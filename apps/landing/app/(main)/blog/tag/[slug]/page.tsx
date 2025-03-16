@@ -19,7 +19,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const tags = await getAllTags();
-  const tag = tags.find(t => t.slug === slug);
+  const tag = tags.find((t: { slug: string }) => t.slug === slug);
   
   if (!tag) {
     return {
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function TagPage({ params }: Props) {
   const { slug } = await params;
   const tags = await getAllTags();
-  const tag = tags.find(t => t.slug === slug);
+  const tag = tags.find((t: { slug: string }) => t.slug === slug);
   
   if (!tag) {
     notFound();
