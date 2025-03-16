@@ -14,8 +14,8 @@ import { Post, SidebarPost, SidebarCategory, SidebarTag } from '@/app/types/blog
 import React from 'react'
 
 interface Props {
-    params: { slug: string };
-    searchParams: { [key: string]: string | string[] | undefined };
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Generate metadata for the page
@@ -24,7 +24,7 @@ export async function generateMetadata(
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   // Fetch post data
-  const { slug } = params;
+  const { slug } = await params;
   const post = await getPostBySlug(slug);
   
   if (!post) {
@@ -87,7 +87,7 @@ export async function generateMetadata(
 
 export default async function BlogPostPage({ params }: Props): Promise<React.ReactElement> {
   // Fetch post data
-  const { slug } = params;
+  const { slug } = await params;
   const post = await getPostBySlug(slug);
   
   // If post not found, return 404
