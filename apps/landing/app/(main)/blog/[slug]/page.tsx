@@ -97,8 +97,8 @@ export default async function BlogPostPage({ params }: Props) {
   const readingTime = calculateReadingTime(post.content)
   
   // Get category and tag IDs for related posts
-  const categoryIds = post.categories.map(category => category.id)
-  const tagIds = post.tags.map(tag => tag.id)
+  const categoryIds = post.categories.map((category: { id: string }) => category.id)
+  const tagIds = post.tags.map((tag: { id: string }) => tag.id)
   
   // Fetch related posts, recent posts, categories, and tags in parallel
   const [relatedPosts, recentPosts, categories, tags] = await Promise.all([
