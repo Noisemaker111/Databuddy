@@ -63,7 +63,6 @@ export default function ContactPage() {
                       {item.icon}
                     </div>
                     <h3 className="text-xl font-semibold text-white mb-2">{item.title}</h3>
-                      <div>{item.details}</div>
                       {item.title === "Book a meeting" ? (
                       <a href={item.details} target="_blank" rel="noopener noreferrer" className="text-sky-400 font-medium mb-2 text-wrap break-words hover:text-sky-300 transition-colors">{item.details}</a>
                     ) : (
