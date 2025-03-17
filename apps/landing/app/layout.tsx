@@ -17,7 +17,7 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "Databuddy Analytics - Privacy-First Web Analytics",
-  description: "Get powerful analytics without compromising user privacy. Full feature parity with Google Analytics, zero cookies required, and 100% data ownership.",
+  description: "Experience powerful, privacy-first analytics that matches Google Analytics feature-for-feature without compromising user data. Zero cookies required, 100% data ownership, and AI-powered insights to help your business grow while staying compliant.",
   keywords: ["analytics", "web analytics", "privacy", "GDPR compliant", "cookieless", "website tracking", "data ownership", "performance analytics", "AI analytics", "privacy-first"],
   authors: [{ name: "Databuddy Team" }],
   creator: "Databuddy Analytics",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://www.databuddy.cc",
     title: "Databuddy Analytics - Privacy-First Web Analytics",
-    description: "Get powerful analytics without compromising user privacy. Full feature parity with Google Analytics, zero cookies required, and 100% data ownership.",
+    description: "Experience powerful, privacy-first analytics that matches Google Analytics feature-for-feature without compromising user data. Zero cookies required, 100% data ownership, and AI-powered insights to help your business grow while staying compliant.",
     siteName: "Databuddy Analytics",
     images: [
       {
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Databuddy Analytics - Privacy-First Web Analytics",
-    description: "Get powerful analytics without compromising user privacy. Full feature parity with Google Analytics, zero cookies required, and 100% data ownership.",
+    description: "Experience powerful, privacy-first analytics that matches Google Analytics feature-for-feature without compromising user data. Zero cookies required, 100% data ownership, and AI-powered insights to help your business grow while staying compliant.",
     images: ["/images/og_image.png"],
     creator: "@Databuddy_ps",
     site: "@Databuddy_ps"
