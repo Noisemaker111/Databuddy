@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
+import { db } from "@databuddy/db";
+import { ApplicationStatus } from "@databuddy/db";
 // import { isSpamEmail, isSpamMessage } from "@/app/lib/spam-detection";
 import { RateLimiter } from "@/app/lib/rate-limiter";
 
-const prisma = new PrismaClient();
 const rateLimiter = new RateLimiter();
 
 // Schema for validating job application data
@@ -21,6 +21,34 @@ const applicationSchema = z.object({
   coverLetter: z.string().min(100, { message: "Cover letter must be at least 100 characters" }),
   volunteerAcknowledgment: z.literal(true, { message: "You must acknowledge this is a volunteer/intern position" }),
 });
+
+// Function to get or create a default volunteer job listing
+async function getVolunteerJobListingId(role: string) {
+  // Try to find an existing volunteer job listing for this role
+  const existingListing = await db.jobListing.findFirst({
+    where: {
+      title: `Volunteer ${role}`,
+      published: true,
+    },
+  });
+
+  if (existingListing) {
+    return existingListing.id;
+  }
+
+  // If no listing exists, create a new one
+  const newListing = await db.jobListing.create({
+    data: {
+      title: `Volunteer ${role}`,
+      description: `Volunteer position for ${role}`,
+      type: "volunteer",
+      published: true,
+      publishedAt: new Date(),
+    },
+  });
+
+  return newListing.id;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,26 +96,24 @@ export async function POST(request: NextRequest) {
 
     // Store application in database
     try {
+      // Get or create a job listing for this volunteer role
+      const jobListingId = await getVolunteerJobListingId(data.role);
+
       // Clean up any undefined values
       const applicationData = {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        role: data.role,
-        experienceLevel: data.experience,
-        resumeUrl: data.resumeUrl,
-        portfolioUrl: data.portfolio || null,
-        linkedinUrl: data.linkedin || null,
-        githubUrl: data.github || null,
+        jobListingId: jobListingId,
+        resume: data.resumeUrl,
         coverLetter: data.coverLetter,
-        volunteerAcknowledged: data.volunteerAcknowledgment,
-        status: "PENDING",
+        status: ApplicationStatus.NEW,
       };
 
       // Log the data being sent to the database for debugging
       console.log("Creating job application with data:", JSON.stringify(applicationData, null, 2));
 
-      await prisma.jobApplication.create({
+      await db.jobApplication.create({
         data: applicationData,
       });
     } catch (error) {
@@ -107,7 +133,5 @@ export async function POST(request: NextRequest) {
       { error: "Failed to process your application. Please try again later." },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 } 
