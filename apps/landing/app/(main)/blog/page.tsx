@@ -1,6 +1,3 @@
-"use client"
-
-import { useEffect, useState } from "react";
 import Background from "../../components/background";
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
@@ -11,90 +8,51 @@ import { BlogSidebar } from "@/app/components/blog/sidebar";
 import { calculateReadingTime } from "@/app/lib/blog-utils";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getAllPosts, getAllCategories, getAllTags } from "@/app/lib/blog-api";
+import { getAllPublishedPosts, getAllCategories, getAllTags } from "./actions";
+import { BlogPost, BlogCategory, BlogTag } from "@/app/lib/blog-types";
+import { Metadata } from "next";
 
-// Define types for our data
-interface Author {
-  name: string | null;
-  image: string | null;
-}
+export const revalidate = 3600; // Revalidate every hour (ISR)
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-}
+export const metadata: Metadata = {
+  title: "Blog | Databuddy Analytics",
+  description: "Explore our latest articles, tutorials, and insights about data analytics, privacy, and web analytics.",
+  keywords: "data analytics, web analytics, privacy, blog, tutorials, insights",
+  openGraph: {
+    title: "Blog | Databuddy Analytics",
+    description: "Explore our latest articles, tutorials, and insights about data analytics, privacy, and web analytics.",
+    type: "website",
+    url: "/blog",
+  },
+};
 
-interface Tag {
-  id: string;
-  name: string;
-  slug: string;
-}
-
-interface Post {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string | null;
-  coverImage: string | null;
-  createdAt: string;
-  author: Author;
-  categories: Category[];
-  tags: Tag[];
-}
-
-export default function BlogPage() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [categories, setCategories] = useState<(Category & { postCount: number })[]>([]);
-  const [tags, setTags] = useState<(Tag & { postCount: number })[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Fetch blog posts, categories, and tags in parallel
-        const [postsData, categoriesData, tagsData] = await Promise.all([
-          getAllPosts(),
-          getAllCategories(),
-          getAllTags()
-        ]);
-        
-        setPosts(postsData as Post[]);
-        setCategories(categoriesData as (Category & { postCount: number })[]);
-        setTags(tagsData as (Tag & { postCount: number })[]);
-      } catch (err: unknown) {
-        console.error("Error fetching blog data:", err);
-        setError(err instanceof Error ? err.message : "An unknown error occurred");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+export default async function BlogPage() {
+  // Fetch blog posts, categories, and tags in parallel
+  const [posts, categories, tags] = await Promise.all([
+    getAllPublishedPosts(),
+    getAllCategories(),
+    getAllTags()
+  ]);
 
   const formatDate = (date: Date | string) => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'long',
       day: 'numeric',
       year: 'numeric'
-    }).format(date instanceof Date ? date : new Date(date));
-  };
+    }).format(date instanceof Date ? date : new Date(date))
+  }
 
   const getInitials = (name: string | null) => {
-    if (!name) return '?';
+    if (!name) return '?'
     return name
       .split(' ')
-      .map((part: string) => part[0])
+      .map(part => part[0])
       .join('')
       .toUpperCase()
-      .substring(0, 2);
-  };
+      .substring(0, 2)
+  }
 
-  if (loading) {
+  if (posts.length === 0) {
     return (
       <div className="fixed inset-0 overflow-hidden">
         <Background />
@@ -146,28 +104,6 @@ export default function BlogPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="fixed inset-0 overflow-hidden">
-        <Background />
-        <div className="relative z-10 h-full overflow-auto scrollbar-hide">
-          <Navbar />
-          <main className="container mx-auto px-4 py-16">
-            <div className="text-center mb-16">
-              <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-blue-500 mb-4">
-                Databuddy Blog
-              </h1>
-              <p className="text-lg text-red-500 max-w-2xl mx-auto">
-                Error loading blog content: {error}
-              </p>
-            </div>
-          </main>
-          <Footer />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="fixed inset-0 overflow-hidden">
       <Background />
@@ -192,7 +128,7 @@ export default function BlogPage() {
               <FadeIn delay={100}>
                 {posts.length > 0 ? (
                   <div className="space-y-12">
-                    {posts.map((post) => {
+                    {posts.map((post: BlogPost) => {
                       const readingTime = calculateReadingTime(post.content);
                       
                       return (
@@ -209,13 +145,13 @@ export default function BlogPage() {
                           
                           <div className="p-6 md:p-8">
                             <div className="flex flex-wrap gap-2 mb-4">
-                              {post.categories?.map((category: Category) => (
-                                <Link key={category.id} href={`/blog/category/${category.slug}`}>
+                              {post.categories.length > 0 && (
+                                <Link key={post.categories[0].id} href={`/blog/category/${post.categories[0].slug}`}>
                                   <Badge variant="outline" className="hover:bg-slate-800 transition-colors cursor-pointer">
-                                    {category.name}
+                                    {post.categories[0].name}
                                   </Badge>
                                 </Link>
-                              ))}
+                              )}
                             </div>
                             
                             <Link href={`/blog/${post.slug}`}>

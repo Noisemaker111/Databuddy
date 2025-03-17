@@ -3,10 +3,21 @@ import { notFound } from 'next/navigation';
 import Background from '@/app/components/background';
 import Navbar from '@/app/components/navbar';
 import Footer from '@/app/components/footer';
-import { getAllCategories, getPostsByCategory, getRecentPosts, getAllTags } from '@/app/lib/blog-api';
+import { getAllCategories, getPostsByCategory, getRecentPosts, getAllTags } from '../../actions';
 import { BlogSidebar } from '@/app/components/blog/sidebar';
 import { PostGrid } from '@/app/components/blog/post-grid';
 import { Separator } from '@/components/ui/separator';
+import { BlogCategory } from '@/app/lib/blog-types';
+
+export const revalidate = 3600; // Revalidate every hour (ISR)
+
+// Generate static params for all categories
+export async function generateStaticParams() {
+  const categories = await getAllCategories();
+  return categories.map((category) => ({
+    slug: category.slug,
+  }));
+}
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -37,7 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;
   const categories = await getAllCategories();
-  const category = categories.find(cat => cat.slug === slug);
+  const category = categories.find(cat => cat.slug === slug) as BlogCategory;
   
   if (!category) {
     notFound();
@@ -49,17 +60,6 @@ export default async function CategoryPage({ params }: Props) {
     getRecentPosts(5),
     getAllTags()
   ]);
-  
-  // Ensure categories and tags have postCount property
-  const formattedCategories = categories.map(cat => ({
-    ...cat,
-    postCount: cat.postCount || 0
-  }));
-  
-  const formattedTags = tags.map(tag => ({
-    ...tag,
-    postCount: tag.postCount || 0
-  }));
   
   return (
     <div className="fixed inset-0 overflow-hidden">
@@ -96,8 +96,8 @@ export default async function CategoryPage({ params }: Props) {
               <div className="sticky top-24">
                 <BlogSidebar
                   recentPosts={recentPosts}
-                  categories={formattedCategories}
-                  tags={formattedTags}
+                  categories={categories}
+                  tags={tags}
                 />
               </div>
             </div>

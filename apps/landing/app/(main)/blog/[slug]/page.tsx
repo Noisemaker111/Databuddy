@@ -3,19 +3,29 @@ import { notFound } from 'next/navigation'
 import Background from '@/app/components/background'
 import Navbar from '@/app/components/navbar'
 import Footer from '@/app/components/footer'
-import { getPostBySlug, getRelatedPosts, getRecentPosts, getAllCategories, getAllTags } from '../actions'
+import { getPostBySlug, getRelatedPosts, getRecentPosts, getAllCategories, getAllTags, getAllPublishedPosts } from '../actions'
 import { PostContent } from '@/app/components/blog/post-content'
 import { RelatedPosts } from '@/app/components/blog/related-posts'
 import { BlogSidebar } from '@/app/components/blog/sidebar'
 import { calculateReadingTime, generateMetaDescription, generateSeoTitle } from '@/app/lib/blog-utils'
 import { Separator } from '@/components/ui/separator'
 import Script from 'next/script'
-import { Post, SidebarPost, SidebarCategory, SidebarTag } from '@/app/types/blog'
+import { BlogPost } from '@/app/lib/blog-types'
 import React from 'react'
 
+export const revalidate = 3600; // Revalidate every hour (ISR)
+
+// Generate static params for all published posts
+export async function generateStaticParams() {
+  const posts = await getAllPublishedPosts();
+  return posts.map((post) => ({
+    slug: post.slug,
+  }));
+}
+
 interface Props {
-    params: Promise<{ slug: string }>;
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Generate metadata for the page
@@ -54,8 +64,8 @@ export async function generateMetadata(
   
   // Extract keywords from tags and categories
   const keywords = [
-    ...(post.tags?.map(tag => tag.name) || []),
-    ...(post.categories?.map(category => category.name) || []),
+    ...post.tags.map(tag => tag.name),
+    ...post.categories.map(category => category.name),
     'analytics', 'web analytics', 'privacy'
   ];
   
@@ -99,8 +109,8 @@ export default async function BlogPostPage({ params }: Props): Promise<React.Rea
   const readingTime = calculateReadingTime(post.content);
   
   // Get category and tag IDs for related posts
-  const categoryIds = post.categories?.map(category => category.id) || [];
-  const tagIds = post.tags?.map(tag => tag.id) || [];
+  const categoryIds = post.categories.map(category => category.id);
+  const tagIds = post.tags.map(tag => tag.id);
   
   // Fetch related posts, recent posts, categories, and tags in parallel
   const [relatedPosts, recentPosts, categories, tags] = await Promise.all([

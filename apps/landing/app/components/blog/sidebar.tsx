@@ -4,38 +4,12 @@ import { Badge } from '@/components/ui/badge'
 import { CalendarIcon, Hash, Layers, Search, Mail, TrendingUp } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-
-interface Post {
-  id: string
-  title: string
-  slug: string
-  excerpt?: string | null
-  coverImage?: string | null
-  createdAt: Date | string
-  author: {
-    name: string | null
-    image: string | null
-  }
-}
-
-interface Category {
-  id: string
-  name: string
-  slug: string
-  postCount: number
-}
-
-interface Tag {
-  id: string
-  name: string
-  slug: string
-  postCount: number
-}
+import { BlogPost, BlogCategory, BlogTag } from '@/app/lib/blog-types'
 
 interface BlogSidebarProps {
-  recentPosts: Post[]
-  categories: Category[]
-  tags: Tag[]
+  recentPosts: BlogPost[]
+  categories: BlogCategory[]
+  tags: BlogTag[]
 }
 
 export function BlogSidebar({ recentPosts, categories, tags }: BlogSidebarProps) {
@@ -47,8 +21,13 @@ export function BlogSidebar({ recentPosts, categories, tags }: BlogSidebarProps)
     }).format(date instanceof Date ? date : new Date(date))
   }
 
-  const sortedCategories = categories.sort((a, b) => b.postCount - a.postCount)
-  const sortedTags = tags.sort((a, b) => b.postCount - a.postCount)
+  const sortedCategories = [...categories].sort((a, b) => 
+    (b.postCount || 0) - (a.postCount || 0)
+  )
+  
+  const sortedTags = [...tags].sort((a, b) => 
+    (b.postCount || 0) - (a.postCount || 0)
+  )
 
   return (
     <div className="space-y-8 font-nunito">

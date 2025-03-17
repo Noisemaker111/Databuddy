@@ -15,12 +15,9 @@ datasource db {
 
 model Email {
   id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  ipAddress String?
   email     String
-  subject   String
-  body      String
   createdAt DateTime @default(now())
-
-  @@map("emails")
 }
 
 model Contact {
@@ -45,6 +42,8 @@ model User {
   email         String          @unique
   firstName     String?
   lastName      String?
+  image         String?
+  emailVerified DateTime?
   name          String? // Computed field for display purposes
   status        UserStatus      @default(ACTIVE)
   createdAt     DateTime        @default(now())
@@ -58,6 +57,7 @@ model User {
   invitesSent   Member[]        @relation("invitedBy")
   projectAccess ProjectAccess[]
   posts         Post[]
+  role          Role            @default(USER)
   websites      Website[]
   
   // Authentication relations - preserved as requested
@@ -65,7 +65,7 @@ model User {
   accounts      Account[]
   invites       Invite[]
 
-  @@map("users")
+  @@map("user")
 }
 
 model Verification {
@@ -91,7 +91,7 @@ model Session {
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@map("sessions")
+  @@map("session")
 }
 
 enum UserStatus {
@@ -102,6 +102,8 @@ enum UserStatus {
 
 enum Role {
   ADMIN
+  USER
+  AUTHOR
   EDITOR
   VIEWER
   OWNER
@@ -117,6 +119,7 @@ model Post {
   excerpt   String?
   published Boolean   @default(false)
   authorId  String
+  coverImage String?
   author    User      @relation(fields: [authorId], references: [id])
   createdAt DateTime  @default(now())
   updatedAt DateTime  @default(now()) @updatedAt
@@ -225,11 +228,13 @@ model Website {
   updatedAt DateTime      @default(now()) @updatedAt
 
   @@index([userId])
-  @@map("websites")
+  @@map("website")
 }
 
 enum WebsiteStatus {
   ACTIVE
+  HEALTHY
+  UNHEALTHY
   INACTIVE
   PENDING
 }

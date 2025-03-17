@@ -1,23 +1,12 @@
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { CalendarIcon } from 'lucide-react'
-
-interface Post {
-  id: string
-  title: string
-  slug: string
-  excerpt?: string | null
-  coverImage?: string | null
-  createdAt: Date | string
-  author: {
-    name: string | null
-    image: string | null
-  }
-}
+import { BlogPost } from '@/app/lib/blog-types'
 
 interface RelatedPostsProps {
-  posts: Post[]
+  posts: BlogPost[]
 }
+
 
 export function RelatedPosts({ posts }: RelatedPostsProps) {
   const formatDate = (date: Date | string) => {

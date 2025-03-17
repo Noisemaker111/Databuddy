@@ -1,17 +1,11 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Hash } from 'lucide-react';
-
-interface Tag {
-  id: string;
-  name: string;
-  slug: string;
-  postCount?: number;
-}
+import { BlogTag } from '@/app/lib/blog-types';
 
 interface RelatedTagsProps {
   currentTagId: string;
-  tags: Tag[];
+  tags: BlogTag[];
   title?: string;
   maxTags?: number;
 }

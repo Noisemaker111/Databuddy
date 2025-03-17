@@ -1,19 +1,20 @@
 "use server";
 
-import prisma from "@/lib/db";
+import { db } from "@databuddy/db";
 import { unstable_cache } from "next/cache";
-import { Post, User, Category, Tag } from "@databuddy/db";
+import { BlogPost, BlogCategory, BlogTag, transformPost, transformCategory, transformTag } from "@/app/lib/blog-types";
 
 // Get all published blog posts
 export const getAllPublishedPosts = unstable_cache(
-  async () => {
-    const posts = await prisma.post.findMany({
+  async (): Promise<BlogPost[]> => {
+    const posts = await db.post.findMany({
       where: { 
         published: true 
       },
       include: {
         author: {
           select: {
+            id: true,
             name: true
           }
         },
@@ -25,17 +26,8 @@ export const getAllPublishedPosts = unstable_cache(
       }
     });
     
-    // Transform the data to match our expected Post type with categories array
-    const transformedPosts = posts.map(post => ({
-      ...post,
-      categories: post.category ? [post.category] : [],
-      author: {
-        name: post.author.name || 'Anonymous',
-        image: null
-      }
-    }));
-    
-    return transformedPosts;
+    // Transform the data using our utility function
+    return posts.map(transformPost);
   },
   ["published-posts"],
   { revalidate: 3600 } // Revalidate every hour
@@ -43,8 +35,8 @@ export const getAllPublishedPosts = unstable_cache(
 
 // Get a single blog post by slug
 export const getPostBySlug = unstable_cache(
-  async (slug: string) => {
-    const post = await prisma.post.findUnique({
+  async (slug: string): Promise<BlogPost | null> => {
+    const post = await db.post.findUnique({
       where: { 
         slug,
         published: true
@@ -52,6 +44,7 @@ export const getPostBySlug = unstable_cache(
       include: {
         author: {
           select: {
+            id: true,
             name: true
           }
         },
@@ -62,26 +55,81 @@ export const getPostBySlug = unstable_cache(
     
     if (!post) return null;
     
-    // Transform the data to match our expected Post type with categories array
-    const transformedPost = {
-      ...post,
-      categories: post.category ? [post.category] : [],
-      author: {
-        name: post.author.name || 'Anonymous',
-        image: null
-      }
-    };
-    
-    return transformedPost;
+    // Transform the data using our utility function
+    return transformPost(post);
   },
   ["post-by-slug"],
   { revalidate: 3600 } // Revalidate every hour
 );
 
+// Get posts by tag
+export const getPostsByTag = unstable_cache(
+  async (tagId: string): Promise<BlogPost[]> => {
+    const posts = await db.post.findMany({
+      where: {
+        published: true,
+        tags: {
+          some: {
+            id: tagId
+          }
+        }
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        category: true,
+        tags: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+    
+    // Transform the data using our utility function
+    return posts.map(transformPost);
+  },
+  ["posts-by-tag"],
+  { revalidate: 3600 } // Revalidate every hour
+);
+
+// Get posts by category
+export const getPostsByCategory = unstable_cache(
+  async (categoryId: string): Promise<BlogPost[]> => {
+    const posts = await db.post.findMany({
+      where: {
+        published: true,
+        categoryId: categoryId
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        category: true,
+        tags: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+    
+    // Transform the data using our utility function
+    return posts.map(transformPost);
+  },
+  ["posts-by-category"],
+  { revalidate: 3600 } // Revalidate every hour
+);
+
 // Get related posts based on categories and tags
 export const getRelatedPosts = unstable_cache(
-  async (postId: string, categoryIds: string[], tagIds: string[], limit = 3) => {
-    const posts = await prisma.post.findMany({
+  async (postId: string, categoryIds: string[], tagIds: string[], limit = 3): Promise<BlogPost[]> => {
+    const posts = await db.post.findMany({
       where: {
         id: { not: postId },
         published: true,
@@ -93,6 +141,7 @@ export const getRelatedPosts = unstable_cache(
       include: {
         author: {
           select: {
+            id: true,
             name: true
           }
         },
@@ -105,17 +154,8 @@ export const getRelatedPosts = unstable_cache(
       take: limit
     });
     
-    // Transform the data to match our expected Post type with categories array
-    const transformedPosts = posts.map(post => ({
-      ...post,
-      categories: post.category ? [post.category] : [],
-      author: {
-        name: post.author.name || 'Anonymous',
-        image: null
-      }
-    }));
-    
-    return transformedPosts;
+    // Transform the data using our utility function
+    return posts.map(transformPost);
   },
   ["related-posts"],
   { revalidate: 3600 } // Revalidate every hour
@@ -123,22 +163,20 @@ export const getRelatedPosts = unstable_cache(
 
 // Get recent posts
 export const getRecentPosts = unstable_cache(
-  async (limit = 5) => {
-    const posts = await prisma.post.findMany({
+  async (limit = 5): Promise<BlogPost[]> => {
+    const posts = await db.post.findMany({
       where: { 
         published: true 
       },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        createdAt: true,
+      include: {
         author: {
           select: {
+            id: true,
             name: true
           }
-        }
+        },
+        category: true,
+        tags: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -146,17 +184,8 @@ export const getRecentPosts = unstable_cache(
       take: limit
     });
     
-    // Transform the data to match our expected SidebarPost type
-    const transformedPosts = posts.map(post => ({
-      ...post,
-      coverImage: null, // Add this field to match expected type
-      author: {
-        name: post.author.name || 'Anonymous',
-        image: null
-      }
-    }));
-    
-    return transformedPosts;
+    // Transform the data using our utility function
+    return posts.map(transformPost);
   },
   ["recent-posts"],
   { revalidate: 3600 } // Revalidate every hour
@@ -164,8 +193,8 @@ export const getRecentPosts = unstable_cache(
 
 // Get all categories with post count
 export const getAllCategories = unstable_cache(
-  async () => {
-    const categories = await prisma.category.findMany({
+  async (): Promise<BlogCategory[]> => {
+    const categories = await db.category.findMany({
       include: {
         _count: {
           select: {
@@ -182,10 +211,7 @@ export const getAllCategories = unstable_cache(
       }
     });
 
-    return categories.map(category => ({
-      ...category,
-      postCount: category._count.posts
-    }));
+    return categories.map(transformCategory);
   },
   ["all-categories"],
   { revalidate: 3600 } // Revalidate every hour
@@ -193,8 +219,8 @@ export const getAllCategories = unstable_cache(
 
 // Get all tags with post count
 export const getAllTags = unstable_cache(
-  async () => {
-    const tags = await prisma.tag.findMany({
+  async (): Promise<BlogTag[]> => {
+    const tags = await db.tag.findMany({
       include: {
         _count: {
           select: {
@@ -211,10 +237,7 @@ export const getAllTags = unstable_cache(
       }
     });
 
-    return tags.map(tag => ({
-      ...tag,
-      postCount: tag._count.posts
-    }));
+    return tags.map(transformTag);
   },
   ["all-tags"],
   { revalidate: 3600 } // Revalidate every hour

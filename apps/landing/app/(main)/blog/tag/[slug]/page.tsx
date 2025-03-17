@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Background from '@/app/components/background';
 import Navbar from '@/app/components/navbar';
 import Footer from '@/app/components/footer';
-import { getAllTags, getPostsByTag, getRecentPosts, getAllCategories } from '@/app/lib/blog-api';
+import { getAllTags, getPostsByTag, getRecentPosts, getAllCategories } from '../../actions';
 import { BlogSidebar } from '@/app/components/blog/sidebar';
 import { PostGrid } from '@/app/components/blog/post-grid';
 import { RelatedTags } from '@/app/components/blog/related-tags';
@@ -11,6 +11,17 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Filter, Grid3X3, LayoutList, SortAsc, SortDesc } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { BlogTag } from '@/app/lib/blog-types';
+
+export const revalidate = 3600; // Revalidate every hour (ISR)
+
+// Generate static params for all tags
+export async function generateStaticParams() {
+  const tags = await getAllTags();
+  return tags.map((tag) => ({
+    slug: tag.slug,
+  }));
+}
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -19,7 +30,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const tags = await getAllTags();
-  const tag = tags.find((t: { slug: string }) => t.slug === slug);
+  const tag = tags.find((t) => t.slug === slug);
   
   if (!tag) {
     return {
@@ -58,7 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function TagPage({ params }: Props) {
   const { slug } = await params;
   const tags = await getAllTags();
-  const tag = tags.find((t: { slug: string }) => t.slug === slug);
+  const tag = tags.find((t) => t.slug === slug) as BlogTag;
   
   if (!tag) {
     notFound();
@@ -70,17 +81,6 @@ export default async function TagPage({ params }: Props) {
     getRecentPosts(5),
     getAllCategories()
   ]);
-  
-  // Ensure categories and tags have postCount property
-  const formattedCategories = categories.map(cat => ({
-    ...cat,
-    postCount: cat.postCount || 0
-  }));
-  
-  const formattedTags = tags.map(t => ({
-    ...t,
-    postCount: t.postCount || 0
-  }));
   
   return (
     <div className="fixed inset-0 overflow-hidden">
@@ -150,7 +150,7 @@ export default async function TagPage({ params }: Props) {
                   <div className="mt-12 lg:hidden">
                     <RelatedTags 
                       currentTagId={tag.id} 
-                      tags={formattedTags} 
+                      tags={tags} 
                       title="Explore Related Tags"
                     />
                   </div>
@@ -172,15 +172,15 @@ export default async function TagPage({ params }: Props) {
                 <div className="hidden lg:block">
                   <RelatedTags 
                     currentTagId={tag.id} 
-                    tags={formattedTags} 
+                    tags={tags} 
                     title="Explore Related Tags"
                   />
                 </div>
                 
                 <BlogSidebar
                   recentPosts={recentPosts}
-                  categories={formattedCategories}
-                  tags={formattedTags}
+                  categories={categories}
+                  tags={tags}
                 />
               </div>
             </div>

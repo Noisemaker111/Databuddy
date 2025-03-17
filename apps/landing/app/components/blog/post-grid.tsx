@@ -4,46 +4,10 @@ import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CalendarIcon, Clock, Eye } from 'lucide-react';
-
-interface Author {
-  id: string;
-  name: string | null;
-  image: string | null;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  postCount?: number;
-}
-
-interface Tag {
-  id: string;
-  name: string;
-  slug: string;
-  postCount?: number;
-}
-
-interface Post {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string | null;
-  coverImage: string | null;
-  published: boolean;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-  author: Author;
-  categories: Category[];
-  tags: Tag[];
-  readingTime?: number;
-}
+import { BlogPost, BlogCategory, BlogTag } from '@/app/lib/blog-types';
 
 interface PostGridProps {
-  posts: Post[];
+  posts: BlogPost[];
 }
 
 export function PostGrid({ posts }: PostGridProps) {
@@ -82,7 +46,7 @@ export function PostGrid({ posts }: PostGridProps) {
             
             <CardHeader className="pb-2">
               <div className="flex flex-wrap gap-2 mb-3">
-                {post.categories?.slice(0, 2).map((category: Category) => (
+                {post.categories?.slice(0, 2).map((category: BlogCategory) => (
                   <Link 
                     key={category.id} 
                     href={`/blog/category/${category.slug}`}
@@ -105,7 +69,7 @@ export function PostGrid({ posts }: PostGridProps) {
               )}
               
               <div className="flex flex-wrap gap-2">
-                {post.tags && post.tags.slice(0, 3).map((tag: Tag) => (
+                {post.tags && post.tags.slice(0, 3).map((tag: BlogTag) => (
                   <Badge 
                     key={tag.id} 
                     variant="outline" 

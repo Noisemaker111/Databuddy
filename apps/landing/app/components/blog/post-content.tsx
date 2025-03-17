@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { CalendarIcon, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { SocialShare } from './social-share'
+import { BlogCategory, BlogTag } from '@/app/lib/blog-types'
 
 interface PostContentProps {
   title: string
@@ -13,16 +14,8 @@ interface PostContentProps {
     image: string | null
   }
   date: Date | string
-  categories: {
-    id: string
-    name: string
-    slug: string
-  }[]
-  tags: {
-    id: string
-    name: string
-    slug: string
-  }[]
+  categories: BlogCategory[]
+  tags: BlogTag[]
   estimatedReadingTime?: number
   url?: string
 }
