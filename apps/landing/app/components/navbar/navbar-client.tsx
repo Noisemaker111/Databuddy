@@ -4,13 +4,12 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { 
-  Menu, X, ChevronDown, BarChart2, ArrowRight
+  Menu, BarChart2, ArrowRight
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetTitle } from "@/components/ui/sheet"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import VisuallyHidden from "@/components/ui/visuallyhidden"
 import { 
   homeNavGroups, blogNavGroups, demoNavGroups, 
@@ -28,15 +27,9 @@ import {
 
 export default function NavbarClient() {
   const pathname = usePathname()
-  const [activeTab, setActiveTab] = React.useState("")
   const [isScrolled, setIsScrolled] = React.useState(false)
   const [isOpen, setIsOpen] = React.useState(false)
-  const [activeGroup, setActiveGroup] = React.useState("About")
-  const [hoveredGroup, setHoveredGroup] = React.useState<string | null>(null)
-  const [hoveredTab, setHoveredTab] = React.useState<string | null>(null)
-  const [showDropdown, setShowDropdown] = React.useState(false)
   const closeTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
-  const navRef = React.useRef<HTMLDivElement>(null)
   
   // Determine which nav groups to use based on the current path
   const getNavGroups = () => {
@@ -49,58 +42,9 @@ export default function NavbarClient() {
   }
   
   const navGroups = getNavGroups()
-  const tabs = flattenNavItems(navGroups)
   const isHomePage = pathname === "/"
   
   const ctaLink = isHomePage ? "#cta-form" : "/#cta-form"
-
-  React.useEffect(() => {
-    // Reset active tab when pathname changes
-    setActiveTab(tabs[0]?.name || "")
-    
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20)
-      
-      // Only update active tab based on scroll position on the home page
-      if (isHomePage) {
-        const sections = tabs.map(tab => {
-          const element = document.querySelector(tab.href)
-          if (!element) return { name: tab.name, top: 0 }
-          
-          const rect = element.getBoundingClientRect()
-          return {
-            name: tab.name,
-            top: rect.top
-          }
-        })
-        
-        // Find the section closest to the top of the viewport
-        const activeSection = sections
-          .filter(section => section.top <= 200)
-          .sort((a, b) => b.top - a.top)[0]
-          
-        if (activeSection) {
-          setActiveTab(activeSection.name)
-          
-          // Find which group the active tab belongs to
-          for (const group of navGroups) {
-            if (group.items.some(item => item.name === activeSection.name)) {
-              setActiveGroup(group.name);
-              break;
-            }
-          }
-        }
-      }
-    }
-    
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => {
-      window.removeEventListener("scroll", handleScroll)
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-      }
-    }
-  }, [pathname, isHomePage, tabs, navGroups])
 
   // Handle hash change and smooth scroll
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
