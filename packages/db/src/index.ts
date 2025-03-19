@@ -1,2 +1,2 @@
-export { prisma as db} from './client';
-export * from '../generated/client';
+export { prisma as db } from './client' // exports instance of prisma 
+ export * from "../generated/client" // exports generated types from prisma
