@@ -1,188 +1,3 @@
-// This file was overwritten by prisma-json-types-generator
-// Report any issues to https://github.com/arthurfiorette/prisma-json-types-generator
-
-declare global {
-  namespace PrismaJson {
-    // This namespace will always be empty. Definitions should be done by
-    // you manually, and merged automatically by typescript. Make sure that
-    // your declaration merging file is included in your tsconfig.json
-    //
-    // Learn more: https://github.com/arthurfiorette/prisma-json-types-generator/issues/143
-    // Declaration Merging: https://www.typescriptlang.org/docs/handbook/declaration-merging.html
-  }
-}
-
-/** A filter to be used against nullable List types. */
-export type NullableListFilter<T> = {
-  equals?: T | T[] | null;
-  has?: T | null;
-  hasEvery?: T[];
-  hasSome?: T[];
-  isEmpty?: boolean;
-};
-
-/** A type to determine how to update a json field */
-export type UpdateInput<T> = T extends object ? { [P in keyof T]?: UpdateInput<T[P]> } : T;
-
-/** A type to determine how to update a json[] field */
-export type UpdateManyInput<T> = T | T[] | { set?: T[]; push?: T | T[] };
-
-/** A type to determine how to create a json[] input */
-export type CreateManyInput<T> = T | T[] | { set?: T[] };
-
-/**
- * A typed version of NestedStringFilter, allowing narrowing of string types to
- * discriminated unions.
- */
-export type TypedNestedStringFilter<S extends string> =
-  //@ts-ignore - When Prisma.StringFilter is not present, this type is not used
-  Prisma.StringFilter & {
-    equals?: S;
-    in?: S[];
-    notIn?: S[];
-    not?: TypedNestedStringFilter<S> | S;
-  };
-
-/**
- * A typed version of StringFilter, allowing narrowing of string types to discriminated
- * unions.
- */
-export type TypedStringFilter<S extends string> =
-  //@ts-ignore - When Prisma.StringFilter is not present, this type is not used
-  Prisma.StringFilter & {
-    equals?: S;
-    in?: S[];
-    notIn?: S[];
-    not?: TypedNestedStringFilter<S> | S;
-  };
-
-/**
- * A typed version of NestedStringNullableFilter, allowing narrowing of string types to
- * discriminated unions.
- */
-export type TypedNestedStringNullableFilter<S extends string> =
-  //@ts-ignore - When Prisma.StringNullableFilter is not present, this type is not used
-  Prisma.StringNullableFilter & {
-    equals?: S | null;
-    in?: S[] | null;
-    notIn?: S[] | null;
-    not?: TypedNestedStringNullableFilter<S> | S | null;
-  };
-
-/**
- * A typed version of StringNullableFilter, allowing narrowing of string types to
- * discriminated unions.
- */
-export type TypedStringNullableFilter<S extends string> =
-  //@ts-ignore - When Prisma.StringNullableFilter is not present, this type is not used
-  Prisma.StringNullableFilter & {
-    equals?: S | null;
-    in?: S[] | null;
-    notIn?: S[] | null;
-    not?: TypedNestedStringNullableFilter<S> | S | null;
-  };
-
-/**
- * A typed version of NestedStringWithAggregatesFilter, allowing narrowing of string types
- * to discriminated unions.
- */
-export type TypedNestedStringWithAggregatesFilter<S extends string> =
-  //@ts-ignore - When Prisma.NestedStringWithAggregatesFilter is not present, this type is not used
-  Prisma.NestedStringWithAggregatesFilter & {
-    equals?: S;
-    in?: S[];
-    notIn?: S[];
-    not?: TypedNestedStringWithAggregatesFilter<S> | S;
-  };
-
-/**
- * A typed version of StringWithAggregatesFilter, allowing narrowing of string types to
- * discriminated unions.
- */
-export type TypedStringWithAggregatesFilter<S extends string> =
-  //@ts-ignore - When Prisma.StringWithAggregatesFilter is not present, this type is not used
-  Prisma.StringWithAggregatesFilter & {
-    equals?: S;
-    in?: S[];
-    notIn?: S[];
-    not?: TypedNestedStringWithAggregatesFilter<S> | S;
-  };
-
-/**
- * A typed version of NestedStringNullableWithAggregatesFilter, allowing narrowing of
- * string types to discriminated unions.
- */
-export type TypedNestedStringNullableWithAggregatesFilter<S extends string> =
-  //@ts-ignore - When Prisma.NestedStringNullableWithAggregatesFilter is not present, this type is not used
-  Prisma.NestedStringNullableWithAggregatesFilter & {
-    equals?: S | null;
-    in?: S[] | null;
-    notIn?: S[] | null;
-    not?: TypedNestedStringNullableWithAggregatesFilter<S> | S | null;
-  };
-
-/**
- * A typed version of StringNullableWithAggregatesFilter, allowing narrowing of string
- * types to discriminated unions.
- */
-export type TypedStringNullableWithAggregatesFilter<S extends string> =
-  //@ts-ignore - When Prisma.StringNullableWithAggregatesFilter is not present, this type is not used
-  Prisma.StringNullableWithAggregatesFilter & {
-    equals?: S | null;
-    in?: S[] | null;
-    notIn?: S[] | null;
-    not?: TypedNestedStringNullableWithAggregatesFilter<S> | S | null;
-  };
-
-/**
- * A typed version of StringFieldUpdateOperationsInput, allowing narrowing of string types
- * to discriminated unions.
- */
-export type TypedStringFieldUpdateOperationsInput<S extends string> =
-  //@ts-ignore - When Prisma.StringFieldUpdateOperationsInput is not present, this type is not used
-  Prisma.StringFieldUpdateOperationsInput & {
-    set?: S;
-  };
-
-/**
- * A typed version of NullableStringFieldUpdateOperationsInput, allowing narrowing of
- * string types to discriminated unions.
- */
-export type TypedNullableStringFieldUpdateOperationsInput<S extends string> =
-  //@ts-ignore - When Prisma.NullableStringFieldUpdateOperationsInput is not present, this type is not used
-  Prisma.NullableStringFieldUpdateOperationsInput & {
-    set?: S | null;
-  };
-
-/**
- * A typed version of StringNullableListFilter, allowing narrowing of string types to
- * discriminated unions.
- */
-export type TypedStringNullableListFilter<S extends string> =
-  //@ts-ignore - When Prisma.StringNullableListFilter is not present, this type is not used
-  Prisma.StringNullableListFilter & {
-    equals?: S[] | null;
-    has?: S | null;
-    hasEvery?: S[];
-    hasSome?: S[];
-  };
-
-/**
- * A typed version of the input type to update a string[] field, allowing narrowing of
- * string types to discriminated unions.
- */
-export type UpdateStringArrayInput<S extends string> = {
-  set?: S[];
-  push?: S | S[];
-};
-
-/**
- * A typed version of the input type to create a string[] field, allowing narrowing of
- * string types to discriminated unions.
- */
-export type CreateStringArrayInput<S extends string> = {
-  set?: S[];
-};
 
 /**
  * Client
@@ -18127,7 +17942,7 @@ export namespace Prisma {
     subscriptionCustomerId: string | null
     subscriptionPriceId: string | null
     subscriptionProductId: string | null
-    subscriptionStatus: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus: string | null
     subscriptionStartsAt: Date | null
     subscriptionEndsAt: Date | null
     subscriptionCanceledAt: Date | null
@@ -18302,7 +18117,7 @@ export namespace Prisma {
       /**
        * [IPrismaSubscriptionStatus]
        */
-      subscriptionStatus: PrismaJson.IPrismaSubscriptionStatus
+      subscriptionStatus: string | null
       subscriptionStartsAt: Date | null
       subscriptionEndsAt: Date | null
       subscriptionCanceledAt: Date | null
@@ -19495,7 +19310,7 @@ export namespace Prisma {
     userId: string | null
     invitedById: string | null
     organizationId: string
-    meta: unknown | null
+    meta: JsonValue | null
     createdAt: Date
     updatedAt: Date
     _count: MemberCountAggregateOutputType | null
@@ -19605,7 +19420,7 @@ export namespace Prisma {
       userId: string | null
       invitedById: string | null
       organizationId: string
-      meta: unknown | null
+      meta: Prisma.JsonValue | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["member"]>
@@ -24147,7 +23962,7 @@ export namespace Prisma {
     projectId: string
     name: string
     description: string | null
-    data: unknown | null
+    data: JsonValue | null
     createdAt: Date
     updatedAt: Date
     _count: EventMetaCountAggregateOutputType | null
@@ -24233,7 +24048,7 @@ export namespace Prisma {
       projectId: string
       name: string
       description: string | null
-      data: unknown | null
+      data: Prisma.JsonValue | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["eventMeta"]>
@@ -27758,7 +27573,7 @@ export namespace Prisma {
     subscriptionCustomerId?: StringNullableFilter<"Organization"> | string | null
     subscriptionPriceId?: StringNullableFilter<"Organization"> | string | null
     subscriptionProductId?: StringNullableFilter<"Organization"> | string | null
-    subscriptionStatus?: TypedStringNullableFilter<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: StringNullableFilter<"Organization"> | string | null
     subscriptionStartsAt?: DateTimeNullableFilter<"Organization"> | Date | string | null
     subscriptionEndsAt?: DateTimeNullableFilter<"Organization"> | Date | string | null
     subscriptionCanceledAt?: DateTimeNullableFilter<"Organization"> | Date | string | null
@@ -27878,7 +27693,7 @@ export namespace Prisma {
     subscriptionCustomerId?: StringNullableWithAggregatesFilter<"Organization"> | string | null
     subscriptionPriceId?: StringNullableWithAggregatesFilter<"Organization"> | string | null
     subscriptionProductId?: StringNullableWithAggregatesFilter<"Organization"> | string | null
-    subscriptionStatus?: TypedStringNullableWithAggregatesFilter<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: StringNullableWithAggregatesFilter<"Organization"> | string | null
     subscriptionStartsAt?: DateTimeNullableWithAggregatesFilter<"Organization"> | Date | string | null
     subscriptionEndsAt?: DateTimeNullableWithAggregatesFilter<"Organization"> | Date | string | null
     subscriptionCanceledAt?: DateTimeNullableWithAggregatesFilter<"Organization"> | Date | string | null
@@ -29509,7 +29324,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -29537,7 +29352,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -29563,7 +29378,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -29591,7 +29406,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -29618,7 +29433,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -29639,7 +29454,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -29660,7 +29475,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -29678,7 +29493,7 @@ export namespace Prisma {
     id?: string
     role: string
     email: string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
     user?: UserCreateNestedOneWithoutMembershipsInput
@@ -29693,7 +29508,7 @@ export namespace Prisma {
     userId?: string | null
     invitedById?: string | null
     organizationId: string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -29702,7 +29517,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneWithoutMembershipsNestedInput
@@ -29717,7 +29532,7 @@ export namespace Prisma {
     userId?: NullableStringFieldUpdateOperationsInput | string | null
     invitedById?: NullableStringFieldUpdateOperationsInput | string | null
     organizationId?: StringFieldUpdateOperationsInput | string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -29729,7 +29544,7 @@ export namespace Prisma {
     userId?: string | null
     invitedById?: string | null
     organizationId: string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -29738,7 +29553,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -29750,7 +29565,7 @@ export namespace Prisma {
     userId?: NullableStringFieldUpdateOperationsInput | string | null
     invitedById?: NullableStringFieldUpdateOperationsInput | string | null
     organizationId?: StringFieldUpdateOperationsInput | string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -30031,7 +29846,7 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
-    data?: unknown | NullableJsonNullValueInput
+    data?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
     project: ProjectCreateNestedOneWithoutEventsInput
@@ -30042,7 +29857,7 @@ export namespace Prisma {
     projectId: string
     name: string
     description?: string | null
-    data?: unknown | NullableJsonNullValueInput
+    data?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -30051,7 +29866,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    data?: unknown | NullableJsonNullValueInput
+    data?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     project?: ProjectUpdateOneRequiredWithoutEventsNestedInput
@@ -30062,7 +29877,7 @@ export namespace Prisma {
     projectId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    data?: unknown | NullableJsonNullValueInput
+    data?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -30072,7 +29887,7 @@ export namespace Prisma {
     projectId: string
     name: string
     description?: string | null
-    data?: unknown | NullableJsonNullValueInput
+    data?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -30081,7 +29896,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    data?: unknown | NullableJsonNullValueInput
+    data?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -30091,7 +29906,7 @@ export namespace Prisma {
     projectId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    data?: unknown | NullableJsonNullValueInput
+    data?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -33173,7 +32988,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -33199,7 +33014,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -33235,7 +33050,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -33262,7 +33077,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -33294,7 +33109,7 @@ export namespace Prisma {
     id?: string
     role: string
     email: string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
     invitedBy?: UserCreateNestedOneWithoutInvitesSentInput
@@ -33307,7 +33122,7 @@ export namespace Prisma {
     email: string
     invitedById?: string | null
     organizationId: string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -33326,7 +33141,7 @@ export namespace Prisma {
     id?: string
     role: string
     email: string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
     user?: UserCreateNestedOneWithoutMembershipsInput
@@ -33339,7 +33154,7 @@ export namespace Prisma {
     email: string
     userId?: string | null
     organizationId: string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -33579,7 +33394,7 @@ export namespace Prisma {
     subscriptionCustomerId?: StringNullableFilter<"Organization"> | string | null
     subscriptionPriceId?: StringNullableFilter<"Organization"> | string | null
     subscriptionProductId?: StringNullableFilter<"Organization"> | string | null
-    subscriptionStatus?: TypedStringNullableFilter<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: StringNullableFilter<"Organization"> | string | null
     subscriptionStartsAt?: DateTimeNullableFilter<"Organization"> | Date | string | null
     subscriptionEndsAt?: DateTimeNullableFilter<"Organization"> | Date | string | null
     subscriptionCanceledAt?: DateTimeNullableFilter<"Organization"> | Date | string | null
@@ -34687,7 +34502,7 @@ export namespace Prisma {
     id?: string
     role: string
     email: string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
     user?: UserCreateNestedOneWithoutMembershipsInput
@@ -34700,7 +34515,7 @@ export namespace Prisma {
     email: string
     userId?: string | null
     invitedById?: string | null
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -35254,7 +35069,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -35281,7 +35096,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -35440,7 +35255,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -35467,7 +35282,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -35584,7 +35399,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -35611,7 +35426,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -35814,7 +35629,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -35841,7 +35656,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -35941,7 +35756,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -35968,7 +35783,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -35993,7 +35808,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -36020,7 +35835,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -36102,7 +35917,7 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
-    data?: unknown | NullableJsonNullValueInput
+    data?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -36111,7 +35926,7 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
-    data?: unknown | NullableJsonNullValueInput
+    data?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -36144,7 +35959,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -36171,7 +35986,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -36358,7 +36173,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -36385,7 +36200,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -36470,7 +36285,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -36497,7 +36312,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -36538,7 +36353,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -36560,7 +36375,7 @@ export namespace Prisma {
     subscriptionCustomerId?: string | null
     subscriptionPriceId?: string | null
     subscriptionProductId?: string | null
-    subscriptionStatus?: PrismaJson.IPrismaSubscriptionStatus
+    subscriptionStatus?: string | null
     subscriptionStartsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
     subscriptionCanceledAt?: Date | string | null
@@ -36579,7 +36394,7 @@ export namespace Prisma {
     email: string
     invitedById?: string | null
     organizationId: string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -36590,7 +36405,7 @@ export namespace Prisma {
     email: string
     userId?: string | null
     organizationId: string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -36669,7 +36484,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -36695,7 +36510,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -36742,7 +36557,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -36769,7 +36584,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -36812,7 +36627,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     invitedBy?: UserUpdateOneWithoutInvitesSentNestedInput
@@ -36825,7 +36640,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     invitedById?: NullableStringFieldUpdateOperationsInput | string | null
     organizationId?: StringFieldUpdateOperationsInput | string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -36845,7 +36660,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneWithoutMembershipsNestedInput
@@ -36858,7 +36673,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     userId?: NullableStringFieldUpdateOperationsInput | string | null
     organizationId?: StringFieldUpdateOperationsInput | string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -37279,7 +37094,7 @@ export namespace Prisma {
     email: string
     userId?: string | null
     invitedById?: string | null
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -37359,7 +37174,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneWithoutMembershipsNestedInput
@@ -37372,7 +37187,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     userId?: NullableStringFieldUpdateOperationsInput | string | null
     invitedById?: NullableStringFieldUpdateOperationsInput | string | null
-    meta?: unknown | NullableJsonNullValueInput
+    meta?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -37490,7 +37305,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -37517,7 +37332,7 @@ export namespace Prisma {
     subscriptionCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionPriceId?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionProductId?: NullableStringFieldUpdateOperationsInput | string | null
-    subscriptionStatus?: TypedNullableStringFieldUpdateOperationsInput<PrismaJson.IPrismaSubscriptionStatus> | PrismaJson.IPrismaSubscriptionStatus | null
+    subscriptionStatus?: NullableStringFieldUpdateOperationsInput | string | null
     subscriptionStartsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionCanceledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -37569,7 +37384,7 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
-    data?: unknown | NullableJsonNullValueInput
+    data?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -37604,7 +37419,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    data?: unknown | NullableJsonNullValueInput
+    data?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -37613,7 +37428,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    data?: unknown | NullableJsonNullValueInput
+    data?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
