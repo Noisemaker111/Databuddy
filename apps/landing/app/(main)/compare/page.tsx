@@ -1,20 +1,77 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight } from "lucide-react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { competitors } from "./data";
+import Background from "@/app/components/background";
+import Navbar from "@/app/components/navbar";
+import Footer from "@/app/components/footer";
+import ComparisonComponent from "@/app/components/comparison";
+import FadeIn from "@/app/components/FadeIn";
+import { Button } from "@/components/ui/button";
+import { Metadata } from "next";
+import { 
+  LineChart, 
+  BarChart, 
+  Check, 
+  X,
+  Sparkles,
+  CheckCircle
+} from "lucide-react";
 
-// Import Navbar and Footer components
-const Navbar = dynamic(() => import("@/app/components/navbar"), { ssr: true });
-const Footer = dynamic(() => import("@/app/components/footer"), { ssr: true });
-
-export const metadata = {
-  title: "Compare Analytics Platforms | Databuddy Analytics",
-  description: "See how Databuddy Analytics compares to other analytics platforms like Google Analytics, Plausible, Fathom, and Matomo.",
+// Define metadata for SEO
+export const metadata: Metadata = {
+  title: "Analytics Comparison | Databuddy vs Google Analytics",
+  description: "See how Databuddy Analytics compares to Google Analytics with our feature comparison. Discover the privacy, performance and data ownership benefits.",
+  keywords: "analytics comparison, Google Analytics alternative, GDPR analytics, cookieless analytics, privacy-focused analytics, analytics comparison",
+  alternates: {
+    canonical: 'https://www.databuddy.cc/compare',
+  },
+  openGraph: {
+    type: 'website',
+    url: 'https://www.databuddy.cc/compare',
+    title: 'Analytics Comparison | Databuddy vs Google Analytics',
+    description: 'Compare Databuddy Analytics to Google Analytics and see why our privacy-first approach delivers better results.',
+    siteName: 'Databuddy Analytics',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Databuddy vs Google Analytics Comparison',
+    description: 'Compare Databuddy Analytics to Google Analytics and see why our privacy-first approach delivers better results.',
+    creator: '@databuddyps',
+  },
 };
 
-export default function ComparePage() {
+// Expanded comparison features
+const additionalFeatures = [
+  {
+    name: "Script performance impact",
+    us: "Minimal (<1.5KB)",
+    ga: "Significant (371KB)",
+    benefit: "Better Core Web Vitals scores and SEO ranking"
+  },
+  {
+    name: "Ad-blocker resistance",
+    us: "High",
+    ga: "Low",
+    benefit: "More complete data collection for accurate insights"
+  },
+  {
+    name: "Data portability",
+    us: "Full JSON/CSV exports",
+    ga: "Limited",
+    benefit: "Freedom to use your data in any system"
+  },
+  {
+    name: "First-party data focus",
+    us: "Yes",
+    ga: "Mixed",
+    benefit: "Future-proof against third-party cookie deprecation"
+  },
+];
+
+// Static page for Comparison
+export default function ComparisonPage() {
   const competitorsToCompare = competitors.filter(c => c.id !== "Databuddy");
   const databuddy = competitors.find(c => c.id === "Databuddy");
   
@@ -23,202 +80,148 @@ export default function ComparePage() {
   }
   
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
-      <Navbar />
-      
-      <main className="flex-grow pt-24 pb-16 relative">
-        {/* Background decorations */}
-        <div className="absolute top-0 left-0 right-0 h-full overflow-hidden pointer-events-none">
-          <div className="absolute top-40 left-10 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl opacity-30"></div>
-          <div className="absolute top-80 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl opacity-30"></div>
-          <div className="absolute bottom-40 left-1/3 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl opacity-30"></div>
-        </div>
-        
-        <div className="container mx-auto px-4 py-8 relative z-10">
-          <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-sky-600">
-                Compare Analytics Platforms
-              </span>
-            </h1>
-            <p className="text-slate-400 max-w-2xl mx-auto">
-              See how Databuddy stacks up against other analytics platforms. We&apos;ve analyzed the key features, privacy considerations, and performance metrics to help you make an informed decision.
-            </p>
+    <div className="fixed inset-0 overflow-hidden">
+      <Background />
+      <div className="relative z-10 h-full overflow-auto scrollbar-hide">
+        <Navbar />
+        <main className="pt-8" itemScope itemType="https://schema.org/WebPage">
+          {/* Hero section */}
+          <FadeIn>
+            <div className="container mx-auto px-4 py-16 max-w-6xl relative">
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-10 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl -z-10" aria-hidden="true" />
+              <div className="absolute bottom-0 left-10 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -z-10" aria-hidden="true" />
+              
+              <div className="text-center mb-8 relative">
+                <div className="inline-flex items-center justify-center p-2 bg-sky-500/10 rounded-full mb-5 border border-sky-500/20" aria-hidden="true">
+                  <BarChart className="h-6 w-6 text-sky-400" />
+                </div>
+                <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-blue-500 mb-6" itemProp="headline">
+                  Databuddy vs Google Analytics
+                </h1>
+                <p className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto mb-10" itemProp="description">
+                  See how our privacy-first analytics compares to Google Analytics and why businesses are making the switch.
+                </p>
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Main Comparison section */}
+          <div id="feature-comparison">
+            <ComparisonComponent />
           </div>
-          
-          {/* Databuddy Overview */}
-          <div className="mb-12">
-            <Card className="bg-slate-800/80 border-slate-700/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <span className="mr-2">Databuddy Analytics</span>
-                  <Badge className="bg-sky-500 text-white">Our Platform</Badge>
-                </CardTitle>
-                <CardDescription className="text-slate-400">
-                  Privacy-First Analytics with AI-Powered Insights
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-slate-300 mb-6">{databuddy.overview}</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-3">Key Strengths</h3>
-                    <ul className="space-y-2">
-                      {databuddy.strengths.map((strength, index) => (
-                        <li key={index} className="flex items-start text-slate-300">
-                          <span className="text-sky-400 mr-2">•</span>
-                          <span>{strength}</span>
-                        </li>
-                      ))}
-                    </ul>
+
+          {/* Additional comparison details */}
+          <FadeIn delay={100}>
+            <div className="container mx-auto px-4 py-16 max-w-6xl">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Deeper Comparison</h2>
+                <p className="text-slate-400 max-w-2xl mx-auto">
+                  Beyond the basic feature comparison, here are some key differences that make Databuddy a better choice:
+                </p>
+              </div>
+
+              <div className="bg-slate-900/30 border border-slate-800 rounded-xl overflow-hidden max-w-4xl mx-auto">
+                <div className="grid grid-cols-3 bg-slate-900/50 p-4">
+                  <div className="text-slate-400">Advanced Features</div>
+                  <div className="text-center font-semibold text-sky-400">Databuddy</div>
+                  <div className="text-center font-semibold text-slate-400">Google Analytics</div>
+                </div>
+
+                {additionalFeatures.map((feature, index) => (
+                  <div key={feature.name} className="grid grid-cols-3 p-4 border-t border-slate-800">
+                    <div className="text-slate-300 pr-2">{feature.name}</div>
+                    <div className="text-center text-sm text-sky-400">{feature.us}</div>
+                    <div className="text-center text-sm text-slate-400">{feature.ga}</div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-3">What Sets Us Apart</h3>
-                    <ul className="space-y-2">
-                      <li className="flex items-start text-slate-300">
-                        <span className="text-sky-400 mr-2">•</span>
-                        <span>Privacy-first approach with no cookies required</span>
-                      </li>
-                      <li className="flex items-start text-slate-300">
-                        <span className="text-sky-400 mr-2">•</span>
-                        <span>AI-powered insights that help you make data-driven decisions</span>
-                      </li>
-                      <li className="flex items-start text-slate-300">
-                        <span className="text-sky-400 mr-2">•</span>
-                        <span>Lightning-fast performance with minimal impact on your site</span>
-                      </li>
-                      <li className="flex items-start text-slate-300">
-                        <span className="text-sky-400 mr-2">•</span>
-                        <span>Complete data ownership and control</span>
-                      </li>
-                    </ul>
+                ))}
+              </div>
+
+              <div className="mt-12 max-w-3xl mx-auto bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+                <h3 className="text-xl font-bold mb-4">Why Businesses Choose Databuddy</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-sky-400 mt-0.5 mr-3 shrink-0" />
+                    <span className="text-slate-300">
+                      <span className="font-medium text-white">Privacy Compliance:</span> Automatic GDPR and CCPA compliance without cookie banners
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-sky-400 mt-0.5 mr-3 shrink-0" />
+                    <span className="text-slate-300">
+                      <span className="font-medium text-white">Performance Impact:</span> Minimal effect on page load times and Core Web Vitals
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-sky-400 mt-0.5 mr-3 shrink-0" />
+                    <span className="text-slate-300">
+                      <span className="font-medium text-white">Data Ownership:</span> Complete control over your analytics data with no vendor lock-in
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-sky-400 mt-0.5 mr-3 shrink-0" />
+                    <span className="text-slate-300">
+                      <span className="font-medium text-white">Simplicity:</span> Intuitive interface that makes it easier to get actionable insights
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* CTA section */}
+          <FadeIn delay={150}>
+            <div className="container mx-auto px-4 py-16 max-w-5xl">
+              <div className="bg-gradient-to-r from-sky-900/20 to-blue-900/20 rounded-2xl p-8 md:p-12 border border-sky-500/20 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-sky-500/10 rounded-full blur-3xl -z-10" aria-hidden="true" />
+                <div className="md:flex items-center justify-between">
+                  <div className="mb-8 md:mb-0 md:mr-8">
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">Ready to make the switch?</h2>
+                    <p className="text-slate-300 md:text-lg max-w-xl">
+                      Join thousands of businesses that have switched to Databuddy for privacy-first analytics that drives real growth.
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button asChild className="bg-sky-500 hover:bg-sky-600 text-white">
+                      <Link href="/demo">Try Databuddy</Link>
+                    </Button>
+                    <Button asChild variant="outline" className="border-slate-700 bg-slate-800/50 hover:bg-slate-800">
+                      <Link href="/contact">Talk to Sales</Link>
+                    </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Competitor Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            {competitorsToCompare.map((competitor) => (
-              <Card 
-                key={competitor.id}
-                className="bg-slate-800/80 border-slate-700/50 backdrop-blur-sm hover:border-sky-500/30 transition-all duration-300"
-              >
-                <CardHeader>
-                  <CardTitle className="text-white">{competitor.name}</CardTitle>
-                  <CardDescription className="text-slate-400">
-                    vs Databuddy Analytics
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-slate-300 mb-6">{competitor.overview}</p>
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-white mb-3">Key Differences</h3>
-                    <p className="text-slate-300 mb-4">{competitor.outshine}</p>
-                  </div>
-                  <Link 
-                    href={`/compare/${competitor.id}`}
-                    className="inline-flex items-center bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Full Comparison <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          
-          {/* Comparison Table */}
-          <div className="mb-12">
-            <Card className="bg-slate-800/80 border-slate-700/50 backdrop-blur-sm overflow-hidden">
-              <CardHeader>
-                <CardTitle className="text-white">Feature Comparison</CardTitle>
-                <CardDescription className="text-slate-400">
-                  See how Databuddy compares to other analytics platforms
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="p-3 text-slate-400">Feature</th>
-                      <th className="p-3 text-sky-400">Databuddy</th>
-                      {competitorsToCompare.map((competitor) => (
-                        <th key={competitor.id} className="p-3 text-slate-400">{competitor.name}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b border-slate-700">
-                      <td className="p-3 text-slate-300">Privacy-First</td>
-                      <td className="p-3 text-white">★★★★★</td>
-                      <td className="p-3 text-white">★☆☆☆☆</td>
-                      <td className="p-3 text-white">★★★★★</td>
-                      <td className="p-3 text-white">★★★★★</td>
-                      <td className="p-3 text-white">★★★★☆</td>
-                    </tr>
-                    <tr className="border-b border-slate-700">
-                      <td className="p-3 text-slate-300">Ease of Use</td>
-                      <td className="p-3 text-white">★★★★★</td>
-                      <td className="p-3 text-white">★★★☆☆</td>
-                      <td className="p-3 text-white">★★★★★</td>
-                      <td className="p-3 text-white">★★★★☆</td>
-                      <td className="p-3 text-white">★★★☆☆</td>
-                    </tr>
-                    <tr className="border-b border-slate-700">
-                      <td className="p-3 text-slate-300">Feature Richness</td>
-                      <td className="p-3 text-white">★★★★☆</td>
-                      <td className="p-3 text-white">★★★★★</td>
-                      <td className="p-3 text-white">★★☆☆☆</td>
-                      <td className="p-3 text-white">★★☆☆☆</td>
-                      <td className="p-3 text-white">★★★★☆</td>
-                    </tr>
-                    <tr className="border-b border-slate-700">
-                      <td className="p-3 text-slate-300">Performance</td>
-                      <td className="p-3 text-white">★★★★★</td>
-                      <td className="p-3 text-white">★☆☆☆☆</td>
-                      <td className="p-3 text-white">★★★★★</td>
-                      <td className="p-3 text-white">★★★★★</td>
-                      <td className="p-3 text-white">★★★☆☆</td>
-                    </tr>
-                    <tr>
-                      <td className="p-3 text-slate-300">AI-Powered Insights</td>
-                      <td className="p-3 text-white">★★★★★</td>
-                      <td className="p-3 text-white">★★★☆☆</td>
-                      <td className="p-3 text-white">★☆☆☆☆</td>
-                      <td className="p-3 text-white">★☆☆☆☆</td>
-                      <td className="p-3 text-white">★★☆☆☆</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* CTA */}
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-white mb-4">Ready to Make the Switch?</h2>
-            <p className="text-slate-400 max-w-2xl mx-auto mb-6">
-              Join thousands of businesses that have already switched to Databuddy for privacy-first, powerful analytics.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link 
-                href="/#cta-form"
-                className="bg-sky-500 hover:bg-sky-600 text-white px-6 py-3 rounded-lg transition-colors"
-              >
-                Get Early Access
-              </Link>
-              <Link 
-                href="/demo"
-                className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-6 py-3 rounded-lg transition-colors"
-              >
-                View Demo
-              </Link>
+              </div>
             </div>
-          </div>
-        </div>
-      </main>
-      <Footer />
+          </FadeIn>
+          
+          {/* Structured data for SEO */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "WebPage",
+                "name": "Databuddy vs Google Analytics Comparison",
+                "description": "Compare Databuddy Analytics to Google Analytics and see why our privacy-first approach delivers better results.",
+                "mainEntity": {
+                  "@type": "Table",
+                  "about": "Comparison between Databuddy Analytics and Google Analytics",
+                  "name": "Analytics Comparison Table"
+                },
+                "publisher": {
+                  "@type": "Organization",
+                  "name": "Databuddy Analytics",
+                  "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://www.databuddy.cc/logo.png"
+                  }
+                }
+              })
+            }}
+          />
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 }

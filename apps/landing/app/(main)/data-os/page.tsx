@@ -23,11 +23,11 @@ export const metadata: Metadata = {
   description: "Databuddy's Data OS is more than analytics—it's an interoperable data layer with event streaming, plugin ecosystem, self-hosting, and data warehouse sync capabilities.",
   keywords: "data operating system, event streaming, analytics platform, data platform, data ecosystem, plugin ecosystem, self-hosted analytics",
   alternates: {
-    canonical: 'https://databuddy.cc/data-os',
+    canonical: 'https://www.databuddy.cc/data-os',
   },
   openGraph: {
     type: 'website',
-    url: 'https://databuddy.cc/data-os',
+    url: 'https://www.databuddy.cc/data-os',
     title: 'Data Operating System | Databuddy Analytics',
     description: 'More than analytics: A complete data operating system with event streaming, developer API, and plugin ecosystem.',
     siteName: 'Databuddy Analytics',

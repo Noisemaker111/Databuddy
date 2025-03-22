@@ -27,11 +27,11 @@ export const metadata: Metadata = {
   description: "Explore the complete feature set of Databuddy Analytics. Privacy-first web analytics with powerful features, simple integration, and zero impact on site performance.",
   keywords: "web analytics, privacy analytics, GDPR analytics, cookieless tracking, performance analytics, data visualization",
   alternates: {
-    canonical: 'https://databuddy.cc/features',
+    canonical: 'https://www.databuddy.cc/features',
   },
   openGraph: {
     type: 'website',
-    url: 'https://databuddy.cc/features',
+    url: 'https://www.databuddy.cc/features',
     title: 'Features | Databuddy Analytics',
     description: 'Privacy-first web analytics with powerful features and zero impact on your site performance.',
     siteName: 'Databuddy Analytics',

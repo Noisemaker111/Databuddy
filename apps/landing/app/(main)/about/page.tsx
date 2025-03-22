@@ -21,11 +21,11 @@ export const metadata: Metadata = {
   description: "Learn about Databuddy Analytics' mission to provide lightning-fast, privacy-focused web analytics that doesn't compromise user privacy or site performance.",
   keywords: "privacy analytics, analytics mission, ethical data collection, web analytics vision, databuddy team, user privacy",
   alternates: {
-    canonical: 'https://databuddy.cc/about',
+    canonical: 'https://www.databuddy.cc/about',
   },
   openGraph: {
     type: 'website',
-    url: 'https://databuddy.cc/about',
+    url: 'https://www.databuddy.cc/about',
     title: 'About Databuddy Analytics',
     description: 'Our mission is to provide businesses with privacy-focused analytics that respects users while delivering powerful insights.',
     siteName: 'Databuddy Analytics',
@@ -221,8 +221,8 @@ export default function AboutPage() {
                 "@context": "https://schema.org",
                 "@type": "Organization",
                 "name": "Databuddy Analytics",
-                "url": "https://databuddy.cc",
-                "logo": "https://databuddy.cc/logo.png",
+                "url": "https://www.databuddy.cc",
+                "logo": "https://www.databuddy.cc/logo.png",
                 "description": "Privacy-first web analytics that doesn't compromise on features or performance.",
                 "foundingDate": "2024",
                 "founders": [{
