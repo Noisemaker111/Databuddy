@@ -1,4 +1,5 @@
 import { Shield, Lock, Database, UserX } from "lucide-react"
+import Link from "next/link"
 import {
   Carousel,
   CarouselContent,
@@ -12,7 +13,8 @@ const features = [
     icon: Shield,
     title: "GDPR Ready",
     description: "Built with privacy regulations in mind. No cookie consent needed.",
-    customers: "EU-based businesses and companies serving European customers"
+    customers: "EU-based businesses and companies serving European customers",
+    href: "/privacy/gdpr"
   },
   {
     icon: Lock,
@@ -48,21 +50,37 @@ export default function Privacy() {
 
         {/* Desktop view: Grid */}
         <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 max-w-7xl mx-auto">
-          {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="p-5 sm:p-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-sky-500/30 transition-all duration-300 hover:shadow-[0_0_25px_-5px_rgba(14,165,233,0.15)] group"
-            >
-              <div className="bg-sky-500/10 p-3 rounded-xl w-fit mb-4 sm:mb-5 group-hover:bg-sky-500/20 transition-colors">
-                <feature.icon className="h-6 w-6 sm:h-7 sm:w-7 text-sky-400" />
+          {features.map((feature) => {
+            const FeatureContent = () => (
+              <>
+                <div className="bg-sky-500/10 p-3 rounded-xl w-fit mb-4 sm:mb-5 group-hover:bg-sky-500/20 transition-colors">
+                  <feature.icon className="h-6 w-6 sm:h-7 sm:w-7 text-sky-400" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 group-hover:text-sky-400 transition-colors tracking-tight">{feature.title}</h3>
+                <p className="text-slate-300 mb-4 text-sm sm:text-base leading-relaxed">{feature.description}</p>
+                <div className="text-xs font-medium text-sky-400/80 bg-sky-500/5 py-2 px-3 rounded-full w-fit">
+                  <span>Perfect for: {feature.customers}</span>
+                </div>
+              </>
+            );
+
+            return feature.href ? (
+              <Link
+                key={feature.title}
+                href={feature.href}
+                className="p-5 sm:p-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-sky-500/30 transition-all duration-300 hover:shadow-[0_0_25px_-5px_rgba(14,165,233,0.15)] group"
+              >
+                <FeatureContent />
+              </Link>
+            ) : (
+              <div
+                key={feature.title}
+                className="p-5 sm:p-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-sky-500/30 transition-all duration-300 hover:shadow-[0_0_25px_-5px_rgba(14,165,233,0.15)] group"
+              >
+                <FeatureContent />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2 group-hover:text-sky-400 transition-colors tracking-tight">{feature.title}</h3>
-              <p className="text-slate-300 mb-4 text-sm sm:text-base leading-relaxed">{feature.description}</p>
-              <div className="text-xs font-medium text-sky-400/80 bg-sky-500/5 py-2 px-3 rounded-full w-fit">
-                <span>Perfect for: {feature.customers}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Mobile view: Carousel */}
@@ -75,9 +93,9 @@ export default function Privacy() {
             className="w-full"
           >
             <CarouselContent>
-              {features.map((feature) => (
-                <CarouselItem key={feature.title}>
-                  <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800 h-full">
+              {features.map((feature) => {
+                const MobileFeatureContent = () => (
+                  <>
                     <div className="bg-sky-500/10 p-3 rounded-xl w-fit mb-5 mx-auto">
                       <feature.icon className="h-7 w-7 text-sky-400" />
                     </div>
@@ -86,9 +104,23 @@ export default function Privacy() {
                     <div className="text-xs font-medium text-sky-400/80 bg-sky-500/5 py-2 px-3 rounded-full mx-auto text-center">
                       <span>Perfect for: {feature.customers}</span>
                     </div>
-                  </div>
-                </CarouselItem>
-              ))}
+                  </>
+                );
+
+                return (
+                  <CarouselItem key={feature.title}>
+                    {feature.href ? (
+                      <Link href={feature.href} className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800 h-full block hover:border-sky-500/30 transition-all duration-300">
+                        <MobileFeatureContent />
+                      </Link>
+                    ) : (
+                      <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800 h-full">
+                        <MobileFeatureContent />
+                      </div>
+                    )}
+                  </CarouselItem>
+                );
+              })}
             </CarouselContent>
             <div className="flex items-center justify-center mt-4">
               <CarouselPrevious className="static translate-y-0 mr-2 bg-slate-800 hover:bg-slate-700 border-slate-700" />

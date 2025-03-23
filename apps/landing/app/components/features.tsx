@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, FC } from "react"
 import { motion } from "framer-motion"
 import { 
   Server, 
@@ -45,6 +45,15 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 
+// Define the feature item type
+type FeatureItem = {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  status: string;
+  href?: string;
+}
+
 // Define feature categories
 const categories = [
   { id: "core", label: "Core Analytics", icon: <BarChart2 className="h-5 w-5" /> },
@@ -56,7 +65,7 @@ const categories = [
 ]
 
 // Define features for each category
-const features = {
+const features: Record<string, FeatureItem[]> = {
   core: [
     {
       title: "Real-time Dashboard",
@@ -157,6 +166,7 @@ const features = {
       description: "Built from the ground up to comply with global privacy regulations",
       icon: <Shield className="h-6 w-6" />,
       status: "available",
+      href: "/privacy/gdpr",
     },
     {
       title: "Data Ownership",
@@ -364,24 +374,43 @@ export default function Features() {
             {Object.entries(features).map(([categoryId, categoryFeatures]) => (
               <TabsContent key={categoryId} value={categoryId} className="mt-0">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                  {categoryFeatures.map((feature) => (
-                    <motion.div
-                      key={feature.title}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="relative p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-sky-500/30 transition-all duration-300 hover:shadow-[0_0_25px_-5px_rgba(14,165,233,0.15)]"
-                    >
-                      <div className="flex items-center gap-4 mb-3">
-                        <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400 flex-shrink-0">
-                          {feature.icon}
+                  {categoryFeatures.map((feature) => {
+                    const FeatureContent = () => (
+                      <>
+                        <div className="flex items-center gap-4 mb-3">
+                          <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400 flex-shrink-0">
+                            {feature.icon}
+                          </div>
+                          <h3 className="text-lg font-semibold line-clamp-2">{feature.title}</h3>
                         </div>
-                        <h3 className="text-lg font-semibold line-clamp-2">{feature.title}</h3>
-                      </div>
-                      <p className="text-slate-400 text-sm mb-4 line-clamp-3">{feature.description}</p>
-                      <StatusBadge status={feature.status} />
-                    </motion.div>
-                  ))}
+                        <p className="text-slate-400 text-sm mb-4 line-clamp-3">{feature.description}</p>
+                        <StatusBadge status={feature.status} />
+                      </>
+                    );
+
+                    return feature.href ? (
+                      <Link key={feature.title} href={feature.href}>
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="relative p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-sky-500/30 transition-all duration-300 hover:shadow-[0_0_25px_-5px_rgba(14,165,233,0.15)]"
+                        >
+                          <FeatureContent />
+                        </motion.div>
+                      </Link>
+                    ) : (
+                      <motion.div
+                        key={feature.title}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="relative p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-sky-500/30 transition-all duration-300 hover:shadow-[0_0_25px_-5px_rgba(14,165,233,0.15)]"
+                      >
+                        <FeatureContent />
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </TabsContent>
             ))}
@@ -419,9 +448,9 @@ export default function Features() {
                   className="w-full"
                 >
                   <CarouselContent>
-                    {categoryFeatures.map((feature) => (
-                      <CarouselItem key={feature.title} className="basis-full sm:basis-1/2 pl-4">
-                        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 h-full">
+                    {categoryFeatures.map((feature) => {
+                      const MobileFeatureContent = () => (
+                        <>
                           <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400 flex-shrink-0">
                               {feature.icon}
@@ -430,9 +459,25 @@ export default function Features() {
                           </div>
                           <p className="text-slate-400 text-sm mb-4">{feature.description}</p>
                           <StatusBadge status={feature.status} />
-                        </div>
-                      </CarouselItem>
-                    ))}
+                        </>
+                      );
+
+                      return (
+                        <CarouselItem key={feature.title} className="basis-full sm:basis-1/2 pl-4">
+                          {feature.href ? (
+                            <Link href={feature.href} className="block h-full">
+                              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 h-full hover:border-sky-500/30 transition-all duration-300">
+                                <MobileFeatureContent />
+                              </div>
+                            </Link>
+                          ) : (
+                            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 h-full">
+                              <MobileFeatureContent />
+                            </div>
+                          )}
+                        </CarouselItem>
+                      );
+                    })}
                   </CarouselContent>
                   <div className="flex items-center justify-center mt-4">
                     <CarouselPrevious className="static translate-y-0 mr-2 bg-slate-800 hover:bg-slate-700 border-slate-700" />

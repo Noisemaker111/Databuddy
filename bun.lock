@@ -153,7 +153,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@auth/prisma-adapter": "^2.8.0",
-        "@databuddy/db": "*",
+        "@databuddy/db": "workspace:^",
         "@fontsource/nunito": "^5.1.1",
         "@fontsource/poppins": "^5.1.1",
         "@hookform/resolvers": "^4.1.2",
@@ -219,7 +219,7 @@
         "input-otp": "^1.4.2",
         "lru-cache": "^11.0.2",
         "lucide-react": "^0.476.0",
-        "next": "^15.2.0",
+        "next": "^15.2.3",
         "next-themes": "^0.4.4",
         "nextjs-toploader": "^3.7.15",
         "nuqs": "^2.4.0",
@@ -230,7 +230,8 @@
         "react-dom": "^19.0.0",
         "react-globe.gl": "^2.32.0",
         "react-hook-form": "^7.54.2",
-        "react-markdown": "^10.0.0",
+        "react-intersection-observer": "^9.16.0",
+        "react-markdown": "^10.1.0",
         "react-resizable-panels": "^2.1.7",
         "react-simplemde-editor": "^5.2.0",
         "recharts": "^2.15.1",
@@ -2132,6 +2133,8 @@
     "react-globe.gl": ["react-globe.gl@2.33.1", "", { "dependencies": { "globe.gl": "^2.41", "prop-types": "15", "react-kapsule": "^2.5" }, "peerDependencies": { "react": "*" } }, "sha512-0TZkwPBUanTOhhVBJuk6es3TfciRpqVgzUSNaGhcsKYzMN6KaA5m9S8ZcibcJ17fZTXPrztcdGJURBo8VFwLxQ=="],
 
     "react-hook-form": ["react-hook-form@7.54.2", "", { "peerDependencies": { "react": "^16.8.0 || ^17 || ^18 || ^19" } }, "sha512-eHpAUgUjWbZocoQYUHposymRb4ZP6d0uwUnooL2uOybA9/3tPUvoAKqEWK1WaSiTxxOfTpffNZP7QwlnM3/gEg=="],
+
+    "react-intersection-observer": ["react-intersection-observer@9.16.0", "", { "peerDependencies": { "react": "^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0" }, "optionalPeers": ["react-dom"] }, "sha512-w9nJSEp+DrW9KmQmeWHQyfaP6b03v+TdXynaoA964Wxt7mdR3An11z4NNCQgL4gKSK7y1ver2Fq+JKH6CWEzUA=="],
 
     "react-is": ["react-is@18.3.1", "", {}, "sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg=="],
 

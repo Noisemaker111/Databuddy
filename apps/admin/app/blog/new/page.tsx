@@ -13,8 +13,9 @@ import { toast } from "sonner"
 import { ArrowLeft, Save, Eye, EyeOff } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { MultiSelect } from "@/components/ui/multi-select"
-import { TiptapEditor } from "@/components/ui/tiptap-editor"
+import { MarkdownEditor } from "@/components/ui/markdown-editor"
 import { Skeleton } from "@/components/ui/skeleton"
+import { BlogImageUpload, ImageSize } from "@/components/blog-image-upload"
 
 export default function NewBlogPost() {
   const router = useRouter()
@@ -29,6 +30,9 @@ export default function NewBlogPost() {
   const [coverImage, setCoverImage] = useState('')
   const [published, setPublished] = useState(false)
   const [featured, setFeatured] = useState(false)
+  
+  // Image sizes for responsive display
+  const [allImageSizes, setAllImageSizes] = useState<Record<ImageSize, string> | null>(null)
   
   // Categories and tags
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -90,8 +94,13 @@ export default function NewBlogPost() {
     setExcerpt(e.target.value)
   }
   
-  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCoverImage(e.target.value)
+  const handleCoverImageChange = (url: string, allSizes?: Record<ImageSize, string>) => {
+    setCoverImage(url)
+    if (allSizes) {
+      setAllImageSizes(allSizes)
+    } else {
+      setAllImageSizes(null)
+    }
   }
   
   const handleCategoryChange = (values: string[]) => {
@@ -129,7 +138,8 @@ export default function NewBlogPost() {
     try {
       setSaving(true)
       
-      const newPost = await createBlogPost({
+      // Prepare the post data
+      const postData: any = {
         title,
         slug,
         content,
@@ -140,7 +150,14 @@ export default function NewBlogPost() {
         authorId: "current-user",
         categoryIds: selectedCategories,
         tagIds: selectedTags
-      })
+      }
+      
+      // Add image sizes metadata if available
+      if (allImageSizes) {
+        postData.imageSizes = JSON.stringify(allImageSizes)
+      }
+      
+      const newPost = await createBlogPost(postData)
       
       toast.success('Blog post created successfully')
       router.push(`/blog/edit/${newPost.id}`)
@@ -240,7 +257,7 @@ export default function NewBlogPost() {
               
               <div className="space-y-2">
                 <Label htmlFor="content">Content</Label>
-                <TiptapEditor
+                <MarkdownEditor
                   value={content}
                   onChange={handleContentChange}
                   height="min-h-[400px]"
@@ -277,25 +294,15 @@ export default function NewBlogPost() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="coverImage">Cover Image URL</Label>
-                <Input 
-                  id="coverImage" 
-                  value={coverImage} 
-                  onChange={handleCoverImageChange} 
-                  placeholder="https://example.com/image.jpg"
+                <Label htmlFor="coverImage">Cover Image</Label>
+                <BlogImageUpload
+                  value={coverImage}
+                  onChange={handleCoverImageChange}
+                  disabled={saving}
                 />
-                {coverImage && (
-                  <div className="mt-2 rounded-md overflow-hidden border">
-                    <img 
-                      src={coverImage} 
-                      alt="Cover preview" 
-                      className="w-full h-32 object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://placehold.co/600x400?text=Invalid+Image+URL'
-                      }}
-                    />
-                  </div>
-                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Recommended size: 1200×675 pixels (16:9 ratio)
+                </p>
               </div>
               
               <div className="space-y-2">

@@ -12,12 +12,31 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { MultiSelect } from '@/components/ui/multi-select'
-import { TiptapEditor } from '@/components/ui/tiptap-editor'
+import { MarkdownEditor } from "@/components/ui/markdown-editor"
 import { toast } from 'sonner'
 import { Pencil, Save, Trash2, X, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BlogImageUpload } from '@/components/blog-image-upload'
-import { ImageSize } from '@/lib/supabase'
+import { BlogImageUpload, ImageSize } from '@/components/blog-image-upload'
+
+interface BlogPostData {
+  id: string
+  title: string
+  slug: string
+  content: string
+  excerpt?: string
+  coverImage?: string
+  published: boolean
+  featured?: boolean
+  author?: {
+    id: string
+    name: string | null
+    image: string | null
+  }
+  category?: Array<{id: string, name: string}> | {id: string, name: string}
+  tags?: Array<{id: string, name: string}> | {id: string, name: string}
+  createdAt: Date
+  updatedAt: Date
+}
 
 export default function EditBlogPost() {
   const router = useRouter()
@@ -62,17 +81,35 @@ export default function EditBlogPost() {
           return
         }
         
-        // Set post data - ensure content preserves whitespace
-        setTitle(postData.title)
-        setSlug(postData.slug)
-        setContent(postData.content || '')
-        setExcerpt(postData.excerpt || '')
-        setCoverImage(postData.coverImage || '')
-        setPublished(postData.published)
+        // Type assertion to help TypeScript understand the structure
+        const post = postData as unknown as BlogPostData
         
-        // Set categories and tags
-        setSelectedCategories(postData?.category?.map((cat: any) => cat.id))
-        setSelectedTags(postData?.tags?.map((tag: any) => tag.id))
+        // Set post data - ensure content preserves whitespace
+        setTitle(post.title)
+        setSlug(post.slug)
+        setContent(post.content || '')
+        setExcerpt(post.excerpt || '')
+        setCoverImage(post.coverImage || '')
+        setPublished(post.published)
+        setFeatured(post.featured || false)
+        
+        // Safely set categories using optional chaining and type guards
+        if (Array.isArray(post.category)) {
+          setSelectedCategories(post.category.map(cat => cat.id))
+        } else if (post.category?.id) {
+          setSelectedCategories([post.category.id])
+        } else {
+          setSelectedCategories([])
+        }
+        
+        // Safely set tags using optional chaining and type guards
+        if (Array.isArray(post.tags)) {
+          setSelectedTags(post.tags.map(tag => tag.id))
+        } else if (post.tags?.id) {
+          setSelectedTags([post.tags.id])
+        } else {
+          setSelectedTags([])
+        }
         
         // Set available categories and tags
         setAvailableCategories(categoriesData.map((cat: any) => ({
@@ -320,7 +357,7 @@ export default function EditBlogPost() {
               
               <div className="space-y-2">
                 <Label htmlFor="content">Content</Label>
-                <TiptapEditor
+                <MarkdownEditor
                   value={content}
                   onChange={handleContentChange}
                   height="min-h-[400px]"

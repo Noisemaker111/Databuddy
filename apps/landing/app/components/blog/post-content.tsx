@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { SocialShare } from './social-share'
 import { BlogCategory, BlogTag } from '@/app/lib/blog-types'
 import Image from 'next/image'
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface PostContentProps {
   title: string
@@ -21,6 +23,12 @@ interface PostContentProps {
   url?: string
 }
 
+// Function to detect if content is HTML
+function isHtml(text: string): boolean {
+  const htmlRegex = /<[a-z][\s\S]*>/i;
+  return htmlRegex.test(text);
+}
+
 export function PostContent({
   title,
   content,
@@ -32,6 +40,8 @@ export function PostContent({
   estimatedReadingTime = 5,
   url = ''
 }: PostContentProps) {
+  
+  
   const formatDate = (date: Date | string) => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'long',
@@ -150,10 +160,53 @@ export function PostContent({
         prose-th:border prose-th:border-sky-500/20 prose-th:bg-slate-800/50 prose-th:p-2
         prose-td:border prose-td:border-sky-500/10 prose-td:p-2
         prose-hr:border-sky-500/20">
-        <div 
-          dangerouslySetInnerHTML={{ __html: content }} 
-          className="blog-content font-nunito"
-        />
+        <Markdown 
+          remarkPlugins={[remarkGfm]}
+          components={{
+              // Preserve whitespace in paragraphs
+              p: ({node, ...props}) => (
+                <p className="font-nunito" style={{whiteSpace: 'pre-wrap'}} {...props} />
+              ),
+              // Preserve whitespace in code blocks
+              code: ({node, ...props}) => (
+                <code style={{whiteSpace: 'pre'}} {...props} />
+              ),
+              // Style headings
+              h1: ({node, ...props}) => (
+                <h1 className="font-poppins" {...props} />
+              ),
+              h2: ({node, ...props}) => (
+                <h2 className="font-poppins" {...props} />
+              ),
+              h3: ({node, ...props}) => (
+                <h3 className="font-poppins" {...props} />
+              ),
+              // Style links
+              a: ({node, ...props}) => (
+                <a className="text-sky-400 hover:underline" {...props} />
+              ),
+              // Style images
+              img: ({node, ...props}) => (
+                <img className="rounded-xl max-w-full my-4" {...props} />
+              ),
+              // Style tables
+              table: ({node, ...props}) => (
+                <table className="border-collapse my-4" {...props} />
+              ),
+              th: ({node, ...props}) => (
+                <th className="border border-sky-500/20 bg-slate-800/50 p-2 text-left font-bold" {...props} />
+              ),
+              td: ({node, ...props}) => (
+                <td className="border border-sky-500/10 p-2" {...props} />
+              ),
+              // Style blockquotes
+              blockquote: ({node, ...props}) => (
+                <blockquote className="border-l-4 border-sky-500 pl-4 italic text-gray-300" {...props} />
+              ),
+            }}
+          >
+            {content}
+          </Markdown>
       </div>
       
       {/* Bottom Social Share */}
