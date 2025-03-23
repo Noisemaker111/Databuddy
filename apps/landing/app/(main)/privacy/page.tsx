@@ -206,13 +206,13 @@ export default function PrivacyPage() {
                     <h3 className="text-lg font-semibold mb-1">GDPR</h3>
                     <p className="text-center text-xs text-slate-400">European Union</p>
                   </Link>
-                  <div className="flex flex-col items-center p-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                  <Link href="/privacy/ccpa-cpra" className="flex flex-col items-center p-4 bg-slate-800/30 rounded-lg border border-slate-700/50 hover:bg-slate-800/50 hover:border-sky-500/30 transition-all duration-300">
                     <div className="p-2 bg-sky-500/10 rounded-full mb-3">
                       <Shield className="h-6 w-6 text-sky-400" />
                     </div>
                     <h3 className="text-lg font-semibold mb-1">CCPA/CPRA</h3>
                     <p className="text-center text-xs text-slate-400">California, USA</p>
-                  </div>
+                  </Link>
                   <div className="flex flex-col items-center p-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
                     <div className="p-2 bg-sky-500/10 rounded-full mb-3">
                       <Shield className="h-6 w-6 text-sky-400" />
