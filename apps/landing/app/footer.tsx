@@ -36,7 +36,7 @@ const footerLinks = [
       { name: "Documentation", href: "https://docs.databuddy.cc" },
       { name: "Support", href: "/contact" },
       { name: "Status", href: "https://status.databuddy.cc" },
-      { name: "Privacy Policy", href: "/privacy" },
+      { name: "Privacy Policy", href: "/privacy-policy" },
       { name: "Terms of Service", href: "/terms" },
     ]
   },
