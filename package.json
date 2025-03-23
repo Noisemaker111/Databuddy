@@ -23,7 +23,5 @@
     "packages/*"
   ],
   "dependencies": {
-    "@highlight-run/node": "^3.12.0",
-    "@highlight-run/pino": "^0.1.6"
   }
 }

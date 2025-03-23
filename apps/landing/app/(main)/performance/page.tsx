@@ -86,7 +86,7 @@ export default function PerformancePage() {
                   Lightning Fast Performance
                 </h1>
                 <p className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto mb-10" itemProp="description">
-                  Our analytics script is built for speed and efficiency, directly improving your site's SEO, user experience, and conversion rates.
+                  Our analytics script is built for speed and efficiency, directly improving your site&apos;s SEO, user experience, and conversion rates.
                 </p>
               </div>
             </div>
@@ -103,7 +103,7 @@ export default function PerformancePage() {
               <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">Impact on Core Web Vitals</h2>
                 <p className="text-slate-400 max-w-2xl mx-auto">
-                  Core Web Vitals are essential metrics Google uses to rank your website. Here's how Databuddy helps improve them:
+                  Core Web Vitals are essential metrics Google uses to rank your website. Here&apos;s how Databuddy helps improve them:
                 </p>
               </div>
 
@@ -127,7 +127,7 @@ export default function PerformancePage() {
                   <ChartBar className="h-10 w-10 text-sky-400 mx-auto mb-4" />
                   <h2 className="text-3xl font-bold mb-4">Impact on SEO & Conversion</h2>
                   <p className="text-slate-400 max-w-2xl mx-auto">
-                    Performance directly affects your search rankings and conversion rates. Here's the real-world impact:
+                    Performance directly affects your search rankings and conversion rates. Here&apos;s the real-world impact:
                   </p>
                 </div>
 
@@ -158,7 +158,7 @@ export default function PerformancePage() {
                   <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
                     <h3 className="text-lg font-semibold text-white mb-2">User Experience</h3>
                     <p className="text-slate-300 mb-4">
-                      Performance isn't just about SEO—it's about delivering a smooth, frustration-free experience for your users. Every 100ms of latency can reduce conversion rates by 1%.
+                      Performance isn&apos;t just about SEO—it&apos;s about delivering a smooth, frustration-free experience for your users. Every 100ms of latency can reduce conversion rates by 1%.
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                       <div className="flex items-start">
@@ -189,7 +189,7 @@ export default function PerformancePage() {
                   <div className="mb-8 md:mb-0 md:mr-8">
                     <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">Boost your site performance</h2>
                     <p className="text-slate-300 md:text-lg max-w-xl">
-                      Switch to Databuddy and see the difference in your site's speed, performance, and conversion rates.
+                      Switch to Databuddy and see the difference in your site&apos;s speed, performance, and conversion rates.
                     </p>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">

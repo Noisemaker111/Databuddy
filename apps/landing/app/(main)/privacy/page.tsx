@@ -136,7 +136,7 @@ export default function PrivacyPage() {
               <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">Transparent Data Collection</h2>
                 <p className="text-slate-400 max-w-2xl mx-auto">
-                  We believe in complete transparency about what data is collected and how it's used.
+                  We believe in complete transparency about what data is collected and how it&apos;s used.
                 </p>
               </div>
 
