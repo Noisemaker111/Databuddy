@@ -25,7 +25,7 @@ import { Separator } from "@/components/ui/separator";
 // Define metadata for SEO
 export const metadata: Metadata = {
   title: "Privacy Policy | Databuddy Analytics",
-  description: "Databuddy's privacy policy details how we collect, use, and protect your information in compliance with global privacy regulations.",
+  description: "Databuddy&apos;s privacy policy details how we collect, use, and protect your information in compliance with global privacy regulations.",
   keywords: "privacy policy, data protection, GDPR, CCPA, data privacy, analytics privacy",
   alternates: {
     canonical: 'https://www.databuddy.cc/privacy-policy',
@@ -223,7 +223,7 @@ export default function PrivacyPolicyPage() {
                   Last Updated: <span className="text-white">{lastUpdated}</span>
                 </p>
                 <p className="max-w-2xl mx-auto text-slate-400">
-                  This policy explains how we collect, use, and protect your information. We're committed to transparency and protecting your privacy.
+                  This policy explains how we collect, use, and protect your information. We&apos;re committed to transparency and protecting your privacy.
                 </p>
               </div>
               
@@ -251,7 +251,7 @@ export default function PrivacyPolicyPage() {
               
               <div className="prose prose-invert prose-lg max-w-none">
                 <p className="lead text-lg text-slate-300">
-                  This Privacy Policy describes how Databuddy Analytics ("we", "our", or "us") collects, uses, and shares information when you use our website, products, and services. We are committed to protecting your privacy and ensuring you have a positive experience on our website and while using our products and services.
+                  This Privacy Policy describes how Databuddy Analytics (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) collects, uses, and shares information when you use our website, products, and services. We are committed to protecting your privacy and ensuring you have a positive experience on our website and while using our products and services.
                 </p>
                 
                 {/* Render policy sections */}

@@ -3,9 +3,8 @@ import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, Clock, Eye, FileText } from 'lucide-react';
+import { CalendarIcon, Clock, FileText } from 'lucide-react';
 import { BlogPost, BlogCategory, BlogTag } from '@/app/lib/blog-types';
-import { Button } from '@/components/ui/button';
 
 interface PostGridProps {
   posts: BlogPost[];
