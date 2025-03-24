@@ -218,13 +218,13 @@ export default function CCPACPRAPage() {
                   </h2>
                   <div className="space-y-4">
                     <p className="text-slate-300">
-                      The California Consumer Privacy Act (CCPA) and the California Privacy Rights Act (CPRA) are comprehensive privacy laws designed to enhance privacy rights and consumer protection for residents of California. <span className="text-amber-400 font-medium">The CCPA, which took effect on January 1, 2020, was the first major consumer privacy law in the United States.</span> The CPRA, sometimes called "CCPA 2.0," was approved in November 2020 and became effective on January 1, 2023, significantly expanding and strengthening the original CCPA.
+                      The California Consumer Privacy Act (CCPA) and the California Privacy Rights Act (CPRA) are comprehensive privacy laws designed to enhance privacy rights and consumer protection for residents of California. <span className="text-amber-400 font-medium">The CCPA, which took effect on January 1, 2020, was the first major consumer privacy law in the United States.</span> The CPRA, sometimes called &quot;CCPA 2.0,&quot; was approved in November 2020 and became effective on January 1, 2023, significantly expanding and strengthening the original CCPA.
                     </p>
                     <p className="text-slate-300">
-                      These groundbreaking laws give California residents unprecedented control over their personal information and impose significant obligations on businesses that collect and process this data. <span className="text-amber-400 font-medium">They represent California's response to growing concerns about data privacy in the digital age and align with global privacy trends, moving closer to the standards set by the European Union's General Data Protection Regulation (GDPR).</span>
+                      These groundbreaking laws give California residents unprecedented control over their personal information and impose significant obligations on businesses that collect and process this data. <span className="text-amber-400 font-medium">They represent California&apos;s response to growing concerns about data privacy in the digital age and align with global privacy trends, moving closer to the standards set by the European Union&apos;s General Data Protection Regulation (GDPR).</span>
                     </p>
                     <p className="text-slate-300">
-                      <span className="text-amber-400 font-medium">The CPRA notably established the California Privacy Protection Agency (CPPA), a dedicated enforcement body,</span> and introduced stronger protections for sensitive personal information, reflecting the increased importance of data privacy in today's digital economy.
+                      <span className="text-amber-400 font-medium">The CPRA notably established the California Privacy Protection Agency (CPPA), a dedicated enforcement body,</span> and introduced stronger protections for sensitive personal information, reflecting the increased importance of data privacy in today&apos;s digital economy.
                     </p>
                   </div>
                 </div>
@@ -246,7 +246,7 @@ export default function CCPACPRAPage() {
                       </li>
                       <li className="flex items-start">
                         <span className="text-amber-400 mr-2">•</span>
-                        <span>Derives 50% or more of annual revenue from selling/sharing California residents' personal information</span>
+                        <span>Derives 50% or more of annual revenue from selling/sharing California residents&apos; personal information</span>
                       </li>
                     </ul>
                   </div>
@@ -271,7 +271,7 @@ export default function CCPACPRAPage() {
                       </li>
                       <li className="flex items-start">
                         <span className="text-amber-400 mr-2">•</span>
-                        <span>Extended to "sharing" of data for cross-context behavioral advertising</span>
+                        <span>Extended to &quot;sharing&quot; of data for cross-context behavioral advertising</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-amber-400 mr-2">•</span>
@@ -352,7 +352,16 @@ export default function CCPACPRAPage() {
                   </div>
                   <h2 className="text-3xl md:text-4xl font-bold mb-4">Impact on Web Analytics</h2>
                   <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-                    The CCPA/CPRA has significant implications for how businesses implement web analytics and tracking technologies
+                    Websites commonly employ web analytics to track user behavior, understand website traffic, and improve user experience. Under CCPA/CPRA, the use of tracking cookies and the processing of personal data for analytics generally require explicit consent from the user.
+                  </p>
+                  <p className="text-slate-300">
+                    This means that websites can no longer rely on implied consent or pre-checked boxes; users must actively and affirmatively agree to the collection of their data for these purposes. The consent obtained must be freely given, specific, informed, and unambiguous.
+                  </p>
+                  <p className="text-slate-300">
+                    Websites are also obligated to provide transparent information about their use of cookies and data processing practices in their privacy policies. This includes detailing the types of cookies used, their purpose, the data collected, and whether this data is shared with any third parties.
+                  </p>
+                  <p className="text-slate-300">
+                    Moreover, it must be as easy for users to withdraw their consent as it was to grant it. This emphasis on explicit consent and transparency has led to the widespread implementation of cookie consent banners and a greater awareness among internet users regarding online tracking practices.
                   </p>
                 </div>
 
@@ -377,7 +386,7 @@ export default function CCPACPRAPage() {
                       Tracking Cookies & Consent
                     </h3>
                     <p className="text-slate-300">
-                      Data collected through cookies is considered personal information. Businesses that sell or share this information must provide a "Do Not Sell or Share" link and honor opt-out signals like Global Privacy Control.
+                      Data collected through cookies is considered personal information. Businesses that sell or share this information must provide a &quot;Do Not Sell or Share&quot; link and honor opt-out signals like Global Privacy Control.
                     </p>
                   </div>
 
@@ -401,7 +410,7 @@ export default function CCPACPRAPage() {
                       Transparency in Practice
                     </h3>
                     <p className="text-slate-300">
-                      CCPA/CPRA mandates transparency in web analytics, requiring clear disclosures about data collection and respecting users' choices regarding the sale or sharing of their information collected through these technologies.
+                      CCPA/CPRA mandates transparency in web analytics, requiring clear disclosures about data collection and respecting users&apos; choices regarding the sale or sharing of their information collected through these technologies.
                     </p>
                   </div>
                 </div>
@@ -496,7 +505,7 @@ export default function CCPACPRAPage() {
                     <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
                       <h4 className="font-semibold mb-1 text-white">Tilting Point Media</h4>
                       <p className="text-slate-300 text-sm mb-1">2024</p>
-                      <p className="text-slate-300">$500,000 fine for violations concerning children's privacy.</p>
+                      <p className="text-slate-300">$500,000 fine for violations concerning children&apos;s privacy.</p>
                     </div>
                     <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
                       <h4 className="font-semibold mb-1 text-white">Honda</h4>
@@ -592,7 +601,7 @@ export default function CCPACPRAPage() {
                     <div className="bg-slate-900/60 p-6 rounded-xl border border-slate-800/70">
                       <h3 className="text-xl font-semibold mb-3 text-white">Privacy-First Approach</h3>
                       <p className="text-slate-300">
-                        Databuddy's privacy-first analytics solutions help businesses navigate these complex requirements while still delivering the insights they need to succeed.
+                        Databuddy&apos;s privacy-first analytics solutions help businesses navigate these complex requirements while still delivering the insights they need to succeed.
                       </p>
                     </div>
                   </div>

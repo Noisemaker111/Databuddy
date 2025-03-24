@@ -214,10 +214,10 @@ export default function GDPRPage() {
                       The General Data Protection Regulation (GDPR) is a comprehensive legal framework designed to protect the privacy and security of personal data for individuals within the European Union. <span className="text-sky-400 font-medium">Enacted by the EU and effective since May 25, 2018, GDPR represents a significant shift in how personal data is handled online.</span>
                     </p>
                     <p className="text-slate-300">
-                      <span className="text-sky-400 font-medium">GDPR's primary objectives include giving individuals greater control over their personal information and ensuring organizations are accountable for how they process this data.</span> The regulation standardizes data protection laws across all EU member states and European Economic Area (EEA) countries, providing a consistent set of rights and obligations.
+                      <span className="text-sky-400 font-medium">GDPR&apos;s primary objectives include giving individuals greater control over their personal information and ensuring organizations are accountable for how they process this data.</span> The regulation standardizes data protection laws across all EU member states and European Economic Area (EEA) countries, providing a consistent set of rights and obligations.
                     </p>
                     <p className="text-slate-300">
-                      This modernization of data protection rules aligns with today's digital society, where online interactions and cloud services are commonplace. <span className="text-sky-400 font-medium">GDPR recognizes data privacy as a fundamental right and empowers individuals to manage their digital footprint.</span>
+                      This modernization of data protection rules aligns with today&apos;s digital society, where online interactions and cloud services are commonplace. <span className="text-sky-400 font-medium">GDPR recognizes data privacy as a fundamental right and empowers individuals to manage their digital footprint.</span>
                     </p>
                   </div>
                 </div>
@@ -226,7 +226,7 @@ export default function GDPRPage() {
                   <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 shadow-lg hover:border-sky-500/20 transition-all duration-300">
                     <h3 className="text-2xl font-bold mb-4">Global Reach</h3>
                     <p className="text-slate-300 mb-4">
-                      GDPR extends beyond EU borders. Any organization worldwide that targets or collects data from individuals within the EU must comply, regardless of the organization's location.
+                      GDPR extends beyond EU borders. Any organization worldwide that targets or collects data from individuals within the EU must comply, regardless of the organization&apos;s location.
                     </p>
                     <ul className="space-y-2 text-slate-300">
                       <li className="flex items-start">
@@ -520,7 +520,7 @@ export default function GDPRPage() {
                     <div className="mb-8 md:mb-0 md:mr-8">
                       <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">Privacy without compromise</h2>
                       <p className="text-slate-300 md:text-lg max-w-xl">
-                        Get the analytics you need while staying fully GDPR compliant with Databuddy's privacy-first approach.
+                        Get the analytics you need while staying fully GDPR compliant with Databuddy&apos;s privacy-first approach.
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
