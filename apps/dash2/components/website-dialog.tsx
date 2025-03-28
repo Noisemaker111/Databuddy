@@ -127,7 +127,7 @@ export function WebsiteDialog({
                     <Input
                       placeholder="https://example.com"
                       {...field}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isEditing}
                     />
                   </FormControl>
                   <FormMessage />

@@ -1373,31 +1373,8 @@ analyticsRouter.get('/connections', zValidator('query', analyticsQuerySchema), a
     const endDate = params.end_date || new Date().toISOString().split('T')[0];
     const startDate = params.start_date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
-    // Create SQL builder for connection type data
-    const connectionBuilder = createSqlBuilder('events');
-    
-    connectionBuilder.sb.select = {
-      connection_type: 'COALESCE(connection_type, \'Unknown\') as connection_type',
-      visitors: 'COUNT(DISTINCT anonymous_id) as visitors',
-      pageviews: 'COUNT(*) as pageviews'
-    };
-    
-    connectionBuilder.sb.where = {
-      client_filter: `client_id = '${params.website_id}'`,
-      date_filter: `time >= parseDateTimeBestEffort('${startDate}') AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')`,
-      event_filter: "event_name = 'screen_view'"
-    };
-    
-    connectionBuilder.sb.groupBy = {
-      connection_type: 'connection_type'
-    };
-    
-    connectionBuilder.sb.orderBy = {
-      visitors: 'visitors DESC'
-    };
-    
-    connectionBuilder.sb.limit = params.limit;
-    
+    // Use the predefined builder for connection type data
+    const connectionBuilder = createConnectionTypesBuilder(params.website_id, startDate, endDate, params.limit);
     const connections = await chQuery(connectionBuilder.getSql());
     
     return c.json({
@@ -1438,31 +1415,8 @@ analyticsRouter.get('/languages', zValidator('query', analyticsQuerySchema), asy
     const endDate = params.end_date || new Date().toISOString().split('T')[0];
     const startDate = params.start_date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
-    // Create SQL builder for language data
-    const languageBuilder = createSqlBuilder('events');
-    
-    languageBuilder.sb.select = {
-      language: 'COALESCE(language, \'Unknown\') as language',
-      visitors: 'COUNT(DISTINCT anonymous_id) as visitors',
-      pageviews: 'COUNT(*) as pageviews'
-    };
-    
-    languageBuilder.sb.where = {
-      client_filter: `client_id = '${params.website_id}'`,
-      date_filter: `time >= parseDateTimeBestEffort('${startDate}') AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')`,
-      event_filter: "event_name = 'screen_view'"
-    };
-    
-    languageBuilder.sb.groupBy = {
-      language: 'language'
-    };
-    
-    languageBuilder.sb.orderBy = {
-      visitors: 'visitors DESC'
-    };
-    
-    languageBuilder.sb.limit = params.limit;
-    
+    // Use the predefined builder for language data
+    const languageBuilder = createLanguagesBuilder(params.website_id, startDate, endDate, params.limit);
     const languages = await chQuery(languageBuilder.getSql());
     
     return c.json({
@@ -1503,31 +1457,8 @@ analyticsRouter.get('/timezones', zValidator('query', analyticsQuerySchema), asy
     const endDate = params.end_date || new Date().toISOString().split('T')[0];
     const startDate = params.start_date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
-    // Create SQL builder for timezone data
-    const timezoneBuilder = createSqlBuilder('events');
-    
-    timezoneBuilder.sb.select = {
-      timezone: 'COALESCE(timezone, \'Unknown\') as timezone',
-      visitors: 'COUNT(DISTINCT anonymous_id) as visitors',
-      pageviews: 'COUNT(*) as pageviews'
-    };
-    
-    timezoneBuilder.sb.where = {
-      client_filter: `client_id = '${params.website_id}'`,
-      date_filter: `time >= parseDateTimeBestEffort('${startDate}') AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')`,
-      event_filter: "event_name = 'screen_view'"
-    };
-    
-    timezoneBuilder.sb.groupBy = {
-      timezone: 'timezone'
-    };
-    
-    timezoneBuilder.sb.orderBy = {
-      visitors: 'visitors DESC'
-    };
-    
-    timezoneBuilder.sb.limit = params.limit;
-    
+    // Use the predefined builder for timezone data
+    const timezoneBuilder = createTimezonesBuilder(params.website_id, startDate, endDate, params.limit);
     const timezones = await chQuery(timezoneBuilder.getSql());
     
     return c.json({

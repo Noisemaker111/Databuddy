@@ -17,7 +17,15 @@ import {
   Monitor, 
   Smartphone, 
   Zap,
-  ChevronDown
+  ChevronDown,
+  LayoutDashboard,
+  ArrowRight,
+  AlertTriangle,
+  Star,
+  Loader2,
+  Info,
+  CalendarIcon,
+  BarChart3Icon
 } from "lucide-react";
 import { DateRange as DayPickerRange } from "react-day-picker";
 import { format, subDays } from "date-fns";
@@ -142,11 +150,24 @@ function WebsiteDetailsPage() {
     {
       accessorKey: 'path',
       header: 'Page',
-      cell: (value: string) => (
-        <span className="font-medium truncate block max-w-[200px]" title={value}>
-          {value}
-        </span>
-      )
+      cell: (value: string) => {
+        const displayPath = value.length > 30 ? value.slice(0, 27) + '...' : value;
+        
+        return (
+          <div className="flex items-center">
+            <a 
+              href={data?.domain ? `${data.domain}${value}` : `#${value}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium hover:text-primary hover:underline truncate max-w-[250px] flex items-center gap-1"
+              title={data?.domain ? `${data.domain}${value}` : value}
+            >
+              {displayPath}
+              <ExternalLink className="h-3 w-3 opacity-70" />
+            </a>
+          </div>
+        );
+      }
     },
     {
       accessorKey: 'pageviews',
@@ -158,12 +179,12 @@ function WebsiteDetailsPage() {
       header: 'Visitors',
       className: 'text-right',
     },
-    {
-      accessorKey: 'avg_time_on_page_formatted',
-      header: 'Avg. Time',
-      className: 'text-right',
-    },
-  ], []);
+    // {
+    //   accessorKey: 'avg_time_on_page_formatted',
+    //   header: 'Avg. Time',
+    //   className: 'text-right',
+    // },
+  ], [data?.domain]);
 
   const referrerColumns = useMemo(() => [
     {

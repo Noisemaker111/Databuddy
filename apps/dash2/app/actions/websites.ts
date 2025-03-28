@@ -107,9 +107,12 @@ export async function updateWebsite(id: string, data: { domain?: string; name?: 
       return { error: "Website not found" };
     }
 
+    // Only allow updating the name, not the domain
+    const { name } = data;
+    
     const updated = await db.website.update({
       where: { id },
-      data
+      data: { name }
     });
 
     revalidatePath("/websites");

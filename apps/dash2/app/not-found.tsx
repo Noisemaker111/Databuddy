@@ -68,9 +68,9 @@ export default function NotFound() {
         {/* Action buttons with brand colors */}
         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xs">
           <Button asChild variant="default" className="flex-1 bg-primary hover:bg-primary/90">
-            <Link href="/dashboard">
+            <Link href="/websites">
               <Home className="h-4 w-4 mr-2" />
-              Dashboard
+              Home
             </Link>
           </Button>
           
