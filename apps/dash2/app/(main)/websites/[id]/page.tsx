@@ -25,7 +25,8 @@ import {
   Loader2,
   Info,
   CalendarIcon,
-  BarChart3Icon
+  BarChart3Icon,
+  RefreshCw
 } from "lucide-react";
 import { DateRange as DayPickerRange } from "react-day-picker";
 import { format, subDays } from "date-fns";
@@ -52,6 +53,7 @@ function WebsiteDetailsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
   const { id } = useParams();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Date range state for analytics with default to last 30 days
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -79,7 +81,7 @@ function WebsiteDetailsPage() {
     }
   }, []);
 
-  // Fetch website details
+  // Fetch website details with optimized settings
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["website", id],
     queryFn: async () => {
@@ -89,14 +91,35 @@ function WebsiteDetailsPage() {
       }
       return result.data;
     },
+    staleTime: 5 * 60 * 1000, // 5 min
+    gcTime: 10 * 60 * 1000, // 10 min
   });
 
   // Fetch all analytics data with a single hook
   const {
     analytics,
     loading,
-    error: analyticsError
+    error: analyticsError,
+    refetch
   } = useWebsiteAnalytics(id as string, memoizedDateRange);
+
+  // Handler for manual data refresh
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await refetch();
+    
+    // Also refresh sessions and profiles data if visible
+    if (activeTab === "sessions" && sessionsRefetch) {
+      await sessionsRefetch();
+    }
+    
+    if (activeTab === "profiles" && profilesRefetch) {
+      await profilesRefetch();
+    }
+    
+    setIsRefreshing(false);
+    toast.success("Data refreshed successfully");
+  }, [refetch, activeTab]);
 
   // Handle website update
   const updateWebsiteMutation = useMutation({
@@ -237,7 +260,11 @@ function WebsiteDetailsPage() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   
   // Fetch sessions data
-  const { data: sessionsData, isLoading: isLoadingSessions } = useAnalyticsSessions(
+  const { 
+    data: sessionsData, 
+    isLoading: isLoadingSessions,
+    refetch: sessionsRefetch 
+  } = useAnalyticsSessions(
     id as string, 
     { start_date: dateRange.start_date, end_date: dateRange.end_date },
     50
@@ -269,7 +296,11 @@ function WebsiteDetailsPage() {
   }, [sessionDetails]);
 
   // Add this for profiles tab
-  const { data: profilesData, isLoading: isLoadingProfiles } = useAnalyticsProfiles(
+  const { 
+    data: profilesData, 
+    isLoading: isLoadingProfiles,
+    refetch: profilesRefetch
+  } = useAnalyticsProfiles(
     id as string, 
     { start_date: dateRange.start_date, end_date: dateRange.end_date },
     50
@@ -394,6 +425,18 @@ function WebsiteDetailsPage() {
         </div>
         
         <div className="flex items-center gap-3">
+          {/* Refresh button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1"
+            onClick={handleRefresh}
+            disabled={isRefreshing || isLoading}
+          >
+            <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+          
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 text-xs gap-1">

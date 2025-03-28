@@ -221,11 +221,18 @@ export function useWebsiteAnalytics(
   }, [websiteId, memoizedDateRange]);
   
   // Helper to fetch data with error handling
-  const fetchData = useCallback(async (endpoint: string, params?: Record<string, string | number>) => {
+  const fetchData = useCallback(async (endpoint: string, params?: Record<string, string | number>, signal?: AbortSignal) => {
     const url = `${API_BASE_URL}${endpoint}?${buildParams(params)}`;
     
-    const response = await fetch(url, {
+    // Add a query parameter to bust cache when manually refreshing
+    const timestamp = new Date().getTime();
+    
+    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${timestamp}`, {
       credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
+      signal, // Pass the AbortSignal to allow cancellation
     });
     
     if (!response.ok) {
@@ -244,8 +251,8 @@ export function useWebsiteAnalytics(
   // Summary query
   const summaryQuery = useQuery({
     queryKey: ['analytics', 'summary', websiteId, memoizedDateRange],
-    queryFn: async () => {
-      const data = await fetchData('/analytics/summary');
+    queryFn: async ({ signal }) => {
+      const data = await fetchData('/analytics/summary', undefined, signal);
       return {
         summary: data.summary as AnalyticsSummary,
         today: data.today as TodayStats,
@@ -293,91 +300,24 @@ export function useWebsiteAnalytics(
       };
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes - keep cached data longer
+    refetchOnWindowFocus: false, // Don't auto-refresh when window gets focus
+    refetchOnMount: false, // Don't auto-refresh when component mounts
+    retry: (failureCount, error) => {
+      // Don't retry on aborted requests
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return false;
+      }
+      return failureCount < 2; // Retry other errors up to 2 times
+    }
   });
-  
-  // Trends query
-//   const trendsQuery = useQuery({
-//     queryKey: ['analytics', 'trends', websiteId, trendsInterval, memoizedDateRange, trendsLimit],
-//     queryFn: async () => {
-//       const data = await fetchData('/analytics/trends', {
-//         interval: trendsInterval,
-//         limit: trendsLimit.toString()
-//       });
-//       return {
-//         data: data.data as TrendData[],
-//         date_range: data.date_range as DateRange,
-//         interval: data.interval as TimeInterval,
-//       };
-//     },
-//     staleTime: 5 * 60 * 1000,
-//   });
-  
-  // Pages query
-//   const pagesQuery = useQuery({
-//     queryKey: ['analytics', 'pages', websiteId, memoizedDateRange, pagesLimit],
-//     queryFn: async () => {
-//       const data = await fetchData('/analytics/pages', {
-//         limit: pagesLimit.toString()
-//       });
-//       return {
-//         data: data.data as PageData[],
-//         date_range: data.date_range as DateRange,
-//       };
-//     },
-//     staleTime: 5 * 60 * 1000,
-//   });
-  
-  // Referrers query
-//   const referrersQuery = useQuery({
-//     queryKey: ['analytics', 'referrers', websiteId, memoizedDateRange, referrersLimit],
-//     queryFn: async () => {
-//       const data = await fetchData('/analytics/referrers', {
-//         limit: referrersLimit.toString()
-//       });
-//       return {
-//         data: data.data as ReferrerData[],
-//         date_range: data.date_range as DateRange,
-//       };
-//     },
-//     staleTime: 5 * 60 * 1000,
-//   });
-  
-  // Devices query
-//   const devicesQuery = useQuery({
-//     queryKey: ['analytics', 'devices', websiteId, memoizedDateRange, deviceLimit],
-//     queryFn: async () => {
-//       const data = await fetchData('/analytics/devices', {
-//         limit: deviceLimit.toString()
-//       });
-//       return {
-//         browsers: data.browsers || [],
-//         os: data.os || [],
-//         device_types: data.device_types || [],
-//         date_range: data.date_range as DateRange,
-//       };
-//     },
-//     staleTime: 5 * 60 * 1000,
-//   });
-  
-  // Locations query
-//   const locationsQuery = useQuery({
-//     queryKey: ['analytics', 'locations', websiteId, memoizedDateRange, locationLimit],
-//     queryFn: async () => {
-//       const data = await fetchData('/analytics/locations', {
-//         limit: locationLimit.toString()
-//       });
-//       return {
-//         countries: data.countries || [],
-//         cities: data.cities || [],
-//         date_range: data.date_range as DateRange,
-//       };
-//     },
-//     staleTime: 5 * 60 * 1000,
-//   });
-  
-  // Combined loading and error states
   const isLoading = summaryQuery.isLoading 
   const isError = summaryQuery.isError 
+  
+  // Manual refetch function
+  const refetch = async () => {
+    return summaryQuery.refetch({ cancelRefetch: false });
+  };
   
   // Return all the data and loading states
   return {
@@ -412,9 +352,7 @@ export function useWebsiteAnalytics(
       summary: summaryQuery
     },
     // Refetch all queries
-    refetch: () => {
-      summaryQuery.refetch();
-    }
+    refetch
   };
 }
 
@@ -712,7 +650,7 @@ export function useAnalyticsSessions(
 ) {
   return useQuery({
     queryKey: ['analytics', 'sessions', websiteId, dateRange, limit],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const params = new URLSearchParams({
         website_id: websiteId,
         limit: limit.toString(),
@@ -726,8 +664,15 @@ export function useAnalyticsSessions(
         params.append('end_date', dateRange.end_date);
       }
       
+      // Add a timestamp to bust cache when manually refreshing
+      params.append('_t', new Date().getTime().toString());
+      
       const response = await fetch(`${API_BASE_URL}/analytics/sessions?${params.toString()}`, {
         credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+        signal, // Pass the AbortSignal to allow cancellation
       });
       
       if (!response.ok) {
@@ -746,7 +691,17 @@ export function useAnalyticsSessions(
         unique_visitors: data.unique_visitors as number
       };
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes 
+    gcTime: 30 * 60 * 1000, // 30 minutes - keep cached data longer
+    refetchOnWindowFocus: false, // Don't auto-refresh when window gets focus
+    refetchOnMount: false, // Don't auto-refresh when component mounts
+    retry: (failureCount, error) => {
+      // Don't retry on aborted requests
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return false;
+      }
+      return failureCount < 2; // Retry other errors up to 2 times
+    }
   });
 }
 
@@ -760,13 +715,14 @@ export function useAnalyticsSessionDetails(
 ) {
   return useQuery({
     queryKey: ['analytics', 'session', websiteId, sessionId],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const params = new URLSearchParams({
         website_id: websiteId,
       });
       
       const response = await fetch(`${API_BASE_URL}/analytics/session/${sessionId}?${params.toString()}`, {
         credentials: 'include',
+        signal, // Pass the AbortSignal to allow cancellation
       });
       
       if (!response.ok) {
@@ -785,6 +741,13 @@ export function useAnalyticsSessionDetails(
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: enabled && !!sessionId,
+    retry: (failureCount, error) => {
+      // Don't retry on aborted requests
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return false;
+      }
+      return failureCount < 2; // Retry other errors up to 2 times
+    }
   });
 }
 
@@ -798,7 +761,7 @@ export function useAnalyticsProfiles(
 ) {
   return useQuery({
     queryKey: ['analytics', 'profiles', websiteId, dateRange, limit],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const params = new URLSearchParams({
         website_id: websiteId,
         limit: limit.toString(),
@@ -812,8 +775,15 @@ export function useAnalyticsProfiles(
         params.append('end_date', dateRange.end_date);
       }
       
+      // Add a timestamp to bust cache when manually refreshing
+      params.append('_t', new Date().getTime().toString());
+      
       const response = await fetch(`${API_BASE_URL}/analytics/profiles?${params.toString()}`, {
         credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+        signal, // Pass the AbortSignal to allow cancellation
       });
       
       if (!response.ok) {
@@ -834,5 +804,15 @@ export function useAnalyticsProfiles(
       };
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes - keep cached data longer
+    refetchOnWindowFocus: false, // Don't auto-refresh when window gets focus
+    refetchOnMount: false, // Don't auto-refresh when component mounts
+    retry: (failureCount, error) => {
+      // Don't retry on aborted requests
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return false;
+      }
+      return failureCount < 2; // Retry other errors up to 2 times
+    }
   });
 } 
