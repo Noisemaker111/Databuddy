@@ -124,8 +124,6 @@ export function AnimatedLoading({
 
   // Cycle through fetch details
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-    
     // Update fetch details message
     const updateFetchDetails = () => {
       const randomIndex = Math.floor(Math.random() * fetchMessages[type].length);
@@ -136,7 +134,7 @@ export function AnimatedLoading({
     updateFetchDetails();
     
     // Set interval to update periodically
-    intervalId = setInterval(updateFetchDetails, 2000);
+    const intervalId = setInterval(updateFetchDetails, 2000);
     
     return () => {
       clearInterval(intervalId);

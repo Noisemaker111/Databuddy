@@ -141,14 +141,14 @@ export function AccountDeletion() {
                   <Info className="h-4 w-4 text-red-400 mt-0.5 mr-2 flex-shrink-0" />
                   <p>
                     <span className="font-medium text-red-400">Immediate effects:</span>{" "}
-                    Your account will be deactivated and you'll be signed out from all devices.
+                    Your account will be deactivated and you&apos;ll be signed out from all devices.
                   </p>
                 </div>
                 <div className="flex items-start">
                   <Info className="h-4 w-4 text-red-400 mt-0.5 mr-2 flex-shrink-0" />
                   <p>
                     <span className="font-medium text-red-400">Recovery period:</span>{" "}
-                    You'll have 30 days to change your mind and recover your account.
+                    You&apos;ll have 30 days to change your mind and recover your account.
                   </p>
                 </div>
                 <div className="flex items-start">

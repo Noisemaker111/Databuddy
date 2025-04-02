@@ -105,7 +105,7 @@ export function WebsiteSettingsTab({
   useEffect(() => {
     setTrackingCode(generateScriptTag());
     setNpmCode(generateNpmCode());
-  }, [trackingOptions, websiteId]);
+  }, [trackingOptions, websiteId, generateScriptTag, generateNpmCode]);
   
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);

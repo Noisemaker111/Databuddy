@@ -95,7 +95,7 @@ export function WebsiteProfilesTab({
         { target: 90, duration: 1800 }
       ];
       
-      let cleanup: NodeJS.Timeout[] = [];
+      const cleanup: NodeJS.Timeout[] = [];
       
       intervals.forEach((interval, index) => {
         const timeout = setTimeout(() => {

@@ -35,7 +35,7 @@ export function useChartConfig({
   const metricColors = useMemo(() => ({
     ...defaultColors,
     ...colors,
-  }), [colors]);
+  }), [colors, defaultColors]);
 
   // Create initial metric visibility state
   const initialToggles = useMemo(() => 

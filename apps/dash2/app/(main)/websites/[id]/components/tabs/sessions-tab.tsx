@@ -101,7 +101,7 @@ export function WebsiteSessionsTab({
         { target: 95, duration: 1500 }
       ];
       
-      let cleanup: NodeJS.Timeout[] = [];
+      const cleanup: NodeJS.Timeout[] = [];
       
       intervals.forEach((interval, index) => {
         const timeout = setTimeout(() => {

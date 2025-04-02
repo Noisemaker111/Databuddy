@@ -113,7 +113,7 @@ export function WebsiteErrorsTab({
         { target: 90, duration: 2000 }
       ];
       
-      let cleanup: NodeJS.Timeout[] = [];
+      const cleanup: NodeJS.Timeout[] = [];
       
       intervals.forEach((interval, index) => {
         const timeout = setTimeout(() => {

@@ -111,7 +111,7 @@ function WebsiteDetailsPage() {
   const memoizedDateRange = useMemo(() => ({
     ...dateRange,
     granularity: timeGranularity
-  }), [dateRange.start_date, dateRange.end_date, timeGranularity]);
+  }), [dateRange, timeGranularity]);
 
   // Callback for date range updates
   const handleDateRangeChange = useCallback((range: DayPickerRange | undefined) => {
