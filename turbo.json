@@ -1,12 +1,13 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
-  "globalEnv": ["DATABASE_URL", "SENTRY_AUTH_TOKEN"],
+  "globalEnv": ["DATABASE_URL"],
   "tasks": {
     "build": {
       "dependsOn": ["^build", "db:generate"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [".next/**", "!.next/cache/**"],
+      "passThroughEnv": ["SENTRY_AUTH_TOKEN"]
     },
     "db:generate": {
       "cache": false
