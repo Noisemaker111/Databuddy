@@ -73,6 +73,11 @@ export const auth = betterAuth({
     // },
     jwt: {
         enabled: true,
+        jwt: {
+            issuer: "databuddy.cc",
+            audience: "databuddy.cc",
+            expirationTime: "30d"
+        }
     },
     api: {
         enabled: true,
