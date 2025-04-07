@@ -76,21 +76,6 @@ export const auth = betterAuth({
     //         console.log(email);
     //     }
     // },
-    jwt: {
-        enabled: true,
-        jwt: {
-            issuer: "databuddy.cc",
-            audience: "databuddy.cc",
-            expirationTime: "30d"
-        },
-        // TODO: Remove this once we have a proper way to handle JWKS
-        jwks: {
-            disablePrivateKeyEncryption: true
-        }
-    },
-    jwks: {
-        disablePrivateKeyEncryption: true
-    },
     api: {
         enabled: true,
     },
