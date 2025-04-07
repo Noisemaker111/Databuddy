@@ -28,7 +28,7 @@ coverage
 .next/
 out/
 build
-generated
+# generated
 # packages/db/generated
 dist
 
