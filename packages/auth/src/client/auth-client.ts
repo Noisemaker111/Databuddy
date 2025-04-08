@@ -2,7 +2,7 @@ import { createAuthClient } from "better-auth/react"
 import { customSessionClient, twoFactorClient, organizationClient, emailOTPClient } from "better-auth/client/plugins";
 import { type auth } from "../auth";
 import { AuthUser } from "../types";
-import { jwt, multiSession } from "better-auth/plugins";
+import { multiSession } from "better-auth/plugins";
 
 // Define a type for the auth client configuration
 export type AuthClientConfig = {
@@ -23,8 +23,7 @@ let _authClient = createAuthClient({
     customSessionClient<typeof auth>(),
     twoFactorClient(),
     multiSession(),
-    jwt(),
-    // emailOTPClient(),
+    emailOTPClient(),
     organizationClient({
       teams: {
         enabled: true
@@ -43,7 +42,6 @@ export function initAuthClient(config: AuthClientConfig = {}) {
       customSessionClient<typeof auth>(),
       twoFactorClient(),
       multiSession(),
-      jwt(),
       emailOTPClient(),
       organizationClient({
         teams: {

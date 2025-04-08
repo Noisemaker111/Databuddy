@@ -1,9 +1,11 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { customSession, multiSession, jwt, twoFactor, captcha, organization, emailOTP } from "better-auth/plugins";
+import { customSession, multiSession, twoFactor, organization, emailOTP } from "better-auth/plugins";
 import { getSessionCookie } from "better-auth/cookies";
 import { db } from "@databuddy/db";
-// import { Resend } from "resend";
+import { Resend } from "resend";
+
+const resend = new Resend(getEnv('RESEND_API_KEY'));
 
 // Helper function to access environment variables in both Node.js and Cloudflare Workers
 function getEnv(key: string) {
@@ -115,10 +117,18 @@ export const auth = betterAuth({
                 },
             }
         }),
-
+        emailOTP({
+            async sendVerificationOTP({email, otp, type}) {
+                await resend.emails.send({
+                    from: 'noreply@databuddy.cc',
+                    to: email,
+                    subject: 'Verify your email',
+                    html: `<p>Your verification code is ${otp}</p>`
+                })
+            },
+        }),
         twoFactor(),
         multiSession(),
-        jwt(),
         organization({
             teams: {
                 enabled: true,
