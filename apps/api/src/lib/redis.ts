@@ -5,8 +5,7 @@ export const redis = new Redis(process.env.REDIS_URL as string);
 
 const getRedisCache = () => redis;
 
-import { createLogger } from '@databuddy/logger';
-// import { getRedisCache } from 'packages/redis';
+import { createLogger } from '../lib/logger';
 
 const logger = createLogger('redis');
 

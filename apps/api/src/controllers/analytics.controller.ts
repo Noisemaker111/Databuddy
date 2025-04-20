@@ -4,9 +4,9 @@
  * Handles processing and storing analytics events from tracking clients.
  */
 
-import { Context } from 'hono';
-import { createLogger } from '@databuddy/logger';
-import { clickHouse } from '@databuddy/db';
+import type { Context } from 'hono';
+import { createLogger } from '../lib/logger';
+import { clickHouse } from '../clickhouse/client';
 import { AppVariables } from '../types';
 import { parseUserAgent } from '../utils/user-agent';
 import { getGeoData } from '../utils/ip-geo';

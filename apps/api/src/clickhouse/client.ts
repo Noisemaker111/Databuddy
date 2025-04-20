@@ -2,8 +2,90 @@
 import type { LogParams, ErrorLogParams, WarnLogParams, Logger, ResponseJSON } from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
+import { createLogger } from '../lib/logger';
 
 export { createClient };
+export interface SqlBuilderObject {
+  where: Record<string, string>;
+  having: Record<string, string>;
+  select: Record<string, string>;
+  groupBy: Record<string, string>;
+  orderBy: Record<string, string>;
+  from: string;
+  limit: number | undefined;
+  offset: number | undefined;
+}
+
+/**
+ * Creates a SQL query builder for ClickHouse
+ * @param tableName Optional table name to query (defaults to events table)
+ */
+export function createSqlBuilder(tableName?: keyof typeof TABLE_NAMES) {
+  const join = (obj: Record<string, string> | string[], joiner: string) =>
+    Object.values(obj).filter(Boolean).join(joiner);
+
+  const sb: SqlBuilderObject = {
+    where: {},
+    from: tableName ? TABLE_NAMES[tableName] : TABLE_NAMES.events,
+    select: {},
+    groupBy: {},
+    orderBy: {},
+    having: {},
+    limit: undefined,
+    offset: undefined,
+  };
+
+  const getWhere = () =>
+    Object.keys(sb.where).length ? `WHERE ${join(sb.where, ' AND ')}` : '';
+  const getHaving = () =>
+    Object.keys(sb.having).length ? `HAVING ${join(sb.having, ' AND ')}` : '';
+  const getFrom = () => `FROM ${sb.from}`;
+  const getSelect = () =>
+    `SELECT ${Object.keys(sb.select).length ? join(sb.select, ', ') : '*'}`;
+  const getGroupBy = () =>
+    Object.keys(sb.groupBy).length ? `GROUP BY ${join(sb.groupBy, ', ')}` : '';
+  const getOrderBy = () =>
+    Object.keys(sb.orderBy).length ? `ORDER BY ${join(sb.orderBy, ', ')}` : '';
+  const getLimit = () => (sb.limit ? `LIMIT ${sb.limit}` : '');
+  const getOffset = () => (sb.offset ? `OFFSET ${sb.offset}` : '');
+
+  return {
+    sb,
+    join,
+    getWhere,
+    getFrom,
+    getSelect,
+    getGroupBy,
+    getOrderBy,
+    getHaving,
+    /**
+     * Set the table to query
+     * @param table The table name from TABLE_NAMES
+     */
+    setTable: (table: keyof typeof TABLE_NAMES) => {
+      sb.from = TABLE_NAMES[table];
+      return sb;
+    },
+    /**
+     * Generates the complete SQL query string
+     */
+    getSql: () => {
+      const sql = [
+        getSelect(),
+        getFrom(),
+        getWhere(),
+        getGroupBy(),
+        getHaving(),
+        getOrderBy(),
+        getLimit(),
+        getOffset(),
+      ]
+        .filter(Boolean)
+        .join(' ');
+      return sql;
+    },
+  };
+}
 
 /**
  * ClickHouse table names used throughout the application
@@ -19,14 +101,7 @@ export const TABLE_NAMES = {
   performance_stats: 'analytics.performance_stats'
 };
 
-// const logger = createLogger('clickhouse');
-
-const logger = {
-  debug: (message: string, ...args: any[]) => console.debug(`${message} from clickhouse:client`, ...args),
-  info: (message: string, ...args: any[]) => console.info(`${message} from clickhouse:client`, ...args),
-  warn: (message: string, ...args: any[]) => console.warn(`${message} from clickhouse:client`, ...args),
-  error: (message: string, ...args: any[]) => console.error(`${message} from clickhouse:client`, ...args),
-}
+const logger = createLogger('clickhouse');
 
 class CustomLogger implements Logger {
     trace({ message, args }: LogParams) {

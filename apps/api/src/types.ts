@@ -1,4 +1,4 @@
-import type { WebsiteStatus } from '@databuddy/db';
+import type { WebsiteStatus } from '../src/lib/db';
 
 export interface TrackingEvent {
   type: 'track' | 'alias' | 'increment' | 'decrement';

@@ -1,12 +1,7 @@
 import { clickHouse } from './client';
-// import { createLogger } from '@databuddy/logger';
+import { createLogger } from '../lib/logger';
 
-const logger = {
-  info: (message: string, ...args: any[]) => console.info(`${message} from clickhouse:schema`, ...args),
-  error: (message: string, ...args: any[]) => console.error(`${message} from clickhouse:schema`, ...args),
-  debug: (message: string, ...args: any[]) => console.debug(`${message} from clickhouse:schema`, ...args),
-  warn: (message: string, ...args: any[]) => console.warn(`${message} from clickhouse:schema`, ...args),
-}
+const logger = createLogger('clickhouse:schema');
 
 // Define the analytics database schema with tables for events, sessions, and aggregated data
 const ANALYTICS_DATABASE = 'analytics';

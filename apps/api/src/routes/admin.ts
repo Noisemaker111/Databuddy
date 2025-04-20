@@ -5,8 +5,8 @@
  */
 
 import { Hono } from 'hono';
-import { initClickHouseSchema } from '@databuddy/db';
-import { createLogger } from '@databuddy/logger';
+import { initClickHouseSchema } from '../clickhouse/schema';
+import { createLogger } from '../lib/logger';
 import type { AppVariables } from '../types';
 
 // Initialize logger for admin routes

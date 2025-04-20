@@ -7,17 +7,12 @@
  */
 
 import { clickHouse } from './client';
-// import { createLogger } from '@databuddy/logger';
-import { format, subDays, eachDayOfInterval } from 'date-fns';
+import { format, subDays } from 'date-fns';
+import { createLogger } from '../lib/logger';
 
-// const logger = createLogger('clickhouse:aggregation');
+const logger = createLogger('clickhouse:aggregation');
 
-const logger = {
-  info: (message: string, ...args: any[]) => console.log(`${message} from clickhouse:aggregation`, ...args),
-  error: (message: string, ...args: any[]) => console.error(`${message} from clickhouse:aggregation`, ...args),
-  debug: (message: string, ...args: any[]) => console.debug(`${message} from clickhouse:aggregation`, ...args),
-  warn: (message: string, ...args: any[]) => console.warn(`${message} from clickhouse:aggregation`, ...args),
-}
+
 
 /**
  * Aggregates daily statistics for a specific date range and saves to daily_stats table
