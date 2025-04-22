@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import { appRouter } from '@databuddy/trpc';
 import { trpcServer } from '@hono/trpc-server'
 import { authMiddleware } from './middleware/auth'
 import { auth, type AuthUser, type SessionData } from '@databuddy/auth';
@@ -97,12 +96,11 @@ app.get('/session', (c) => {
 // Error handling
 app.onError((err, c) => {
   console.error('[API Error]:', err);
-  const status = err instanceof TRPCError ? mapTRPCErrorToStatus(err.code) : 500;
   return new Response(JSON.stringify({ 
     error: err.message || 'Internal Server Error',
-    status: err instanceof TRPCError ? err.code : 500
+    status: 500
   }), { 
-    status,
+    status: 500,
     headers: { 'Content-Type': 'application/json' }
   });
 });
@@ -113,24 +111,6 @@ app.notFound((c) => {
     headers: { 'Content-Type': 'application/json' }
   });
 });
-
-// Map TRPC error codes to HTTP status codes
-function mapTRPCErrorToStatus(code: string): number {
-  switch (code) {
-    case 'UNAUTHORIZED': return 401;
-    case 'FORBIDDEN': return 403;
-    case 'NOT_FOUND': return 404;
-    case 'TIMEOUT': return 408;
-    case 'CONFLICT': return 409;
-    case 'PRECONDITION_FAILED': return 412;
-    case 'PAYLOAD_TOO_LARGE': return 413;
-    case 'METHOD_NOT_SUPPORTED': return 405;
-    case 'TOO_MANY_REQUESTS': return 429;
-    case 'BAD_REQUEST': return 400;
-    default: return 500;
-  }
-}
-
 // Helper function to access environment variables in both Node.js and Cloudflare Workers
 function getEnv(key: string) {
   return process.env[key] || 
