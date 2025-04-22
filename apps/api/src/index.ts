@@ -1,10 +1,8 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import { trpcServer } from '@hono/trpc-server'
 import { authMiddleware } from './middleware/auth'
 import { auth, type AuthUser, type SessionData } from '@databuddy/auth';
-import { TRPCError } from '@trpc/server';
 import basketRouter from './routes/basket';
 import adminRouter from './routes/admin';
 import analyticsRouter from './routes/analytics';

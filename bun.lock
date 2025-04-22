@@ -99,10 +99,8 @@
         "@databuddy/logger": "../../packages/logger",
         "@databuddy/queue": "../../packages/queue",
         "@databuddy/redis": "../../packages/redis",
-        "@databuddy/trpc": "../../packages/trpc",
         "@highlight-run/hono": "^1.0.3",
         "@hono/node-server": "^1.8.2",
-        "@hono/trpc-server": "^0.3.4",
         "@hono/zod-validator": "^0.4.3",
         "@logtail/edge": "^0.5.2",
         "@prisma/client": "^6.4.1",
@@ -444,14 +442,6 @@
         "dayjs": "^1.11.13",
       },
     },
-    "packages/trpc": {
-      "name": "@databuddy/trpc",
-      "version": "0.1.0",
-      "dependencies": {
-        "@databuddy/db": "*",
-        "@trpc/server": "^10.45.2",
-        "zod": "^3.24.2",
-      },
       "devDependencies": {
         "typescript": "^5.8.2",
       },
@@ -571,7 +561,6 @@
 
     "@databuddy/shared": ["@databuddy/shared@workspace:packages/shared"],
 
-    "@databuddy/trpc": ["@databuddy/trpc@workspace:packages/trpc"],
 
     "@databuddy/validation": ["@databuddy/validation@workspace:packages/validation"],
 
@@ -682,8 +671,6 @@
     "@highlight-run/pino": ["@highlight-run/pino@0.1.6", "", { "dependencies": { "@highlight-run/node": " *" } }, "sha512-7+XuTDS9+MJZKouRHnu7dNpJ0fd5SMMu39Cq8sKbuDCFAEFY7kk72JZvmfprbb4KVLsNWbz3hU1yN/knwTL+oQ=="],
 
     "@hono/node-server": ["@hono/node-server@1.14.0", "", { "peerDependencies": { "hono": "^4" } }, "sha512-YUCxJwgHRKSqjrdTk9e4VMGKN27MK5r4+MGPyZTgKH+IYbK+KtYbHeOcPGJ91KGGD6RIQiz2dAHxvjauNhOS8g=="],
-
-    "@hono/trpc-server": ["@hono/trpc-server@0.3.4", "", { "peerDependencies": { "@trpc/server": "^10.10.0 || >11.0.0-rc", "hono": ">=4.*" } }, "sha512-xFOPjUPnII70FgicDzOJy1ufIoBTu8eF578zGiDOrYOrYN8CJe140s9buzuPkX+SwJRYK8LjEBHywqZtxdm8aA=="],
 
     "@hono/zod-validator": ["@hono/zod-validator@0.4.3", "", { "peerDependencies": { "hono": ">=3.9.0", "zod": "^3.19.1" } }, "sha512-xIgMYXDyJ4Hj6ekm9T9Y27s080Nl9NXHcJkOvkXPhubOLj8hZkOL8pDnnXfvCf5xEE8Q4oMFenQUZZREUY2gqQ=="],
 
@@ -3215,7 +3202,6 @@
 
     "api/@databuddy/redis": ["@databuddy/redis@file:packages/redis", { "dependencies": { "ioredis": "^5.4.3", "zod": "^3.22.4" }, "devDependencies": { "@types/node": "^20.11.19", "typescript": "^5.3.3" } }],
 
-    "api/@databuddy/trpc": ["@databuddy/trpc@file:packages/trpc", { "dependencies": { "@databuddy/db": "*", "@trpc/server": "^10.45.2", "zod": "^3.24.2" }, "devDependencies": { "typescript": "^5.8.2" } }],
 
     "api/@trpc/server": ["@trpc/server@11.0.1", "", { "peerDependencies": { "typescript": ">=5.7.2" } }, "sha512-DZS3+bONLno4oJjHBMrS3xRPtoZsnmBImDH/Mmo1QhaFt3Xp/S0Riu7WU/oofsLTVj2m1UO5LlgLJFumvlSNoQ=="],
 
@@ -3565,7 +3551,6 @@
 
     "api/@databuddy/queue/@databuddy/redis": ["@databuddy/redis@file:packages/redis", { "dependencies": { "ioredis": "^5.4.3", "zod": "^3.22.4" }, "devDependencies": { "@types/node": "^20.11.19", "typescript": "^5.3.3" } }],
 
-    "api/@databuddy/trpc/@trpc/server": ["@trpc/server@10.45.2", "", {}, "sha512-wOrSThNNE4HUnuhJG6PfDRp4L2009KDVxsd+2VYH8ro6o/7/jwYZ8Uu5j+VaW+mOmc8EHerHzGcdbGNQSAUPgg=="],
 
     "bun-types/@types/node/undici-types": ["undici-types@6.20.0", "", {}, "sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg=="],
 

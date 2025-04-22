@@ -13,10 +13,10 @@
     "DATABASE_URL": "postgresql://neondb_owner:npg_UOo3mtCdMj0f@ep-snowy-violet-a5l4k6xx-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require",
     "IPINFO_TOKEN": "d0cc541d95407c",
     "REDIS_URL": "redis://default:xqqmwe6r8brthbrl@34.27.238.8:2929",
-    "QUEUE_REDIS_URL": "redis://default:xqqmwe6r8brthbrl@34.27.238.8:2929",
+    "QUEUE_REDIS_URL": "redis://default:xqqmwe6r8brthbrl@34.27.238.8:2929"
   },
   "build": {
-    "watch_dir": ["src/lib/logger.ts", "packages/auth", "packages/db", "packages/trpc", "packages/redis"]
+    "watch_dir": ["src/lib/logger.ts", "packages/auth", "packages/db", "packages/redis"]
   },
   "kv_namespaces": [
     {
