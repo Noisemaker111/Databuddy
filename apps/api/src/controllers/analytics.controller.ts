@@ -10,10 +10,7 @@ import { AppVariables } from '../types';
 import { parseUserAgent } from '../utils/user-agent';
 import { getGeoData } from '../utils/ip-geo';
 import { parseReferrer } from '../utils/referrer';
-// import { queueEvent, QueueName } from '@databuddy/queue';
-// import { getEventQueueCounts, getEventJob, getQueue } from '@databuddy/queue';
 
-// const queue = await getQueue(QueueName.EVENTS);
 // Initialize logger
 const logger = console;
 
