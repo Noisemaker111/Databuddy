@@ -96,7 +96,6 @@
         "@clickhouse/client": "^1.10.1",
         "@databuddy/auth": "../../packages/auth",
         "@databuddy/db": "../../packages/db",
-        "@databuddy/logger": "../../packages/logger",
         "@databuddy/queue": "../../packages/queue",
         "@databuddy/redis": "../../packages/redis",
         "@highlight-run/hono": "^1.0.3",
@@ -392,27 +391,10 @@
         "typescript-eslint": "^8.26.0",
       },
     },
-    "packages/logger": {
-      "name": "@databuddy/logger",
-      "version": "0.1.0",
-      "dependencies": {
-        "@highlight-run/node": "^3.12.0",
-        "@highlight-run/pino": "^0.1.6",
-        "pino": "9.6.0",
-        "pino-pretty": "^10.3.1",
-      },
-      "devDependencies": {
-        "eslint": "^8.57.1",
-        "rimraf": "^5.0.10",
-        "tsup": "^8.4.0",
-        "typescript": "^5.8.2",
-      },
-    },
     "packages/queue": {
       "name": "@databuddy/queue",
       "version": "0.1.0",
       "dependencies": {
-        "@databuddy/logger": "*",
         "@databuddy/redis": "*",
         "bullmq": "^5.44.4",
         "superjson": "^2.2.1",
@@ -548,7 +530,6 @@
 
     "@databuddy/db": ["@databuddy/db@workspace:packages/db"],
 
-    "@databuddy/logger": ["@databuddy/logger@workspace:packages/logger"],
 
     "@databuddy/queue": ["@databuddy/queue@workspace:packages/queue"],
 
@@ -3158,9 +3139,8 @@
 
     "api/@databuddy/auth": ["@databuddy/auth@file:packages/auth", { "dependencies": { "@databuddy/db": "*", "better-auth": "^1.2.5", "resend": "^4.2.0" }, "peerDependencies": { "react": "19.0.0", "react-dom": "19.0.0" } }],
 
-    "api/@databuddy/logger": ["@databuddy/logger@file:packages/logger", { "dependencies": { "@highlight-run/node": "^3.12.0", "@highlight-run/pino": "^0.1.6", "pino": "9.6.0", "pino-pretty": "^10.3.1" }, "devDependencies": { "eslint": "^8.57.1", "rimraf": "^5.0.10", "tsup": "^8.4.0", "typescript": "^5.8.2" } }],
 
-    "api/@databuddy/queue": ["@databuddy/queue@file:packages/queue", { "dependencies": { "@databuddy/logger": "*", "@databuddy/redis": "*", "bullmq": "^5.44.4", "superjson": "^2.2.1" }, "devDependencies": { "@types/node": "^20.10.6", "typescript": "^5.3.3" } }],
+    "api/@databuddy/queue": ["@databuddy/queue@file:packages/queue", { "dependencies": { "@databuddy/redis": "*", "bullmq": "^5.44.4", "superjson": "^2.2.1" }, "devDependencies": { "@types/node": "^20.10.6", "typescript": "^5.3.3" } }],
 
     "api/@databuddy/redis": ["@databuddy/redis@file:packages/redis", { "dependencies": { "ioredis": "^5.4.3", "zod": "^3.22.4" }, "devDependencies": { "@types/node": "^20.11.19", "typescript": "^5.3.3" } }],
 
@@ -3483,8 +3463,6 @@
     "admin/eslint/file-entry-cache": ["file-entry-cache@8.0.0", "", { "dependencies": { "flat-cache": "^4.0.0" } }, "sha512-XXTUwCvisa5oacNGRP9SfNtYBNAMi+RPwBFmblZEF7N7swHYQS6/Zfk7SRwx4D5j3CH211YNRco1DEMNVfZCnQ=="],
 
     "ajv-formats/ajv/json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
-
-    "api/@databuddy/queue/@databuddy/logger": ["@databuddy/logger@file:packages/logger", { "dependencies": { "@highlight-run/node": "^3.12.0", "@highlight-run/pino": "^0.1.6", "pino": "9.6.0", "pino-pretty": "^10.3.1" }, "devDependencies": { "eslint": "^8.57.1", "rimraf": "^5.0.10", "tsup": "^8.4.0", "typescript": "^5.8.2" } }],
 
     "api/@databuddy/queue/@databuddy/redis": ["@databuddy/redis@file:packages/redis", { "dependencies": { "ioredis": "^5.4.3", "zod": "^3.22.4" }, "devDependencies": { "@types/node": "^20.11.19", "typescript": "^5.3.3" } }],
 

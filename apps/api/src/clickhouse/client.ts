@@ -1,4 +1,3 @@
-// import { createLogger } from '@databuddy/logger';
 import type { LogParams, ErrorLogParams, WarnLogParams, Logger, ResponseJSON } from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
@@ -154,13 +153,6 @@ class CustomLogger implements Logger {
         }, {} as T);
       }),
     };
-  
-    // logger.info('query info', {
-    //   query: cleanQuery(query),
-    //   rows: json.rows,
-    //   stats: response.statistics,
-    //   elapsed: Date.now() - start,
-    // });
   
     return response;
   }

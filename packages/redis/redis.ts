@@ -1,10 +1,9 @@
 import { SuperJSON } from 'superjson';
 import type { RedisOptions } from 'ioredis';
 import Redis from 'ioredis';
-import { createLogger } from '@databuddy/logger';
 
 // Initialize logger
-const logger = createLogger('redis');
+const logger = console;
 
 const getSuperJson = SuperJSON.parse;
 const setSuperJson = SuperJSON.stringify;

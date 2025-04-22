@@ -4,7 +4,6 @@
  */
 
 import { Hono } from 'hono';
-import { createLogger } from '@databuddy/logger';
 import { cors } from 'hono/cors';
 import { z } from 'zod';
 import { websiteAuthHook } from '../hooks/auth';
@@ -16,7 +15,7 @@ import { parseReferrer } from '../utils/referrer';
 import bots from '../lists/bots';
 
 // Initialize logger
-const logger = createLogger('analytics-basket');
+const logger = console;
 
 // Helper function to check if user agent matches any bot patterns
 function isBot(userAgent: string): boolean {

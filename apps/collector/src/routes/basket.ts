@@ -1,16 +1,14 @@
 import { Hono } from 'hono';
-import { createLogger } from '@databuddy/logger';
 import { z } from 'zod';
 import { websiteAuthHook } from '../hooks/auth';
 import { processEvent } from '../controllers/analytics.controller';
-import { AppVariables, TrackingEvent } from '../types';
+import type { AppVariables, TrackingEvent } from '../types';
 import { parseUserAgent } from '../utils/user-agent';
 import { parseIp, anonymizeIp } from '../utils/ip-geo';
 import { parseReferrer } from '../utils/referrer';
-import { cors } from 'hono/cors';
 
 // Initialize logger
-const logger = createLogger('analytics-basket');
+const logger = console;
 
 // Create a new basket router
 const basketRouter = new Hono<{ Variables: AppVariables & { enriched?: any } }>();

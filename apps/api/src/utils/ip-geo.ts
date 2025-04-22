@@ -1,8 +1,7 @@
 import { cacheable } from '@databuddy/redis';
-import { createLogger } from '@databuddy/logger';
 import { z } from 'zod';
 
-const logger = createLogger('ip-geo');
+const logger = console;
 
 // Helper function to access environment variables in both Node.js and Cloudflare Workers
 function getEnv(key: string) {

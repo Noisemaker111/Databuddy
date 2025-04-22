@@ -6,9 +6,8 @@
  */
 
 import { clickHouse } from '@databuddy/db';
-import { createLogger } from '@databuddy/logger';
 
-const logger = createLogger('migration:events-schema');
+const logger = console;
 
 async function migrateEventsSchema() {
   try {

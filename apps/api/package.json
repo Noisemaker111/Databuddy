@@ -19,7 +19,6 @@
     "@clickhouse/client": "^1.10.1",
     "@databuddy/auth": "../../packages/auth",
     "@databuddy/db": "../../packages/db",
-    "@databuddy/logger": "../../packages/logger",
     "@databuddy/queue": "../../packages/queue",
     "@databuddy/redis": "../../packages/redis",
     "@highlight-run/hono": "^1.0.3",

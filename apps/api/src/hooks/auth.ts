@@ -6,13 +6,12 @@
  */
 
 import type { MiddlewareHandler } from 'hono';
-import { createLogger } from '@databuddy/logger';
 import { dbEdge as prisma, WebsiteStatus, type Website } from '@databuddy/db';
 import { cacheable } from '@databuddy/redis';
 import type { AppVariables } from '../types';
 
 // Initialize logger
-const logger = createLogger('website-auth');
+const logger = console;
 
 // Cache the website lookup for 5 minutes
 export const getWebsiteById = cacheable(

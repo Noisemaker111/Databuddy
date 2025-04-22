@@ -5,7 +5,6 @@
  */
 
 import { Hono } from 'hono';
-import { createLogger } from '@databuddy/logger';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { chQuery, createSqlBuilder } from '@databuddy/db';
@@ -100,7 +99,7 @@ interface TodayData {
 }
 
 // Initialize logger
-const logger = createLogger('analytics-api');
+const logger = console;
 
 // Create router with typed context
 const analyticsRouter = new Hono<{ 

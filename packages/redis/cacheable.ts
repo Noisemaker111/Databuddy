@@ -1,7 +1,6 @@
-import { createLogger } from '@databuddy/logger';
 import { getRedisCache } from './index';
 
-const logger = createLogger('redis');
+const logger = console;
 
 interface CacheOptions {
   expireInSec: number;

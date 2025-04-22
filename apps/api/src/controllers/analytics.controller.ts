@@ -5,7 +5,6 @@
  */
 
 import type { Context } from 'hono';
-import { createLogger } from '@databuddy/logger';
 import { clickHouse } from '@databuddy/db';
 import { AppVariables } from '../types';
 import { parseUserAgent } from '../utils/user-agent';
@@ -16,7 +15,7 @@ import { parseReferrer } from '../utils/referrer';
 
 // const queue = await getQueue(QueueName.EVENTS);
 // Initialize logger
-const logger = createLogger('analytics-controller');
+const logger = console;
 
 /**
  * Extract version from user agent string

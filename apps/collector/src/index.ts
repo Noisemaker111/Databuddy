@@ -1,11 +1,10 @@
 import { Hono } from 'hono';
 import { logger as honoLogger } from 'hono/logger';
-import { createLogger } from '@databuddy/logger';
 import { basketRouter } from './routes/basket';
-import { AppVariables } from './types';
+import type { AppVariables } from './types';
 
 // Initialize logger
-const logger = createLogger('analytics-collector');
+const logger = console;
 
 // Create the main app
 const app = new Hono<{ Variables: AppVariables }>();

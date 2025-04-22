@@ -6,9 +6,8 @@
  */
 
 import { initClickHouseSchema } from '@databuddy/db';
-import { createLogger } from '@databuddy/logger';
 
-const logger = createLogger('init-clickhouse-tables');
+const logger = console;
 
 async function initTables() {
   try {

@@ -10,9 +10,8 @@
  */
 
 import migrateEventsSchema from '../scripts/migrate-events-schema';
-import { createLogger } from '@databuddy/logger';
 
-const logger = createLogger('migration-runner');
+const logger = console;
 
 async function run() {
   logger.info('Starting events table schema migration...');

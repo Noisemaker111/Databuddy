@@ -1,19 +1,24 @@
-import { MiddlewareHandler } from 'hono';
-import { createLogger } from '@databuddy/logger';
+import type { MiddlewareHandler } from 'hono';
 import { prisma, WebsiteStatus } from '@databuddy/db';
-import { AppVariables, Website } from '../types';
-import { cacheable } from '@/packages/redis/cacheable';
+import type { AppVariables, Website } from '../types';
+import { cacheable } from '@databuddy/redis';
 
 // Initialize logger
-const logger = createLogger('website-auth');
+const logger = console;
 
 // Cache the website lookup for 5 minutes
 export const getWebsiteById = cacheable(
   async (id: string): Promise<Website | null> => {
     logger.debug('Fetching website from database', { id });
-    return prisma.website.findUnique({
+    const website = await prisma.website.findUnique({
       where: { id }
     });
+    return website ? {
+      ...website,
+      name: website.name || '',
+      userId: website.userId || '',
+      projectId: website.projectId || ''
+    } : null;
   },
   {
     expireInSec: 300, // 5 minutes

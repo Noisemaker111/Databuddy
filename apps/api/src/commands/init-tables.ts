@@ -9,25 +9,22 @@
  */
 
 import initClickhouseTables from '../scripts/init-clickhouse-tables';
-import { createLogger } from '@databuddy/logger';
-
-const logger = createLogger('init-tables-command');
 
 async function run() {
-  logger.info('Initializing ClickHouse tables...');
+  console.info('Initializing ClickHouse tables...');
   
   try {
     const result = await initClickhouseTables();
     
     if (result.success) {
-      logger.info(result.message);
+      console.info(result.message);
       process.exit(0);
     } else {
-      logger.error(result.message);
+      console.error(result.message);
       process.exit(1);
     }
   } catch (error) {
-    logger.error('Unhandled error during initialization:', error);
+    console.error('Unhandled error during initialization:', error);
     process.exit(1);
   }
 }

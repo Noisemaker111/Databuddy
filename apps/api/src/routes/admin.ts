@@ -6,11 +6,10 @@
 
 import { Hono } from 'hono';
 import { initClickHouseSchema } from '@databuddy/db';
-import { createLogger } from '@databuddy/logger';
 import type { AppVariables } from '../types';
 
 // Initialize logger for admin routes
-const logger = createLogger('admin:routes');
+const logger = console;
 
 // Create admin router
 const adminRouter = new Hono<{ Variables: AppVariables }>();

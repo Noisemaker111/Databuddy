@@ -4,13 +4,12 @@
  * Handles processing and storing analytics events from tracking clients.
  */
 
-import { Context } from 'hono';
-import { createLogger } from '@databuddy/logger';
+import type { Context } from 'hono';
 import { clickHouse } from '@databuddy/db';
 import { parseUserAgent } from '../utils/user-agent';
 import { getGeoData } from '../utils/ip-geo';
 
-const logger = createLogger('analytics-controller');
+const logger = console;
 
 /**
  * Process a tracking event from databuddy.js client

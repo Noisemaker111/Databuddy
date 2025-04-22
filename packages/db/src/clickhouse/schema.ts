@@ -1,7 +1,5 @@
 import { clickHouse } from './client';
-import { createLogger } from '@databuddy/logger';
 
-const logger = createLogger('clickhouse:schema');
 
 // Define the analytics database schema with tables for events, sessions, and aggregated data
 const ANALYTICS_DATABASE = 'analytics';
@@ -228,13 +226,13 @@ SETTINGS index_granularity = 8192
  */
 export async function initClickHouseSchema() {
   try {
-    logger.info('Initializing ClickHouse schema...');
+    console.info('Initializing ClickHouse schema...');
     
     // Create the analytics database
     await clickHouse.command({
       query: CREATE_DATABASE,
     });
-    logger.info(`Created database: ${ANALYTICS_DATABASE}`);
+    console.info(`Created database: ${ANALYTICS_DATABASE}`);
     
     // Create tables
     const tables = [
@@ -252,10 +250,10 @@ export async function initClickHouseSchema() {
       await clickHouse.command({
         query: table.query,
       });
-      logger.info(`Created table: ${ANALYTICS_DATABASE}.${table.name}`);
+      console.info(`Created table: ${ANALYTICS_DATABASE}.${table.name}`);
     }
     
-    logger.info('ClickHouse schema initialization completed successfully');
+    console.info('ClickHouse schema initialization completed successfully');
     return {
       success: true,
       message: 'ClickHouse schema initialized successfully',
@@ -265,7 +263,7 @@ export async function initClickHouseSchema() {
       }
     };
   } catch (error) {
-    logger.error('Error initializing ClickHouse schema:', error);
+    console.error('Error initializing ClickHouse schema:', error);
     return {
       success: false,
       message: 'Failed to initialize ClickHouse schema',
