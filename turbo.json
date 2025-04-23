@@ -17,9 +17,11 @@
         "GITHUB_CLIENT_SECRET",
         "RECAPTCHA_SECRET_KEY",
         "RESEND_API_KEY",
+        "RESEND_AUDIENCE_ID",
         "SUPABASE_KEY",
         "SUPABASE_URL",
-        "STRIPE_SECRET_KEY"
+        "STRIPE_SECRET_KEY",
+        "REDIS_URL"
       ]
     },
     "start": {
