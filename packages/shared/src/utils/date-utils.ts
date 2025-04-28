@@ -1,86 +1,87 @@
-// Import dayjs using require format
 import dayjs from 'dayjs';
 import utcPlugin from 'dayjs/plugin/utc';
 import timezonePlugin from 'dayjs/plugin/timezone';
+import relativeTimePlugin from 'dayjs/plugin/relativeTime';
 import { TIMEZONES } from '../lists/timezones';
 
 // Initialize dayjs plugins
 dayjs.extend(utcPlugin);
 dayjs.extend(timezonePlugin);
+dayjs.extend(relativeTimePlugin);
+
+// Default format constants
+const DEFAULT_DATE_FORMAT = 'MMM D, YYYY';
+const DEFAULT_TIME_FORMAT = 'h:mm A';
+
+interface DateFormatOptions {
+  timezone?: string;
+  dateFormat?: string;
+  timeFormat?: string;
+  showTime?: boolean;
+  customFormat?: string;
+}
+
+type DateInput = Date | string | number | null;
 
 /**
- * Format a date according to user's timezone and format preferences
+ * Formats a date according to specified options
+ * @param date - Date to format
+ * @param options - Formatting options
+ * @returns Formatted date string
  */
-export function formatDate(
-  date: Date | string | number,
-  options?: {
-    timezone?: string;
-    dateFormat?: string;
-    timeFormat?: string;
-    showTime?: boolean;
-    customFormat?: string;
-  }
-) {
+export function formatDate(date: DateInput, options?: DateFormatOptions): string {
   if (!date) return '';
   
   const timezone = options?.timezone || 'UTC';
+  const dayjsDate = dayjs(date).tz(timezone);
   
-  // If a custom format is provided, use it
   if (options?.customFormat) {
-    return dayjs(date).tz(timezone).format(options.customFormat);
+    return dayjsDate.format(options.customFormat);
   }
   
-  // Default formats
-  const dateFormat = options?.dateFormat || 'MMM D, YYYY';
-  const timeFormat = options?.timeFormat || 'h:mm A';
-  
-  // Combine formats if showTime is true
-  const format = options?.showTime 
-    ? `${dateFormat} ${timeFormat}` 
-    : dateFormat;
+  const dateFormat = options?.dateFormat || DEFAULT_DATE_FORMAT;
+  const timeFormat = options?.timeFormat || DEFAULT_TIME_FORMAT;
+  const format = options?.showTime ? `${dateFormat} ${timeFormat}` : dateFormat;
     
-  return dayjs(date).tz(timezone).format(format);
+  return dayjsDate.format(format);
 }
 
 /**
- * Convert a date to a specific timezone
+ * Converts a date to specified timezone
+ * @param date - Date to convert
+ * @param timezone - Target timezone
+ * @returns Date in target timezone
  */
 export function convertToTimezone(
-  date: Date | string | number,
+  date: Exclude<DateInput, null>,
   timezone = 'UTC'
-) {
+): Date {
   return dayjs(date).tz(timezone).toDate();
 }
 
 /**
- * Get current browser timezone
+ * Gets the browser's timezone
+ * @returns Browser timezone string
  */
-export function getBrowserTimezone() {
+export function getBrowserTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
 /**
- * Find timezone by region
+ * Finds timezone info by region name
+ * @param region - Timezone region to find
+ * @returns Timezone info or undefined
  */
 export function findTimezoneByRegion(region: string) {
   return TIMEZONES.find(tz => tz.region === region);
 }
 
 /**
- * Format relative time (e.g., "2 hours ago")
+ * Formats a date as relative time (e.g. "2 hours ago")
+ * @param date - Date to format
+ * @returns Relative time string
  */
-export function formatRelativeTime(date: Date | string | number) {
+export function formatRelativeTime(date: DateInput): string {
   if (!date) return '';
-  
-  const now = dayjs();
-  const past = dayjs(date);
-  const diff = now.diff(past, 'second');
-  
-  if (diff < 60) return 'Just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)} minute(s) ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} hour(s) ago`;
-  if (diff < 2592000) return `${Math.floor(diff / 86400)} day(s) ago`;
-  if (diff < 31536000) return `${Math.floor(diff / 2592000)} month(s) ago`;
-  
-  return `${Math.floor(diff / 31536000)} year(s) ago`;
-} 
+  return dayjs(date).fromNow();
+}
