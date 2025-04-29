@@ -2,12 +2,9 @@
   "name": "dash2",
   "version": "0.1.0",
   "private": true,
-  "prisma": {
-    "schema": "../../packages/db/prisma/schema.prisma"
-  },
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"

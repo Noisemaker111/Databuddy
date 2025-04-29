@@ -1,5 +1,4 @@
 import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
 import { customSession, multiSession, twoFactor, emailOTP, magicLink } from "better-auth/plugins";
 import { getSessionCookie } from "better-auth/cookies";
 import { db, eq } from "@databuddy/db";

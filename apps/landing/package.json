@@ -3,13 +3,8 @@
   "version": "0.1.0",
   "packageManager": "bun@1.2.3",
   "private": true,
-  "prisma": {
-    "schema": "../../packages/db/prisma/schema.prisma"
-  },
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "prisma generate && next build",
-    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint"
   },
