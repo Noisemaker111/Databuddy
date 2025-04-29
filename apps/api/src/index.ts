@@ -4,6 +4,7 @@ import { auth, type AuthUser, type SessionData } from '@databuddy/auth';
 import basketRouter from './routes/basket';
 import analyticsRouter from './routes/analytics';
 import { logger } from './lib/logger';
+import { logger as HonoLogger } from "hono/logger"
 
 // Define the Hono app with typed context
 type AppVariables = {
@@ -14,6 +15,8 @@ type AppVariables = {
 }
 
 const app = new Hono<AppVariables>();
+
+app.use('*', HonoLogger());
 
 // Configure CORS - must be before auth routes
 app.use('*', cors({
@@ -97,7 +100,6 @@ app.notFound((c) => {
     headers: { 'Content-Type': 'application/json' }
   });
 });
-
 // Helper function to access environment variables in both Node.js and Cloudflare Workers
 function getEnv(key: string) {
   return process.env[key] || 

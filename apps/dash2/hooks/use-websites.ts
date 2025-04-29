@@ -14,13 +14,39 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 export interface Website {
   id: string;
   name: string | null;
-  domain: string;
+  // The domain can be either a string or an object depending on how it's returned from the API
+  domain: string | { 
+    id: string;
+    name: string;
+    verificationStatus: string;
+    verificationToken: string | null;
+    verifiedAt: string | null;
+    userId: string | null;
+    projectId: string | null;
+    dnsRecords: any;
+    createdAt: string;
+    updatedAt: string;
+    deletedAt: string | null;
+  };
   userId?: string | null;
   projectId?: string | null;
   domainId?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   status?: string;
+  domainData?: {
+    id: string;
+    name: string;
+    verificationStatus: string;
+    verificationToken: string | null;
+    verifiedAt: string | null;
+    userId: string | null;
+    projectId: string | null;
+    dnsRecords: any;
+    createdAt: string;
+    updatedAt: string;
+    deletedAt: string | null;
+  } | null;
 }
 
 interface CreateWebsiteData {

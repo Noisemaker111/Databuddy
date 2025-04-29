@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { db } from "@databuddy/db";
+import { db, user, eq } from "@databuddy/db";
 import { auth } from "@databuddy/auth";
 import { headers } from "next/headers";
 import { cache } from "react";
@@ -92,8 +92,8 @@ export async function uploadProfileImage(formData: FormData) {
  * Updates the user's profile information
  */
 export async function updateUserProfile(formData: FormData) {
-  const user = await getUser();
-  if (!user) return { error: "Unauthorized" };
+  const currentUser = await getUser();
+  if (!currentUser) return { error: "Unauthorized" };
 
   try {
     // Parse and validate form data
@@ -109,16 +109,16 @@ export async function updateUserProfile(formData: FormData) {
     });
 
     // Update user in database
-    await db.user.update({
-      where: { id: user.id },
-      data: {
+    const updated = await db.update(user)
+      .set({
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
         image: validatedData.image,
         // Set the display name to the full name
         name: `${validatedData.firstName} ${validatedData.lastName}`,
-      }
-    });
+      })
+      .where(eq(user.id, currentUser.id))
+      .returning();
 
     revalidatePath("/settings");
     return { success: true };
@@ -135,8 +135,8 @@ export async function updateUserProfile(formData: FormData) {
  * Handles soft deletion of a user account
  */
 export async function deactivateUserAccount(formData: FormData) {
-  const user = await getUser();
-  if (!user) return { error: "Unauthorized" };
+  const currentUser = await getUser();
+  if (!currentUser) return { error: "Unauthorized" };
 
   try {
     const password = formData.get("password");
@@ -145,21 +145,20 @@ export async function deactivateUserAccount(formData: FormData) {
     }
 
     const email = formData.get("email");
-    if (!email || typeof email !== "string" || email !== user.email) {
+    if (!email || typeof email !== "string" || email !== currentUser.email) {
       return { error: "Email address doesn't match your account" };
     }
 
     // Password verification would be done here
     // This is a placeholder for actual password verification
 
-    await db.user.update({
-      where: { id: user.id },
-      data: {
-        deletedAt: new Date(),
+    await db.update(user)
+      .set({
+        deletedAt: new Date().toISOString(),
         // Store scheduled deletion date in database
         // This record is used by a cleanup job to permanently delete after grace period (ensuring user has time to cancel)
-      }
-    });
+      })
+      .where(eq(user.id, currentUser.id));
 
     revalidatePath("/settings");
     return { success: true };

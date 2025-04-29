@@ -14,8 +14,9 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // Use the Domain type from the store
-import type { Domain } from '@databuddy/db';
+import type { domains } from '@databuddy/db';
 
+type Domain = typeof domains.$inferSelect;
 // Query keys
 export const domainKeys = {
   all: ['domains'] as const,

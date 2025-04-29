@@ -4,14 +4,38 @@ import { shallow } from 'zustand/shallow';
 export interface Website {
   id: string;
   name: string | null;
-  domain: string;
+  domain: string | { 
+    id: string;
+    name: string;
+    verificationStatus: string;
+    verificationToken: string | null;
+    verifiedAt: string | null;
+    userId: string | null;
+    projectId: string | null;
+    dnsRecords: any;
+    createdAt: string;
+    updatedAt: string;
+    deletedAt: string | null;
+  };
   userId?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  projectId?: string | null;
+  domainId?: string | null;
+  createdAt: string;
+  updatedAt: string;
   status?: string;
-  verificationToken?: string | null;
-  verificationStatus?: "PENDING" | "VERIFIED" | "FAILED";
-  verifiedAt?: Date | null;
+  domainData?: {
+    id: string;
+    name: string;
+    verificationStatus: string;
+    verificationToken: string | null;
+    verifiedAt: string | null;
+    userId: string | null;
+    projectId: string | null;
+    dnsRecords: any;
+    createdAt: string;
+    updatedAt: string;
+    deletedAt: string | null;
+  } | null;
 }
 
 interface WebsitesState {

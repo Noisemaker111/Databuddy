@@ -4,7 +4,6 @@ export interface AuthUser {
   name?: string | null;
   email: string;
   image?: string | null;
-  role: string;
 }
 
 // Session types

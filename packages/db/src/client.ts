@@ -1,47 +1,13 @@
-import { PrismaClient } from "../generated/client";
+import { drizzle } from 'drizzle-orm/node-postgres';
+import * as schema from '../drizzle/schema';
+import * as relations from '../drizzle/relations';
 
-export * from '../generated/client';
-
-// Helper function to access environment variables in both Node.js and Cloudflare Workers
-function getEnv(key: string) {
-  return process.env[key] || 
-         (typeof globalThis.process !== 'undefined' ? globalThis.process.env?.[key] : null) || 
-         (typeof globalThis !== 'undefined' && key in globalThis ? (globalThis as unknown as { [key: string]: string })[key] : null);
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL environment variable is not set');
 }
 
-// Helper to check NODE_ENV
-function isProduction() {
-  const nodeEnv = getEnv('NODE_ENV');
-  return nodeEnv === 'production';
-}
+// Combine schema and relations
+const fullSchema = { ...schema, ...relations };
 
-/**
- * Get a properly configured PrismaClient instance
- */
-const getPrismaClient = () => {
-  const client = new PrismaClient({
-    // log: ['error'],
-  });
-  
-  return client;
-};
-
-// Add prisma to the global type
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient;
-};
-
-// Export a singleton instance of PrismaClient
-export const prisma = globalForPrisma.prisma ?? getPrismaClient();
-
-// Prevent multiple instances during development due to HMR
-if (!isProduction()) {
-  globalForPrisma.prisma = prisma;
-}
-
-// Export a function to create a client with custom context
-export const createClientWithContext = (context: { userId?: string; ipAddress?: string; userAgent?: string }) => {
-  const client = new PrismaClient();
-  // client.$use(createAuditMiddleware(context));
-  return client;
-};
+export const db = drizzle(connectionString, { schema: fullSchema });

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import type { Domain } from '@databuddy/db';
+import type { domains } from '@databuddy/db';
+
+type Domain = typeof domains.$inferSelect;
 
 interface DomainsState {
   // Data

@@ -32,7 +32,21 @@ export function WebsiteCard({
 }: WebsiteCardProps) {
   const setSelectedWebsite = useWebsitesStore(state => state.setSelectedWebsite);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const isLocalhost = website.domain.includes('localhost') || website.domain.includes('127.0.0.1');
+  
+  // Enhanced domain value extraction logic
+  let domainValue = '';
+  if (typeof website.domain === 'string') {
+    domainValue = website.domain;
+  } else if (website.domain && typeof website.domain === 'object') {
+    // If domain is an object, try to get its name property if it exists
+    const domainObj = website.domain as any;
+    domainValue = domainObj.name || JSON.stringify(website.domain);
+  } else if (website.domainData?.name) {
+    // Fallback to domainData if available
+    domainValue = website.domainData.name;
+  }
+  
+  const isLocalhost = domainValue.includes('localhost') || domainValue.includes('127.0.0.1');
 
   const handleOpenDialog = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -46,8 +60,12 @@ export function WebsiteCard({
       <CardHeader className="relative">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-base">{website.domain}</CardTitle>
-            <CardDescription>Added on {new Date(website.createdAt).toLocaleDateString()}</CardDescription>
+            <CardTitle className="text-base truncate">
+              {website.name || 'Unnamed Website'}
+            </CardTitle>
+            <CardDescription className="truncate">
+              {domainValue}
+            </CardDescription>
           </div>
           <Button 
             variant="ghost" 

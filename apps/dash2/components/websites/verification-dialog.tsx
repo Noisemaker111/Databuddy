@@ -14,12 +14,31 @@ import {
 import type { Website } from "@/stores/use-websites-store";
 import { useWebsitesStore } from "@/stores/use-websites-store";
 
+// Helper to extract domain string from domain object or string
+function getDomainString(domain: string | { name: string } | any): string {
+  if (typeof domain === 'string') {
+    return domain;
+  }
+  
+  if (domain && typeof domain === 'object' && 'name' in domain) {
+    return domain.name;
+  }
+  
+  return '';
+}
+
+// Extended Website type for verification properties
+interface VerifiableDomain extends Website {
+  verificationStatus?: string;
+  verificationToken?: string | null;
+}
+
 interface VerificationDialogProps {
-  website: Website | null;
+  website: VerifiableDomain | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onVerify: (id: string) => void;
-  onRegenerateToken: (id: string) => Promise<{ data?: Website; error?: string }>;
+  onRegenerateToken: (id: string) => Promise<{ data?: VerifiableDomain; error?: string }>;
   isVerifying: boolean;
   isRegenerating: boolean;
 }
@@ -45,14 +64,18 @@ export const VerificationDialog = memo(function VerificationDialog({
   }, [open]);
   
   // Memoize these functions to prevent recreating on each render
-  const getDomainForDNS = useCallback((domain: string) => {
+  const getDomainForDNS = useCallback((domainInput: string | object | undefined) => {
     try {
+      // Extract domain as string
+      const domainStr = getDomainString(domainInput || '');
+      if (!domainStr) return '';
+      
       // Ensure domain has a protocol
-      const domainWithProtocol = domain.startsWith('http') ? domain : `https://${domain}`;
+      const domainWithProtocol = domainStr.startsWith('http') ? domainStr : `https://${domainStr}`;
       return new URL(domainWithProtocol).hostname.replace(/^www\./, '');
     } catch (error) {
-      console.error('Invalid domain:', domain);
-      return domain;
+      console.error('Invalid domain:', domainInput);
+      return typeof domainInput === 'string' ? domainInput : '';
     }
   }, []);
 
@@ -94,13 +117,16 @@ export const VerificationDialog = memo(function VerificationDialog({
   // If not open, don't render anything (optimization)
   if (!open) return null;
 
+  // Get domain string for display
+  const domainForDisplay = getDomainString(website?.domain || '');
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Verify Domain</DialogTitle>
           <DialogDescription>
-            Verify ownership of {website?.domain} by adding a DNS record.
+            Verify ownership of {domainForDisplay} by adding a DNS record.
           </DialogDescription>
         </DialogHeader>
         
@@ -118,7 +144,7 @@ export const VerificationDialog = memo(function VerificationDialog({
                   size="sm"
                   className="h-6 px-2"
                   onClick={() => {
-                    const dnsRecord = `_databuddy.${getDomainForDNS(website?.domain || '')}`;
+                    const dnsRecord = `_databuddy.${getDomainForDNS(website?.domain)}`;
                     navigator.clipboard.writeText(dnsRecord);
                     toast("DNS record name copied to clipboard");
                   }}
@@ -127,7 +153,7 @@ export const VerificationDialog = memo(function VerificationDialog({
                   Copy
                 </Button>
               </div>
-              <div className="mt-1">_databuddy.{getDomainForDNS(website?.domain || '')}</div>
+              <div className="mt-1">_databuddy.{getDomainForDNS(website?.domain)}</div>
               <div className="mt-2 flex items-center justify-between">
                 <span className="text-muted-foreground">Value:</span>
                 <Button

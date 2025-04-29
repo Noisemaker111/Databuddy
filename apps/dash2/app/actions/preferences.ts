@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { db } from "@databuddy/db";
+import { db, userPreferences, eq } from "@databuddy/db";
 import { auth } from "@databuddy/auth";
 import { headers } from "next/headers";
 import { cache } from "react";
 import { z } from "zod";
+import { randomUUID } from "node:crypto";
 
 // Helper to get authenticated user
 const getUser = cache(async () => {
@@ -32,20 +33,22 @@ export async function getUserPreferences() {
 
   try {
     // Try to find existing preferences
-    let preferences = await db.userPreference.findUnique({
-      where: { userId: user.id },
+    let preferences = await db.query.userPreferences.findFirst({
+      where: eq(userPreferences.userId, user.id)
     });
     
     // Create default preferences if none exist
     if (!preferences) {
-      preferences = await db.userPreference.create({
-        data: {
-          userId: user.id,
-          timezone: "auto",
-          dateFormat: "MMM D, YYYY",
-          timeFormat: "h:mm a"
-        }
-      });
+      const inserted = await db.insert(userPreferences).values({
+        id: randomUUID(),
+        userId: user.id,
+        timezone: "auto",
+        dateFormat: "MMM D, YYYY",
+        timeFormat: "h:mm a",
+        updatedAt: new Date().toISOString(),
+      }).returning();
+      
+      preferences = inserted[0];
     }
     
     return { data: preferences };
@@ -76,30 +79,35 @@ export async function updateUserPreferences(formData: FormData) {
     });
 
     // Get or create preferences
-    let preferences = await db.userPreference.findUnique({
-      where: { userId: user.id },
+    let preferences = await db.query.userPreferences.findFirst({
+      where: eq(userPreferences.userId, user.id)
     });
     
     if (!preferences) {
       // Create if doesn't exist
-      preferences = await db.userPreference.create({
-        data: {
-          userId: user.id,
-          timezone: validatedData.timezone || "auto",
-          dateFormat: validatedData.dateFormat || "MMM D, YYYY",
-          timeFormat: validatedData.timeFormat || "h:mm a"
-        }
-      });
+      const inserted = await db.insert(userPreferences).values({
+        id: randomUUID(),
+        userId: user.id,
+        timezone: validatedData.timezone || "auto",
+        dateFormat: validatedData.dateFormat || "MMM D, YYYY",
+        timeFormat: validatedData.timeFormat || "h:mm a",
+        updatedAt: new Date().toISOString(),
+      }).returning();
+      
+      preferences = inserted[0];
     } else {
       // Update existing preferences
-      preferences = await db.userPreference.update({
-        where: { userId: user.id },
-        data: {
-          timezone: validatedData.timezone,
-          dateFormat: validatedData.dateFormat,
-          timeFormat: validatedData.timeFormat,
-        }
-      });
+      const updated = await db.update(userPreferences)
+        .set({
+          timezone: validatedData.timezone || preferences.timezone,
+          dateFormat: validatedData.dateFormat || preferences.dateFormat,
+          timeFormat: validatedData.timeFormat || preferences.timeFormat,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(userPreferences.userId, user.id))
+        .returning();
+        
+      preferences = updated[0];
     }
 
     revalidatePath("/settings");

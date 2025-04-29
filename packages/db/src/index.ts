@@ -1,8 +1,8 @@
-export { prisma as db, prisma, createClientWithContext } from './client' // exports instance of prisma 
-export * from '../generated/client'
-
+export { db } from './client'
+export * from '../drizzle/schema'
 export * from './clickhouse/client'
 export * from './clickhouse/schema'
-export * from './sql_builder'
-// Export all services
-// export * from './edge'
+export * from 'drizzle-orm'
+
+export * from '../drizzle/schema'
+export * from '../drizzle/relations'

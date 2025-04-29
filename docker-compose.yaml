@@ -1,0 +1,33 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+    develop:
+      watch:
+        - path: ./apps/api/src
+          target: /app/apps/api/src
+          action: sync
+        - path: ./apps/api/package.json
+          target: /app/apps/api/package.json
+          action: sync+restart
+        - path: ./packages
+          target: /app/packages
+          action: sync
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - QUEUE_REDIS_URL=${QUEUE_REDIS_URL}
+      - CLICKHOUSE_URL=${CLICKHOUSE_URL}
+      - CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE}
+      - IPINFO_TOKEN=${IPINFO_TOKEN}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - PORT=${PORT}
+      
+    ports:
+      - 4000:4000

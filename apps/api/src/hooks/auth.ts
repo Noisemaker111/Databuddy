@@ -6,17 +6,21 @@
  */
 
 import type { MiddlewareHandler } from 'hono';
-import { prisma, WebsiteStatus, type Website } from '@databuddy/db';
+import { db, eq, websites } from '@databuddy/db';
+import type { websiteStatus } from '@databuddy/db';
 import { cacheable } from '@databuddy/redis';
 import type { AppVariables } from '../types';
 import { logger } from '../lib/logger';
 
+// Define WebsiteStatus type from the enum values
+type WebsiteStatus = typeof websiteStatus.enumValues[number];
+
 // Cache the website lookup for 5 minutes
 export const getWebsiteById = cacheable(
-  async (id: string): Promise<Website | null> => {
+  async (id: string): Promise<any> => {
     logger.debug('Fetching website from database', { id });
-    return prisma.website.findUnique({
-      where: { id }
+    return db.query.websites.findFirst({
+      where: eq(websites.id, id)
     });
   },
   {
@@ -129,14 +133,14 @@ export const websiteAuthHook = (): MiddlewareHandler<{
       }
       
       // If website is inactive, reject
-      if (website.status !== WebsiteStatus.ACTIVE) {
+      if (website.status !== 'ACTIVE') {
         logger.warn('Inactive website', { clientId, status: website.status });
         return c.json({ error: 'Website is not active' }, 403);
       }
       
       // Check if domain is verified or localhost (localhost domains are exempt from verification)
       const isLocalhostDomain = isLocalhost(website.domain);
-      const isVerified = website.status === WebsiteStatus.ACTIVE || isLocalhostDomain;
+      const isVerified = website.status === 'ACTIVE' || isLocalhostDomain;
       
       if (!isVerified) {
         logger.warn('Unverified domain', { clientId, domain: website.domain });

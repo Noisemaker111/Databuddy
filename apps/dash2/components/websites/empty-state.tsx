@@ -3,7 +3,8 @@ import { Globe, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WebsiteDialog } from "@/components/website-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import type { Domain } from "@databuddy/db";
+import type { domains } from "@databuddy/db";
+type Domain = typeof domains.$inferSelect;
 
 interface EmptyStateProps {
   onCreateWebsite: (data: any) => void;

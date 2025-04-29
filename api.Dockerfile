@@ -1,13 +1,13 @@
-FROM oven/bun:1
+FROM oven/bun:1-slim
 
-# Install OpenSSL
+# Install OpenSSL for Prisma
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Copy workspace files
 COPY package.json bun.lock turbo.json ./
-COPY apps/api/package.json apps/api/bun.lockb ./apps/api/
+COPY apps/api/package.json ./apps/api/
 COPY packages/ ./packages/
 
 # Install dependencies
@@ -18,9 +18,8 @@ COPY apps/api/ ./apps/api/
 
 # Set environment variables
 ENV NODE_ENV=production
-
 # Expose the API port
-EXPOSE 3000
+EXPOSE 4000
 
 # Start the API
 WORKDIR /app/apps/api

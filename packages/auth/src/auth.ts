@@ -2,10 +2,12 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { customSession, multiSession, twoFactor, emailOTP, magicLink } from "better-auth/plugins";
 import { getSessionCookie } from "better-auth/cookies";
-import { db } from "@databuddy/db";
+import { db, eq } from "@databuddy/db";
+import { user } from "@databuddy/db";
 import { Resend } from "resend";
 import { getRedisCache } from "@databuddy/redis";
 import { nextCookies } from "better-auth/next-js";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 // Helper to check NODE_ENV
 function isProduction() {
@@ -25,8 +27,8 @@ export const getSession = async (request: any) => {
 }
 
 export const auth = betterAuth({
-    database: prismaAdapter(db, {
-        provider: "postgresql",
+    database: drizzleAdapter(db, {
+        provider: "pg",
     }),
     appName: "databuddy.cc",
     advanced: {
@@ -102,33 +104,6 @@ export const auth = betterAuth({
         },
     },
     plugins: [
-        customSession(async ({ user, session }) => {
-            // Fetch the user's role from the database
-            const dbUser = await db.user.findUnique({
-                where: { id: user.id },
-                select: { role: true, emailVerified: true }
-            });
-            
-            return {
-                user: {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    image: user.image,
-                    emailVerified: user.emailVerified || false,
-                    role: dbUser?.role || 'USER',
-                },
-                session: {
-                    id: session.id,
-                    role: dbUser?.role || 'USER',
-                    expiresAt: session.expiresAt,
-                    createdAt: session.createdAt,
-                    updatedAt: session.updatedAt,
-                    ipAddress: session.ipAddress,
-                    userAgent: session.userAgent,
-                },
-            }
-        }),
         emailOTP({
             async sendVerificationOTP({email, otp, type}) {
                 const resend = new Resend(process.env.RESEND_API_KEY as string); 

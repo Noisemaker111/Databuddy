@@ -34,11 +34,3 @@ const useSession = authClient.useSession;
 const getSession = authClient.getSession;
 
 export { signIn, signUp, signOut, useSession, getSession };
-
-// Export a helper to check if the user has a specific role
-export function hasRole(user: AuthUser | null | undefined, role: string | string[]) {
-  if (!user) return false;
-  
-  const roles = Array.isArray(role) ? role : [role];
-  return roles.includes(user.role);
-}

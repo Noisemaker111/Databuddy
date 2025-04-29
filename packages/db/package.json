@@ -12,8 +12,6 @@
     },
     "dependencies": {
         "@clickhouse/client": "^1.11.0",
-        "@prisma/adapter-pg": "^6.6.0",
-        "@prisma/client": "^6.5.0",
         "dotenv": "^16.5.0",
         "drizzle-orm": "^0.42.0",
         "pg": "^8.15.6"
@@ -21,16 +19,13 @@
     "devDependencies": {
         "@types/pg": "^8.11.13",
         "drizzle-kit": "^0.31.0",
-        "prisma": "^6.5.0",
         "tsx": "^4.19.3"
     },
     "scripts": {
-        "postinstall": "prisma generate",
-        "db:generate": "prisma generate",
-        "db:push": "prisma db push --skip-generate",
-        "db:studio": "prisma studio",
-        "db:migrate": "prisma migrate dev --skip-generate",
-        "db:deploy": "prisma migrate deploy",
-        "generate": "prisma generate"
+        "db:generate": "drizzle-kit generate:pg",
+        "db:push": "drizzle-kit push:pg",
+        "db:studio": "drizzle-kit studio",
+        "db:migrate": "drizzle-kit generate:pg && tsx src/migrate.ts",
+        "db:deploy": "tsx src/migrate.ts"
     }
 }

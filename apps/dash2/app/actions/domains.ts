@@ -1,12 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { db } from "@databuddy/db";
+import { db, domains, eq, desc, user, projectAccess, and, or, projects, sql, inArray } from "@databuddy/db";
 import { auth } from "@databuddy/auth";
 import { headers } from "next/headers";
 import { cache } from "react";
 import dns from "node:dns";
 import { promisify } from "node:util";
+import { randomUUID } from "node:crypto";
 
 // Promisify DNS lookup
 const dnsLookup = promisify(dns.lookup);
@@ -40,10 +41,8 @@ export async function createDomain(data: {
     console.log(`[Domain] Creating: ${data.name}`);
     
     // Check if domain already exists
-    const existingDomain = await db.domain.findFirst({
-      where: {
-        name: data.name,
-      }
+    const existingDomain = await db.query.domains.findFirst({
+      where: eq(domains.name, data.name)
     });
 
     if (existingDomain) {
@@ -65,19 +64,24 @@ export async function createDomain(data: {
       ownerData.userId = user.id;
     }
 
-    const domain = await db.domain.create({
-      data: {
-        name: data.name,
-        verificationToken,
-        verificationStatus: "PENDING",
-        ...ownerData
-      }
+    const domainId = randomUUID();
+    
+    // Insert domain record
+    await db.insert(domains).values({
+      id: domainId,
+      name: data.name,
+      verificationToken,
+      verificationStatus: "PENDING",
+      ...ownerData
+    });
+    
+    // Fetch the newly created domain
+    const createdDomain = await db.query.domains.findFirst({
+      where: eq(domains.id, domainId)
     });
 
-    console.log(`[Domain] Created: ${domain.id} (${domain.name})`);
-    
     revalidatePath("/domains");
-    return { data: domain };
+    return { data: createdDomain };
   } catch (error) {
     console.error("[Domain] Creation failed:", error);
     return { error: "Failed to create domain" };
@@ -90,16 +94,12 @@ export const getUserDomains = cache(async () => {
   if (!user) return { error: "Unauthorized" };
 
   try {
-    const domains = await db.domain.findMany({
-      where: {
-        userId: user.id
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
+    const userDomains = await db.query.domains.findMany({
+      where: eq(domains.userId, user.id),
+      orderBy: (domains, { desc }) => [desc(domains.createdAt)]
     });
     
-    return { data: domains };
+    return { data: userDomains };
   } catch (error) {
     console.error("[Domain] Fetch failed:", error);
     return { error: "Failed to fetch domains" };
@@ -113,27 +113,23 @@ export const getProjectDomains = cache(async (projectId: string) => {
 
   try {
     // Check if user has access to the project
-    const projectAccess = await db.projectAccess.findFirst({
-      where: {
-        projectId,
-        userId: user.id
-      }
+    const projectAccessRecord = await db.query.projectAccess.findFirst({
+      where: and(
+        eq(projectAccess.projectId, projectId),
+        eq(projectAccess.userId, user.id)
+      )
     });
 
-    if (!projectAccess) {
+    if (!projectAccessRecord) {
       return { error: "You don't have access to this project" };
     }
 
-    const domains = await db.domain.findMany({
-      where: {
-        projectId
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
+    const projectDomains = await db.query.domains.findMany({
+      where: eq(domains.projectId, projectId),
+      orderBy: (domains, { desc }) => [desc(domains.createdAt)]
     });
     
-    return { data: domains };
+    return { data: projectDomains };
   } catch (error) {
     console.error("[Domain] Fetch failed:", error);
     return { error: "Failed to fetch domains" };
@@ -146,21 +142,30 @@ export const getDomainById = cache(async (id: string) => {
   if (!user) return { error: "Unauthorized" };
 
   try {
-    const domain = await db.domain.findFirst({
-      where: {
-        id,
-        OR: [
-          { userId: user.id },
-          { 
-            projectId: {
-              in: await db.projectAccess.findMany({
-                where: { userId: user.id },
-                select: { projectId: true }
-              }).then(access => access.map(a => a.projectId))
-            }
-          }
-        ]
+    // Get all projects the user has access to
+    const userProjectAccess = await db.query.projectAccess.findMany({
+      where: eq(projectAccess.userId, user.id),
+      columns: {
+        projectId: true
       }
+    });
+    
+    const projectIds = userProjectAccess.map(access => access.projectId);
+    
+    // Find domain where it's owned by the user or in a project they have access to
+    const domain = await db.query.domains.findFirst({
+      where: or(
+        and(
+          eq(domains.id, id),
+          eq(domains.userId, user.id)
+        ),
+        and(
+          eq(domains.id, id),
+          projectIds.length > 0 ? 
+            inArray(domains.projectId, projectIds) : 
+            eq(domains.id, "impossible-match") // Will never match if no project ids
+        )
+      )
     });
     
     if (!domain) {
@@ -182,21 +187,30 @@ export async function updateDomain(id: string, data: { name?: string }) {
   try {
     console.log(`[Domain] Updating: ${id}`);
     
-    const domain = await db.domain.findFirst({
-      where: {
-        id,
-        OR: [
-          { userId: user.id },
-          { 
-            projectId: {
-              in: await db.projectAccess.findMany({
-                where: { userId: user.id },
-                select: { projectId: true }
-              }).then(access => access.map(a => a.projectId))
-            }
-          }
-        ]
+    // Get all projects the user has access to
+    const userProjectAccess = await db.query.projectAccess.findMany({
+      where: eq(projectAccess.userId, user.id),
+      columns: {
+        projectId: true
       }
+    });
+    
+    const projectIds = userProjectAccess.map(access => access.projectId);
+    
+    // Find domain where it's owned by the user or in a project they have access to
+    const domain = await db.query.domains.findFirst({
+      where: or(
+        and(
+          eq(domains.id, id),
+          eq(domains.userId, user.id)
+        ),
+        and(
+          eq(domains.id, id),
+          projectIds.length > 0 ? 
+            inArray(domains.projectId, projectIds) : 
+            eq(domains.id, "impossible-match")
+        )
+      )
     });
 
     if (!domain) {
@@ -206,16 +220,21 @@ export async function updateDomain(id: string, data: { name?: string }) {
     // Only allow updating the name
     const { name } = data;
     
-    const updated = await db.domain.update({
-      where: { id },
-      data: { name }
+    // Update the domain
+    await db.update(domains)
+      .set({ name })
+      .where(eq(domains.id, id));
+
+    // Fetch the updated domain
+    const updatedDomain = await db.query.domains.findFirst({
+      where: eq(domains.id, id)
     });
 
-    console.log(`[Domain] Updated: ${updated.id}`);
+    console.log(`[Domain] Updated: ${id}`);
     
     revalidatePath("/domains");
     revalidatePath(`/domains/${id}`);
-    return { data: updated };
+    return { data: updatedDomain };
   } catch (error) {
     console.error("[Domain] Update failed:", error);
     return { error: "Failed to update domain" };
@@ -230,30 +249,38 @@ export async function deleteDomain(id: string) {
   try {
     console.log(`[Domain] Deleting: ${id}`);
     
-    const domain = await db.domain.findFirst({
-      where: {
-        id,
-        OR: [
-          { userId: user.id },
-          { 
-            projectId: {
-              in: await db.projectAccess.findMany({
-                where: { userId: user.id },
-                select: { projectId: true }
-              }).then(access => access.map(a => a.projectId))
-            }
-          }
-        ]
+    // Get all projects the user has access to
+    const userProjectAccess = await db.query.projectAccess.findMany({
+      where: eq(projectAccess.userId, user.id),
+      columns: {
+        projectId: true
       }
+    });
+    
+    const projectIds = userProjectAccess.map(access => access.projectId);
+    
+    // Find domain where it's owned by the user or in a project they have access to
+    const domain = await db.query.domains.findFirst({
+      where: or(
+        and(
+          eq(domains.id, id),
+          eq(domains.userId, user.id)
+        ),
+        and(
+          eq(domains.id, id),
+          projectIds.length > 0 ? 
+            inArray(domains.projectId, projectIds) : 
+            eq(domains.id, "impossible-match") // Will never match if no project ids
+        )
+      )
     });
 
     if (!domain) {
       return { error: "Domain not found" };
     }
 
-    await db.domain.delete({
-      where: { id }
-    });
+    await db.delete(domains)
+      .where(eq(domains.id, id));
 
     console.log(`[Domain] Deleted: ${id}`);
     
@@ -273,21 +300,30 @@ export async function checkDomainVerification(id: string) {
   try {
     console.log(`[Verification] Checking: ${id}`);
     
-    const domain = await db.domain.findFirst({
-      where: {
-        id,
-        OR: [
-          { userId: user.id },
-          { 
-            projectId: {
-              in: await db.projectAccess.findMany({
-                where: { userId: user.id },
-                select: { projectId: true }
-              }).then(access => access.map(a => a.projectId))
-            }
-          }
-        ]
+    // Get all projects the user has access to
+    const userProjectAccess = await db.query.projectAccess.findMany({
+      where: eq(projectAccess.userId, user.id),
+      columns: {
+        projectId: true
       }
+    });
+    
+    const projectIds = userProjectAccess.map(access => access.projectId);
+    
+    // Find domain where it's owned by the user or in a project they have access to
+    const domain = await db.query.domains.findFirst({
+      where: or(
+        and(
+          eq(domains.id, id),
+          eq(domains.userId, user.id)
+        ),
+        and(
+          eq(domains.id, id),
+          projectIds.length > 0 ? 
+            inArray(domains.projectId, projectIds) : 
+            eq(domains.id, "impossible-match")
+        )
+      )
     });
 
     if (!domain) {
@@ -324,12 +360,16 @@ export async function checkDomainVerification(id: string) {
         console.log(`[Verification] Success: ${domain.name}`);
         
         // Update domain as verified
-        await db.domain.update({
-          where: { id },
-          data: {
-            verifiedAt: new Date(),
+        await db.update(domains)
+          .set({
+            verifiedAt: new Date().toISOString(),
             verificationStatus: "VERIFIED"
-          }
+          })
+          .where(eq(domains.id, id));
+        
+        // Fetch updated domain
+        const updatedDomain = await db.query.domains.findFirst({
+          where: eq(domains.id, id)
         });
         
         revalidatePath("/domains");
@@ -372,21 +412,30 @@ export async function regenerateVerificationToken(id: string) {
   try {
     console.log(`[Verification] Regenerating token: ${id}`);
     
-    const domain = await db.domain.findFirst({
-      where: {
-        id,
-        OR: [
-          { userId: user.id },
-          { 
-            projectId: {
-              in: await db.projectAccess.findMany({
-                where: { userId: user.id },
-                select: { projectId: true }
-              }).then(access => access.map(a => a.projectId))
-            }
-          }
-        ]
+    // Get all projects the user has access to
+    const userProjectAccess = await db.query.projectAccess.findMany({
+      where: eq(projectAccess.userId, user.id),
+      columns: {
+        projectId: true
       }
+    });
+    
+    const projectIds = userProjectAccess.map(access => access.projectId);
+    
+    // Find domain where it's owned by the user or in a project they have access to
+    const domain = await db.query.domains.findFirst({
+      where: or(
+        and(
+          eq(domains.id, id),
+          eq(domains.userId, user.id)
+        ),
+        and(
+          eq(domains.id, id),
+          projectIds.length > 0 ? 
+            inArray(domains.projectId, projectIds) : 
+            eq(domains.id, "impossible-match")
+        )
+      )
     });
 
     if (!domain) {
@@ -397,21 +446,25 @@ export async function regenerateVerificationToken(id: string) {
     const verificationToken = generateVerificationToken();
     
     // Update domain with new token
-    const updated = await db.domain.update({
-      where: { id },
-      data: {
+    await db.update(domains)
+      .set({
         verificationToken,
         verificationStatus: "PENDING",
         verifiedAt: null
-      }
-    });
+      })
+      .where(eq(domains.id, id));
 
-    console.log(`[Verification] Token regenerated: ${updated.id}`);
+    // Fetch the updated domain
+    const updatedDomain = await db.query.domains.findFirst({
+      where: eq(domains.id, id)
+    });
+    
+    console.log(`[Verification] Token regenerated: ${id}`);
     
     revalidatePath("/domains");
     revalidatePath(`/domains/${id}`);
     
-    return { data: updated };
+    return { data: updatedDomain };
   } catch (error) {
     console.error("[Verification] Token regeneration failed:", error);
     return { error: "Failed to regenerate verification token" };

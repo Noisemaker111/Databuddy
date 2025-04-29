@@ -19,14 +19,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import React from "react";
 import { useRouter } from "next/navigation";
 
-type Domain = {
-  id: string;
-  name: string;
-  verificationStatus: "PENDING" | "VERIFIED" | "FAILED";
-  verificationToken: string | null;
-  verifiedAt: Date | null;
-  createdAt: Date;
-};
+import type { domains } from "@databuddy/db";
+
+type Domain = typeof domains.$inferSelect;
 
 type VerificationResult = {
   verified: boolean;

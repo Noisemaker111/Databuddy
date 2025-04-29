@@ -1,9 +1,5 @@
 import { clickHouse } from '../clickhouse/client';
 
-const result = await clickHouse.query({
-  query: 'SELECT * FROM websites',
-});
-
-const connects =
+const result = await clickHouse.ping();
 
 console.log(result);

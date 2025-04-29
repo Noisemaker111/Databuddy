@@ -5,8 +5,9 @@ import { ThemeProvider } from "next-themes";
 import { useSession } from "@databuddy/auth/client"
 import { useState, createContext, useContext } from "react";
 import type { ReactNode } from "react";
-import type { Session } from "@databuddy/db";
+import type { session } from "@databuddy/db";
 
+type Session = typeof session.$inferSelect;
 // Default query client configuration
 const defaultQueryClientOptions = {
   defaultOptions: {
