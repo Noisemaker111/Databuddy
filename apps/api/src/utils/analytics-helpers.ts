@@ -26,45 +26,57 @@ export function calculateWeightedBounceRate(
 }
 
 /**
- * Format time in seconds to a human-readable string
- * Carefully detects if the value is in milliseconds and converts appropriately
+ * Format time from seconds to a more readable string
+ * @param seconds Time in seconds
+ * @returns Formatted time string
  */
-export function formatTime(timeValue: number): string {
-  if (!timeValue || Number.isNaN(timeValue)) {
+export function formatTime(seconds: number): string {
+  if (!seconds || seconds < 0) {
     return '0s';
   }
   
-  // Always assume values over 1000 are milliseconds and convert them
-  // This ensures consistency across the application
-  const seconds = timeValue;
-  
-  // Now format the seconds value
-  if (seconds < 60) {
-    return `${Math.round(seconds)}s`;
-  } 
-  
-  if (seconds < 3600) {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.round(seconds % 60);
-    return `${minutes}m ${remainingSeconds}s`;
-  } 
-  
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = Math.round(seconds % 60);
-  return `${hours}h ${minutes}m ${remainingSeconds}s`;
+  const remainingSeconds = Math.floor(seconds % 60);
+  
+  let result = '';
+  
+  if (hours > 0) {
+    result += `${hours}h `;
+  }
+  
+  if (minutes > 0 || hours > 0) {
+    result += `${minutes}m `;
+  }
+  
+  result += `${remainingSeconds}s`;
+  
+  return result;
 }
 
 /**
- * Format performance metrics with appropriate units
+ * Format average session duration from seconds to a readable string
+ * This is a wrapper around formatTime that ensures consistent formatting
+ * @param sessionDuration Time in seconds
+ * @returns Formatted time string
  */
-export function formatPerformanceMetric(value: number, unit = 'ms'): string {
+export function formatAvgSessionDuration(sessionDuration: number): string {
+  return formatTime(sessionDuration || 0);
+}
+
+/**
+ * Format performance metric value based on type
+ * @param value Metric value in milliseconds
+ * @param suffix Optional suffix to add (default is 'ms')
+ * @returns Formatted metric string
+ */
+export function formatPerformanceMetric(value: number, suffix: string = 'ms'): string {
   if (!value || Number.isNaN(value)) {
-    return `0${unit}`;
+    return `0${suffix}`;
   }
   
-  if (value < 1000 || unit !== 'ms') {
-    return `${Math.round(value)}${unit}`;
+  if (value < 1000 || suffix !== 'ms') {
+    return `${Math.round(value)}${suffix}`;
   }
   
   return `${(value / 1000).toFixed(2)}s`;
@@ -85,7 +97,7 @@ export function formatAnalyticsEntry(entry: any, dateField = 'date'): any {
     bounce_rate: Math.round((entry.bounce_rate || 0) * 10) / 10,
     bounce_rate_pct: `${Math.round((entry.bounce_rate || 0) * 10) / 10}%`,
     avg_session_duration: Math.round(duration),
-    avg_session_duration_formatted: formatTime(duration)
+    avg_session_duration_formatted: formatAvgSessionDuration(duration)
   };
 }
 

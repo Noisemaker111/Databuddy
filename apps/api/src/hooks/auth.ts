@@ -56,14 +56,16 @@ export function isValidOrigin(origin: string, domain: string): boolean {
   if (!origin) return true;
   
   try {
-    // Try to parse the domain as a URL if it looks like one
+    // Normalize domain by removing protocol if present and handling ports
     let domainHostname = domain;
     if (domain.startsWith('http://') || domain.startsWith('https://')) {
-      domainHostname = new URL(domain).hostname;
+      const domainUrl = new URL(domain);
+      domainHostname = domainUrl.hostname + (domainUrl.port ? `:${domainUrl.port}` : '');
     }
     
-    // Get hostname from origin
-    const hostname = new URL(origin).hostname;
+    // Get hostname and port from origin
+    const originUrl = new URL(origin);
+    const hostname = originUrl.hostname + (originUrl.port ? `:${originUrl.port}` : '');
     
     // Check exact domain match
     if (hostname === domainHostname) return true;
@@ -152,7 +154,8 @@ export const websiteAuthHook = (): MiddlewareHandler<{
       
       // Validate origin against domain if origin header is present
       if (origin && !isValidOrigin(origin, website.domain)) {
-        logger.warn('Origin mismatch', { 
+        logger.warn({
+          message: 'Origin mismatch',
           clientId, 
           origin, 
           expectedDomain: website.domain 

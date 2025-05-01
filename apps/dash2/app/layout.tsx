@@ -1,10 +1,8 @@
-// import "@/app/once-ui/styles/index.scss";
-// import "@/app/once-ui/tokens/index.scss";
+import "./globals.css";
 
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import NextTopLoader from 'nextjs-toploader';
-import "./globals.css";
 import { Toaster } from "sonner";
 import Providers from "./providers";
 import Script from "next/script";
@@ -16,7 +14,7 @@ const inter = Inter({
 });
 
 const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
+  subsets: ["latin"], 
   display: "swap",
   variable: "--font-jetbrains-mono",
 });
@@ -46,7 +44,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  
   const isLocalhost = process.env.NODE_ENV === 'development';
 
   return (
