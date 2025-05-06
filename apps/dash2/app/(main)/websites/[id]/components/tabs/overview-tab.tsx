@@ -11,6 +11,7 @@ import {
   LayoutDashboard
 } from "lucide-react";
 import { differenceInDays } from "date-fns";
+import { useRouter } from "next/navigation";
 
 import { StatCard } from "@/components/analytics/stat-card";
 import { MetricsChart } from "@/components/charts/metrics-chart";
@@ -29,6 +30,9 @@ import {
 } from "../utils/analytics-helpers";
 import { MetricToggles, ExternalLinkButton, BORDER_RADIUS } from "../utils/ui-components";
 import type { FullTabProps, MetricPoint } from "../utils/types";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+
 // Define trend calculation return type
 interface TrendCalculation {
   visitors?: number;
@@ -38,6 +42,40 @@ interface TrendCalculation {
   bounce_rate?: number;
   session_duration?: number;
   pages_per_session?: number;
+}
+
+// Add UnauthorizedAccessError component
+function UnauthorizedAccessError() {
+  const router = useRouter();
+  
+  return (
+    <Card className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/50">
+      <CardHeader className="pb-2">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
+            <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+          </div>
+          <div>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription className="mt-1">
+              You don't have permission to access this website's analytics.
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-2">
+        <p className="text-sm text-muted-foreground mb-4">
+          If you believe this is a mistake, please contact the website owner or your administrator to request access.
+        </p>
+        <Button 
+          onClick={() => router.push("/websites")}
+          className="w-full sm:w-auto"
+        >
+          Return to Websites
+        </Button>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function WebsiteOverviewTab({
@@ -51,7 +89,7 @@ export function WebsiteOverviewTab({
   const [adjustedDateRange, setAdjustedDateRange] = useState(dateRange);
   
   // Fetch analytics data
-  const { analytics, loading, refetch } = useWebsiteAnalytics(websiteId, adjustedDateRange);
+  const { analytics, loading, error, refetch } = useWebsiteAnalytics(websiteId, adjustedDateRange);
 
   // Chart metric visibility
   const [visibleMetrics, setVisibleMetrics] = useState<Record<string, boolean>>({
@@ -106,6 +144,11 @@ export function WebsiteOverviewTab({
   // 1. The API is loading
   // 2. We are refreshing data
   const isLoading = loading.summary || isRefreshing;
+
+  // Show unauthorized access error
+  if (error instanceof Error && error.message === 'UNAUTHORIZED_ACCESS') {
+    return <UnauthorizedAccessError />;
+  }
 
   // Format data for UI
   const deviceData = useMemo(() => 

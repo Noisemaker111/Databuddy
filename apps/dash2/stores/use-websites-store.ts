@@ -57,6 +57,7 @@ interface WebsitesState {
   setWebsites: (websites: Website[]) => void;
   setSelectedWebsite: (website: Website | null) => void;
   setShowVerificationDialog: (show: boolean) => void;
+  reset: () => void;
   
   // Loading States
   setIsLoading: (loading: boolean) => void;
@@ -88,6 +89,18 @@ export const useWebsitesStore = create<WebsitesState>((set) => ({
   setWebsites: (websites) => set({ websites }),
   setSelectedWebsite: (website) => set({ selectedWebsite: website }),
   setShowVerificationDialog: (show) => set({ showVerificationDialog: show }),
+  reset: () => set({
+    websites: [],
+    selectedWebsite: null,
+    isLoading: true,
+    isError: false,
+    isCreating: false,
+    isUpdating: false,
+    isDeleting: false,
+    isVerifying: false,
+    isRegenerating: false,
+    showVerificationDialog: false,
+  }),
   
   // Loading States
   setIsLoading: (loading) => set({ isLoading: loading }),

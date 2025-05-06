@@ -6,6 +6,7 @@ import { useSession } from "@databuddy/auth/client"
 import { useState, createContext, useContext, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { session } from "@databuddy/db";
+import { useWebsitesStore } from "@/stores/use-websites-store";
 
 type Session = typeof session.$inferSelect;
 // Default query client configuration
@@ -15,8 +16,8 @@ const defaultQueryClientOptions = {
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
       refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
+      refetchOnMount: true,
+      refetchOnReconnect: true,
       retry: 1,
       retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
@@ -53,6 +54,7 @@ const SessionProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!session && !isPending) {
       queryClient.clear();
+      useWebsitesStore.getState().reset();
     }
   }, [session, isPending]);
   

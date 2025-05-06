@@ -16,12 +16,12 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html>
+    <html lang="en">
       <body>
         <div className="min-h-screen flex items-center justify-center p-6 bg-background">
           <div className="max-w-md w-full space-y-6">
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center">
+              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
                 <AlertTriangle className="h-8 w-8 text-red-600" />
               </div>
               
@@ -45,7 +45,9 @@ export default function GlobalError({
               <Button
                 variant="outline"
                 className="sm:flex-1"
-                onClick={() => window.location.href = "/"}
+                onClick={() => {
+                  window.location.href = "/";
+                }}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Go to Dashboard

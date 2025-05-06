@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { useSession, signOut } from '@databuddy/auth/client';
 import { loginWithEmail, loginWithGoogle, loginWithGithub, registerWithEmail } from '@databuddy/auth/client';
 import type { AuthUser } from '@databuddy/auth';
+import { useWebsitesStore } from './use-websites-store';
 
 interface AuthStore {
   // State
@@ -111,6 +112,8 @@ export const useAuth = create<AuthStore>((set, get) => ({
     try {
       await signOut();
       set({ user: null, isAuthenticated: false });
+      // Clear all stores
+      useWebsitesStore.getState().reset();
       if (options?.router && options.redirectUrl) {
         options.router.push(options.redirectUrl);
       }

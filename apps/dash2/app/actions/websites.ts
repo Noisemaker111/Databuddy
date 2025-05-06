@@ -135,42 +135,42 @@ function handleError(context: string, error: unknown): ApiResponse<never> {
 }
 
 // Helper to invalidate all relevant website caches after modifications
-async function invalidateWebsiteCaches(userId?: string | null, projectId?: string | null): Promise<void> {
-  try {
-    // Clear user websites cache if userId provided
-    if (userId) {
-      await getUserWebsites.clearAll();
-    }
+// async function invalidateWebsiteCaches(userId?: string | null, projectId?: string | null): Promise<void> {
+//   try {
+//     // Clear user websites cache if userId provided
+//     if (userId) {
+//       await getUserWebsites.clear(userId); 
+//     }
     
-    // Clear project websites cache if projectId provided
-    if (projectId) {
-      await getProjectWebsites.clear(projectId);
-    }
+//     // Clear project websites cache if projectId provided
+//     if (projectId) {
+//       await getProjectWebsites.clear(projectId);
+//     }
     
-    // Clear individual website caches for affected entities
-    const conditions = [];
-    if (userId) conditions.push({ userId });
-    if (projectId) conditions.push({ projectId });
+//     // Clear individual website caches for affected entities
+//     const conditions = [];
+//     if (userId) conditions.push({ userId });
+//     if (projectId) conditions.push({ projectId });
     
-    if (conditions.length) {
-      const websiteResults = await db.query.websites.findMany({
-        where: userId && projectId ? 
-          or(eq(websites.userId, userId), eq(websites.projectId, projectId)) :
-          userId ? eq(websites.userId, userId) : 
-          projectId ? eq(websites.projectId, projectId) : undefined,
-        columns: {
-          id: true
-        }
-      });
+//     if (conditions.length) {
+//       const websiteResults = await db.query.websites.findMany({
+//         where: userId && projectId ? 
+//           or(eq(websites.userId, userId), eq(websites.projectId, projectId)) :
+//           userId ? eq(websites.userId, userId) : 
+//           projectId ? eq(websites.projectId, projectId) : undefined,
+//         columns: {
+//           id: true
+//         }
+//       });
       
-      for (const { id } of websiteResults) {
-        await getWebsiteById.clear(id);
-      }
-    }
-  } catch (error) {
-    console.error("[Website] Error invalidating caches:", error);
-  }
-}
+//       for (const { id } of websiteResults) {
+//         await getWebsiteById.clear(id);
+//       }
+//     }
+//   } catch (error) {
+//     console.error("[Website] Error invalidating caches:", error);
+//   }
+// }
 
 // Create website with proper revalidation and cache invalidation
 export async function createWebsite(data: WebsiteData): Promise<ApiResponse<any>> {
@@ -245,7 +245,7 @@ export async function createWebsite(data: WebsiteData): Promise<ApiResponse<any>
     }
     
     // Invalidate caches and revalidate paths
-    await invalidateWebsiteCaches(ownerData.userId, ownerData.projectId);
+    // await invalidateWebsiteCaches(ownerData.userId, ownerData.projectId);
     revalidatePath("/websites");
     
     return { data: result };
@@ -255,8 +255,7 @@ export async function createWebsite(data: WebsiteData): Promise<ApiResponse<any>
 }
 
 // Get all websites for current user with Redis caching
-export const getUserWebsites = cacheable(
-  async (userId?: string | null): Promise<ApiResponse<any>> => {
+export const getUserWebsites = async (userId?: string | null): Promise<ApiResponse<any>> => {
     const user = userId ? { id: userId } : await getUser();
     if (!user) return { error: "Unauthorized" };
 
@@ -269,7 +268,6 @@ export const getUserWebsites = cacheable(
       // Fetch domain information for websites with domainId
       const websitesData = await Promise.all(
         userWebsites.map(async (website) => {
-          // Create a result object that includes any additional properties we might add
           const result: any = { ...website };
           
           if (website.domainId) {
@@ -278,9 +276,7 @@ export const getUserWebsites = cacheable(
             });
             
             if (domainRecord) {
-              // Ensure domain is stored correctly - in both properties
               result.domainData = domainRecord;
-              // Make sure domain property is a string
               result.domain = website.domain;
             }
           }
@@ -290,12 +286,10 @@ export const getUserWebsites = cacheable(
       );
       
       return { data: websitesData };
-    } catch (error) {
-      return handleError("fetch user websites", error);
-    }
-  },
-  { ...CACHE_CONFIG, prefix: 'user-websites' }
-);
+  } catch (error) {
+    return handleError("fetch user websites", error);
+  }
+}
 
 // Get all websites for a project with Redis caching
 export const getProjectWebsites = cacheable(
@@ -324,7 +318,6 @@ export const getProjectWebsites = cacheable(
       // Fetch domain information for websites with domainId
       const websitesData = await Promise.all(
         projectWebsites.map(async (website) => {
-          // Create a result object that includes any additional properties we might add
           const result: any = { ...website };
           
           if (website.domainId) {
@@ -333,9 +326,7 @@ export const getProjectWebsites = cacheable(
             });
             
             if (domainRecord) {
-              // Ensure domain is stored correctly - in both properties
-              result.domainData = domainRecord;
-              // Make sure domain property is a string
+                result.domainData = domainRecord;
               result.domain = website.domain;
             }
           }
@@ -473,7 +464,7 @@ export async function updateWebsite(id: string, data: WebsiteUpdateData): Promis
     }
 
     // Invalidate caches and revalidate paths
-    await invalidateWebsiteCaches(website.userId, website.projectId);
+    // await invalidateWebsiteCaches(website.userId, website.projectId);
     await getWebsiteById.clear(id);
     revalidatePath("/websites");
     revalidatePath(`/websites/${id}`);
@@ -495,16 +486,15 @@ export async function deleteWebsite(id: string): Promise<ApiResponse<{ success: 
       return { error: "Website not found" };
     }
 
-    // Store website info before deletion for cache invalidation
-    const websiteUserId = website.userId;
-    const websiteProjectId = website.projectId;
+    // const websiteUserId = website.userId;
+    // const websiteProjectId = website.projectId;
 
     // Delete website
     await db.delete(websites)
       .where(eq(websites.id, id));
 
     // Invalidate caches and revalidate paths
-    await invalidateWebsiteCaches(websiteUserId, websiteProjectId);
+    // await invalidateWebsiteCaches(websiteUserId, websiteProjectId);
     await getWebsiteById.clear(id);
     revalidatePath("/websites");
     
