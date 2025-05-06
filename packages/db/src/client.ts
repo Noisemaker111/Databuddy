@@ -5,4 +5,4 @@ import * as relations from '../drizzle/relations';
 // Combine schema and relations
 const fullSchema = { ...schema, ...relations };
 
-export const db = drizzle(process.env.DATABASE_URL, { schema: fullSchema });
+export const db = drizzle(process.env.DATABASE_URL as string, { schema: fullSchema });
