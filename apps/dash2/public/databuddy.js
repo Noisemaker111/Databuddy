@@ -135,8 +135,11 @@
             // Use directly provided version or fallback to safe default
             headers["databuddy-sdk-version"] = this.options.sdkVersion || "1.0.0";
             
+            // Debug log the API URL
+            console.log('Databuddy: Initializing with API URL:', this.options.apiUrl);
+            
             this.api = new c({
-                baseUrl: this.options.apiUrl || "https://api.databuddy.cc",
+                baseUrl: this.options.apiUrl,
                 defaultHeaders: headers,
                 // Pass retry config to HTTP client
                 maxRetries: this.options.enableRetries ? (this.options.maxRetries || 3) : 0,
@@ -547,20 +550,33 @@
                 }
                 
                 // Add client ID and SDK info as URL parameters since Beacon can't set headers
-                const baseUrl = this.api.baseUrl;
+                const baseUrl = this.options.apiUrl;
+                if (!baseUrl) {
+                    console.error('Databuddy: No API URL configured');
+                    return null;
+                }
+
+                console.log('Databuddy: Sending beacon to base URL:', baseUrl);
+
                 const clientId = this.options.clientId;
                 const sdkName = this.options.sdk || "web";
                 const sdkVersion = this.options.sdkVersion || "1.0.0";
                 
                 // Build URL with query parameters for authentication
-                const url = `${baseUrl}/basket?client_id=${encodeURIComponent(clientId)}&sdk_name=${encodeURIComponent(sdkName)}&sdk_version=${encodeURIComponent(sdkVersion)}`;
+                const url = new URL('/basket', baseUrl);
+                url.searchParams.set('client_id', clientId);
+                url.searchParams.set('sdk_name', sdkName);
+                url.searchParams.set('sdk_version', sdkVersion);
+                
+                console.log('Databuddy: Constructed URL:', url.toString());
+                
                 const data = JSON.stringify(pEvent);
                 
                 // Only try sendBeacon if it's available
                 if (navigator.sendBeacon) {
                     try {
                         const blob = new Blob([data], { type: 'application/json' });
-                        const success = navigator.sendBeacon(url, blob);
+                        const success = navigator.sendBeacon(url.toString(), blob);
                         
                         if (success) {
                             if (event.payload.name === 'page_exit') {
@@ -1060,13 +1076,16 @@
         trackAttributes() {
             this.isServer() || document.addEventListener("click", t => {
                 let r = t.target
-                  , i = r.closest("button")
+                  , i = r.closest("button") 
                   , n = r.closest("a")
                   , s = i?.getAttribute("data-track") ? i : n?.getAttribute("data-track") ? n : null;
                 if (s) {
                     const o = {};
-                    for (const p of s.attributes)
-                        p.name.startsWith("data-") && p.name !== "data-track" && (o[h(p.name.replace(/^data-/, ""))] = p.value);
+                    for (const p of s.attributes) {
+                        if (p.name.startsWith("data-") && p.name !== "data-track") {
+                            o[h(p.name.replace(/^data-/, ""))] = p.value;
+                        }
+                    }
                     const u = s.getAttribute("data-track");
                     u && this.track(u, o)
                 }
@@ -1075,7 +1094,8 @@
         screenView(t, r) {
             if (this.isServer()) return;
             
-            let i, n;
+            let i;
+            let n;
             
             if (this.lastPath && this.pageEngagementStart && this.options.trackEngagement) {
                 const time_on_page = Math.round((Date.now() - this.pageEngagementStart) / 1000);
@@ -1093,7 +1113,7 @@
             
             this.pageEngagementStart = Date.now();
             
-            typeof t === "string" ? (i = t, n = r) : (i = window.location.href, n = t);
+            typeof t === "string" ? (i = t, n = r) : (i = window.location.href, n = t); 
             
             if (this.lastPath !== i) {
                 this.lastPath = i;
@@ -1125,7 +1145,7 @@
         if (typeof window === 'undefined') return;
             
         // Get current script tag
-        const currentScript = document.currentScript || (function() {
+        const currentScript = document.currentScript || (() => {
             const scripts = document.getElementsByTagName('script');
             return scripts[scripts.length - 1];
         })();
@@ -1148,13 +1168,19 @@
                     // Convert kebab-case to camelCase
                     const key = attr.name.substring(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
                     
-                    // Convert string values to appropriate types
-                    let value = attr.value;
-                    if (value === 'true') value = true;
-                    if (value === 'false') value = false;
-                    if (!Number.isNaN(value) && value !== '') value = Number(value);
+                    // Get the raw value
+                    const value = attr.value;
                     
-                    dataAttributes[key] = value;
+                    // Only convert to number if it's a numeric string
+                    if (value === 'true') {
+                        dataAttributes[key] = true;
+                    } else if (value === 'false') {
+                        dataAttributes[key] = false;
+                    } else if (/^\d+$/.test(value)) {
+                        dataAttributes[key] = Number(value);
+                    } else {
+                        dataAttributes[key] = value;
+                    }
                 }
             }
             
@@ -1165,12 +1191,16 @@
                 const params = new URLSearchParams(srcUrl.search);
                 
                 params.forEach((value, key) => {
-                    // Convert string values to appropriate types
-                    if (value === 'true') value = true;
-                    if (value === 'false') value = false;
-                    if (!Number.isNaN(value) && value !== '') value = Number(value);
-                    
-                    urlParams[key] = value;
+                    // Only convert to number if it's a numeric string
+                    if (value === 'true') {
+                        urlParams[key] = true;
+                    } else if (value === 'false') {
+                        urlParams[key] = false;
+                    } else if (/^\d+$/.test(value)) {
+                        urlParams[key] = Number(value);
+                    } else {
+                        urlParams[key] = value;
+                    }
                 });
             } catch (e) {
                 // Ignore URL parsing errors
@@ -1182,6 +1212,14 @@
                 ...urlParams,
                 ...dataAttributes
             };
+
+            // Debug log the configuration
+            console.log('Databuddy: Script configuration:', {
+                apiUrl: config.apiUrl,
+                clientId: config.clientId,
+                sdk: config.sdk,
+                sdkVersion: config.sdkVersion
+            });
             
             // Ensure sampling rate is a valid proportion between 0 and 1
             if (config.samplingRate !== undefined) {
@@ -1211,6 +1249,18 @@
                 // Keep batch timeout between 100ms and 30000ms (30 seconds)
                 if (config.batchTimeout < 100) config.batchTimeout = 100;
                 if (config.batchTimeout > 30000) config.batchTimeout = 30000;
+            }
+
+            // Validate API URL
+            if (!config.apiUrl) {
+                console.error('Databuddy: Missing required API URL configuration');
+            } else {
+                try {
+                    new URL(config.apiUrl);
+                } catch (e) {
+                    console.error('Databuddy: Invalid API URL configuration:', config.apiUrl);
+                    config.apiUrl = undefined;
+                }
             }
             
             return config;

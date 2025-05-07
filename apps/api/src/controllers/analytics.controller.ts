@@ -10,7 +10,7 @@ import { parseUserAgent } from '../utils/user-agent';
 import { getGeoData } from '../utils/ip-geo';
 import { getRedisCache } from '@databuddy/redis';
 import { logger } from '../lib/logger';
-import { nanoid } from 'nanoid';
+import { randomUUID } from 'node:crypto';
 
 /**
  * Redis client wrapper for recent events cache
@@ -98,7 +98,7 @@ export async function processEvent(c: Context) {
     const geo = await getGeoData(enriched.ip || '');
     // Map event data to ClickHouse columns
     const eventData = {
-      id: nanoid(),
+      id: randomUUID(),
       client_id: website.id,
       event_name: payload.name || event.type,
       anonymous_id: payload.anonymousId || '',
@@ -175,7 +175,7 @@ export async function processEvent(c: Context) {
 
     return c.json({ status: 'success' });
   } catch (error) {
-    logger.error('Error processing event:', { error });
+    logger.error({message: 'Error processing event:', error });
     return c.json({ status: 'error', message: 'Failed to process event' }, 500);
   }
 }

@@ -101,10 +101,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable} h-full`}>
       <head />
-      <Script 
+      <Script
         src={isLocalhost ? "http://localhost:3000/databuddy.js" : "https://app.databuddy.cc/databuddy.js"}
         data-client-id={isLocalhost ? "5ced32e5-0219-4e75-a18a-ad9826f85698" : "3ed1fce1-5a56-4cb6-a977-66864f6d18e3"}
-        data-api-url={isLocalhost ? process.env.NEXT_PUBLIC_API_URL : "https://api.databuddy.cc"}
+        data-api-url={isLocalhost ? "http://localhost:4000" : "https://api.databuddy.cc"}
         data-track-screen-views="true"
         data-track-performance="true"
         data-track-web-vitals="false"
@@ -113,6 +113,7 @@ export default function RootLayout({
         // data-batch-size="20"
         // data-batch-timeout="5000"
         strategy="afterInteractive"
+        defer
       />
       <body className="antialiased h-full min-h-screen bg-background text-foreground flex flex-col">
         <Providers>
