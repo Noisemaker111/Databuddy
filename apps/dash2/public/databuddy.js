@@ -67,12 +67,10 @@
                     const jitter = Math.random() * 0.3 + 0.85; // 0.85-1.15 randomization factor
                     const delay = this.initialRetryDelay * (2 ** retryCount) * jitter;
                     
-                    console.debug(`Databuddy: Retrying request (${retryCount+1}/${this.maxRetries}) in ${Math.round(delay)}ms`);
                     await new Promise(resolve => setTimeout(resolve, delay));
                     return this.post(url, data, options, retryCount + 1);
                 }
                 
-                console.error(`Databuddy: ${this.maxRetries > 0 ? `Max retries (${this.maxRetries}) reached for` : "Error with no retries for"} ${url}:`, error);
                 return null;
             }
         }
@@ -135,8 +133,6 @@
             // Use directly provided version or fallback to safe default
             headers["databuddy-sdk-version"] = this.options.sdkVersion || "1.0.0";
             
-            // Debug log the API URL
-            console.log('Databuddy: Initializing with API URL:', this.options.apiUrl);
             
             this.api = new c({
                 baseUrl: this.options.apiUrl,
@@ -338,19 +334,15 @@
         addToBatch(event) {
             // Add event to batch queue
             this.batchQueue.push(event);
-            
-            const eventName = event.payload.name || event.type;
-            console.log(`Databuddy: Added ${eventName} event to batch queue (${this.batchQueue.length}/${this.options.batchSize})`);
+        
             
             // Set a timer to flush the batch if not already set
             if (this.batchTimer === null) {
-                console.debug(`Databuddy: Starting batch timer for ${this.options.batchTimeout}ms`);
                 this.batchTimer = setTimeout(() => this.flushBatch(), this.options.batchTimeout);
             }
             
             // If batch queue has reached the max size, flush it immediately
             if (this.batchQueue.length >= this.options.batchSize) {
-                console.debug(`Databuddy: Batch queue reached max size (${this.options.batchSize}), flushing immediately`);
                 this.flushBatch();
             }
             
@@ -366,7 +358,6 @@
             
             // If there are no events in the batch, do nothing
             if (this.batchQueue.length === 0) {
-                console.debug("Databuddy: No events to flush in batch queue");
                 return;
             }
             
@@ -374,17 +365,8 @@
             const batchEvents = [...this.batchQueue];
             this.batchQueue = [];
             
-            console.log(`Databuddy: Flushing batch of ${batchEvents.length} events`, {
-                eventTypes: batchEvents.map(e => e.payload.name || e.type).join(', '),
-                batchingEnabled: this.options.enableBatching,
-                queueLength: batchEvents.length
-            });
-            
             // Send batch to API
             try {
-                console.debug(`Databuddy: Sending batch of ${batchEvents.length} events`);
-                
-                // Add keepalive for more reliable delivery
                 const fetchOptions = {
                     keepalive: true,
                     credentials: 'omit' // Avoid CORS issues
@@ -393,16 +375,13 @@
                 // Use sendBeacon if available for better reliability
                 const beaconResult = await this.sendBatchBeacon(batchEvents);
                 if (beaconResult) {
-                    console.debug("Databuddy: Successfully sent batch via beacon");
                     return beaconResult;
                 }
                 
                 // Fall back to fetch API
                 const result = await this.api.fetch("/basket/batch", batchEvents, fetchOptions);
-                console.debug(`Databuddy: Batch sent successfully via fetch, processed ${result?.processed?.length || 0} events`);
                 return result;
             } catch (error) {
-                console.error("Databuddy: Error sending batch", error);
                 
                 // Only retry for specific network errors, not server responses
                 // This helps prevent duplicate events if the server processed the batch but failed to respond
@@ -410,16 +389,12 @@
                 
                 if (isNetworkError) {
                     // If batch failed due to network error, try to send events individually
-                    console.debug(`Databuddy: Network error detected, attempting to send ${batchEvents.length} events individually`);
                     for (const event of batchEvents) {
                         // Mark event as force send to avoid infinite loop
                         event.isForceSend = true;
-                        this.send(event).catch(e => {
-                            console.warn("Databuddy: Failed to send individual event", e);
-                        });
+                        this.send(event);
                     }
                 } else {
-                    console.debug("Databuddy: Server error detected - will not retry to avoid duplicates");
                 }
                 
                 return null;
@@ -447,7 +422,6 @@
                     return { success: true };
                 }
             } catch (e) {
-                console.warn("Databuddy: Error using Beacon API for batch", e);
             }
             
             return null;
@@ -471,7 +445,6 @@
                 
                 // Skip event if random value exceeds sampling rate
                 if (samplingValue > this.options.samplingRate) {
-                    console.debug(`Databuddy: Skipping ${eventName} event due to sampling (${this.options.samplingRate * 100}%)`);
                     return { sampled: false };
                 }
             }
@@ -514,25 +487,20 @@
 
             // If batching is enabled, route through send method which handles batching
             if (this.options.enableBatching) {
-                console.debug(`Databuddy: Adding ${eventName} event to batch`);
                 return this.send(payload);
             }
             
             // Otherwise, use sendBeacon for direct sending
             try {
-                console.debug(`Databuddy: Tracking ${eventName} event with beacon`);
                 const beaconResult = await this.sendBeacon(payload);
                 if (beaconResult) {
-                    console.debug(`Databuddy: Successfully sent ${eventName} via beacon`);
                     return beaconResult;
                 }
             } catch (e) {
                 // If beacon fails, fall back to regular send
-                console.debug(`Databuddy: Beacon failed for ${eventName}, using fetch fallback`);
             }
             
             // Fallback to regular fetch
-            console.debug(`Databuddy: Tracking ${eventName} event with fetch+keepalive`);
             return this.send(payload);
         }
         
@@ -552,11 +520,9 @@
                 // Add client ID and SDK info as URL parameters since Beacon can't set headers
                 const baseUrl = this.options.apiUrl;
                 if (!baseUrl) {
-                    console.error('Databuddy: No API URL configured');
                     return null;
                 }
 
-                console.log('Databuddy: Sending beacon to base URL:', baseUrl);
 
                 const clientId = this.options.clientId;
                 const sdkName = this.options.sdk || "web";
@@ -568,7 +534,6 @@
                 url.searchParams.set('sdk_name', sdkName);
                 url.searchParams.set('sdk_version', sdkVersion);
                 
-                console.log('Databuddy: Constructed URL:', url.toString());
                 
                 const data = JSON.stringify(pEvent);
                 
@@ -579,20 +544,15 @@
                         const success = navigator.sendBeacon(url.toString(), blob);
                         
                         if (success) {
-                            if (event.payload.name === 'page_exit') {
-                                console.log("Databuddy: Successfully sent exit event via Beacon API");
-                            }
                             return { success: true };
                         }
                     } catch (e) {
-                        console.warn("Databuddy: Error using Beacon API", e);
                     }
                 }
                 
                 // If we got here, Beacon failed or isn't available
                 return null;
             } catch (error) {
-                console.error("Databuddy: Error in sendBeacon", error);
                 return null;
             }
         }
@@ -686,7 +646,6 @@
                 
                 return {};
             } catch (e) {
-                console.warn("Error collecting performance data:", e);
                 return {};
             }
         }
@@ -1098,14 +1057,6 @@
             let n;
             
             if (this.lastPath && this.pageEngagementStart && this.options.trackEngagement) {
-                const time_on_page = Math.round((Date.now() - this.pageEngagementStart) / 1000);
-                const previousPageData = {
-                    previous_path: this.lastPath,
-                    previous_time_on_page: time_on_page,
-                    previous_scroll_depth: Math.round(this.maxScrollDepth),
-                    previous_interaction_count: this.interactionCount
-                };
-                
                 this.maxScrollDepth = 0;
                 this.interactionCount = 0;
                 this.hasExitIntent = false;
@@ -1163,7 +1114,6 @@
             
             // If no current script found, return global config
             if (!currentScript) {
-                console.warn('Databuddy: Could not identify script tag, using global config only');
                 return globalConfig;
             }
             
@@ -1218,14 +1168,6 @@
                 ...urlParams,
                 ...dataAttributes
             };
-
-            // Debug log the configuration
-            console.log('Databuddy: Script configuration:', {
-                apiUrl: config.apiUrl,
-                clientId: config.clientId,
-                sdk: config.sdk,
-                sdkVersion: config.sdkVersion
-            });
             
             // Ensure sampling rate is a valid proportion between 0 and 1
             if (config.samplingRate !== undefined) {
@@ -1259,12 +1201,10 @@
 
             // Validate API URL
             if (!config.apiUrl) {
-                console.error('Databuddy: Missing required API URL configuration');
             } else {
                 try {
                     new URL(config.apiUrl);
                 } catch (e) {
-                    console.error('Databuddy: Invalid API URL configuration:', config.apiUrl);
                     config.apiUrl = undefined;
                 }
             }
@@ -1284,7 +1224,6 @@
                 return currentScript.getAttribute('data-client-id');
             }
             
-            console.error('Databuddy: Missing client ID');
             return null;
         }
         
@@ -1341,7 +1280,6 @@
             visibilityChangeTimeout = setTimeout(() => {
                 // Only flush batches, don't track exit
                 if (document.visibilityState === 'hidden') {
-                    console.log("Databuddy: Page hidden, flushing batch");
                     if (window.databuddy.options.enableBatching) {
                         window.databuddy.flushBatch();
                     }
@@ -1373,7 +1311,6 @@
                 clearTimeout(visibilityChangeTimeout);
             }
             
-            console.log("Databuddy: Page hiding, flushing batch");
             if (window.databuddy.options.enableBatching) {
                 window.databuddy.flushBatch();
             }
@@ -1393,7 +1330,6 @@
                 clearTimeout(visibilityChangeTimeout);
             }
             
-            console.log("Databuddy: Page unloading, flushing batch");
             if (window.databuddy.options.enableBatching) {
                 window.databuddy.flushBatch();
             }
