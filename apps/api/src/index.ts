@@ -5,6 +5,7 @@ import basketRouter from './routes/basket';
 import analyticsRouter from './routes/analytics';
 import { logger } from './lib/logger';
 import { logger as HonoLogger } from "hono/logger"
+import { sentry } from '@hono/sentry'
 
 // Define the Hono app with typed context
 type AppVariables = {
@@ -16,6 +17,7 @@ type AppVariables = {
 
 const app = new Hono<AppVariables>();
 
+app.use('*', sentry())
 app.use('*', HonoLogger());
 
 // Configure CORS - must be before auth routes

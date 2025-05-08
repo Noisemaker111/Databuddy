@@ -24,6 +24,7 @@
     "@databuddy/redis": "../../packages/redis",
     "@highlight-run/hono": "^1.0.4",
     "@hono/node-server": "^1.14.1",
+    "@hono/sentry": "^1.2.1",
     "@hono/zod-validator": "^0.4.3",
     "@logtail/edge": "^0.5.4",
     "@types/ua-parser-js": "^0.7.39",
