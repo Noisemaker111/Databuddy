@@ -56,33 +56,37 @@ export function isValidOrigin(origin: string, domain: string): boolean {
   if (!origin) return true;
   
   try {
-    // Normalize domain by removing protocol if present and handling ports
+    // Normalize domain by removing protocol if present and handling ports, then www.
     let domainHostname = domain;
     if (domain.startsWith('http://') || domain.startsWith('https://')) {
       const domainUrl = new URL(domain);
       domainHostname = domainUrl.hostname + (domainUrl.port ? `:${domainUrl.port}` : '');
     }
+    domainHostname = domainHostname.replace(/^www\./, '');
     
-    // Get hostname and port from origin
+    // Get hostname and port from origin, then remove www.
     const originUrl = new URL(origin);
-    const hostname = originUrl.hostname + (originUrl.port ? `:${originUrl.port}` : '');
+    let hostname = originUrl.hostname + (originUrl.port ? `:${originUrl.port}` : '');
+    hostname = hostname.replace(/^www\./, '');
     
+    logger.debug('isValidOrigin check', {
+      originalOrigin: origin,
+      normalizedOriginHostname: hostname,
+      originalDbDomain: domain,
+      normalizedDbDomainHostname: domainHostname
+    });
+
     // Check exact domain match
     if (hostname === domainHostname) return true;
     
     // Check if hostname is a subdomain of the registered domain
     // e.g., app.example.com should be valid for example.com
-    const domainParts = domainHostname.split('.');
-    const hostnameParts = hostname.split('.');
-    
-    if (hostnameParts.length >= domainParts.length) {
-      const hostnameSuffix = hostnameParts.slice(-domainParts.length).join('.');
-      return hostnameSuffix === domainHostname;
-    }
+    // This check needs to be against the normalized domainHostname
+    if (hostname.endsWith(`.${domainHostname}`)) return true;
     
     return false;
   } catch (error) {
-    logger.error('Invalid origin format', { origin, domain, error });
+    logger.error('Invalid origin format for isValidOrigin', { origin, domain, error });
     return false;
   }
 }
