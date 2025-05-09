@@ -19,7 +19,7 @@ app.use('*', cors({
   maxAge: 600,
 }));
 
-app.route('/basket', basketRouter);
+app.route('/', basketRouter);
 
 app.get('/health', (c) => c.json({ status: 'ok', version: '1.0.0' }));
 

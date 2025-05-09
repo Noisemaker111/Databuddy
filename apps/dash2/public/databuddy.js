@@ -323,7 +323,7 @@
             };
             
             // Try to send directly to API with keepalive
-            return this.api.fetch("/basket", pEvent, fetchOptions);
+            return this.api.fetch("/", pEvent, fetchOptions);
         }
         
         addToBatch(event) {
@@ -370,7 +370,7 @@
                     return beaconResult;
                 }
 
-                const result = await this.api.fetch("/basket/batch", batchEvents, fetchOptions);
+                const result = await this.api.fetch("/batch", batchEvents, fetchOptions);
                 return result;
             } catch (error) {
                 
@@ -399,7 +399,7 @@
                 const sdkName = this.options.sdk || "web";
                 const sdkVersion = this.options.sdkVersion || "1.0.0";
                 
-                const url = `${baseUrl}/basket/batch?client_id=${encodeURIComponent(clientId)}&sdk_name=${encodeURIComponent(sdkName)}&sdk_version=${encodeURIComponent(sdkVersion)}`;
+                const url = `${baseUrl}/batch?client_id=${encodeURIComponent(clientId)}&sdk_name=${encodeURIComponent(sdkName)}&sdk_version=${encodeURIComponent(sdkVersion)}`;
                 const data = JSON.stringify(events);
                 
                 const blob = new Blob([data], { type: 'application/json' });
@@ -516,7 +516,7 @@
                 const sdkVersion = this.options.sdkVersion || "1.0.0";
                 
                 // Build URL with query parameters for authentication
-                const url = new URL('/basket', baseUrl);
+                const url = new URL('/', baseUrl);
                 url.searchParams.set('client_id', clientId);
                 url.searchParams.set('sdk_name', sdkName);
                 url.searchParams.set('sdk_version', sdkVersion);
