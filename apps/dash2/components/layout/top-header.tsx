@@ -223,20 +223,13 @@ export function TopHeader({ setMobileOpen }: TopHeaderProps) {
                     <Link href="/websites" className="flex items-center w-full">
                       <LayoutDashboard className="mr-2.5 h-4 w-4" />
                       Websites
-                      <DropdownMenuShortcut>⌘D</DropdownMenuShortcut>
+                      {/* <DropdownMenuShortcut>⌘D</DropdownMenuShortcut> */}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="h-9 rounded-md">
-                    <Link href="/settings/profile" className="flex items-center w-full">
+                    <Link href="/settings?tab=profile" className="flex items-center w-full">
                       <User className="mr-2.5 h-4 w-4" />
                       Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="h-9 rounded-md">
-                    <Link href="/settings" className="flex items-center w-full">
-                      <Settings className="mr-2.5 h-4 w-4" />
-                      Settings
-                      <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>

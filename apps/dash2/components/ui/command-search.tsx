@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import type { DialogProps } from "@radix-ui/react-dialog"
-import { Search, LayoutDashboard } from "lucide-react"
+import { LayoutDashboard, CogIcon } from "lucide-react"
 
 import {
   CommandDialog,
@@ -25,25 +25,23 @@ const staticSearchGroups = [
   {
     category: "Pages",
     items: [
-      { name: "My Websites", path: "/websites", icon: LayoutDashboard },
-      // Add other main pages if needed, e.g., from a navigation config
-      { name: "Settings", path: "/settings", icon: Search }, // Placeholder icon
+      { name: "Settings", path: "/settings", icon: CogIcon }
     ],
   },
-  {
-    category: "Actions",
-    items: [
-      { name: "Add New Website", path: "/websites/new", icon: Search }, // Placeholder icon
-      // { name: "Create Report", path: "/reports/new", icon: Search },
-    ],
-  },
-  {
-    category: "Help",
-    items: [
-      { name: "Documentation", path: "/docs", icon: Search }, // Placeholder icon
-      // { name: "Support", path: "/support", icon: Search }, 
-    ],
-  },
+  // {
+  //   category: "Actions",
+  //   items: [
+  //     { name: "Add New Website", path: "/websites?new=true", icon: Search }, // Placeholder icon
+  //     // { name: "Create Report", path: "/reports/new", icon: Search },
+  //   ],
+  // },
+  // {
+  //   category: "Help",
+  //   items: [
+  //     { name: "Documentation", path: "/docs", icon: Search }, // Placeholder icon
+  //     // { name: "Support", path: "/support", icon: Search }, 
+  //   ],
+  // },
 ]
 
 interface CommandSearchProps extends DialogProps {
@@ -130,7 +128,7 @@ export function CommandSearch({
                 className="cursor-pointer"
               >
                 <item.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>{item.name}</span>
+                <span>{item.name}</span> <span className="text-xs text-muted-foreground text-end">{item.path}</span>
               </CommandItem>
             ))}
           </CommandGroup>
