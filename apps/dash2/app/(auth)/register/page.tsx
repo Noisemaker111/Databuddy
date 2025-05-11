@@ -1,21 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@databuddy/auth/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Github, Mail, Loader2, Info } from "lucide-react";
+import { Github, Mail, Loader2, Info, ChevronLeft, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import VisuallyHidden from "@/components/ui/visuallyhidden";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import Iridescence from "@/components/bits/Iridiscence";
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,6 +26,9 @@ export default function RegisterPage() {
   });
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isHoneypot, setIsHoneypot] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [registrationStep, setRegistrationStep] = useState<"form" | "success" | "verification-needed">("form");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -64,7 +67,8 @@ export default function RegisterPage() {
               localStorage.setItem("authToken", authToken);
             }
             toast.success("Account created! Please check your email to verify your account.");
-            router.push(`/verify?email=${encodeURIComponent(formData.email)}`);
+            setRegistrationStep("verification-needed");
+            // router.push(`/verify?email=${encodeURIComponent(formData.email)}`);
           },
         }
       });
@@ -74,6 +78,28 @@ export default function RegisterPage() {
       }
     } catch (error) {
       toast.error("Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resendVerificationEmail = async () => {
+    setIsLoading(true);
+    try {
+      await authClient.sendVerificationEmail({
+        email: formData.email,
+        callbackURL: "/home",
+        fetchOptions: {
+          onSuccess: () => {
+            toast.success("Verification email sent!");
+          },
+          onError: () => {
+            toast.error("Failed to send verification email. Please try again later.");
+          },
+        },
+      });
+    } catch (error) {
+      toast.error("Failed to send verification email. Please try again later.");
     } finally {
       setIsLoading(false);
     }
@@ -105,59 +131,160 @@ export default function RegisterPage() {
     }
   };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4 antialiased">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link
-            href="/"
-            className="inline-block text-2xl font-bold bg-gradient-to-r from-sky-400 to-sky-600 bg-clip-text text-transparent hover:from-sky-300 hover:to-sky-500 transition-all duration-200"
-            aria-label="Go to Databuddy homepage"
-          >
-            Databuddy
-          </Link>
-        </div>
-        <Card className="bg-slate-800/80 border-slate-700/50 backdrop-blur-sm shadow-xl">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-medium text-white">Create your account</CardTitle>
-            <CardDescription className="text-slate-400">
-              Get started with Databuddy analytics
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+  // Render header content based on current registration step
+  const renderHeaderContent = () => {
+    switch (registrationStep) {
+      case "verification-needed":
+        return (
+          <>
+            <div className="inline-flex justify-center items-center p-3 bg-amber-100 rounded-full mb-5 relative w-16 h-16">
+              <div className="absolute inset-0 bg-amber-50 rounded-full animate-pulse" />
+              <div className="absolute -inset-1 bg-gradient-to-tr from-amber-200 to-amber-100 rounded-full blur-md opacity-70" />
+              <div className="relative bg-gradient-to-tr from-amber-500 to-amber-400 rounded-full p-2.5">
+                <AlertCircle className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">Verify your email</h1>
+            <p className="text-muted-foreground mt-2">
+              We've sent a verification link to <strong className="text-amber-600 font-medium">{formData.email}</strong>
+            </p>
+          </>
+        );
+      case "success":
+        return (
+          <>
+            <div className="inline-flex justify-center items-center p-3 bg-green-100 rounded-full mb-5 relative w-16 h-16">
+              <div className="absolute inset-0 bg-green-50 rounded-full animate-pulse" />
+              <div className="absolute -inset-1 bg-gradient-to-tr from-green-200 to-green-100 rounded-full blur-md opacity-70" />
+              <div className="relative bg-gradient-to-tr from-green-500 to-green-400 rounded-full p-2.5">
+                <CheckCircle2 className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">Success!</h1>
+            <p className="text-muted-foreground mt-2">
+              Your account has been created successfully
+            </p>
+          </>
+        );
+      default:
+        return (
+          <>
+            <div className="inline-flex justify-center items-center p-3 bg-primary/10 rounded-full mb-5 relative w-16 h-16">
+              <div className="absolute inset-0 bg-primary/5 rounded-full animate-pulse" />
+              <div className="absolute -inset-1 bg-gradient-to-tr from-primary/30 to-primary/10 rounded-full blur-md opacity-70" />
+              <div className="relative bg-gradient-to-tr from-primary to-primary/80 rounded-full p-2.5">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-labelledby="logoTitle">
+                  <title id="logoTitle">Databuddy Logo</title>
+                  <path d="M8 12H16M12 8V16" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Create your account</h1>
+            <p className="text-muted-foreground mt-2">
+              Sign up to start building better products with Databuddy
+            </p>
+          </>
+        );
+    }
+  };
+
+  // Render content based on current registration step
+  const renderContent = () => {
+    switch (registrationStep) {
+      case "verification-needed":
+        return (
+          <div className="space-y-5 py-4">
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">
+              <p className="text-sm">
+                Please check your email inbox and click the verification link to activate your account. If you don't see the email, check your spam folder.
+              </p>
+            </div>
+            
+            <div className="flex flex-col space-y-3">
+              <Button
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                disabled={isLoading}
+                onClick={resendVerificationEmail}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Resend verification email"
+                )}
+              </Button>
+              
               <Button
                 variant="outline"
-                className="bg-slate-700/50 border-slate-600 hover:bg-slate-700/80 hover:text-white text-slate-100"
+                className="w-full border-amber-200 text-amber-700 hover:bg-amber-50"
+                onClick={() => setRegistrationStep("form")}
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back to registration
+              </Button>
+            </div>
+          </div>
+        );
+      case "success":
+        return (
+          <div className="space-y-5 py-4">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
+              <p className="text-sm">
+                Your account has been created successfully. You can now sign in to access your dashboard.
+              </p>
+            </div>
+            
+            <Button 
+              className="w-full bg-green-500 hover:bg-green-600 text-white"
+              onClick={() => router.push("/login")}
+            >
+              Continue to login
+            </Button>
+          </div>
+        );
+      default:
+        return (
+          <div className="space-y-5">
+            <div className="space-y-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full flex items-center justify-center h-11 hover:bg-primary/5 transition-all duration-200 cursor-pointer"
                 onClick={() => handleSocialLogin("github")}
                 disabled={isLoading}
               >
-                <Github className="mr-2 h-4 w-4" />
-                Github
+                <Github className="mr-2 h-5 w-5" />
+                Sign up with GitHub
               </Button>
+              
               <Button
+                type="button"
                 variant="outline"
-                className="bg-slate-700/50 border-slate-600 hover:bg-slate-700/80 hover:text-white text-slate-100"
+                className="w-full flex items-center justify-center h-11 hover:bg-primary/5 transition-all duration-200 cursor-pointer"
                 onClick={() => handleSocialLogin("google")}
                 disabled={isLoading}
               >
-                <Mail className="mr-2 h-4 w-4" />
-                Google
+                <Mail className="mr-2 h-5 w-5" />
+                Sign up with Google
               </Button>
             </div>
+            
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <Separator className="w-full" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-slate-800 px-2 text-slate-400">
-                  Or continue with email
+              <div className="relative flex justify-center">
+                <span className="bg-card px-4 text-sm text-muted-foreground font-medium">
+                  or continue with email
                 </span>
               </div>
             </div>
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-white">Full name</Label>
+                <Label htmlFor="name" className="text-foreground font-medium">Full name</Label>
                 <Input
                   id="name"
                   name="name"
@@ -166,13 +293,14 @@ export default function RegisterPage() {
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-sky-400 focus:ring-sky-400/10"
+                  className="h-11 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                   disabled={isLoading}
                   autoComplete="name"
                 />
               </div>
+              
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">Email address</Label>
+                <Label htmlFor="email" className="text-foreground font-medium">Email address</Label>
                 <Input
                   id="email"
                   name="email"
@@ -181,18 +309,19 @@ export default function RegisterPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-sky-400 focus:ring-sky-400/10"
+                  className="h-11 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                   disabled={isLoading}
                   autoComplete="email"
                 />
               </div>
+              
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-white">Password</Label>
+                  <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-slate-400 hover:text-slate-300 cursor-help" />
+                        <Info className="h-4 w-4 text-muted-foreground" />
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>Password must be at least 8 characters long</p>
@@ -200,34 +329,58 @@ export default function RegisterPage() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  minLength={8}
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-sky-400 focus:ring-sky-400/10"
-                  disabled={isLoading}
-                  autoComplete="new-password"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    minLength={8}
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="h-11 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                    disabled={isLoading}
+                    autoComplete="new-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
+              
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-white">Confirm password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  minLength={8}
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-sky-400 focus:ring-sky-400/10"
-                  disabled={isLoading}
-                  autoComplete="new-password"
-                />
+                <Label htmlFor="confirmPassword" className="text-foreground font-medium">Confirm password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    required
+                    minLength={8}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="h-11 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                    disabled={isLoading}
+                    autoComplete="new-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
+              
               <VisuallyHidden>
                 <div className="flex items-center space-x-2" id="honeypot">
                   <Checkbox 
@@ -238,27 +391,41 @@ export default function RegisterPage() {
                   />
                 </div>
               </VisuallyHidden>
+              
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="terms" 
                   checked={acceptTerms}
                   onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
                   disabled={isLoading}
-                  className="border-slate-600 data-[state=checked]:bg-sky-500 data-[state=checked]:border-sky-500"
+                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary cursor-pointer"
                 />
                 <Label
                   htmlFor="terms"
-                  className="text-sm font-medium leading-none text-slate-400 cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="text-sm text-muted-foreground leading-tight"
                 >
                   I agree to the{" "}
-                  <Link href="/terms" className="text-sky-400 hover:text-sky-300">
-                    terms and conditions
+                  <Link 
+                    href="/terms" 
+                    className="text-primary hover:text-primary/80 font-medium"
+                    target="_blank"
+                  >
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link 
+                    href="/privacy" 
+                    className="text-primary hover:text-primary/80 font-medium"
+                    target="_blank"
+                  >
+                    Privacy Policy
                   </Link>
                 </Label>
               </div>
+              
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full h-11 shadow relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/20"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -271,20 +438,90 @@ export default function RegisterPage() {
                 )}
               </Button>
             </form>
-          </CardContent>
-          <CardFooter>
-            <div className="text-center w-full text-sm text-slate-400">
-              Already have an account?{" "}
-              <Link 
-                href="/login" 
-                className="text-sky-400 hover:text-sky-300"
-              >
-                Sign in
-              </Link>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="flex h-screen">
+      {/* Iridescence side - Left column */}
+      <div className="hidden md:flex md:w-1/2 relative flex-col items-start justify-between p-12 overflow-hidden">
+        <div className="absolute inset-0">
+          <Iridescence 
+            color={[0.1, 0.2, 0.9]} 
+            speed={0.5} 
+            amplitude={0.2} 
+            mouseReact={true} 
+          />
+        </div>
+        
+        <Button variant="outline" className="relative z-10 bg-white/20 text-white border-white/10 hover:bg-white/30">
+          <ChevronLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        
+        <div className="relative z-10 text-white">
+          <div className="mb-2 text-sm font-medium uppercase tracking-wide">databuddy</div>
+          <h1 className="text-4xl font-bold mb-4">
+            Start your <br />journey with <br />Databuddy
+          </h1>
+          <p className="text-white/70 max-w-md">
+            Connect your data sources, build insights, and share them with your team.
+          </p>
+        </div>
+      </div>
+      
+      {/* Register form - Right column */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-12 bg-background overflow-hidden">
+        <div className="w-full max-w-md">
+          <div className="flex justify-center mb-6 md:hidden">
+            <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">databuddy</div>
+          </div>
+          
+          <div className="text-center mb-8">
+            {renderHeaderContent()}
+          </div>
+          
+          <div className="bg-card rounded-xl shadow p-6 border border-border relative overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="relative z-10">
+              {renderContent()}
             </div>
-          </CardFooter>
-        </Card>
+          </div>
+          
+          {registrationStep === "form" && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <Link 
+                  href="/login" 
+                  className="text-primary hover:text-primary/80 font-medium"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="relative">
+          <div className="absolute inset-0 animate-ping rounded-full bg-primary/20 blur-xl" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
+        </div>
+      </div>
+    }>
+      <RegisterPageContent />
+    </Suspense>
   );
 } 
