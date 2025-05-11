@@ -56,10 +56,10 @@ const getInitials = (name: string | null | undefined) => {
 export default async function AdminWebsitesPage({
   searchParams,
 }: {
-  searchParams: { search?: string };
+  searchParams: Promise<{ search?: string }>;
 }) {
+  const { search } = await searchParams;
   const { websites, error } = await getAllWebsitesAsAdmin();
-  const search = searchParams.search?.toLowerCase() || "";
 
   // Filter websites based on search
   const filteredWebsites = websites?.filter((website) => {
@@ -74,11 +74,10 @@ export default async function AdminWebsitesPage({
 
   if (error) {
     return (
-      <Card className="border-destructive bg-destructive/10">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-destructive flex items-center">
-            <AlertCircle className="w-5 h-5 mr-2" />Error Fetching Websites
-          </CardTitle>
+          <CardTitle>Error</CardTitle>
+          <CardDescription>Could not load websites.</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-destructive">{error}</p>
@@ -88,12 +87,27 @@ export default async function AdminWebsitesPage({
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-8">
+      {/* Header Section */}
+      <Card className="bg-gradient-to-br from-primary/5 to-muted/0 border-0 shadow-none">
+        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 pb-2">
+          <div className="flex items-center gap-4">
+            <Globe className="h-10 w-10 text-primary bg-primary/10 rounded-full p-2 shadow" />
+            <div>
+              <CardTitle className="text-3xl font-bold mb-1">Manage Websites</CardTitle>
+              <CardDescription className="text-base text-muted-foreground">
+                View and manage all websites on the platform.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      <Card className="shadow-md border-0 bg-gradient-to-br from-primary/5 to-muted/0">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Manage Websites</CardTitle>
+              <CardTitle>Websites</CardTitle>
               <CardDescription>
                 Found {filteredWebsites?.length || 0} website{filteredWebsites?.length === 1 ? '' : 's'}
                 {search && ` matching "${search}"`}.
@@ -102,23 +116,16 @@ export default async function AdminWebsitesPage({
             <DataTableToolbar placeholder="Search websites..." />
           </div>
         </CardHeader>
-      </Card>
-
-      {(!filteredWebsites || filteredWebsites.length === 0) && (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
-              {search 
-                ? `No websites found matching "${search}". Try a different search term.`
-                : "No websites found."}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {filteredWebsites && filteredWebsites.length > 0 && (
-        <Card>
-          <CardContent className="p-0">
+        <CardContent>
+          {(!filteredWebsites || filteredWebsites.length === 0) ? (
+            <div className="p-8 border rounded-lg bg-muted/20">
+              <p className="text-center text-muted-foreground">
+                {search 
+                  ? `No websites found matching "${search}". Try a different search term.`
+                  : "No websites found."}
+              </p>
+            </div>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -141,35 +148,33 @@ export default async function AdminWebsitesPage({
                           href={`http://${website.domain}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="hover:underline flex items-center"
+                          className="font-medium hover:underline flex items-center"
                         >
-                          {website.domain} <ExternalLink className="h-3 w-3 ml-1.5 opacity-70"/>
+                          {website.domain} <ExternalLink className="ml-1 h-3.5 w-3.5" />
                         </a>
                       ) : "N/A"}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {website.userId || website.ownerEmail ? (
-                          <Link href={`/users/${encodeURIComponent(website.userId || website.ownerEmail || "")}`} className="flex items-center gap-2 group">
-                            <Avatar className="h-8 w-8 text-xs group-hover:ring-2 group-hover:ring-primary">
-                              <AvatarFallback>{getInitials(website.ownerName)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium text-sm group-hover:underline">{website.ownerName || "Unknown User"}</div>
-                            </div>
-                          </Link>
-                        ) : (
-                          <>
-                            <Avatar className="h-8 w-8 text-xs">
-                              <AvatarFallback>{getInitials(website.ownerName)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium text-sm">{website.ownerName || "Unknown User"}</div>
-                            </div>
-                          </>
-                        )}
-                        <div className="text-xs text-muted-foreground">{website.ownerEmail || "-"}</div>
-                      </div>
+                      {website.userId || website.ownerEmail ? (
+                        <Link href={`/users/${encodeURIComponent(website.userId || website.ownerEmail || "")}`} className="flex items-center gap-2 group">
+                          <Avatar className="h-8 w-8 text-xs group-hover:ring-2 group-hover:ring-primary">
+                            <AvatarFallback>{getInitials(website.ownerName)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium text-sm group-hover:underline">{website.ownerName || "Unknown User"}</div>
+                          </div>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8 text-xs">
+                            <AvatarFallback>{getInitials(website.ownerName)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium text-sm">{website.ownerName || "Unknown User"}</div>
+                          </div>
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground">{website.ownerEmail || "-"}</div>
                     </TableCell>
                     <TableCell>{format(new Date(website.createdAt), 'MMM d, yyyy')}</TableCell>
                     <TableCell className="text-right">
@@ -178,15 +183,15 @@ export default async function AdminWebsitesPage({
                   </TableRow>
                 ))}
               </TableBody>
+              {filteredWebsites.length > 10 && (
+                <TableCaption className="py-4 border-t mt-0">
+                  Showing {filteredWebsites.length} websites. Pagination coming soon.
+                </TableCaption>
+              )}
             </Table>
-          </CardContent>
-          {filteredWebsites.length > 10 && (
-            <CardContent className="pt-4 text-center">
-              <TableCaption className="mt-0 py-2">Showing {filteredWebsites.length} websites. Pagination coming soon.</TableCaption>
-            </CardContent>
           )}
-        </Card>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 } 

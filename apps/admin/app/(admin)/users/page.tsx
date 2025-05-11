@@ -86,24 +86,23 @@ export default async function AdminUsersPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-0.5">
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl flex items-center">
-            <Users className="w-7 h-7 mr-3 text-primary" /> Manage Users
-          </h1>
-          <p className="text-muted-foreground">
-            View and manage all customer accounts on the platform.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/users/new">
-            <UserPlus className="mr-2 h-4 w-4" /> Create New User
-          </Link>
-        </Button>
-      </div>
+    <div className="space-y-8">
+      {/* Header Section */}
+      <Card className="bg-gradient-to-br from-primary/5 to-muted/0 border-0 shadow-none">
+        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 pb-2">
+          <div className="flex items-center gap-4">
+            <Users className="h-10 w-10 text-primary bg-primary/10 rounded-full p-2 shadow" />
+            <div>
+              <CardTitle className="text-3xl font-bold mb-1">Manage Users</CardTitle>
+              <CardDescription className="text-base text-muted-foreground">
+                View and manage all customer accounts on the platform.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
 
-      <Card>
+      <Card className="shadow-md border-0 bg-gradient-to-br from-primary/5 to-muted/0">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
