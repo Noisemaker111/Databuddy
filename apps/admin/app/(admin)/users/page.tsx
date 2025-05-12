@@ -53,10 +53,10 @@ interface User {
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: { search?: string };
+  searchParams: Promise<{ search?: string }>;
 }) {
+  const { search } = await searchParams;
   const { users, error } = await getAllUsersAsAdmin();
-  const search = searchParams.search?.toLowerCase() || "";
 
   // Filter users based on search
   const filteredUsers = users?.filter((user) => {

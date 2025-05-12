@@ -1,32 +1,24 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { format, subDays } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { 
-  CalendarIcon, 
-  Users, 
-  Globe, 
-  BarChart3, 
-  Clock, 
-  Smartphone, 
+  UserRound, 
+  Globe,
+  Clock,
+  Smartphone,
   Monitor,
-  Filter,
-  UserRound,
   ArrowUpRight,
-  BarChart
+  Filter,
+  CircleUser
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { CalendarDateRangePicker } from "@/components/date-range-picker";
 import { cn } from "@/lib/utils";
 import { useAnalyticsProfiles, useAnalyticsSessions } from "@/hooks/use-analytics";
+import type { ProfileData, SessionData } from "@/hooks/use-analytics";
 import { DataTable } from "@/components/analytics/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -38,105 +30,117 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ErrorBoundary } from "@/components/error-boundary";
-
-// Extended ProfileData interface with additional properties
-interface ExtendedProfileData {
-  visitor_id: string;
-  sessions: number;
-  pageviews: number;
-  first_seen?: string;
-  last_seen?: string;
-  country?: string;
-  city?: string;
-  device_type?: string;
-  browser?: string;
-  [key: string]: any;
-}
-
-// Session data for profile's sessions view
-interface ProfileSessionData {
-  session_id: string;
-  visitor_id: string;
-  started_at?: string;
-  duration?: number;
-  pageviews?: number;
-  device_type?: string;
-  browser?: string;
-  country?: string;
-  city?: string;
-  [key: string]: any;
-}
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 export default function ProfilesPage() {
-  const { id } = useParams();
-  const [date, setDate] = useState<DateRange | undefined>({
+  const { id } = useParams<{ id: string }>();
+  
+  // Date range state (last 30 days by default)
+  const [date, setDate] = useState<DateRange>({
     from: subDays(new Date(), 30),
     to: new Date(),
   });
   
-  // Convert selected date range to string format
+  // Convert selected date range to string format for API
   const dateRange = useMemo(() => ({
-    start_date: date?.from ? format(date.from, 'yyyy-MM-dd') : format(subDays(new Date(), 30), 'yyyy-MM-dd'),
-    end_date: date?.to ? format(date.to, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+    start_date: date.from ? format(date.from, 'yyyy-MM-dd') : format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+    end_date: date.to ? format(date.to, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
   }), [date]);
 
+  // Filter state
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  
   // Fetch profiles data
   const { data: profilesData, isLoading } = useAnalyticsProfiles(
-    id as string, 
+    id, 
     dateRange
   );
   
-  // Additional state
-  const [activeTab, setActiveTab] = useState("all");
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
-  
-  // Fetch sessions for the selected profile (if any)
-  const { data: profileSessionsData, isLoading: isLoadingProfileSessions } = useAnalyticsSessions(
-    id as string, 
+  // Fetch sessions for all profiles
+  const { data: allSessionsData, isLoading: isLoadingAllSessions } = useAnalyticsSessions(
+    id, 
     dateRange,
-    100
+    1000 // Fetch more sessions to ensure we have enough for profile filtering
   );
 
-  // Filter sessions for the selected profile
-  const filteredProfileSessions = useMemo(() => {
-    if (!profileSessionsData?.sessions || !selectedProfileId) return [];
-    return profileSessionsData.sessions.filter(
-      session => session.visitor_id === selectedProfileId
-    );
-  }, [profileSessionsData?.sessions, selectedProfileId]);
+  // Profile filtering function
+  const filteredProfiles = useMemo(() => {
+    if (!profilesData?.profiles) return [];
+    
+    let results = [...profilesData.profiles];
+    
+    // Filter by device type if tab is not 'all'
+    if (activeTab !== 'all') {
+      results = results.filter(profile => {
+        if (activeTab === 'desktop') return profile.device === 'desktop';
+        if (activeTab === 'mobile') return profile.device === 'mobile' || profile.device === 'tablet';
+        if (activeTab === 'returning') return profile.total_sessions > 1;
+        return true;
+      });
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      results = results.filter(profile => 
+        profile.visitor_id.toLowerCase().includes(query) ||
+        (profile.country?.toLowerCase().includes(query) ?? false) ||
+        (profile.city?.toLowerCase().includes(query) ?? false) ||
+        (profile.browser?.toLowerCase().includes(query) ?? false)
+      );
+    }
+    
+    return results;
+  }, [profilesData?.profiles, activeTab, searchQuery]);
 
-  // Profiles table columns
-  const profileColumns = useMemo(() => [
+  // Get sessions for selected profile
+  const profileSessions = useMemo(() => {
+    if (!selectedProfileId || !allSessionsData?.sessions) return [];
+    return allSessionsData.sessions.filter(session => 
+      session.visitor_id === selectedProfileId
+    ).sort((a, b) => {
+      const dateA = new Date(a.first_visit || '').getTime();
+      const dateB = new Date(b.first_visit || '').getTime();
+      return dateB - dateA;
+    });
+  }, [selectedProfileId, allSessionsData?.sessions]);
+
+  // Stats calculations
+  const totalVisitors = profilesData?.total_visitors || 0;
+  const returningVisitors = profilesData?.returning_visitors || 0;
+  const returningRate = totalVisitors > 0 ? Math.round((returningVisitors / totalVisitors) * 100) : 0;
+  
+  // Get the selected profile details
+  const selectedProfile = useMemo(() => {
+    if (!selectedProfileId || !profilesData?.profiles) return null;
+    return profilesData.profiles.find(profile => profile.visitor_id === selectedProfileId);
+  }, [selectedProfileId, profilesData?.profiles]);
+
+  // Profile columns definition
+  type ProfileColumn = {
+    accessorKey: keyof ProfileData;
+    header: string;
+    cell: (value: any) => React.ReactNode;
+    className?: string;
+  };
+
+  const profileColumns: ProfileColumn[] = [
     {
       accessorKey: 'visitor_id',
       header: 'Visitor ID',
       cell: (value: string) => (
         <span className="font-mono text-xs truncate block max-w-[150px]" title={value}>
-          {value || '-'}
+          {value.substring(0, 8)}...
         </span>
       )
     },
     {
-      accessorKey: 'first_seen',
-      header: 'First Seen',
-      cell: (value: string) => {
-        if (!value) return <span>-</span>;
-        try {
-          const date = new Date(value);
-          return (
-            <span className="whitespace-nowrap">
-              {Number.isNaN(date.getTime()) ? '-' : format(date, 'MMM d, yyyy')}
-            </span>
-          );
-        } catch (error) {
-          return <span>-</span>;
-        }
-      }
-    },
-    {
-      accessorKey: 'last_seen',
+      accessorKey: 'last_visit',
       header: 'Last Seen',
       cell: (value: string) => {
         if (!value) return <span>-</span>;
@@ -153,54 +157,70 @@ export default function ProfilesPage() {
       }
     },
     {
-      accessorKey: 'sessions',
+      accessorKey: 'total_sessions',
       header: 'Sessions',
-      cell: (value: any) => {
-        if (typeof value === 'object') return <span>-</span>;
-        return <span className="text-right">{value || 0}</span>;
-      },
-      className: 'text-right',
-    },
-    {
-      accessorKey: 'pageviews',
-      header: 'Pageviews',
-      cell: (value: any) => {
-        if (typeof value === 'object') return <span>-</span>;
-        return <span className="text-right">{value || 0}</span>;
-      },
+      cell: (value: number) => (
+        <span className="font-medium">{value || 0}</span>
+      ),
       className: 'text-right',
     },
     {
       accessorKey: 'country',
       header: 'Country',
-      cell: (value: any) => {
-        if (typeof value === 'object') return <span>-</span>;
-        return <span>{value || 'Unknown'}</span>;
+      cell: (value: string) => {
+        if (!value || value === 'Unknown') return <span className="text-muted-foreground">Unknown</span>;
+        return (
+          <div className="flex items-center gap-1.5">
+            {value && (
+              <div className="w-4 h-3 relative overflow-hidden rounded-[1px]">
+                <img 
+                  src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${value.toUpperCase()}.svg`}
+                  alt={value}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            <span>{value}</span>
+          </div>
+        );
       }
     },
     {
-      accessorKey: 'device_type',
+      accessorKey: 'device',
       header: 'Device',
-      cell: (value: any) => {
-        if (typeof value === 'object') return <span>-</span>;
-        return <span>{value || 'Unknown'}</span>;
+      cell: (value: string) => {
+        const icon = value === 'desktop' ? <Monitor className="w-3 h-3" /> : <Smartphone className="w-3 h-3" />;
+        return (
+          <div className="flex items-center gap-1.5">
+            {icon}
+            <span className="capitalize">{value || 'Unknown'}</span>
+          </div>
+        );
       }
     },
-  ], []);
-  
-  // Profile sessions table columns (for profile details)
-  const profileSessionsColumns = useMemo(() => [
     {
-      accessorKey: 'session_id',
-      header: 'Session ID',
+      accessorKey: 'browser',
+      header: 'Browser',
       cell: (value: string) => (
-        <span className="font-mono text-xs truncate block max-w-[150px]" title={value}>
-          {value || '-'}
-        </span>
+        <span className="capitalize">{value || 'Unknown'}</span>
       )
     },
+  ];
+
+  // Sessions columns for profile detail view
+  type SessionColumn = {
+    accessorKey: keyof SessionData;
+    header: string;
+    cell: (value: any) => React.ReactNode;
+    className?: string;
+  };
+
+  const sessionColumns: SessionColumn[] = [
     {
-      accessorKey: 'started_at',
+      accessorKey: 'first_visit',
       header: 'Date',
       cell: (value: string) => {
         if (!value) return <span>-</span>;
@@ -219,419 +239,370 @@ export default function ProfilesPage() {
     {
       accessorKey: 'duration',
       header: 'Duration',
-      cell: (value: any) => {
+      cell: (value: number) => {
         if (typeof value !== 'number') return <span>-</span>;
         return <span>{Math.floor(value / 60)}m {value % 60}s</span>;
       }
     },
     {
-      accessorKey: 'pageviews',
+      accessorKey: 'page_views',
       header: 'Pages',
-      cell: (value: any) => {
-        if (typeof value === 'object') return <span>-</span>;
-        return <span className="text-right">{value || 0}</span>;
-      },
+      cell: (value: number) => (
+        <span className="font-medium">{value || 0}</span>
+      ),
       className: 'text-right',
     },
     {
-      accessorKey: 'device_type',
-      header: 'Device',
-      cell: (value: any) => {
-        if (typeof value === 'object') return <span>-</span>;
-        return <span>{value || 'Unknown'}</span>;
-      }
-    },
-    {
-      accessorKey: 'browser',
-      header: 'Browser',
-      cell: (value: any) => {
-        if (typeof value === 'object') return <span>-</span>;
-        return <span>{value || 'Unknown'}</span>;
-      }
-    },
-  ], []);
-
-  // Filter profiles based on active tab
-  const filteredProfiles = useMemo(() => {
-    if (!profilesData?.profiles || activeTab === 'all') {
-      return profilesData?.profiles || [];
-    }
-    
-    // Cast to the extended type to access the properties safely
-    const profiles = profilesData.profiles as unknown as ExtendedProfileData[];
-    
-    switch (activeTab) {
-      case 'returning':
-        return profiles.filter(profile => 
-          (typeof profile.sessions === 'number' && profile.sessions > 1)
-        );
-      case 'new':
-        return profiles.filter(profile => 
-          (typeof profile.sessions === 'number' && profile.sessions === 1)
-        );
-      case 'active':
-        return profiles.filter(profile => {
-          // Consider profiles with more than 5 sessions or 20 pageviews as "active"
-          return (
-            (typeof profile.sessions === 'number' && profile.sessions > 5) || 
-            (typeof profile.pageviews === 'number' && profile.pageviews > 20)
-          );
-        });
-      default:
-        return profiles;
-    }
-  }, [activeTab, profilesData?.profiles]);
-  
-  // Summary metrics
-  const metrics = useMemo(() => {
-    if (!profilesData?.profiles) return {
-      total: 0,
-      returning: 0,
-      new: 0,
-      active: 0,
-      avgPageviews: 0
-    };
-    
-    // Cast to the extended type to access the properties safely
-    const profiles = profilesData.profiles as unknown as ExtendedProfileData[];
-    
-    const totalPageviews = profiles.reduce((sum, p) => {
-      const pageviews = typeof p.pageviews === 'number' ? p.pageviews : 0;
-      return sum + pageviews;
-    }, 0);
-    
-    return {
-      total: profiles.length,
-      returning: profiles.filter(p => typeof p.sessions === 'number' && p.sessions > 1).length,
-      new: profiles.filter(p => typeof p.sessions === 'number' && p.sessions === 1).length,
-      active: profiles.filter(p => {
+      accessorKey: 'referrer',
+      header: 'Referrer',
+      cell: (value: string) => {
+        if (!value || value === 'direct') return <span className="text-muted-foreground">Direct</span>;
         return (
-          (typeof p.sessions === 'number' && p.sessions > 5) ||
-          (typeof p.pageviews === 'number' && p.pageviews > 20)
+          <span className="truncate block max-w-[120px]" title={value}>
+            {value}
+          </span>
         );
-      }).length,
-      avgPageviews: profiles.length > 0 ? Math.round(totalPageviews / profiles.length) : 0
-    };
-  }, [profilesData?.profiles]);
-  
-  // Handle profile row click to show details
-  const handleProfileRowClick = (visitorId: string) => {
-    setSelectedProfileId(visitorId);
-  };
-  
-  // Handle close profile details dialog
-  const handleCloseProfileDialog = () => {
+      }
+    },
+  ];
+
+  // Event handlers
+  const handleProfileClick = useCallback((profile: any) => {
+    setSelectedProfileId(profile.visitor_id);
+  }, []);
+
+  const handleCloseProfile = useCallback(() => {
     setSelectedProfileId(null);
-  };
+  }, []);
   
-  // Find the selected profile details
-  const selectedProfile = useMemo(() => {
-    if (!selectedProfileId || !profilesData?.profiles) return null;
-    const profile = profilesData.profiles.find(p => p.visitor_id === selectedProfileId);
-    return profile as unknown as ExtendedProfileData | null;
-  }, [selectedProfileId, profilesData?.profiles]);
+  const handleDateRangeChange = useCallback((range: DateRange | undefined) => {
+    if (range?.from && range?.to) {
+      setDate(range);
+    }
+  }, []);
+
+  // Add onKeyDown for accessibility to handle keyboard navigation
+  const handleProfileRowKeyDown = useCallback((e: React.KeyboardEvent, profile: any) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleProfileClick(profile);
+    }
+  }, [handleProfileClick]);
 
   return (
-    <ErrorBoundary>
-      <div className="p-6 space-y-6 bg-background">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="flex flex-col p-6 pb-0 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">User Profiles</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              View visitor profiles and behavior data
+            <h1 className="text-2xl font-bold tracking-tight mb-1">Visitor Profiles</h1>
+            <p className="text-muted-foreground text-sm">
+              Analyze your website visitors and their behavior
             </p>
           </div>
           
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="md:min-w-[240px] justify-start text-left font-normal shadow-sm">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date?.from ? (
-                  date.to ? (
-                    <>
-                      {format(date.from, "LLL dd, y")} -{" "}
-                      {format(date.to, "LLL dd, y")}
-                    </>
-                  ) : (
-                    format(date.from, "LLL dd, y")
-                  )
-                ) : (
-                  <span>Pick a date range</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 shadow-md" align="end">
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={date?.from}
-                selected={date}
-                onSelect={setDate}
-                numberOfMonths={2}
-              />
-            </PopoverContent>
-          </Popover>
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <CalendarDateRangePicker
+              initialDateRange={date}
+              onUpdate={handleDateRangeChange}
+            />
+          </div>
         </div>
         
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card className="shadow-sm border overflow-hidden">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <Users className="h-4 w-4 mr-2 text-primary" />
-                Total Visitors
-              </CardTitle>
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Visitors</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-8 w-24" />
               ) : (
-                <div className="text-2xl font-bold">{metrics.total.toLocaleString()}</div>
+                <div className="flex items-center gap-2">
+                  <UserRound className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-2xl font-bold">{totalVisitors.toLocaleString()}</span>
+                </div>
               )}
             </CardContent>
           </Card>
           
-          <Card className="shadow-sm border overflow-hidden">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <UserRound className="h-4 w-4 mr-2 text-blue-500" />
-                New Visitors
-              </CardTitle>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Returning Visitors</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-8 w-24" />
               ) : (
-                <div className="text-2xl font-bold">{metrics.new.toLocaleString()}</div>
+                <div className="flex items-center gap-2">
+                  <CircleUser className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-2xl font-bold">{returningVisitors.toLocaleString()}</span>
+                  <Badge variant="outline" className="ml-2 font-normal">
+                    {returningRate}% return rate
+                  </Badge>
+                </div>
               )}
             </CardContent>
           </Card>
           
-          <Card className="shadow-sm border overflow-hidden">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <ArrowUpRight className="h-4 w-4 mr-2 text-indigo-500" />
-                Returning Visitors
-              </CardTitle>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Device Breakdown</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-8 w-full" />
               ) : (
-                <div className="text-2xl font-bold">{metrics.returning.toLocaleString()}</div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-sm border overflow-hidden">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <BarChart className="h-4 w-4 mr-2 text-green-500" />
-                Active Visitors
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-7 w-16" />
-              ) : (
-                <div className="text-2xl font-bold">{metrics.active.toLocaleString()}</div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-sm border overflow-hidden">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <BarChart3 className="h-4 w-4 mr-2 text-amber-500" />
-                Avg. Pageviews
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-7 w-16" />
-              ) : (
-                <div className="text-2xl font-bold">{metrics.avgPageviews.toLocaleString()}</div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Tabs */}
-        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full mt-8">
-          <TabsList className="grid grid-cols-4 md:w-fit mb-4 rounded-lg p-1 shadow-sm">
-            <TabsTrigger value="all" className="rounded-md">All Visitors</TabsTrigger>
-            <TabsTrigger value="new" className="rounded-md">New</TabsTrigger>
-            <TabsTrigger value="returning" className="rounded-md">Returning</TabsTrigger>
-            <TabsTrigger value="active" className="rounded-md">Active</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="all" className="mt-0">
-            <Card className="border shadow-sm">
-              <DataTable 
-                columns={profileColumns}
-                data={filteredProfiles}
-                isLoading={isLoading}
-                title="All Visitors"
-                limit={25}
-                emptyMessage="No visitor data recorded yet"
-                onRowClick={(row) => handleProfileRowClick(row.visitor_id)}
-              />
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="new" className="mt-0">
-            <Card className="border shadow-sm">
-              <DataTable 
-                columns={profileColumns}
-                data={filteredProfiles}
-                isLoading={isLoading}
-                title="New Visitors"
-                limit={25}
-                emptyMessage="No new visitors recorded yet"
-                onRowClick={(row) => handleProfileRowClick(row.visitor_id)}
-              />
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="returning" className="mt-0">
-            <Card className="border shadow-sm">
-              <DataTable 
-                columns={profileColumns}
-                data={filteredProfiles}
-                isLoading={isLoading}
-                title="Returning Visitors"
-                limit={25}
-                emptyMessage="No returning visitors recorded yet"
-                onRowClick={(row) => handleProfileRowClick(row.visitor_id)}
-              />
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="active" className="mt-0">
-            <Card className="border shadow-sm">
-              <DataTable 
-                columns={profileColumns}
-                data={filteredProfiles}
-                isLoading={isLoading}
-                title="Active Visitors"
-                limit={25}
-                emptyMessage="No active visitors recorded yet"
-                onRowClick={(row) => handleProfileRowClick(row.visitor_id)}
-              />
-            </Card>
-          </TabsContent>
-        </Tabs>
-        
-        {/* Profile Details Dialog */}
-        <Dialog open={!!selectedProfileId} onOpenChange={handleCloseProfileDialog}>
-          <DialogContent className="max-w-5xl p-0 overflow-hidden rounded-lg shadow-xl">
-            <DialogHeader className="px-6 py-4 border-b sticky top-0 bg-background z-10">
-              <DialogTitle className="text-xl">Visitor Profile</DialogTitle>
-            </DialogHeader>
-            
-            {selectedProfile ? (
-              <div className="px-6 py-5 space-y-8 max-h-[80vh] overflow-y-auto">
-                {/* Profile Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <Card className="border shadow-sm hover:shadow-md transition-all duration-200">
-                    <CardHeader className="pb-2 pt-5 bg-muted/20">
-                      <CardTitle className="text-sm font-medium">Visitor Info</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Visitor ID</p>
-                        <div className="font-mono text-xs truncate px-2 py-1 bg-muted/30 rounded" title={selectedProfile.visitor_id}>
-                          {selectedProfile.visitor_id}
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">First Seen</p>
-                          <div className="text-sm font-medium">
-                            {selectedProfile.first_seen ? format(new Date(selectedProfile.first_seen), 'MMM d, yyyy') : '-'}
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">Last Seen</p>
-                          <div className="text-sm font-medium">
-                            {selectedProfile.last_seen ? format(new Date(selectedProfile.last_seen), 'MMM d, yyyy') : '-'}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4 pt-2">
-                        <div className="space-y-1 bg-primary/5 p-3 rounded-lg">
-                          <p className="text-xs text-muted-foreground">Total Sessions</p>
-                          <div className="text-2xl font-bold">{selectedProfile.sessions}</div>
-                        </div>
-                        
-                        <div className="space-y-1 bg-indigo-500/5 p-3 rounded-lg">
-                          <p className="text-xs text-muted-foreground">Pageviews</p>
-                          <div className="text-2xl font-bold">{selectedProfile.pageviews}</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                <div className="flex items-center gap-4">
+                  <div className="flex flex-col items-center">
+                    <Monitor className="h-4 w-4 text-muted-foreground mb-1" />
+                    <span className="text-lg font-semibold">
+                      {profilesData?.profiles?.filter(p => p.device === 'desktop').length || 0}
+                    </span>
+                    <span className="text-xs text-muted-foreground">Desktop</span>
+                  </div>
                   
-                  <Card className="border shadow-sm hover:shadow-md transition-all duration-200">
-                    <CardHeader className="pb-2 pt-5 bg-muted/20">
-                      <CardTitle className="text-sm font-medium">Location & Device</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6 pt-4">
-                      <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground">Location</p>
-                        <div className="flex items-center gap-2 bg-muted/20 p-3 rounded-lg">
-                          <Globe className="h-5 w-5 text-green-500" />
-                          <div className="text-sm">
-                            <div className="font-medium">{selectedProfile.country || 'Unknown'}</div>
-                            <span className="text-muted-foreground text-xs">{selectedProfile.city || 'Unknown location'}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground">Device</p>
-                        <div className="flex items-center gap-3 bg-muted/20 p-3 rounded-lg">
-                          {selectedProfile.device_type?.toLowerCase().includes('mobile') ? (
-                            <Smartphone className="h-5 w-5 text-indigo-500" />
-                          ) : (
-                            <Monitor className="h-5 w-5 text-blue-500" />
-                          )}
-                          <div>
-                            <div className="text-sm font-medium">{selectedProfile.device_type || 'Unknown device'}</div>
-                            <span className="text-muted-foreground text-xs">{selectedProfile.browser || 'Unknown browser'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="flex flex-col items-center">
+                    <Smartphone className="h-4 w-4 text-muted-foreground mb-1" />
+                    <span className="text-lg font-semibold">
+                      {profilesData?.profiles?.filter(p => p.device === 'mobile' || p.device === 'tablet').length || 0}
+                    </span>
+                    <span className="text-xs text-muted-foreground">Mobile</span>
+                  </div>
                 </div>
-                
-                {/* Sessions */}
-                <div>
-                  <h3 className="text-lg font-medium mb-4 pl-1">Visitor Sessions</h3>
-                  <Card className="border shadow-sm">
-                    <DataTable 
-                      columns={profileSessionsColumns}
-                      data={filteredProfileSessions}
-                      isLoading={isLoadingProfileSessions}
-                      title="Recent Sessions"
-                      limit={10}
-                      emptyMessage="No sessions recorded for this visitor"
-                    />
-                  </Card>
-                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-3 items-start justify-between">
+          <Tabs 
+            defaultValue="all" 
+            className="w-full max-w-[400px]"
+            onValueChange={setActiveTab}
+          >
+            <TabsList className="grid grid-cols-4 w-full">
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="desktop">Desktop</TabsTrigger>
+              <TabsTrigger value="mobile">Mobile</TabsTrigger>
+              <TabsTrigger value="returning">Returning</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          <div className="relative w-full sm:max-w-[250px]">
+            <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search profiles..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex-1 p-6 pt-4 overflow-hidden">
+        <div className="bg-card rounded-lg border shadow-sm overflow-hidden h-full flex flex-col">
+          <div className="overflow-y-auto flex-1">
+            {isLoading ? (
+              <div className="p-8 flex justify-center">
+                <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
               </div>
+            ) : filteredProfiles.length > 0 ? (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-muted/40">
+                    {profileColumns.map((column) => (
+                      <th 
+                        key={column.accessorKey} 
+                        className={cn(
+                          "px-4 py-3 text-xs font-medium text-left", 
+                          column.className
+                        )}
+                      >
+                        {column.header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProfiles.map((profile, i) => (
+                    <tr 
+                      key={profile.visitor_id} 
+                      className="border-b hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => handleProfileClick(profile)}
+                      onKeyDown={(e) => handleProfileRowKeyDown(e, profile)}
+                      tabIndex={0}
+                      aria-label={`View details for visitor ${profile.visitor_id}`}
+                    >
+                      {profileColumns.map((column) => (
+                        <td 
+                          key={`${profile.visitor_id}-${column.accessorKey}`} 
+                          className={cn("px-4 py-3 text-sm", column.className)}
+                        >
+                          {column.cell(profile[column.accessorKey])}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             ) : (
-              <div className="py-12 flex justify-center">
-                <Skeleton className="h-[400px] w-full max-w-3xl rounded-lg" />
+              <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
+                <UserRound className="h-8 w-8 mb-2 opacity-20" />
+                <p>No visitor profiles found</p>
+                <p className="text-sm">Try changing your filters or date range</p>
               </div>
             )}
-          </DialogContent>
-        </Dialog>
+          </div>
+          
+          <div className="p-4 border-t bg-muted/20 text-sm text-muted-foreground">
+            Showing {filteredProfiles.length} of {profilesData?.profiles?.length || 0} profiles
+          </div>
+        </div>
       </div>
-    </ErrorBoundary>
+      
+      {/* Profile Detail Dialog */}
+      <Dialog open={!!selectedProfileId} onOpenChange={(open) => !open && handleCloseProfile()}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserRound className="h-5 w-5" />
+              Visitor Details
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedProfile && (
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Visitor ID</p>
+                  <p className="text-sm font-mono truncate" title={selectedProfile.visitor_id}>
+                    {selectedProfile.visitor_id}
+                  </p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">First Seen</p>
+                  <p className="text-sm">
+                    {format(new Date(selectedProfile.first_visit), 'MMM d, yyyy')}
+                  </p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Last Seen</p>
+                  <p className="text-sm">
+                    {format(new Date(selectedProfile.last_visit), 'MMM d, yyyy')}
+                  </p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Total Sessions</p>
+                  <p className="text-sm font-semibold">{selectedProfile.total_sessions}</p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Pageviews</p>
+                  <p className="text-sm font-semibold">{selectedProfile.total_pageviews}</p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Total Time</p>
+                  <p className="text-sm">{selectedProfile.total_duration_formatted}</p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Device</p>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    {selectedProfile.device === 'desktop' ? 
+                      <Monitor className="h-3 w-3" /> : 
+                      <Smartphone className="h-3 w-3" />}
+                    <span className="capitalize">{selectedProfile.device}</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Browser</p>
+                  <p className="text-sm capitalize">{selectedProfile.browser}</p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">OS</p>
+                  <p className="text-sm">{selectedProfile.os}</p>
+                </div>
+                
+                <div className="space-y-1 col-span-2 sm:col-span-1">
+                  <p className="text-xs text-muted-foreground">Location</p>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <Globe className="h-3 w-3" />
+                    <span>
+                      {selectedProfile.city && selectedProfile.city !== 'Unknown'
+                        ? `${selectedProfile.city}, ${selectedProfile.country}`
+                        : selectedProfile.country || 'Unknown'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="pt-2">
+                <h4 className="text-sm font-medium mb-3">Session History</h4>
+                
+                {isLoadingAllSessions ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : profileSessions.length > 0 ? (
+                  <div className="border rounded-md overflow-hidden">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b bg-muted/40">
+                          {sessionColumns.map((column) => (
+                            <th 
+                              key={column.accessorKey} 
+                              className={cn(
+                                "px-3 py-2 text-xs font-medium text-left", 
+                                column.className
+                              )}
+                            >
+                              {column.header}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {profileSessions.map((session, i) => (
+                          <tr 
+                            key={session.session_id} 
+                            className="border-b last:border-0"
+                          >
+                            {sessionColumns.map((column) => (
+                              <td 
+                                key={`${session.session_id}-${column.accessorKey}`} 
+                                className={cn("px-3 py-2 text-xs", column.className)}
+                              >
+                                {column.cell(session[column.accessorKey])}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground border rounded-md">
+                    No session data available
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          <DialogClose asChild>
+            <Button variant="outline">Close</Button>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 } 

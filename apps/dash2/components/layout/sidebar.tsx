@@ -60,6 +60,7 @@ const websiteNavigation: NavigationSection[] = [
       { name: "Overview", icon: <BarChart className="h-4 w-4" />, href: "" },
       { name: "Sessions", icon: <Clock className="h-4 w-4" />, href: "/sessions" },
       { name: "Profiles", icon: <Users className="h-4 w-4" />, href: "/profiles" },
+      { name: "Map", icon: <MapIcon className="h-4 w-4" />, href: "/map" },
     ],
   },
 ];

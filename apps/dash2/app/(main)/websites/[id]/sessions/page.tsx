@@ -1,142 +1,144 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { format, subDays } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { 
-  CalendarIcon, 
   Clock, 
   Globe, 
   Smartphone, 
-  Monitor, 
-  BarChart3,
-  Users,
+  Monitor,
   MousePointerClick,
-  LayoutDashboard
+  Filter,
+  ExternalLink,
+  Laptop
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { CalendarDateRangePicker } from "@/components/date-range-picker";
 import { cn } from "@/lib/utils";
 import { useAnalyticsSessions, useAnalyticsSessionDetails } from "@/hooks/use-analytics";
-import { DataTable } from "@/components/analytics/data-table";
+import type { SessionData, SessionEventData, SessionWithEvents } from "@/hooks/use-analytics";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogClose
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorBoundary } from "@/components/error-boundary";
-
-// Add interface definitions for session data types
-interface SessionData {
-  session_id: string;
-  visitor_id: string;
-  started_at: string;
-  duration: number;
-  pageviews: number;
-  country?: string;
-  city?: string;
-  device_type?: string;
-  browser?: string;
-  os?: string;
-  is_returning_visitor?: boolean;
-  [key: string]: any;
-}
-
-interface SessionEventData {
-  event_id: string;
-  time: string;
-  event_name: string;
-  path: string;
-  title?: string;
-  time_on_page?: number;
-  device_type?: string;
-  browser?: string;
-  os?: string;
-  [key: string]: any;
-}
-
-interface SessionWithEvents extends SessionData {
-  events: SessionEventData[];
-}
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 export default function SessionsPage() {
-  const { id } = useParams();
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
+  const { id } = useParams<{ id: string }>();
+  
+  // Date range state (last 7 days by default)
+  const [date, setDate] = useState<DateRange>({
+    from: subDays(new Date(), 7),
     to: new Date(),
   });
   
-  // Convert selected date range to string format
+  // Convert selected date range to string format for API
   const dateRange = useMemo(() => ({
-    start_date: date?.from ? format(date.from, 'yyyy-MM-dd') : format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+    start_date: date?.from ? format(date.from, 'yyyy-MM-dd') : format(subDays(new Date(), 7), 'yyyy-MM-dd'),
     end_date: date?.to ? format(date.to, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
   }), [date]);
 
-  // Session details dialog state
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  // Filter state
   const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   
   // Fetch sessions data
   const { data: sessionsData, isLoading } = useAnalyticsSessions(
-    id as string, 
+    id, 
     dateRange,
-    100
+    500 // Fetch more sessions for better filtering
   );
   
   // Fetch session details when a session is selected
   const { data: sessionDetails, isLoading: isLoadingSessionDetails } = useAnalyticsSessionDetails(
-    id as string,
+    id,
     selectedSessionId || '',
     !!selectedSessionId
   );
 
-  // Session table columns
-  const sessionColumns = useMemo(() => [
+  // Sessions filtering function  
+  const filteredSessions = useMemo(() => {
+    if (!sessionsData?.sessions) return [];
+    
+    let results = [...sessionsData.sessions];
+    
+    // Filter by device type if tab is not 'all'
+    if (activeTab !== 'all') {
+      results = results.filter(session => {
+        if (activeTab === 'desktop') return session.device === 'desktop';
+        if (activeTab === 'mobile') return session.device === 'mobile' || session.device === 'tablet';
+        if (activeTab === 'long') return (session.duration || 0) > 300; // 5+ minutes
+        if (activeTab === 'bounce') return (session.page_views || 0) === 1; // Single page view
+        return true;
+      });
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      results = results.filter(session => 
+        session.visitor_id.toLowerCase().includes(query) ||
+        session.session_id.toLowerCase().includes(query) ||
+        (session.country?.toLowerCase().includes(query)) ||
+        (session.browser?.toLowerCase().includes(query))
+      );
+    }
+    
+    return results;
+  }, [sessionsData?.sessions, activeTab, searchQuery]);
+
+  // Stats calculations
+  const totalSessions = sessionsData?.sessions?.length || 0;
+  const avgDuration = useMemo(() => {
+    if (!sessionsData?.sessions?.length) return 0;
+    const totalDuration = sessionsData.sessions.reduce((sum, session) => sum + (session.duration || 0), 0);
+    return Math.round(totalDuration / sessionsData.sessions.length);
+  }, [sessionsData?.sessions]);
+  
+  const bounceRate = useMemo(() => {
+    if (!sessionsData?.sessions?.length) return 0;
+    const singlePageSessions = sessionsData.sessions.filter(session => (session.page_views || 0) === 1).length;
+    return Math.round((singlePageSessions / sessionsData.sessions.length) * 100);
+  }, [sessionsData?.sessions]);
+
+  // Add type definition for column cell accessors
+  type ColumnAccessKeys = keyof SessionData;
+
+  // Session columns definition
+  type SessionColumn = {
+    accessorKey: string;
+    header: string;
+    cell: (value: any) => React.ReactNode;
+    className?: string;
+  };
+
+  const sessionColumns: SessionColumn[] = [
     {
-      accessorKey: 'session_id',
-      header: 'Session ID',
-      cell: (value: string) => (
-        <span className="font-mono text-xs truncate block max-w-[150px]" title={value}>
-          {value || '-'}
-        </span>
-      )
-    },
-    {
-      accessorKey: 'visitor_id',
-      header: 'Visitor ID',
-      cell: (value: string) => (
-        <span className="font-mono text-xs truncate block max-w-[150px]" title={value}>
-          {value || '-'}
-        </span>
-      )
-    },
-    {
-      accessorKey: 'started_at',
-      header: 'Started',
+      accessorKey: 'first_visit',
+      header: 'Date & Time',
       cell: (value: string) => {
         if (!value) return <span>-</span>;
         try {
           const date = new Date(value);
           return (
             <span className="whitespace-nowrap">
-              {Number.isNaN(date.getTime()) ? '-' : format(date, 'MMM d, yyyy HH:mm:ss')}
+              {Number.isNaN(date.getTime()) ? '-' : format(date, 'MMM d, HH:mm')}
             </span>
           );
         } catch (error) {
@@ -147,71 +149,117 @@ export default function SessionsPage() {
     {
       accessorKey: 'duration',
       header: 'Duration',
-      cell: (value: any) => {
+      cell: (value: number) => {
         if (typeof value !== 'number') return <span>-</span>;
-        return <span>{Math.floor(value / 60)}m {value % 60}s</span>;
+        const minutes = Math.floor(value / 60);
+        const seconds = value % 60;
+        return <span>{minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`}</span>;
       }
     },
     {
-      accessorKey: 'pageviews',
+      accessorKey: 'page_views',
       header: 'Pages',
-      cell: (value: any) => {
-        if (typeof value === 'object') return <span>-</span>;
-        return <span className="text-right">{value || 0}</span>;
-      },
+      cell: (value: number) => (
+        <span className="font-medium">{value || 0}</span>
+      ),
       className: 'text-right',
     },
     {
       accessorKey: 'country',
       header: 'Country',
-      cell: (value: any) => {
-        if (typeof value === 'object') return <span>-</span>;
-        return <span>{value || 'Unknown'}</span>;
+      cell: (value: string) => {
+        if (!value || value === 'Unknown') return <span className="text-muted-foreground">Unknown</span>;
+        return (
+          <div className="flex items-center gap-1.5">
+            {value && (
+              <div className="w-4 h-3 relative overflow-hidden rounded-[1px]">
+                <img 
+                  src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${value.toUpperCase()}.svg`}
+                  alt={value}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            <span>{value}</span>
+          </div>
+        );
       }
     },
     {
-      accessorKey: 'device_type',
+      accessorKey: 'device',
       header: 'Device',
-      cell: (value: any) => {
-        if (typeof value === 'object') return <span>-</span>;
-        return <span>{value || 'Unknown'}</span>;
+      cell: (value: string) => {
+        const icon = value === 'desktop' ? <Monitor className="w-3 h-3" /> : <Smartphone className="w-3 h-3" />;
+        return (
+          <div className="flex items-center gap-1.5">
+            {icon}
+            <span className="capitalize">{value || 'Unknown'}</span>
+          </div>
+        );
       }
     },
     {
       accessorKey: 'browser',
       header: 'Browser',
-      cell: (value: any) => {
-        if (typeof value === 'object') return <span>-</span>;
-        return <span>{value || 'Unknown'}</span>;
-      }
+      cell: (value: string) => (
+        <span className="capitalize">{value || 'Unknown'}</span>
+      )
     },
-  ], []);
+  ];
 
-  // Session events table columns (for session details)
-  const sessionEventsColumns = useMemo(() => [
+  // Session event columns for session detail view
+  type EventColumn = {
+    accessorKey: keyof SessionEventData;
+    header: string;
+    cell: (value: any, row?: any) => React.ReactNode;
+  };
+
+  const eventColumns: EventColumn[] = [
     {
       accessorKey: 'time',
       header: 'Time',
-      cell: (value: string) => (
-        <span className="whitespace-nowrap font-mono text-xs">
-          {value}
-        </span>
-      )
+      cell: (value: string) => {
+        if (!value) return <span>-</span>;
+        try {
+          return <span className="font-mono text-xs">{value.split(' ')[1]}</span>;
+        } catch (error) {
+          return <span>-</span>;
+        }
+      }
     },
     {
-      accessorKey: 'event',
+      accessorKey: 'event_name',
       header: 'Event',
-      cell: (value: string) => (
-        <span className="font-medium">
-          {value}
-        </span>
-      )
+      cell: (value: string, row?: any) => {
+        let icon: React.ReactNode;
+        let variant: "default" | "secondary" | "destructive" | "outline" | undefined = "default";
+        
+        if (value === 'pageview') {
+          icon = <ExternalLink className="h-3 w-3" />;
+          variant = "outline";
+        } else if (value === 'click') {
+          icon = <MousePointerClick className="h-3 w-3" />;
+          variant = "secondary";
+        }
+        
+        return (
+          <Badge variant={variant} className="capitalize font-normal">
+            <span className="flex items-center gap-1">
+              {icon}
+              <span>{value}</span>
+            </span>
+          </Badge>
+        );
+      }
     },
     {
       accessorKey: 'path',
       header: 'Path',
       cell: (value: string) => (
-        <span className="truncate block max-w-[200px]" title={value}>
+        <span className="truncate block max-w-[120px]" title={value}>
           {value || '/'}
         </span>
       )
@@ -220,389 +268,365 @@ export default function SessionsPage() {
       accessorKey: 'title',
       header: 'Page Title',
       cell: (value: string) => (
-        <span className="truncate block max-w-[200px]" title={value}>
+        <span className="truncate block max-w-[150px]" title={value}>
           {value || '-'}
         </span>
       )
-    },
-    {
-      accessorKey: 'time_on_page',
-      header: 'Time on Page',
-      cell: (value: string) => (
-        <span>
-          {value || '-'}
-        </span>
-      )
-    },
-  ], []);
-
-  // Filter sessions based on active tab
-  const filteredSessions = useMemo(() => {
-    if (!sessionsData?.sessions || activeTab === 'all') {
-      return sessionsData?.sessions || [];
     }
-    
-    // Cast to the defined SessionData type to access properties safely
-    const sessions = sessionsData.sessions as unknown as SessionData[];
-    
-    switch (activeTab) {
-      case 'desktop':
-        return sessions.filter(session => 
-          session.device_type?.toLowerCase() === 'desktop' || 
-          session.device_type?.toLowerCase() === 'laptop'
-        );
-      case 'mobile':
-        return sessions.filter(session => 
-          session.device_type?.toLowerCase() === 'mobile' || 
-          session.device_type?.toLowerCase() === 'tablet'
-        );
-      case 'returning':
-        return sessions.filter(session => 
-          session.is_returning_visitor === true
-        );
-      default:
-        return sessions;
-    }
-  }, [activeTab, sessionsData?.sessions]);
-  
-  // Summary metrics
-  const metrics = useMemo(() => {
-    if (!sessionsData?.sessions) return {
-      total: 0,
-      desktop: 0,
-      mobile: 0,
-      returning: 0,
-      avgDuration: 0
-    };
-    
-    // Cast to the defined SessionData type to access properties safely
-    const sessions = sessionsData.sessions as unknown as SessionData[];
-    const totalDuration = sessions.reduce((sum, s) => sum + (typeof s.duration === 'number' ? s.duration : 0), 0);
-    
-    return {
-      total: sessions.length,
-      desktop: sessions.filter(s => s.device_type?.toLowerCase() === 'desktop' || s.device_type?.toLowerCase() === 'laptop').length,
-      mobile: sessions.filter(s => s.device_type?.toLowerCase() === 'mobile' || s.device_type?.toLowerCase() === 'tablet').length,
-      returning: sessions.filter(s => s.is_returning_visitor === true).length,
-      avgDuration: sessions.length > 0 ? Math.round(totalDuration / sessions.length) : 0
-    };
-  }, [sessionsData?.sessions]);
-  
-  const handleSessionRowClick = (sessionId: string) => {
-    setSelectedSessionId(sessionId);
-  };
+  ];
 
-  const handleCloseSessionDialog = () => {
-    setSelectedSessionId(null);
-  };
-
-  // Format session events for display in details dialog
+  // Format session events for display
   const formattedEvents = useMemo(() => {
     if (!sessionDetails?.session?.events) return [];
     
     return sessionDetails.session.events.map(event => ({
-      id: event.event_id,
-      time: event.time ? format(new Date(event.time), 'HH:mm:ss') : '-',
-      event: event.event_name,
-      path: event.path,
-      title: event.title || '-',
-      time_on_page: event.time_on_page ? `${Math.round(event.time_on_page)}s` : '-',
-      device_info: [event.browser, event.os, event.device_type]
-        .filter(Boolean)
-        .join(' / ') || 'Unknown'
+      ...event,
+      time: event.time ? format(new Date(event.time), 'yyyy-MM-dd HH:mm:ss') : '',
     }));
-  }, [sessionDetails]);
+  }, [sessionDetails?.session?.events]);
+
+  // Event handlers
+  const handleSessionClick = useCallback((session: any) => {
+    setSelectedSessionId(session.session_id);
+  }, []);
+
+  const handleCloseSession = useCallback(() => {
+    setSelectedSessionId(null);
+  }, []);
+  
+  const handleDateRangeChange = useCallback((range: DateRange | undefined) => {
+    if (range?.from && range?.to) {
+      setDate(range);
+    }
+  }, []);
 
   return (
-    <ErrorBoundary>
-      <div className="p-6 space-y-6 bg-background">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="flex flex-col p-6 pb-0 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Sessions</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              View detailed session data for your website
+            <h1 className="text-2xl font-bold tracking-tight mb-1">Session Analysis</h1>
+            <p className="text-muted-foreground text-sm">
+              View and analyze your visitors' browsing sessions 
             </p>
           </div>
           
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="md:min-w-[240px] justify-start text-left font-normal shadow-sm">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date?.from ? (
-                  date.to ? (
-                    <>
-                      {format(date.from, "LLL dd, y")} -{" "}
-                      {format(date.to, "LLL dd, y")}
-                    </>
-                  ) : (
-                    format(date.from, "LLL dd, y")
-                  )
-                ) : (
-                  <span>Pick a date range</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 shadow-md" align="end">
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={date?.from}
-                selected={date}
-                onSelect={setDate}
-                numberOfMonths={2}
-              />
-            </PopoverContent>
-          </Popover>
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <CalendarDateRangePicker
+              initialDateRange={date}
+              onUpdate={handleDateRangeChange}
+            />
+          </div>
         </div>
         
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card className="shadow-sm border overflow-hidden">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <LayoutDashboard className="h-4 w-4 mr-2 text-primary" />
-                Total Sessions
-              </CardTitle>
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-8 w-24" />
               ) : (
-                <div className="text-2xl font-bold">{metrics.total.toLocaleString()}</div>
+                <div className="flex items-center gap-2">
+                  <Laptop className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-2xl font-bold">{totalSessions.toLocaleString()}</span>
+                </div>
               )}
             </CardContent>
           </Card>
           
-          <Card className="shadow-sm border overflow-hidden">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <Monitor className="h-4 w-4 mr-2 text-blue-500" />
-                Desktop Sessions
-              </CardTitle>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Avg. Session Duration</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-8 w-24" />
               ) : (
-                <div className="text-2xl font-bold">{metrics.desktop.toLocaleString()}</div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-2xl font-bold">
+                    {Math.floor(avgDuration / 60)}m {avgDuration % 60}s
+                  </span>
+                </div>
               )}
             </CardContent>
           </Card>
           
-          <Card className="shadow-sm border overflow-hidden">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <Smartphone className="h-4 w-4 mr-2 text-indigo-500" />
-                Mobile Sessions
-              </CardTitle>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Bounce Rate</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-8 w-24" />
               ) : (
-                <div className="text-2xl font-bold">{metrics.mobile.toLocaleString()}</div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-sm border overflow-hidden">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <Users className="h-4 w-4 mr-2 text-green-500" />
-                Returning Visitors
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-7 w-16" />
-              ) : (
-                <div className="text-2xl font-bold">{metrics.returning.toLocaleString()}</div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-sm border overflow-hidden">
-            <CardHeader className="pb-2 pt-5">
-              <CardTitle className="text-sm font-medium flex items-center">
-                <Clock className="h-4 w-4 mr-2 text-amber-500" />
-                Avg. Duration
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-7 w-16" />
-              ) : (
-                <div className="text-2xl font-bold">
-                  {Math.floor(metrics.avgDuration / 60)}m {metrics.avgDuration % 60}s
+                <div className="flex items-center gap-2">
+                  <MousePointerClick className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-2xl font-bold">{bounceRate}%</span>
+                  <Badge variant="outline" className="ml-2 font-normal">
+                    Single page visits
+                  </Badge>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
         
-        {/* Tabs */}
-        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full mt-8">
-          <TabsList className="grid grid-cols-4 md:w-fit mb-4 rounded-lg p-1 shadow-sm">
-            <TabsTrigger value="all" className="rounded-md">All Sessions</TabsTrigger>
-            <TabsTrigger value="desktop" className="rounded-md">Desktop</TabsTrigger>
-            <TabsTrigger value="mobile" className="rounded-md">Mobile</TabsTrigger>
-            <TabsTrigger value="returning" className="rounded-md">Returning</TabsTrigger>
-          </TabsList>
+        <div className="flex flex-col sm:flex-row gap-3 items-start justify-between">
+          <Tabs 
+            defaultValue="all" 
+            className="w-full max-w-[400px]"
+            onValueChange={setActiveTab}
+          >
+            <TabsList className="grid grid-cols-4 w-full">
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="desktop">Desktop</TabsTrigger>
+              <TabsTrigger value="mobile">Mobile</TabsTrigger>
+              <TabsTrigger value="long">Long</TabsTrigger>
+            </TabsList>
+          </Tabs>
           
-          <TabsContent value="all" className="mt-0">
-            <Card className="border shadow-sm">
-              <DataTable 
-                columns={sessionColumns}
-                data={filteredSessions}
-                isLoading={isLoading}
-                onRowClick={(row) => handleSessionRowClick(row.session_id)}
-                title="All Sessions"
-                limit={25}
-                emptyMessage="No sessions recorded yet"
-              />
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="desktop" className="mt-0">
-            <Card className="border shadow-sm">
-              <DataTable 
-                columns={sessionColumns}
-                data={filteredSessions}
-                isLoading={isLoading}
-                onRowClick={(row) => handleSessionRowClick(row.session_id)}
-                title="Desktop Sessions"
-                limit={25}
-                emptyMessage="No desktop sessions recorded yet"
-              />
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="mobile" className="mt-0">
-            <Card className="border shadow-sm">
-              <DataTable 
-                columns={sessionColumns}
-                data={filteredSessions}
-                isLoading={isLoading}
-                onRowClick={(row) => handleSessionRowClick(row.session_id)}
-                title="Mobile Sessions"
-                limit={25}
-                emptyMessage="No mobile sessions recorded yet"
-              />
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="returning" className="mt-0">
-            <Card className="border shadow-sm">
-              <DataTable 
-                columns={sessionColumns}
-                data={filteredSessions}
-                isLoading={isLoading}
-                onRowClick={(row) => handleSessionRowClick(row.session_id)}
-                title="Returning Visitor Sessions"
-                limit={25}
-                emptyMessage="No returning visitor sessions recorded yet"
-              />
-            </Card>
-          </TabsContent>
-        </Tabs>
-        
-        {/* Session Details Dialog */}
-        <Dialog open={!!selectedSessionId} onOpenChange={handleCloseSessionDialog}>
-          <DialogContent className="max-w-5xl p-0 overflow-hidden rounded-lg shadow-xl">
-            <DialogHeader className="px-6 py-4 border-b sticky top-0 bg-background z-10">
-              <DialogTitle className="text-xl">Session Details</DialogTitle>
-            </DialogHeader>
-            
-            {isLoadingSessionDetails ? (
-              <div className="space-y-4 p-6">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-32 w-full" />
+          <div className="relative w-full sm:max-w-[250px]">
+            <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search sessions..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex-1 p-6 pt-4 overflow-hidden">
+        <div className="bg-card rounded-lg border shadow-sm overflow-hidden h-full flex flex-col">
+          <div className="overflow-y-auto flex-1">
+            {isLoading ? (
+              <div className="p-8 flex justify-center">
+                <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
               </div>
-            ) : sessionDetails?.session ? (
-              <div className="px-6 py-5 space-y-8 max-h-[80vh] overflow-y-auto">
-                {/* Session Info */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <Card className="border shadow-sm hover:shadow-md transition-all duration-200">
-                    <CardHeader className="pb-2 pt-5 bg-muted/20">
-                      <CardTitle className="text-sm font-medium">Visitor</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-sm pt-4">
-                      <div className="font-mono truncate text-xs" title={sessionDetails.session.visitor_id}>
-                        ID: {sessionDetails.session.visitor_id}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-3">
-                        <span className={cn(
-                          "h-2.5 w-2.5 rounded-full",
-                          sessionDetails.session.is_returning_visitor ? "bg-green-500" : "bg-blue-500"
-                        )} />
-                        <span className="text-sm">{sessionDetails.session.is_returning_visitor ? "Returning" : "New"} visitor</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="border shadow-sm hover:shadow-md transition-all duration-200">
-                    <CardHeader className="pb-2 pt-5 bg-muted/20">
-                      <CardTitle className="text-sm font-medium">Device</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-sm space-y-2 pt-4">
-                      <div className="flex items-center gap-2">
-                        {/* Cast session to SessionWithEvents type to access device_type safely */}
-                        {(sessionDetails.session as unknown as SessionWithEvents).device_type?.toLowerCase() === 'mobile' ? (
-                          <Smartphone className="h-4 w-4 text-indigo-500" />
-                        ) : (
-                          <Monitor className="h-4 w-4 text-blue-500" />
+            ) : filteredSessions.length > 0 ? (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-muted/40">
+                    {sessionColumns.map((column) => (
+                      <th 
+                        key={column.accessorKey} 
+                        className={cn(
+                          "px-4 py-3 text-xs font-medium text-left", 
+                          column.className
                         )}
-                        <span>{(sessionDetails.session as unknown as SessionWithEvents).device_type || 'Unknown'}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">Browser:</span>
-                        <span>{sessionDetails.session.browser || 'Unknown'}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">OS:</span>
-                        <span>{sessionDetails.session.os || 'Unknown'}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="border shadow-sm hover:shadow-md transition-all duration-200">
-                    <CardHeader className="pb-2 pt-5 bg-muted/20">
-                      <CardTitle className="text-sm font-medium">Location</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-sm space-y-2 pt-4">
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-green-500" />
-                        <span>{sessionDetails.session.country || 'Unknown'}</span>
-                      </div>
-                      <div className="flex items-center gap-2 pl-6">
-                        <span>{sessionDetails.session.city || 'Unknown location'}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                {/* Session Events */}
-                <div>
-                  <h3 className="text-lg font-medium mb-4 pl-1">Session Timeline</h3>
-                  <Card className="border shadow-sm">
-                    <DataTable 
-                      columns={sessionEventsColumns}
-                      data={formattedEvents}
-                      title="Page Views & Events"
-                      emptyMessage="No events recorded for this session"
-                    />
-                  </Card>
-                </div>
-              </div>
+                      >
+                        {column.header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSessions.map((session) => (
+                    <tr 
+                      key={session.session_id} 
+                      className="border-b hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => handleSessionClick(session)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSessionClick(session);
+                      }}
+                      tabIndex={0}
+                    >
+                      {sessionColumns.map((column) => (
+                        <td 
+                          key={`${session.session_id}-${column.accessorKey}`} 
+                          className={cn("px-4 py-3 text-sm", column.className)}
+                        >
+                          {column.cell((session as any)[column.accessorKey])}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             ) : (
-              <div className="py-12 text-center text-muted-foreground">
-                <p>Session details not available</p>
+              <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
+                <Clock className="h-8 w-8 mb-2 opacity-20" />
+                <p>No sessions found</p>
+                <p className="text-sm">Try changing your filters or date range</p>
               </div>
             )}
-          </DialogContent>
-        </Dialog>
+          </div>
+          
+          <div className="p-4 border-t bg-muted/20 text-sm text-muted-foreground">
+            Showing {filteredSessions.length} of {sessionsData?.sessions?.length || 0} sessions
+          </div>
+        </div>
       </div>
-    </ErrorBoundary>
+      
+      {/* Session Detail Dialog */}
+      <Dialog open={!!selectedSessionId} onOpenChange={(open) => !open && handleCloseSession()}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Laptop className="h-5 w-5" />
+              Session Details
+            </DialogTitle>
+          </DialogHeader>
+          
+          {isLoadingSessionDetails ? (
+            <div className="space-y-4">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+          ) : sessionDetails?.session ? (
+            <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Session ID</p>
+                  <p className="text-sm font-mono truncate" title={sessionDetails.session.session_id}>
+                    {sessionDetails.session.session_id?.substring(0, 8)}...
+                  </p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Visitor ID</p>
+                  <p className="text-sm font-mono truncate" title={sessionDetails.session.visitor_id}>
+                    {sessionDetails.session.visitor_id?.substring(0, 8)}...
+                  </p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Date</p>
+                  <p className="text-sm">
+                    {sessionDetails.session.first_visit ? 
+                      format(new Date(sessionDetails.session.first_visit), 'MMM d, yyyy') : '-'}
+                  </p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Time</p>
+                  <p className="text-sm">
+                    {sessionDetails.session.first_visit ? 
+                      format(new Date(sessionDetails.session.first_visit), 'HH:mm:ss') : '-'}
+                  </p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Duration</p>
+                  <p className="text-sm font-semibold">
+                    {sessionDetails.session.duration ? 
+                      `${Math.floor(sessionDetails.session.duration / 60)}m ${sessionDetails.session.duration % 60}s` : '-'}
+                  </p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Pages Viewed</p>
+                  <p className="text-sm font-semibold">{sessionDetails.session.page_views || 0}</p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Device</p>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    {sessionDetails.session.device === 'desktop' ? 
+                      <Monitor className="h-3 w-3" /> : 
+                      <Smartphone className="h-3 w-3" />}
+                    <span className="capitalize">{sessionDetails.session.device}</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Browser</p>
+                  <p className="text-sm capitalize">{sessionDetails.session.browser}</p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">OS</p>
+                  <p className="text-sm">{sessionDetails.session.os}</p>
+                </div>
+                
+                <div className="space-y-1 col-span-2 sm:col-span-1">
+                  <p className="text-xs text-muted-foreground">Location</p>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <Globe className="h-3 w-3" />
+                    <span>
+                      {sessionDetails.session.city && sessionDetails.session.city !== 'Unknown'
+                        ? `${sessionDetails.session.city}, ${sessionDetails.session.country}`
+                        : sessionDetails.session.country || 'Unknown'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Referrer</p>
+                  <p className="text-sm truncate" title={sessionDetails.session.referrer}>
+                    {sessionDetails.session.referrer || 'Direct'}
+                  </p>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">User Type</p>
+                  <p className="text-sm">
+                    {sessionDetails.session.is_returning_visitor ? 'Returning' : 'New'} visitor
+                  </p>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium mb-3">Session Timeline</h4>
+                
+                {formattedEvents.length > 0 ? (
+                  <div className="border rounded-md overflow-hidden">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b bg-muted/40">
+                          {eventColumns.map((column) => (
+                            <th 
+                              key={column.accessorKey} 
+                              className={cn(
+                                "px-3 py-2 text-xs font-medium text-left"
+                              )}
+                            >
+                              {column.header}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {formattedEvents.map((event, i) => (
+                          <tr 
+                            key={event.event_id || i} 
+                            className="border-b last:border-0"
+                          >
+                            {eventColumns.map((column) => (
+                              <td 
+                                key={`${event.event_id || i}-${column.accessorKey}`} 
+                                className={cn("px-3 py-2 text-xs")}
+                              >
+                                {column.cell((event as any)[column.accessorKey], event)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground border rounded-md">
+                    No event data available for this session
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Session details not found
+            </div>
+          )}
+          
+          <DialogClose asChild>
+            <Button variant="outline">Close</Button>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 } 
