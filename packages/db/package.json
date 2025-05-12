@@ -6,9 +6,7 @@
     "exports": {
         ".": "./src/index.ts",
         "./client": "./src/client.ts",
-        "./edge/*": "./src/edge/*",
-        "./edge": "./src/edge/client.ts",
-        "./src/edge/client": "./src/edge/client.ts"
+        "./clickhouse": "./clickhouse/index.ts"
     },
     "dependencies": {
         "@clickhouse/client": "^1.11.0",

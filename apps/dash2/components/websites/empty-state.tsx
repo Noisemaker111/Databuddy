@@ -14,7 +14,6 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ 
-  onCreateWebsite, 
   isCreating, 
   hasVerifiedDomains = true,
   verifiedDomains = []
