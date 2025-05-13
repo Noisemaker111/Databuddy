@@ -47,6 +47,7 @@ import {
   createErrorDetailsBuilder,
   createSessionsBuilder,
   createSessionEventsBuilder,
+  createMiniChartBuilder,
   parseReferrers
 } from '../builders/analytics';
 import {
@@ -2160,6 +2161,91 @@ analyticsRouter.post('/basket/batch', zValidator('json', analyticsBatchSchema), 
   } catch (error) {
     logger.error('Error processing analytics batch:', { error });
     return c.json({ success: false, error: 'Failed to process batch' }, 500);
+  }
+});
+
+/**
+ * Get mini chart data for website card
+ * GET /analytics/mini-chart/:website_id
+ */
+analyticsRouter.get('/mini-chart/:website_id', async (c) => {
+  const websiteId = c.req.param('website_id');
+  const user = c.get('user');
+  
+  if (!user) {
+    return c.json({ error: 'Authentication required' }, 401);
+  }
+
+  try {
+    // Use our builder for the mini chart data
+    const miniChartBuilder = createMiniChartBuilder(websiteId);
+    
+    // Execute query
+    const chartData = await chQuery(miniChartBuilder.getSql());
+    
+    return c.json(createSuccessResponse({
+      data: chartData || []
+    }));
+    
+  } catch (error: any) {
+    logger.error('Error fetching mini chart data:', error);
+    return c.json(createErrorResponse({ 
+      message: 'Error fetching mini chart data',
+      error: error.message
+    }), 500);
+  }
+});
+
+/**
+ * Get mini charts data for multiple websites in a single request
+ * GET /analytics/batch-mini-charts?ids=id1,id2,id3
+ */
+analyticsRouter.get('/batch-mini-charts', async (c) => {
+  const ids = c.req.query('ids');
+  const user = c.get('user');
+  
+  if (!user) {
+    return c.json({ error: 'Authentication required' }, 401);
+  }
+
+  if (!ids) {
+    return c.json(createErrorResponse({ 
+      message: 'Website IDs required',
+      error: 'Missing ids parameter'
+    }), 400);
+  }
+
+  try {
+    // Parse the comma-separated ids
+    const websiteIds = ids.split(',');
+    
+    // Fetch mini chart data for all websites in parallel
+    const promises = websiteIds.map(id => {
+      const miniChartBuilder = createMiniChartBuilder(id);
+      return chQuery(miniChartBuilder.getSql()).then(data => ({ 
+        id, 
+        data: data || [] 
+      }));
+    });
+    
+    const results = await Promise.all(promises);
+    
+    // Convert results array to an object with website IDs as keys
+    const batchData = results.reduce((acc, { id, data }) => {
+      acc[id] = data;
+      return acc;
+    }, {} as Record<string, any>);
+    
+    return c.json(createSuccessResponse({
+      data: batchData
+    }));
+    
+  } catch (error: any) {
+    logger.error('Error fetching batch mini chart data:', error);
+    return c.json(createErrorResponse({ 
+      message: 'Error fetching batch mini chart data',
+      error: error.message
+    }), 500);
   }
 });
 

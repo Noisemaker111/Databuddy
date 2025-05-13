@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useQuery, type QueryKey, type UseQueryOptions } from '@tanstack/react-query';
+import { useQuery, useQueries, type QueryKey, type UseQueryOptions, type QueryFunction } from '@tanstack/react-query';
 
 // Types
 export interface AnalyticsSummary {
@@ -159,6 +159,11 @@ export interface SessionEventData {
 
 export interface SessionWithEvents extends SessionData {
   events: SessionEventData[];
+}
+
+export interface MiniChartDataPoint {
+  date: string;
+  value: number;
 }
 
 export type TimeInterval = 'day' | 'week' | 'month';
@@ -344,6 +349,10 @@ interface ProfilesResponse extends ApiResponse {
   returning_visitors: number;
 }
 
+interface MiniChartResponse extends ApiResponse {
+  data: MiniChartDataPoint[];
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 // Base params builder
@@ -470,6 +479,66 @@ export function useAnalyticsSummary(websiteId: string, dateRange?: DateRange) {
     queryFn: () => fetchAnalyticsData<SimpleSummaryResponse>('/analytics/summary', websiteId, dateRange),
     ...defaultQueryOptions
   });
+}
+
+/**
+ * Hook to fetch mini chart data for website cards
+ */
+export function useMiniChartData(websiteId: string, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['analytics', 'mini-chart', websiteId],
+    queryFn: () => fetchAnalyticsData<MiniChartResponse>(`/analytics/mini-chart/${websiteId}`, websiteId),
+    ...defaultQueryOptions,
+    enabled: options?.enabled !== undefined ? options.enabled : true
+  });
+}
+
+/**
+ * Hook to fetch mini chart data for multiple websites with a single request
+ * @param websiteIds Array of website IDs to fetch data for
+ * @returns Object with data for each website ID, loading states, and error states
+ */
+export function useBatchedMiniCharts(websiteIds: string[]) {
+  const query = useQuery({
+    queryKey: ['analytics', 'batch-mini-charts', websiteIds.sort().join(',')],
+    queryFn: async () => {
+      if (!websiteIds.length) return { data: {} };
+      
+      // Build URL with comma-separated IDs
+      const idsParam = websiteIds.join(',');
+      
+      // Make a single request for all websites
+      const url = `${API_BASE_URL}/analytics/batch-mini-charts?ids=${idsParam}`;
+      
+      console.log('[DataBuddy] Fetching batch mini charts:', url);
+      
+      const response = await fetch(url, { 
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch batch mini chart data');
+      }
+      
+      return await response.json();
+    },
+    ...defaultQueryOptions,
+    staleTime: 10 * 60 * 1000, // 10 minutes for mini charts
+    enabled: websiteIds.length > 0
+  });
+  
+  // Process the results into a more usable format
+  const chartsData: Record<string, MiniChartDataPoint[]> = query.data?.data || {};
+  
+  return {
+    chartsData,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: query.refetch
+  };
 }
 
 /**

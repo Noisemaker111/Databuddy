@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, ExternalLink, Globe, Home, ShieldCheck, ShieldAlert, ShieldQuestion, Clock } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -13,10 +13,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { WebsiteDialog } from "@/components/website-dialog";
 import type { Website } from "@/hooks/use-websites";
 import { useWebsitesStore } from "@/stores/use-websites-store";
+import { MiniChart } from "@/components/websites/mini-chart";
+import type { MiniChartDataPoint } from "@/hooks/use-analytics";
+import { cn } from "@/lib/utils";
 
 type VerifiedDomain = {
   id: string;
@@ -29,6 +31,9 @@ interface WebsiteCardProps {
   onUpdate: (id: string, name: string) => void;
   isUpdating: boolean;
   verifiedDomains: VerifiedDomain[];
+  data?: MiniChartDataPoint[];
+  isLoading?: boolean;
+  isError?: boolean;
 }
 
 export function WebsiteCard({
@@ -36,6 +41,9 @@ export function WebsiteCard({
   onUpdate,
   isUpdating,
   verifiedDomains,
+  data,
+  isLoading,
+  isError
 }: WebsiteCardProps) {
   const setSelectedWebsite = useWebsitesStore(state => state.setSelectedWebsite);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -53,21 +61,75 @@ export function WebsiteCard({
     setDialogOpen(true);
   };
 
+  // Get verification icon
+  const getVerificationIcon = () => {
+    if (isLocalhost) {
+      return (
+        <div className="flex items-center text-zinc-500" title="Local Development">
+          <Home className="h-3.5 w-3.5" />
+        </div>
+      );
+    }
+    
+    const domain = typeof website.domain === 'string' 
+      ? verifiedDomains.find(d => d.name === website.domain)
+      : verifiedDomains.find(d => d.id === website.domainId);
+    
+    if (!domain) {
+      return (
+        <div className="flex items-center text-zinc-500" title="Domain Status Unknown">
+          <Globe className="h-3.5 w-3.5" />
+        </div>
+      );
+    }
+    
+    switch (domain.verificationStatus) {
+      case "VERIFIED":
+        return (
+          <div className="flex items-center text-green-500" title="Domain Verified">
+            <ShieldCheck className="h-3.5 w-3.5" />
+          </div>
+        );
+      case "FAILED":
+        return (
+          <div className="flex items-center text-red-500" title="Verification Failed">
+            <ShieldAlert className="h-3.5 w-3.5" />
+          </div>
+        );
+      case "PENDING":
+        return (
+          <div className="flex items-center text-amber-500" title="Verification Pending">
+            <Clock className="h-3.5 w-3.5" />
+          </div>
+        );
+      default:
+        return (
+          <div className="flex items-center text-zinc-500" title="Domain Status Unknown">
+            <ShieldQuestion className="h-3.5 w-3.5" />
+          </div>
+        );
+    }
+  };
+
   return (
-    <Card className="relative overflow-hidden border-border/60 shadow-sm card-hover-effect">
-      <CardHeader className="relative">
+    <Card className={cn(
+      "relative overflow-hidden shadow-sm transition-all duration-200 hover:shadow-md",
+      "border border-border/60 hover:border-border/80 group"
+    )}>
+      <CardHeader className="relative pb-2 md:pb-3">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-base truncate">
+            <CardTitle className="text-base truncate group-hover:text-primary transition-colors">
               {website.name || 'Unnamed Website'}
             </CardTitle>
-            <CardDescription className="truncate">
-              {domainValue}
+            <CardDescription className="truncate text-xs flex items-center gap-1.5">
+              {getVerificationIcon()}
+              <span className="truncate">{domainValue}</span>
             </CardDescription>
           </div>
           <Button 
             variant="ghost" 
-            className="h-8 w-8 p-0"
+            className="h-8 w-8 p-0 -mr-2 opacity-70 hover:opacity-100"
             type="button"
             onClick={handleOpenDialog}
           >
@@ -75,17 +137,28 @@ export function WebsiteCard({
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="text-sm">
-          <Badge variant="outline" className="bg-background">
-            {isLocalhost ? "Local Development" : "Website"}
-          </Badge>
-        </div>
+      <CardContent className="pb-3 md:pb-4">
+        <MiniChart
+          websiteId={website.id}
+          data={data}
+          isLoading={isLoading}
+          isError={isError}
+        />
       </CardContent>
-      <CardFooter className="flex flex-col space-y-2">
-        <Button asChild variant="default" className="w-full">
-          <Link href={`/websites/${website.id}`}>
-            View Analytics
+      <CardFooter className="pt-0">
+        <Button 
+          asChild 
+          variant="outline" 
+          size="sm" 
+          className={cn(
+            "w-full bg-transparent border-muted text-muted-foreground",
+            "hover:bg-primary/5 hover:text-primary hover:border-primary/20",
+            "transition-all duration-200"
+          )}
+        >
+          <Link href={`/websites/${website.id}`} className="flex items-center justify-center gap-1">
+            <span>View Analytics</span>
+            <ExternalLink className="h-3.5 w-3.5" />
           </Link>
         </Button>
       </CardFooter>

@@ -120,7 +120,7 @@ export function AnimatedLoading({
       
       return () => clearInterval(interval);
     }
-  }, [externalProgress, type, stages]);
+  }, [externalProgress, type]);
 
   // Cycle through fetch details
   useEffect(() => {
@@ -139,7 +139,7 @@ export function AnimatedLoading({
     return () => {
       clearInterval(intervalId);
     };
-  }, [type, fetchMessages]);
+    }, [type]);
 
   return (
     <div className={cn(
@@ -183,7 +183,7 @@ export function AnimatedLoading({
               
               return (
                 <div 
-                  key={i} 
+                  key={`${type}-${i + 1}`} 
                   className={cn(
                     "flex items-center p-2.5 rounded-md transition-colors duration-300",
                     isActive ? "bg-background/80 backdrop-blur-sm" : "bg-transparent",

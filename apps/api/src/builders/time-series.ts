@@ -16,6 +16,11 @@ export interface EventByDate {
   avg_session_duration: number;
 }
 
+export interface MiniChartDataPoint {
+  date: string;
+  value: number;
+}
+
 /**
  * Creates a builder for fetching analytics data broken down by time periods
  * Supports hourly or daily granularity
@@ -240,6 +245,45 @@ export function createErrorTimelineBuilder(websiteId: string, startDate: string,
     date: 'date ASC',
     count: 'count DESC'
   };
+  
+  return builder;
+}
+
+/**
+ * Creates a builder for fetching mini chart data for website cards
+ * Returns last 7 days of pageviews data for simple visualization
+ */
+export function createMiniChartBuilder(websiteId: string) {
+  const builder = createSqlBuilder();
+  
+  const sql = `
+    WITH date_range AS (
+      SELECT arrayJoin(arrayMap(
+        d -> toDate(today()) - d,
+        range(7) -- Last 7 days
+      )) AS date
+    ),
+    daily_pageviews AS (
+      SELECT 
+        toDate(time) as event_date,
+        countIf(event_name = 'screen_view') as pageviews
+      FROM analytics.events
+      WHERE 
+        client_id = '${websiteId}'
+        AND toDate(time) >= (today() - 6) -- Last 7 days including today
+        AND toDate(time) <= today()
+      GROUP BY event_date
+    )
+    SELECT
+      toString(date_range.date) as date,
+      COALESCE(dp.pageviews, 0) as value
+    FROM date_range
+    LEFT JOIN daily_pageviews dp ON date_range.date = dp.event_date
+    ORDER BY date_range.date ASC
+  `;
+  
+  // Override the getSql method
+  builder.getSql = () => sql;
   
   return builder;
 } 

@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 interface CountryFlagProps {
   country: string;
   size?: number;
@@ -8,9 +10,14 @@ interface CountryFlagProps {
 export function CountryFlag({ country, size = 18 }: CountryFlagProps) {
   const countryCode = country.toLowerCase();
   
+  const imageUrl = useMemo(() => 
+    `https://purecatamphetamine.github.io/country-flag-icons/3x2/${countryCode.toUpperCase()}.svg`,
+    [countryCode]
+  );
+  
   return (
     <img
-      src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${countryCode.toUpperCase()}.svg`}
+      src={imageUrl}
       alt={`${country} flag`}
       width={size}
       height={size * 0.75}
