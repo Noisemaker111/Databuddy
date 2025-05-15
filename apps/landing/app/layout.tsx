@@ -86,12 +86,9 @@ export default function RootLayout({
         data-api-url="https://api.databuddy.cc"
         data-track-screen-views="true"
         data-track-performance="true"
-        data-track-web-vitals="true"
         data-track-errors="true"
-        data-enable-batching="true"
-        data-batch-size="20"
-        data-batch-timeout="5000"
         strategy="afterInteractive"
+        defer
       />
       </Head>
       <PostHogProvider>
