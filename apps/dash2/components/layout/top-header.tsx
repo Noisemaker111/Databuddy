@@ -40,7 +40,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { NotificationsPopover } from "@/components/notifications/notifications-popover";
-import { CommandSearch } from "@/components/ui/command-search";
+// import { CommandSearch } from "@/components/ui/command-search";
 import { useWebsites } from "@/hooks/use-websites";
 import { redirect } from "next/navigation";
 
@@ -62,7 +62,6 @@ export function TopHeader({ setMobileOpen }: TopHeaderProps) {
   const [mounted, setMounted] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [commandSearchOpen, setCommandSearchOpen] = useState(false);
 
   // Transform fetched websites for CommandSearch
   const commandSearchWebsites = useMemo((): WebsiteItem[] => {
@@ -122,25 +121,6 @@ export function TopHeader({ setMobileOpen }: TopHeaderProps) {
             </div>
             <span className="font-semibold text-lg">Databuddy</span>
           </Link>
-        </div>
-
-        {/* Placeholder for a more central search bar - Step 2 */}
-        <div className="flex-1 flex justify-center px-4">
-          {/* This will be replaced by the styled search bar button */}
-          <Button
-            variant="outline"
-            className="w-full max-w-xs md:max-w-md lg:max-w-lg justify-start text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors duration-200"
-            onClick={() => setCommandSearchOpen(true)}
-            disabled={isLoadingWebsites} // Disable if websites are loading
-          >
-            <Search className="h-4 w-4 mr-2 flex-shrink-0" />
-            <span className="truncate">
-              {isLoadingWebsites ? "Loading websites..." : "Search websites, pages, actions..."}
-            </span>
-            <kbd className="pointer-events-none ml-auto hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 md:flex">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </Button>
         </div>
 
         {/* Right Side - User Controls - adjusted to remove the small search icon */}
@@ -290,13 +270,6 @@ export function TopHeader({ setMobileOpen }: TopHeaderProps) {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Command Search Dialog */}
-      <CommandSearch 
-        open={commandSearchOpen} 
-        onOpenChange={setCommandSearchOpen} 
-        userWebsites={commandSearchWebsites} // Pass transformed websites
-      />
     </header>
   );
 } 
