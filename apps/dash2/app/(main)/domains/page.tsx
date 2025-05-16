@@ -133,32 +133,58 @@ export default function DomainsPage() {
   };
 
   const handleVerifyDomain = async (domainId: string) => {
+    if (!domainId) {
+      toast.error("Invalid domain ID");
+      return;
+    }
+
     setIsVerifying(prev => ({ ...prev, [domainId]: true }));
+    
     try {
+      // Wrap in try-catch to prevent unhandled exceptions
       const result = await checkDomainVerification(domainId);
       
-      if (result.error) {
-        toast.error(result.error);
+      // Handle error case first
+      if (!result || result.error) {
+        toast.error(result?.error || "Verification failed - no response from server");
         return;
       }
       
+      // Safely handle the result data
       if (result.data) {
+        // Update verification result state with type safety
         setVerificationResult(prev => ({ 
           ...prev, 
-          [domainId]: result.data 
+          [domainId]: {
+            verified: Boolean(result.data.verified),
+            message: String(result.data.message || "")
+          }
         }));
         
+        // Show appropriate toast based on verification result
         if (result.data.verified) {
           toast.success("Domain verified successfully");
-          fetchDomains(); // Refresh domains list
+          // Wait a moment before refreshing to ensure UI updates properly
+          setTimeout(() => fetchDomains(), 500);
         } else {
-          toast.error(result.data.message);
+          toast.error(result.data.message || "Verification failed");
         }
+      } else {
+        // Handle case where result.data is undefined
+        toast.error("Verification returned invalid data");
       }
     } catch (error) {
+      // Log detailed error and show user-friendly message
       console.error("Error verifying domain:", error);
-      toast.error("Failed to verify domain");
+      let errorMessage = "Failed to verify domain";
+      
+      if (error instanceof Error) {
+        errorMessage += `: ${error.message}`;
+      }
+      
+      toast.error(errorMessage);
     } finally {
+      // Always reset the loading state
       setIsVerifying(prev => ({ ...prev, [domainId]: false }));
     }
   };

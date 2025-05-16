@@ -297,6 +297,8 @@ export async function checkDomainVerification(id: string) {
   const user = await getUser();
   if (!user) return { error: "Unauthorized" };
 
+  if (!id) return { error: "Invalid domain ID" };
+
   try {
     console.log(`[Verification] Checking: ${id}`);
     
@@ -330,6 +332,10 @@ export async function checkDomainVerification(id: string) {
       return { error: "Domain not found" };
     }
 
+    if (!domain.name) {
+      return { error: "Invalid domain name" };
+    }
+
     // Check if domain is localhost
     const isLocalhost = domain.name.includes('localhost') || domain.name.includes('127.0.0.1');
     if (isLocalhost) {
@@ -360,19 +366,70 @@ export async function checkDomainVerification(id: string) {
     const rootDomain = domainName.replace(/^www\./, '');
     console.log(`[Verification] Checking DNS for: ${rootDomain}`);
     
+    // Verify token is present
+    const expectedToken = domain.verificationToken;
+    if (!expectedToken) {
+      console.error(`[Verification] Missing verification token for ${domain.name}`);
+      return { 
+        data: { 
+          verified: false, 
+          message: "Missing verification token. Please regenerate the token and try again." 
+        } 
+      };
+    }
+    
     // Check for TXT record
     try {
       const dnsRecord = `_databuddy.${rootDomain}`;
       console.log(`[Verification] Looking up: ${dnsRecord}`);
       
-      const txtRecords = await dns.promises.resolveTxt(dnsRecord);
-      console.log(`[Verification] Found ${txtRecords.length} TXT records`);
+      // Ensure we handle DNS lookup errors correctly
+      let txtRecords: string[][] | undefined;
+      try {
+        txtRecords = await dns.promises.resolveTxt(dnsRecord);
+        console.log(`[Verification] Found ${txtRecords?.length || 0} TXT records`);
+      } catch (dnsError: unknown) {
+        console.error("[Verification] DNS resolution error:", dnsError);
+        
+        // Update domain status
+        await db.update(domains)
+          .set({
+            verificationStatus: "FAILED"
+          })
+          .where(eq(domains.id, id));
+        
+        return { 
+          data: { 
+            verified: false, 
+            message: "DNS lookup failed. Please make sure the TXT record is correctly configured and try again." 
+          } 
+        };
+      }
       
-      // Check if any TXT record contains our verification token
-      const expectedToken = domain.verificationToken || '';
+      // Handle cases where there are no TXT records
+      if (!txtRecords || txtRecords.length === 0) {
+        console.log(`[Verification] No TXT records found for ${dnsRecord}`);
+        
+        // Update domain status
+        await db.update(domains)
+          .set({
+            verificationStatus: "FAILED"
+          })
+          .where(eq(domains.id, id));
+        
+        return { 
+          data: { 
+            verified: false, 
+            message: "No DNS records found. Please add the TXT record and wait for DNS propagation (which can take up to 24-48 hours)." 
+          } 
+        };
+      }
       
+      // Safely check if any TXT record contains our verification token
       const isVerified = txtRecords.some(record => 
-        record.some(txt => txt.includes(expectedToken))
+        Array.isArray(record) && record.some(txt => 
+          typeof txt === 'string' && txt.includes(expectedToken)
+        )
       );
       
       if (isVerified) {
@@ -386,10 +443,15 @@ export async function checkDomainVerification(id: string) {
           })
           .where(eq(domains.id, id));
         
-        // Fetch updated domain
+        // Fetch updated domain to confirm update worked
         const updatedDomain = await db.query.domains.findFirst({
           where: eq(domains.id, id)
         });
+        
+        if (!updatedDomain || updatedDomain.verificationStatus !== "VERIFIED") {
+          console.error(`[Verification] Domain status update failed for ${domain.name}`);
+          return { error: "Failed to update domain verification status" };
+        }
         
         revalidatePath("/domains");
         revalidatePath(`/domains/${id}`);
@@ -414,11 +476,11 @@ export async function checkDomainVerification(id: string) {
       return { 
         data: { 
           verified: false, 
-          message: "Verification token not found in DNS records. Your domain will remain unverified until verified." 
+          message: "Verification token not found in DNS records. Please check your DNS configuration and try again." 
         } 
       };
     } catch (error) {
-      console.error("[Verification] DNS lookup error:", error);
+      console.error("[Verification] Error in verification process:", error);
       
       // Update domain as failed
       await db.update(domains)
@@ -430,7 +492,7 @@ export async function checkDomainVerification(id: string) {
       return { 
         data: { 
           verified: false, 
-          message: "Could not find verification record. Make sure the DNS record has been added and propagated. Your domain will remain unverified until verified." 
+          message: "Verification failed due to an error. Please try again later." 
         } 
       };
     }
