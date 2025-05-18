@@ -179,38 +179,38 @@ export function useWebsites() {
 }
 
 // Hook to get a single website by ID
-export function useWebsite(id: string) {
-  const queryClient = useQueryClient();
+// export function useWebsite(id: string) {
+//   const queryClient = useQueryClient();
   
-  return useQuery<Website | null, Error>({
-    queryKey: websiteKeys.detail(id),
-    queryFn: async () => {
-      if (!id) return null;
+//   return useQuery<Website | null, Error>({
+//     queryKey: websiteKeys.detail(id),
+//     queryFn: async () => {
+//       if (!id) return null;
       
-      const websitesData = queryClient.getQueryData<Website[]>(websiteKeys.lists());
-      const cachedWebsite = websitesData?.find(website => website.id === id);
-      if (cachedWebsite) {
-        return cachedWebsite;
-      }
+//       const websitesData = queryClient.getQueryData<Website[]>(websiteKeys.lists());
+//       const cachedWebsite = websitesData?.find(website => website.id === id);
+//       if (cachedWebsite) {
+//         return cachedWebsite;
+//       }
       
-      console.log(`Website with ID ${id} not found in cache, fetching from server...`);
-      const result = await getWebsiteById(id);
+//       console.log(`Website with ID ${id} not found in cache, fetching from server...`);
+//       const result = await getWebsiteById(id);
       
-      if (result.error) {
-        toast.error(`Failed to fetch website: ${result.error}`);
-        throw new Error(result.error);
-      }
+//       if (result.error) {
+//         toast.error(`Failed to fetch website: ${result.error}`);
+//         throw new Error(result.error);
+//       }
       
-      if (!result.data) {
-        // Using toast.message for neutral information. 
-        // If this should be an error state, toast.error might be more appropriate.
-        toast.message(`Website with ID ${id} not found on server.`);
-        return null; 
-      }
+//       if (!result.data) {
+//         // Using toast.message for neutral information. 
+//         // If this should be an error state, toast.error might be more appropriate.
+//         toast.message(`Website with ID ${id} not found on server.`);
+//         return null; 
+//       }
       
-      return result.data as Website; // Cast to Website type
-    },
-    enabled: !!id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-} 
+//       return result.data as Website; // Cast to Website type
+//     },
+//     enabled: !!id,
+//     staleTime: 5 * 60 * 1000, // 5 minutes
+//   });
+// } 

@@ -48,44 +48,67 @@ const eventSchema = z.object({
 
 const batchEventsSchema = z.array(eventSchema);
 
-const enrichEvent = (properties: Record<string, any>, enriched: any) => ({
-  screen_resolution: properties.screen_resolution || '',
-  viewport_size: properties.viewport_size || '',
-  language: properties.language || enriched.language || '',
-  timezone: properties.timezone || enriched.timezone || '',
-  timezone_offset: properties.timezone_offset || null,
-  connection_type: properties.connection_type || '',
-  connection_speed: properties.connection_speed || '',
-  rtt: properties.rtt || null,
-  load_time: properties.load_time || null,
-  dom_ready_time: properties.dom_ready_time || null,
-  ttfb: properties.ttfb || null,
-  redirect_time: properties.redirect_time || null,
-  domain_lookup_time: properties.domain_lookup_time || null,
-  connection_time: properties.connection_time || null,
-  request_time: properties.request_time || null,
-  render_time: properties.render_time || null,
-  fcp: properties.fcp || null,
-  lcp: properties.lcp || null,
-  cls: properties.cls || null,
-  page_size: properties.page_size || null,
-  time_on_page: properties.time_on_page || null,
-  page_count: properties.page_count || null,
-  scroll_depth: properties.scroll_depth || null,
-  interaction_count: properties.interaction_count || null,
-  exit_intent: properties.exit_intent || 0,
-  title: properties.__title || '',
-  path: properties.__path || enriched.path,
-  session_id: properties.sessionId,
-  session_start_time: properties.sessionStartTime,
-  referrer: properties.__referrer || enriched.referrer,
-  referrer_type: properties.__referrer_type,
-  referrer_name: properties.__referrer_name,
-  sdk_name: properties.__sdk_name || properties.__enriched?.sdk_name,
-  sdk_version: properties.__sdk_version || properties.__enriched?.sdk_version,
-  __raw_properties: properties,
-  __enriched: enriched
-});
+const enrichEvent = (properties: Record<string, any>, enriched: any) => {
+  // Get the current domain from the URL
+  const currentDomain = new URL(properties.__path || enriched.path).hostname;
+  
+  // Check if referrer is from the same domain
+  let referrer = properties.__referrer || enriched.referrer;
+  let referrerType = properties.__referrer_type;
+  let referrerName = properties.__referrer_name;
+  
+  if (referrer) {
+    try {
+      const referrerUrl = new URL(referrer);
+      if (referrerUrl.hostname === currentDomain) {
+        referrer = 'direct';
+        referrerType = 'direct';
+        referrerName = 'Direct';
+      }
+    } catch (e) {
+      // If URL parsing fails, keep the original referrer
+    }
+  }
+
+  return {
+    screen_resolution: properties.screen_resolution || '',
+    viewport_size: properties.viewport_size || '',
+    language: properties.language || enriched.language || '',
+    timezone: properties.timezone || enriched.timezone || '',
+    timezone_offset: properties.timezone_offset || null,
+    connection_type: properties.connection_type || '',
+    connection_speed: properties.connection_speed || '',
+    rtt: properties.rtt || null,
+    load_time: properties.load_time || null,
+    dom_ready_time: properties.dom_ready_time || null,
+    ttfb: properties.ttfb || null,
+    redirect_time: properties.redirect_time || null,
+    domain_lookup_time: properties.domain_lookup_time || null,
+    connection_time: properties.connection_time || null,
+    request_time: properties.request_time || null,
+    render_time: properties.render_time || null,
+    fcp: properties.fcp || null,
+    lcp: properties.lcp || null,
+    cls: properties.cls || null,
+    page_size: properties.page_size || null,
+    time_on_page: properties.time_on_page || null,
+    page_count: properties.page_count || null,
+    scroll_depth: properties.scroll_depth || null,
+    interaction_count: properties.interaction_count || null,
+    exit_intent: properties.exit_intent || 0,
+    title: properties.__title || '',
+    path: properties.__path || enriched.path,
+    session_id: properties.sessionId,
+    session_start_time: properties.sessionStartTime,
+    referrer: referrer,
+    referrer_type: referrerType,
+    referrer_name: referrerName,
+    sdk_name: properties.__sdk_name || properties.__enriched?.sdk_name,
+    sdk_version: properties.__sdk_version || properties.__enriched?.sdk_version,
+    __raw_properties: properties,
+    __enriched: enriched
+  };
+};
 
 basketRouter.use('*', async (c, next) => {
   const userAgent = c.req.header('user-agent') || '';

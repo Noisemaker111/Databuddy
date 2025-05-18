@@ -4,6 +4,7 @@
     "": {
       "name": "databuddy",
       "dependencies": {
+        "@elysiajs/cors": "^1.3.3",
         "@tanstack/react-table": "^8.21.3",
         "@types/ua-parser-js": "^0.7.39",
         "compressorjs": "^1.2.1",
@@ -125,7 +126,7 @@
       "dependencies": {
         "@aws-sdk/client-s3": "^3.812.0",
         "@elysiajs/cron": "^1.3.0",
-        "elysia": "latest",
+        "elysia": "^1.3.1",
       },
       "devDependencies": {
         "bun-types": "latest",
@@ -595,6 +596,8 @@
     "@databuddy/validation": ["@databuddy/validation@workspace:packages/validation"],
 
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.10.2", "", {}, "sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w=="],
+
+    "@elysiajs/cors": ["@elysiajs/cors@1.3.3", "", { "peerDependencies": { "elysia": ">= 1.3.0" } }, "sha512-mYIU6PyMM6xIJuj7d27Vt0/wuzVKIEnFPjcvlkyd7t/m9xspAG37cwNjFxVOnyvY43oOd2I/oW2DB85utXpA2Q=="],
 
     "@elysiajs/cron": ["@elysiajs/cron@1.3.0", "", { "dependencies": { "croner": "^6.0.3" }, "peerDependencies": { "elysia": ">= 1.3.0" } }, "sha512-8MaL9ypxo+6r9ISYGx1uabDJhdJxCHGc5IUjpNSOGnDT6koFW2xAKtrFtECrkWt4IhwWmew6GMLXvYZ3aOcHGQ=="],
 
@@ -3315,8 +3318,6 @@
     "dash2/typescript": ["typescript@5.8.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
 
     "databuddy-new/@databuddy/db": ["@databuddy/db@file:packages/db", { "dependencies": { "@clickhouse/client": "^1.11.0", "dotenv": "^16.5.0", "drizzle-orm": "^0.42.0", "pg": "^8.15.6" }, "devDependencies": { "@types/pg": "^8.11.13", "drizzle-kit": "^0.31.0", "tsx": "^4.19.3" } }],
-
-    "databuddy-new/@databuddy/sdk": ["@databuddy/sdk@1.2.0", "", {}, "sha512-tEV3GcIHzvjYGH2HcKLplVVi+6kBVqLN0rhL3V2bmBzGV6/YuHc5gtqF+wjpo0lnyGeezjI/HFL1H5VRUeU0gA=="],
 
     "databuddy-new/@hookform/resolvers": ["@hookform/resolvers@4.1.3", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "react-hook-form": "^7.0.0" } }, "sha512-Jsv6UOWYTrEFJ/01ZrnwVXs7KDvP8XIo115i++5PWvNkNvkrsTfGiLS6w+eJ57CYtUtDQalUWovCZDHFJ8u1VQ=="],
 

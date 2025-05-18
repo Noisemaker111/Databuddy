@@ -137,10 +137,10 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
       params.granularity as 'hourly' | 'daily'
     );
     const todayPagesBuilder = createTopPagesBuilder(params.website_id, todayDateStr, todayDateStr, 5);
-    const todayReferrersBuilder = createTopReferrersBuilder(params.website_id, todayDateStr, todayDateStr, 100);
-    const resolutionsBuilder = createScreenResolutionsBuilder(params.website_id, startDate, endDate, 10);
-    const browserVersionsBuilder = createBrowserVersionsBuilder(params.website_id, startDate, endDate, 10);
-    const countriesBuilder = createCountriesBuilder(params.website_id, startDate, endDate, 5);
+    const todayReferrersBuilder = createTopReferrersBuilder(params.website_id, todayDateStr, todayDateStr, 5);
+    const resolutionsBuilder = createScreenResolutionsBuilder(params.website_id, startDate, endDate, 6);
+    const browserVersionsBuilder = createBrowserVersionsBuilder(params.website_id, startDate, endDate, 5);
+    const countriesBuilder = createCountriesBuilder(params.website_id, startDate, endDate, 100);
     const deviceTypesBuilder = createDeviceTypesBuilder(params.website_id, startDate, endDate, 5);
     const connectionTypesBuilder = createConnectionTypesBuilder(params.website_id, startDate, endDate, 5);
     const languagesBuilder = createLanguagesBuilder(params.website_id, startDate, endDate, 5);
