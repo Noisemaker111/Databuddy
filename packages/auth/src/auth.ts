@@ -128,7 +128,23 @@ export const auth = betterAuth({
         //     provider: "cloudflare-turnstile",
         //     secretKey: process.env.RECAPTCHA_SECRET_KEY as string,
         // })
-        nextCookies()
+        nextCookies(),
+        customSession(async ({ user: sessionUser, session }) => {
+            const [dbUser] = await db.query.user.findMany({
+                where: eq(user.id, session.userId),
+                columns: {
+                    role: true,
+                }
+            });
+            return {
+                role: dbUser?.role,
+                user: {
+                    ...sessionUser,
+                    role: dbUser?.role,
+                },
+                session
+            };
+        }),
     ]
 })
 

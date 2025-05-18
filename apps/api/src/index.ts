@@ -1,16 +1,15 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { auth, type AuthUser, type SessionData } from '@databuddy/auth';
+import { auth, type User, type Session } from '@databuddy/auth';
 import analyticsRouter from './routes/analytics';
 import { logger } from './lib/logger';
 import { logger as HonoLogger } from "hono/logger"
 import { sentry } from '@hono/sentry'
 
-// Define the Hono app with typed context
 type AppVariables = {
   Variables: {
-    user: AuthUser; // Replace 'any' with your actual user type
-    session: SessionData; // Replace 'any' with your actual session type
+    user: User;
+    session: Session;
   }
 }
 
@@ -19,7 +18,6 @@ const app = new Hono<AppVariables>();
 app.use('*', sentry())
 app.use('*', HonoLogger());
 
-// Configure CORS - must be before auth routes
 app.use('*', cors({
   origin: (origin) => {
     // Allow requests with no origin (like mobile apps or curl requests)

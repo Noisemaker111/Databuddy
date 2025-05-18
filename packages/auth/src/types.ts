@@ -1,26 +1,9 @@
-// User types
-export interface AuthUser {
-  id: string;
-  name?: string | null;
-  email: string;
-  image?: string | null;
-}
-
-// Session types
-export interface AuthSession {
-  id: string;
-  role: string;
-  expiresAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  ipAddress?: string | null;
-  userAgent?: string | null;
-}
-
+import type { User, Session } from "@databuddy/auth";
 // Combined session data type
 export interface SessionData {
-  user: AuthUser;
-  session: AuthSession;
+  role: string;
+  user: User;
+  session: Session;
 }
 
 // Auth error types

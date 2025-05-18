@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, Suspense, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapComponent } from "@/components/analytics/map-component";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useWebsitesStore } from "@/stores/use-websites-store";
-import { useWebsites } from "@/hooks/use-websites";
 import { useParams } from "next/navigation";
 import { useAnalyticsLocations } from "@/hooks/use-analytics";
 import { AlertCircle, Globe, HelpCircle, Info, MapPin } from "lucide-react";
@@ -15,17 +13,12 @@ import { cn } from "@/lib/utils";
 
 function WebsiteMapPage() {
   const { id } = useParams<{ id: string }>();
-  const { websites } = useWebsites();
-  const { setSelectedWebsite } = useWebsitesStore();
   const [mode, setMode] = useState<"total" | "perCapita">("total");
   
-  useEffect(() => {
-    if (id && websites) {
-      const website = websites.find((site: any) => site.id === id);
-      if (website) setSelectedWebsite(website);
-    }
-  }, [id, websites, setSelectedWebsite]);
   
+  if (!id) {
+    return <div>No website ID</div>;
+  }
   const { data: locationData, isLoading } = useAnalyticsLocations(id);
   const topCountries = locationData?.countries?.slice(0, 5) || [];
   const totalVisitors = locationData?.countries?.reduce((sum, country) => sum + country.visitors, 0) || 0;

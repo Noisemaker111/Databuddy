@@ -632,7 +632,7 @@ export function useAnalyticsDevices(
 export function useAnalyticsLocations(
   websiteId: string,
   dateRange?: DateRange,
-  limit = 10
+  limit = 10,
 ) {
   return useQuery({
     queryKey: ['analytics', 'locations', websiteId, dateRange, limit],
@@ -640,7 +640,7 @@ export function useAnalyticsLocations(
       '/analytics/locations', 
       websiteId, 
       dateRange, 
-      { limit }
+      // { limit }
     ),
     ...defaultQueryOptions
   });

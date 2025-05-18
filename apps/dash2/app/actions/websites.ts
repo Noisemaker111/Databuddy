@@ -230,8 +230,15 @@ export async function getWebsiteById(id: string): Promise<ApiResponse<any>> {
   if (!user) return { error: "Unauthorized" };
 
   try {
-    const projectIds = await getUserProjectIds(user.id);
+    // const projectIds = await getUserProjectIds(user.id);
     
+    if (user.role === 'ADMIN') {
+      const website = await db.query.websites.findFirst({
+        where: eq(websites.id, id)
+      });
+      return { data: website };
+    }
+
     const website = await db.query.websites.findFirst({
       where: or(
         and(
@@ -240,9 +247,9 @@ export async function getWebsiteById(id: string): Promise<ApiResponse<any>> {
         ),
         and(
           eq(websites.id, id),
-          projectIds.length > 0 ? 
-            inArray(websites.projectId, projectIds) : 
-            eq(websites.id, "impossible-match")
+          // projectIds.length > 0 ? 
+          //   inArray(websites.projectId, projectIds) : 
+          eq(websites.id, "impossible-match")
         )
       )
     });

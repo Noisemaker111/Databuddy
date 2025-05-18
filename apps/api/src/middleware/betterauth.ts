@@ -1,7 +1,8 @@
 import { betterAuth } from "better-auth";
-import { db } from "@databuddy/db";
+import { db, eq, user } from "@databuddy/db";
 import { getRedisCache } from "@databuddy/redis";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { customSession } from "better-auth/plugins";
 
 function isProduction() {
   return process.env.NODE_ENV === 'production';
@@ -48,7 +49,25 @@ export const auth = betterAuth({
             await redisCache.del(key);
         },
     },
-    
+    plugins: [
+        customSession(async ({ user: sessionUser, session }) => {
+            const [dbUser] = await db.query.user.findMany({
+                where: eq(user.id, session.userId),
+                columns: {
+                    role: true,
+                }
+            });
+            return {
+                role: dbUser?.role,
+                user: {
+                    ...sessionUser,
+                    role: dbUser?.role,
+                },
+                session
+            };
+        }),
+    ]
+
 })
 
 export type User = (typeof auth)["$Infer"]["Session"]["user"];

@@ -56,6 +56,7 @@ import {
   mergeTodayIntoTrends
 } from '../utils/today-data-processor';
 import { logger } from '../lib/logger';
+import { db, eq, websites as websitesTable} from '@databuddy/db';
 
 // Define types for data processing
 interface ReferrerData {
@@ -136,7 +137,7 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
       params.granularity as 'hourly' | 'daily'
     );
     const todayPagesBuilder = createTopPagesBuilder(params.website_id, todayDateStr, todayDateStr, 5);
-    const todayReferrersBuilder = createTopReferrersBuilder(params.website_id, todayDateStr, todayDateStr, 5);
+    const todayReferrersBuilder = createTopReferrersBuilder(params.website_id, todayDateStr, todayDateStr, 100);
     const resolutionsBuilder = createScreenResolutionsBuilder(params.website_id, startDate, endDate, 10);
     const browserVersionsBuilder = createBrowserVersionsBuilder(params.website_id, startDate, endDate, 10);
     const countriesBuilder = createCountriesBuilder(params.website_id, startDate, endDate, 5);
@@ -163,7 +164,8 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
       connectionTypes,
       languages,
       timezones,
-      performance
+      performance,
+      website
     ] = await Promise.all([
       chQuery(summaryBuilder.getSql()),
       chQuery(todayBuilder.getSql()),
@@ -180,9 +182,16 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
       chQuery(connectionTypesBuilder.getSql()),
       chQuery(languagesBuilder.getSql()),
       chQuery(timezonesBuilder.getSql()),
-      chQuery(performanceBuilder.getSql())
-    ]);
+      chQuery(performanceBuilder.getSql()),
+      db.query.websites.findFirst({
+        where: eq(websitesTable.id, params.website_id)
+      })
 
+    ]);
+    
+    if (!website) {
+      return c.json({ error: 'Website not found' }, 404);
+    }
     
     // Process today's hourly data to make sure we have accurate "today" summary
     const todaySummary = {
@@ -317,13 +326,15 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
     const allProcessedReferrers = parseReferrers(
       topReferrers as ReferrerData[],
       true, 
-      (referrer) => isInternalReferrer(referrer)
-    );
+      (referrer) => isInternalReferrer(referrer, website.domain),
+      website.domain
+    ).filter(ref => !isInternalReferrer(ref.referrer, website.domain));
     const allProcessedTodayReferrers = parseReferrers(
       todayTopReferrers as ReferrerData[],
       true, 
-      (referrer) => isInternalReferrer(referrer)
-    );
+      (referrer) => isInternalReferrer(referrer, website.domain),
+      website.domain
+    ).filter(ref => !isInternalReferrer(ref.referrer, website.domain));
 
     let finalTopReferrers: Array<ReferrerData & { type?: string; name?: string; domain?: string }>;
     if (endDate === todayDateStr) {

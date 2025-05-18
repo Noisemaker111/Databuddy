@@ -15,15 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getWebsiteById } from "@/app/actions/websites";
-import { checkDomainVerification, regenerateVerificationToken } from "@/app/actions/domains";
 import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/app/providers";
 import { format, subDays, subHours, differenceInDays } from "date-fns";
 import type { DateRange as DayPickerRange } from "react-day-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { VerificationDialog } from "@/components/websites/verification-dialog";
 import { useAtom } from "jotai";
 import {
   dateRangeAtom,
@@ -40,7 +36,7 @@ import { WebsitePerformanceTab } from "./components/tabs/performance-tab";
 import { WebsiteSettingsTab } from "./components/tabs/settings-tab";
 import { WebsiteErrorsTab } from "./components/tabs/errors-tab";
 
-import React from "react";
+import type React from "react";
 
 // Add type for tab ID
 type TabId = 'overview' | 'audience' | 'content' | 'performance' | 'settings' | 'errors';
@@ -55,7 +51,6 @@ type TabDefinition = {
 };
 
 function WebsiteDetailsPage() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const { id } = useParams();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -64,9 +59,6 @@ function WebsiteDetailsPage() {
     progress: 0,
     total: 4
   });
-  const [showVerificationDialog, setShowVerificationDialog] = useState(false);
-  const [isRegenerating, setIsRegenerating] = useState(false);
-  
   // Replace useState with Jotai atoms
   const [currentDateRange, setCurrentDateRangeState] = useAtom(dateRangeAtom);
   const [currentGranularity, setCurrentGranularityAtomState] = useAtom(timeGranularityAtom);
@@ -151,70 +143,7 @@ function WebsiteDetailsPage() {
     }
   }, [isError, error]);
 
-  // After the data query, check if the website is verified:
-  const isLocalhost = data?.domain?.includes('localhost') || data?.domain?.includes('127.0.0.1');
-  const isVerified = isLocalhost || data?.domainData?.verificationStatus === "VERIFIED" || data?.domainId;
   
-  // Modified implementation of regenerateToken to fix typing issues
-  const regenerateToken = async (websiteId: string) => {
-    setIsRegenerating(true);
-    try {
-      const result = await regenerateVerificationToken(websiteId);
-      if (result.error) {
-        toast.error(result.error);
-        return { error: result.error };
-      }
-      
-      // Refetch website data
-      queryClient.invalidateQueries({ queryKey: ['website', id] });
-      toast.success("Verification token regenerated");
-      
-      // Add missing domain property
-      return { 
-        data: result.data ? { 
-          ...result.data,
-          domain: data?.domain || ''
-        } : undefined 
-      };
-    } catch (error) {
-      console.error('Error regenerating token:', error);
-      toast.error("Failed to regenerate token");
-      return { error: "Failed to regenerate token" };
-    } finally {
-      setIsRegenerating(false);
-    }
-  };
-  
-  // Replace the verifyDomain function with checkDomainVerification:
-  const verifyDomain = async (websiteId: string) => {
-    try {
-      const result = await checkDomainVerification(websiteId);
-      
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-      
-      if (result.data?.verified) {
-        // Refetch website data
-        queryClient.invalidateQueries({ queryKey: ['website', id] });
-        toast.success(result.data.message || "Domain verified successfully");
-      } else {
-        toast.error(result.data?.message || "Domain verification failed");
-      }
-    } catch (error) {
-      console.error('Error verifying domain:', error);
-      toast.error("Failed to verify domain");
-    }
-  };
-
-  // Use useRef for stable function references
-  const verifyDomainRef = useRef((id: string) => verifyDomain(id));
-  const regenerateTokenRef = useRef((id: string) => regenerateToken(id));
-
-  // Lazy load the verification dialog
-  const LazyVerificationDialog = React.memo(VerificationDialog);
-
   // Create stable versions of the props objects before using in dependencies
   const stableTabProps = useMemo(() => ({
     websiteId: id as string,
@@ -338,98 +267,6 @@ function WebsiteDetailsPage() {
             <Link href="/websites">Back to Websites</Link>
           </Button>
         </div>
-      </div>
-    );
-  }
-
-  // Add verification check here
-  if (!isVerified && !isLocalhost && data) {
-    return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <div className="flex items-center mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => router.push("/websites")}
-            className="flex items-center mr-2"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          <h1 className="text-2xl font-semibold">{data.name || data.domain}</h1>
-        </div>
-        
-        <Card className="mb-8 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800/50">
-          <CardHeader className="pb-2">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full">
-                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <CardTitle>Domain Verification Required</CardTitle>
-                <CardDescription className="mt-1">
-                  You need to verify ownership of {data.domain} before you can access analytics.
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <p className="text-sm text-muted-foreground mb-4">
-              To verify your domain, you'll need to add a DNS TXT record. This proves that you own the domain
-              and helps prevent unauthorized tracking.
-            </p>
-            <Button 
-              onClick={() => setShowVerificationDialog(true)}
-              className="w-full sm:w-auto"
-            >
-              Verify Domain Now
-            </Button>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>What is domain verification?</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Domain verification is a security measure that ensures only legitimate owners can track analytics
-              for a domain. Here's how it works:
-            </p>
-            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground pl-2">
-              <li>You add a special TXT record to your domain's DNS settings</li>
-              <li>Our system checks for this record to confirm you control the domain</li>
-              <li>Once verified, you can access all analytics features for your website</li>
-            </ol>
-            <p className="text-sm text-muted-foreground">
-              The verification process is quick and simple, usually taking just a few minutes to complete.
-            </p>
-          </CardContent>
-          <CardFooter className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-            <Button 
-              onClick={() => setShowVerificationDialog(true)}
-              className="w-full sm:w-auto"
-            >
-              Start Verification
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => router.push("/websites")}
-              className="w-full sm:w-auto"
-            >
-              Back to Websites
-            </Button>
-          </CardFooter>
-        </Card>
-        
-        <LazyVerificationDialog
-          website={data}
-          open={showVerificationDialog}
-          onOpenChange={setShowVerificationDialog}
-          onVerify={verifyDomainRef.current}
-          onRegenerateToken={regenerateTokenRef.current}
-          isVerifying={false}
-          isRegenerating={isRegenerating}
-        />
       </div>
     );
   }

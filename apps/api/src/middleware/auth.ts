@@ -1,12 +1,12 @@
 import { createMiddleware } from 'hono/factory'
 import { auth } from "./betterauth"
 import { logger } from '../lib/logger';
-import { db, session } from "@databuddy/db";
+import { db } from "@databuddy/db";
 import { eq, and } from "drizzle-orm";
 import { websites, projectAccess } from "@databuddy/db";
 
 // Helper function to verify website access
-async function verifyWebsiteAccess(userId: string, websiteId: string): Promise<boolean> {
+async function verifyWebsiteAccess(userId: string, websiteId: string, role: string): Promise<boolean> {
   try {
     // First check if user owns the website
     const website = await db.query.websites.findFirst({
@@ -14,6 +14,7 @@ async function verifyWebsiteAccess(userId: string, websiteId: string): Promise<b
     });
 
     if (!website) return false;
+    if (role === 'ADMIN') return true;
     if (website.userId === userId) return true;
 
     // Then check if user has access through project access
@@ -35,29 +36,8 @@ async function verifyWebsiteAccess(userId: string, websiteId: string): Promise<b
   }
 }
 
-// Helper function to log audit events
-async function logAuditEvent(event: {
-  userId: string;
-  action: string;
-  path: string;
-  method: string;
-  ip: string;
-  details?: Record<string, any>;
-}) {
-  try {
-    // Log to console for now - implement proper audit logging later
-    logger.info({
-      message: 'Audit event',
-      name: 'authMiddleware',
-      ...event,
-    });
-  } catch (error) {
-    logger.error('Error logging audit event:', { error, event });
-  }
-}
-
 export const authMiddleware = createMiddleware(async (c, next) => {
-  const startTime = Date.now();
+  // const startTime = Date.now();
   const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
   const path = c.req.path;
   const method = c.req.method;
@@ -108,7 +88,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
       if (path.startsWith('/analytics/') && session) {
         const websiteId = c.req.query('website_id');
         if (websiteId) {
-          const hasAccess = await verifyWebsiteAccess(session.user.id, websiteId);
+          const hasAccess = await verifyWebsiteAccess(session.user.id, websiteId, session.user.role);
           if (!hasAccess) {
             return c.json({
               success: false,
@@ -118,22 +98,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
           }
         }
       }
-
-    // Log audit event for authenticated requests
-    if (session) {
-      await logAuditEvent({
-        userId: session.user.id,
-        action: 'api_access',
-        path,
-        method,
-        ip,
-        details: {
-          userAgent: c.req.header('user-agent'),
-          responseTime: Date.now() - startTime
-        }
-      });
-    }
-
+      
     return next();
   } catch (error) {
     logger.error('Auth middleware error:', { 
