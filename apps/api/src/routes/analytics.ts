@@ -126,7 +126,7 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
     const summaryBuilder = createSummaryBuilder(params.website_id, startDate, endDate);
     const todayBuilder = createTodayBuilder(params.website_id);
     const todayByHourBuilder = createTodayByHourBuilder(params.website_id);
-    const topPagesBuilder = createTopPagesBuilder(params.website_id, startDate, endDate, 5);
+    const topPagesBuilder = createTopPagesBuilder(params.website_id, startDate, endDate, 7);
     const topReferrersBuilder = createTopReferrersBuilder(params.website_id, startDate, endDate, website.domain);
     const eventsByDateBuilder = createEventsByDateBuilder(
       params.website_id, 
@@ -134,7 +134,7 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
       endDate, 
       params.granularity as 'hourly' | 'daily'
     );
-    const todayPagesBuilder = createTopPagesBuilder(params.website_id, todayDateStr, todayDateStr, 5);
+    const todayPagesBuilder = createTopPagesBuilder(params.website_id, todayDateStr, todayDateStr, 7);
     const resolutionsBuilder = createScreenResolutionsBuilder(params.website_id, startDate, endDate, 6);
     const browserVersionsBuilder = createBrowserVersionsBuilder(params.website_id, startDate, endDate, 5);
     const countriesBuilder = createCountriesBuilder(params.website_id, startDate, endDate, 5);
@@ -296,7 +296,7 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
     // Convert to array, sort by visitors, and take top 5
     const finalTopReferrers = Array.from(groupedReferrers.values())
       .sort((a, b) => b.visitors - a.visitors)
-      .slice(0, 5);
+      .slice(0, 7);
 
     let finalTopPages: Array<PageData & { avg_time_on_page_formatted: string }>;
     if (endDate === todayDateStr) {
@@ -419,7 +419,7 @@ function generateSessionName(sessionId: string): string {
   const animals = [
     'Elephant', 'Tiger', 'Dolphin', 'Eagle', 'Penguin', 
     'Wolf', 'Lion', 'Bear', 'Panda', 'Fox', 
-    'Owl', 'Koala', 'Whale', 'Hawk', 'Jaguar'
+    'Owl', 'Koala', 'Whale', 'Hawk', 'Jaguar', 'Glimp'
   ];
   
   // Simple hash function to get a consistent animal name for the session ID

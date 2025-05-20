@@ -14,6 +14,11 @@ export const auth = betterAuth({
     database: drizzleAdapter(db, {
         provider: "pg",
     }),
+    security: {
+        ipAddress: {
+            ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"],
+        }
+    },
     appName: "databuddy.cc",
     advanced: {
         crossSubDomainCookies: {
