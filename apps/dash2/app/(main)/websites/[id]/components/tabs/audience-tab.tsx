@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useEffect } from "react";
+// Import TanStack Table types
+import type { ColumnDef, CellContext } from "@tanstack/react-table";
 
 import { DistributionChart } from "@/components/charts/distribution-chart";
 import { DataTable } from "@/components/analytics/data-table";
@@ -17,6 +19,20 @@ interface DeviceTypeEntry {
   device_model: string;
   visitors: number;
   pageviews: number;
+}
+
+// Define types for table data
+interface TimezoneEntry {
+  timezone: string;
+  visitors: number;
+  pageviews: number;
+}
+
+interface CountryEntry {
+  country: string;
+  visitors: number;
+  pageviews: number;
+  // Potentially other fields from API if any
 }
 
 // Helper function to get browser icon
@@ -223,80 +239,93 @@ export function WebsiteAudienceTab({
       {/* Timezones */}
       <div className="rounded-xl border shadow-sm">
         <DataTable 
-          data={analytics.timezones?.map(item => ({
-            timezone: item.timezone, 
-            visitors: item.visitors, 
+          data={analytics.timezones?.map(item => ({ // Ensure data maps to TimezoneEntry
+            timezone: item.timezone,
+            visitors: item.visitors,
             pageviews: item.pageviews
           })) || []}
-          columns={[
+          columns={useMemo((): ColumnDef<TimezoneEntry, any>[] => [
             {
               accessorKey: 'timezone',
               header: 'Timezone',
-              cell: (value: string) => (
+              cell: (info: CellContext<TimezoneEntry, string>) => (
                 <span className="font-medium">
-                  {value || 'Unknown'}
+                  {info.getValue() || 'Unknown'}
                 </span>
               )
             },
             {
               accessorKey: 'visitors',
               header: 'Visitors',
-              className: 'text-right'
             },
             {
               accessorKey: 'pageviews',
               header: 'Pageviews',
-              className: 'text-right'
             }
-          ]}
+          ], [])}
           title="Timezones"
           description="Visitors by timezone"
           isLoading={isLoading}
-          limit={10}
+          initialPageSize={10}
         />
       </div>
       
       {/* Countries with flags */}
       <div className="rounded-xl border shadow-sm">
         <DataTable 
-          data={analytics.countries}
-          columns={[
+          data={analytics.countries?.map(item => ({ // Ensure data maps to CountryEntry
+            country: item.country,
+            visitors: item.visitors,
+            pageviews: item.pageviews
+          })) || []}
+          columns={useMemo((): ColumnDef<CountryEntry, any>[] => [
             {
               accessorKey: 'country',
               header: 'Country',
-              cell: (value: string) => (
-                <div className="flex items-center gap-2">
-                  {value ? (
-                    <div className="w-5 h-4 relative overflow-hidden rounded-sm bg-muted">
-                      <img 
-                        src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${value.toUpperCase()}.svg`} 
-                        alt={value}
-                        className="absolute inset-0 w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-5 h-4 flex items-center justify-center rounded-sm bg-muted">
-                      <HelpCircle className="h-3 w-3 text-muted-foreground" />
-                    </div>
-                  )}
-                  <span className="font-medium">{value || 'Unknown'}</span>
-                </div>
-              )
+              cell: (info: CellContext<CountryEntry, string>) => {
+                const countryCode = info.getValue();
+                return (
+                  <div className="flex items-center gap-2">
+                    {countryCode ? (
+                      <div className="w-5 h-4 relative overflow-hidden rounded-sm bg-muted">
+                        <img 
+                          src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${countryCode.toUpperCase()}.svg`} 
+                          alt={countryCode}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            const parent = (e.target as HTMLImageElement).parentElement;
+                            if (parent) {
+                              const helpCircle = parent.querySelector('.fallback-icon');
+                              if (helpCircle) (helpCircle as HTMLElement).style.display = 'flex';
+                            }
+                          }}
+                        />
+                        <div className="fallback-icon w-5 h-4 items-center justify-center rounded-sm bg-muted" style={{display: 'none'}}>
+                            <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-5 h-4 flex items-center justify-center rounded-sm bg-muted">
+                        <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                    )}
+                    <span className="font-medium">{countryCode || 'Unknown'}</span>
+                  </div>
+                );
+              }
             },
             {
               accessorKey: 'visitors',
               header: 'Visitors',
-              className: 'text-right'
+              meta: { className: 'text-right justify-end' }
             },
             {
               accessorKey: 'pageviews',
               header: 'Pageviews',
-              className: 'text-right'
+              meta: { className: 'text-right justify-end' }
             }
-          ]}
+          ], [])}
           title="Geographic Distribution"
           description="Visitors by location"
           isLoading={isLoading}
@@ -333,20 +362,15 @@ export function WebsiteAudienceTab({
                 
                 // Determine device type based on resolution
                 let deviceType = "Unknown";
-                let deviceIcon = "💻";
                 if (isValid) {
                   if (width <= 480) {
                     deviceType = "Mobile";
-                    deviceIcon = "📱";
                   } else if (width <= 1024) {
                     deviceType = "Tablet";
-                    deviceIcon = "📱";
                   } else if (width <= 1440) {
                     deviceType = "Laptop";
-                    deviceIcon = "💻";
                   } else {
                     deviceType = "Desktop";
-                    deviceIcon = "🖥️";
                   }
                 }
                 
@@ -363,7 +387,6 @@ export function WebsiteAudienceTab({
                         <div className="font-medium">{item.screen_resolution}</div>
                         <div className="text-xs text-muted-foreground">{deviceType}</div>
                       </div>
-                      <div className="text-2xl">{deviceIcon}</div>
                     </div>
                     
                     {/* Screen visualization with perspective */}

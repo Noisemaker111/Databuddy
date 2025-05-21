@@ -121,3 +121,25 @@ export function categorizeReferrer(referrerInfo: ReferrerInfo): string {
       return 'Other';
   }
 } 
+
+export function isInternalReferrer(referrerUrl: string, websiteHostname?: string): boolean {
+  if (!referrerUrl || referrerUrl === 'direct') {
+    return false;
+  }
+  
+  try {
+    const url = new URL(referrerUrl);
+    
+    // Check if it's localhost or contains the same hostname
+    if (url.hostname === 'localhost' || 
+        url.hostname.includes('127.0.0.1') || 
+        (websiteHostname && url.hostname === websiteHostname)) {
+      return true;
+    }
+    
+    return false;
+  } catch (e) {
+    // If URL parsing fails, it's not an internal referrer
+    return false;
+  }
+}

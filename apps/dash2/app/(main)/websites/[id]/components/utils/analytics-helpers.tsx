@@ -1,5 +1,6 @@
 import { format, formatDistanceToNow, parseISO, isValid } from "date-fns";
 import { toast } from "sonner";
+import { formatMetricNumber } from "@/lib/formatters";
 
 type Granularity = 'daily' | 'hourly';
 
@@ -153,22 +154,6 @@ export const formatDomainLink = (
 export const formatRelativeTime = (date: string | Date): string => {
   const dateObj = safeParseDate(date);
   return formatDistanceToNow(dateObj, { addSuffix: true });
-};
-
-// Format number with metric prefix (K, M, B)
-export const formatMetricNumber = (num: number): string => {
-  if (num === undefined || num === null) return '0';
-  
-  if (num >= 1000000000) {
-    return `${(num / 1000000000).toFixed(1)}B`;
-  }
-  if (num >= 1000000) {
-    return `${(num / 1000000).toFixed(1)}M`;
-  }
-  if (num >= 1000) {
-    return `${(num / 1000).toFixed(1)}K`;
-  }
-  return num.toString();
 };
 
 export const calculatePercentChange = (current: number, previous: number): number => {

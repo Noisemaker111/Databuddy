@@ -2,11 +2,15 @@
 
 import { useMemo, useEffect } from "react";
 import { FileText, Globe, BarChart, Link2, Users, Clock } from "lucide-react";
+import type { ColumnDef, CellContext } from "@tanstack/react-table";
 import { DataTable } from "@/components/analytics/data-table";
 import { useWebsiteAnalytics } from "@/hooks/use-analytics";
 import type { FullTabProps } from "../utils/types";
-import { EmptyState, ExternalLinkButton } from "../utils/ui-components";
+import { EmptyState } from "../utils/ui-components";
 import { formatDomainLink } from "../utils/analytics-helpers";
+import { PageLinkCell, type PageLinkCellData } from "@/components/atomic/PageLinkCell";
+import { ReferrerSourceCell, type ReferrerSourceCellData } from "@/components/atomic/ReferrerSourceCell";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 interface TopPageEntry {
   path: string;
@@ -65,37 +69,38 @@ export function WebsiteContentTab({
 
   const isLoading = loading.summary || isRefreshing;
 
-  const topPagesColumns = useMemo(() => [
+  const topPagesColumns = useMemo((): ColumnDef<TopPageEntry, any>[] => [
     {
       accessorKey: 'path',
       header: 'Page Path',
-      cell: (value: string) => {
-        const link = formatDomainLink(value, websiteData?.domain);
-        return <ExternalLinkButton href={link.href} label={link.display} title={link.title} showTooltip={true} className="font-medium hover:text-primary hover:underline truncate max-w-[300px] flex items-center gap-1"/>;
-      }
+      cell: (info: CellContext<TopPageEntry, string>) => (
+        <PageLinkCell 
+          path={info.getValue()} 
+          websiteDomain={websiteData?.domain} 
+        />
+      )
     },
     {
       accessorKey: 'pageviews',
       header: 'Views',
-      className: 'text-right',
     },
     {
       accessorKey: 'visitors',
       header: 'Visitors',
-      className: 'text-right',
-      cell: (value: number | undefined) => value ?? 'N/A'
+      cell: (info: CellContext<TopPageEntry, number | undefined>) => info.getValue() ?? 'N/A'
     },
     {
       accessorKey: 'avg_time_on_page_formatted',
       header: 'Avg. Time',
-      className: 'text-right',
-      cell: (value: string | null | undefined) => value || 'N/A'
+      cell: (info: CellContext<TopPageEntry, string | null | undefined>) => info.getValue() || 'N/A'
     },
     {
         accessorKey: 'percentage_of_total',
         header: '% Total Views',
-        className: 'text-right',
-        cell: (value: number | undefined) => value ? `${value.toFixed(1)}%` : 'N/A'
+        cell: (info: CellContext<TopPageEntry, number | undefined>) => {
+          const value = info.getValue();
+          return value ? `${value.toFixed(1)}%` : 'N/A';
+        }
     }
   ], [websiteData?.domain]);
 
@@ -108,30 +113,33 @@ export function WebsiteContentTab({
     })).slice(0, 10);
   }, [analytics.top_pages, analytics.summary?.pageviews]);
 
-  const topReferrersColumns = useMemo(() => [
+  const topReferrersColumns = useMemo((): ColumnDef<TopReferrerEntry, any>[] => [
     {
       accessorKey: 'name',
       header: 'Source',
-      cell: (value: string, row: TopReferrerEntry) => (
-        <span className="font-medium">
-          {value || row.domain || row.referrer || 'Direct'}
-        </span>
-      )
+      cell: (info: CellContext<TopReferrerEntry, string | undefined>) => {
+        const cellData: ReferrerSourceCellData = info.row.original;
+        return <ReferrerSourceCell {...cellData} />;
+      }
     },
     {
         accessorKey: 'type',
         header: 'Type',
-        cell: (value: string | undefined) => value ? value.charAt(0).toUpperCase() + value.slice(1) : 'Unknown'
+        meta: { className: 'text-left capitalize' },
+        cell: (info: CellContext<TopReferrerEntry, string | undefined>) => {
+          const value = info.getValue();
+          return value ? value : 'Unknown';
+        }
     },
     {
       accessorKey: 'visitors',
       header: 'Visitors',
-      className: 'text-right',
+      meta: { className: 'text-right' },
     },
     {
       accessorKey: 'pageviews',
       header: 'Pageviews',
-      className: 'text-right',
+      meta: { className: 'text-right' },
     },
   ], []);
 
@@ -167,67 +175,70 @@ export function WebsiteContentTab({
 
   return (
     <div className="space-y-6 pt-2">
-      <div className="rounded-xl border shadow-sm p-4 md:p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Content Engagement</h3>
-          <BarChart className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="p-4 rounded-lg bg-background flex flex-col justify-between">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Avg. Session Duration</p>
-              <p className="text-2xl font-semibold">
-                {analytics.summary?.avg_session_duration_formatted || '0s'}
-              </p>
+                <CardTitle className="text-lg">Content Engagement</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground mt-0.5">Key metrics for user interaction with your content</CardDescription>
             </div>
-            <Clock className="h-4 w-4 text-muted-foreground self-end mt-2" />
+            <BarChart className="h-5 w-5 text-muted-foreground" />
           </div>
-          <div className="p-4 rounded-lg bg-background flex flex-col justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Bounce Rate</p>
-              <p className="text-2xl font-semibold">
-                {analytics.summary?.bounce_rate_pct || '0%'}
-              </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="p-4 rounded-lg bg-muted/50 flex flex-col justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Avg. Session Duration</p>
+                <p className="text-xl font-semibold">
+                  {analytics.summary?.avg_session_duration_formatted || '0s'}
+                </p>
+              </div>
+              <Clock className="h-4 w-4 text-muted-foreground self-end mt-1" />
             </div>
-            <Users className="h-4 w-4 text-muted-foreground self-end mt-2" />
-          </div>
-          <div className="p-4 rounded-lg bg-background flex flex-col justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Pages per Session</p>
-              <p className="text-2xl font-semibold">
-                {analytics.summary?.sessions && analytics.summary.sessions > 0 ? 
-                  ( (analytics.summary.pageviews || 0) / analytics.summary.sessions).toFixed(1) : 
-                  '0.0'
-                }
-              </p>
+            <div className="p-4 rounded-lg bg-muted/50 flex flex-col justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Bounce Rate</p>
+                <p className="text-xl font-semibold">
+                  {analytics.summary?.bounce_rate_pct || '0%'}
+                </p>
+              </div>
+              <Users className="h-4 w-4 text-muted-foreground self-end mt-1" />
             </div>
-            <FileText className="h-4 w-4 text-muted-foreground self-end mt-2" />
+            <div className="p-4 rounded-lg bg-muted/50 flex flex-col justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Pages per Session</p>
+                <p className="text-xl font-semibold">
+                  {analytics.summary?.sessions && analytics.summary.sessions > 0 ? 
+                    ( (analytics.summary.pageviews || 0) / analytics.summary.sessions).toFixed(1) : 
+                    '0.0'
+                  }
+                </p>
+              </div>
+              <FileText className="h-4 w-4 text-muted-foreground self-end mt-1" />
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {topPagesData.length > 0 && (
-        <div className="rounded-xl border shadow-sm">
-          <DataTable
+        <DataTable
             data={topPagesData}
             columns={topPagesColumns}
             title="Top Pages"
             description="Most viewed pages on your website."
             isLoading={isLoading}
           />
-        </div>
       )}
 
       {topReferrersData.length > 0 && (
-        <div className="rounded-xl border shadow-sm">
-          <DataTable
+        <DataTable
             data={topReferrersData}
             columns={topReferrersColumns}
             title="Top Referrers"
             description="Where your website traffic is coming from."
             isLoading={isLoading}
           />
-        </div>
       )}
     </div>
   );

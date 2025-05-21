@@ -6,5 +6,6 @@
         },
         "esModuleInterop": true
     },
+    "exclude": ["node_modules", "dist", ".next", "turbo"],
     "include": ["apps/**/*", "packages/**/*"]
 }

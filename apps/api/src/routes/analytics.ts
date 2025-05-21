@@ -8,17 +8,13 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { chQuery } from '@databuddy/db';
-import { createSqlBuilder } from '../clickhouse/client';
 import type { AppVariables } from '../types';
 import { authMiddleware } from '../middleware/auth';
-import { UAParser } from 'ua-parser-js';
 import { 
   formatTime, 
   formatPerformanceMetric, 
   getDefaultDateRange, 
   formatCleanPath,
-  createSuccessResponse, 
-  createErrorResponse,
   formatBrowserData,
   formatDeviceData
 } from '../utils/analytics-helpers';
@@ -37,9 +33,6 @@ import {
   createLanguagesBuilder,
   createTimezonesBuilder,
   createPerformanceBuilder,
-  createSessionsBuilder,
-  createSessionEventsBuilder,
-  createMiniChartBuilder,
   parseReferrers
 } from '../builders/analytics';
 import {
@@ -49,6 +42,7 @@ import {
 } from '../utils/today-data-processor';
 import { logger } from '../lib/logger';
 import { websiteAuthHook } from '../middleware/website';
+import { isInternalReferrer } from '../utils/referrer';
 
 // Define types for data processing
 interface ReferrerData {
@@ -99,7 +93,6 @@ const analyticsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(1000).default(30),
 });
 
-
 /**
  * Get summary statistics
  * GET /analytics/summary
@@ -126,7 +119,7 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
     const summaryBuilder = createSummaryBuilder(params.website_id, startDate, endDate);
     const todayBuilder = createTodayBuilder(params.website_id);
     const todayByHourBuilder = createTodayByHourBuilder(params.website_id);
-    const topPagesBuilder = createTopPagesBuilder(params.website_id, startDate, endDate, 7);
+    const topPagesBuilder = createTopPagesBuilder(params.website_id, startDate, endDate, 100);
     const topReferrersBuilder = createTopReferrersBuilder(params.website_id, startDate, endDate, website.domain);
     const eventsByDateBuilder = createEventsByDateBuilder(
       params.website_id, 
@@ -134,11 +127,10 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
       endDate, 
       params.granularity as 'hourly' | 'daily'
     );
-    const todayPagesBuilder = createTopPagesBuilder(params.website_id, todayDateStr, todayDateStr, 7);
     const resolutionsBuilder = createScreenResolutionsBuilder(params.website_id, startDate, endDate, 6);
     const browserVersionsBuilder = createBrowserVersionsBuilder(params.website_id, startDate, endDate, 5);
     const countriesBuilder = createCountriesBuilder(params.website_id, startDate, endDate, 5);
-    const deviceTypesBuilder = createDeviceTypesBuilder(params.website_id, startDate, endDate, 5);
+    const deviceTypesBuilder = createDeviceTypesBuilder(params.website_id, startDate, endDate, 100);
     const connectionTypesBuilder = createConnectionTypesBuilder(params.website_id, startDate, endDate, 5);
     const languagesBuilder = createLanguagesBuilder(params.website_id, startDate, endDate, 5);
     const timezonesBuilder = createTimezonesBuilder(params.website_id, startDate, endDate, 5);
@@ -152,7 +144,6 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
       topPages, 
       topReferrers, 
       eventsByDate, 
-      todayTopPages, 
       resolutions,
       browserVersions,
       countries,
@@ -168,7 +159,6 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
       chQuery(topPagesBuilder.getSql()),
       chQuery(topReferrersBuilder.getSql()),
       chQuery(eventsByDateBuilder.getSql()),
-      chQuery(todayPagesBuilder.getSql()),
       chQuery(resolutionsBuilder.getSql()),
       chQuery(browserVersionsBuilder.getSql()),
       chQuery(countriesBuilder.getSql()),
@@ -177,7 +167,6 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
       chQuery(languagesBuilder.getSql()),
       chQuery(timezonesBuilder.getSql()),
       chQuery(performanceBuilder.getSql()),
-
     ]);
     
     if (!website) {
@@ -248,18 +237,6 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
       } as PageData & { avg_time_on_page_formatted: string };
     });
     
-    const allProcessedTodayTopPages = todayTopPages.map(page => {
-      const cleanPath = formatCleanPath(page.path);
-      const timeOnPage = page.avg_time_on_page;
-      return {
-        pageviews: page.pageviews,
-        visitors: page.visitors,
-        path: cleanPath,
-        avg_time_on_page: timeOnPage,
-        avg_time_on_page_formatted: formatTime(timeOnPage === null ? null : timeOnPage)
-      } as PageData & { avg_time_on_page_formatted: string };
-    });
-
     // Process referrer data first for clarity before conditional logic
     const allProcessedReferrers = parseReferrers(
       topReferrers as ReferrerData[],
@@ -296,25 +273,25 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
     // Convert to array, sort by visitors, and take top 5
     const finalTopReferrers = Array.from(groupedReferrers.values())
       .sort((a, b) => b.visitors - a.visitors)
-      .slice(0, 7);
+      .slice(0, 100);
 
     let finalTopPages: Array<PageData & { avg_time_on_page_formatted: string }>;
-    if (endDate === todayDateStr) {
-        allProcessedTopPages.sort((a, b) => b.pageviews - a.pageviews);
-        finalTopPages = allProcessedTopPages.slice(0, params.limit);
+    if (endDate === todayDateStr && params.start_date === todayDateStr) {
+      const todayOnlyPagesBuilder = createTopPagesBuilder(params.website_id, todayDateStr, todayDateStr, 100);
+      const todayOnlyTopPagesResult = await chQuery(todayOnlyPagesBuilder.getSql());
+      finalTopPages = todayOnlyTopPagesResult.map(page => {
+        const cleanPath = formatCleanPath(page.path);
+        const timeOnPage = page.avg_time_on_page;
+        return {
+          pageviews: page.pageviews,
+          visitors: page.visitors,
+          path: cleanPath,
+          avg_time_on_page: timeOnPage,
+          avg_time_on_page_formatted: formatTime(timeOnPage === null ? null : timeOnPage)
+        } as PageData & { avg_time_on_page_formatted: string };
+      }).sort((a, b) => b.pageviews - a.pageviews).slice(0, 100);
     } else {
-        const mergedTopPages: Array<PageData & { avg_time_on_page_formatted: string }> = [...allProcessedTopPages];
-        for (const todayPage of allProcessedTodayTopPages) {
-            const existingPageIndex = mergedTopPages.findIndex(p => p.path === todayPage.path);
-            if (existingPageIndex >= 0) {
-                mergedTopPages[existingPageIndex].pageviews += todayPage.pageviews;
-                mergedTopPages[existingPageIndex].visitors += todayPage.visitors;
-            } else {
-                mergedTopPages.push(todayPage);
-            }
-        }
-        mergedTopPages.sort((a, b) => b.pageviews - a.pageviews);
-        finalTopPages = mergedTopPages.slice(0, params.limit);
+      finalTopPages = allProcessedTopPages.sort((a, b) => b.pageviews - a.pageviews).slice(0, 100);
     }
     
     return c.json({
@@ -349,7 +326,7 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
       screen_resolutions: resolutions,
       browser_versions: processedBrowserVersions,
       countries: processedCountries,
-      device_types: deviceTypes.slice(0, params.limit),
+      device_types: deviceTypes.slice(0, 100),
       connection_types: connectionTypes,
       languages: languages,
       timezones: timezones,
@@ -383,604 +360,12 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
   }
 });
 
-/**
- * Check if a referrer URL is from the same website (internal referrer)
- */
-function isInternalReferrer(referrerUrl: string, websiteHostname?: string): boolean {
-  if (!referrerUrl || referrerUrl === 'direct') {
-    return false;
-  }
-  
-  try {
-    const url = new URL(referrerUrl);
-    
-    // Check if it's localhost or contains the same hostname
-    if (url.hostname === 'localhost' || 
-        url.hostname.includes('127.0.0.1') || 
-        (websiteHostname && url.hostname === websiteHostname)) {
-      return true;
-    }
-    
-    return false;
-  } catch (e) {
-    // If URL parsing fails, it's not an internal referrer
-    return false;
-  }
-}
+import miniChartRouter from './mini-chart';
+import sessionsRouter from './sessions';
+import profilesRouter from './profiles';
 
-// Helper function to generate a readable session name from a session ID
-function generateSessionName(sessionId: string): string {
-  if (!sessionId) return 'Unknown Session';
-  
-  // Use the first 6 characters of the session ID as a base
-  const shortId = sessionId.substring(0, 6);
-  
-  // Create a descriptive name using animal names based on the hash of the ID
-  const animals = [
-    'Elephant', 'Tiger', 'Dolphin', 'Eagle', 'Penguin', 
-    'Wolf', 'Lion', 'Bear', 'Panda', 'Fox', 
-    'Owl', 'Koala', 'Whale', 'Hawk', 'Jaguar', 'Glimp'
-  ];
-  
-  // Simple hash function to get a consistent animal name for the session ID
-  let hashValue = 0;
-  for (let i = 0; i < sessionId.length; i++) {
-    hashValue = ((hashValue << 5) - hashValue) + sessionId.charCodeAt(i);
-    hashValue |= 0; // Convert to 32bit integer
-  }
-  
-  const animalIndex = Math.abs(hashValue) % animals.length;
-  const animal = animals[animalIndex];
-  
-  return `${animal}-${shortId}`;
-}
-
-// GET /analytics/sessions - retrieves a list of sessions
-analyticsRouter.get('/sessions', zValidator('query', analyticsQuerySchema), async (c) => {
-  const params = c.req.valid('query');
-  const user = c.get('user');
-  
-  if (!user) {
-    return c.json({ success: false, error: 'Authentication required' }, 401);
-  }
-
-  try {
-    // Set default date range if not provided
-    const endDate = params.end_date || new Date().toISOString().split('T')[0];
-    const startDate = params.start_date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const sessionsLimit = params.limit;
-    
-    // Create sessions builder and execute
-    const sessionsBuilder = createSessionsBuilder(params.website_id, startDate, endDate, sessionsLimit);
-    const sessionsResult = await chQuery(sessionsBuilder.getSql());
-    
-    // Track user profiles - get a list of unique visitor IDs
-    const visitorIds = [...new Set(sessionsResult.map(session => session.visitor_id))];
-    
-    // Create a map of visitor IDs to their session counts
-    const visitorSessionCounts: Record<string, number> = {};
-    for (const session of sessionsResult) { 
-      if (session.visitor_id) {
-        visitorSessionCounts[session.visitor_id] = (visitorSessionCounts[session.visitor_id] || 0) + 1;
-      }
-    }
-    
-    // Format the sessions data
-    const formattedSessions = sessionsResult.map(session => {
-      // Format the duration as Xh Ym Zs
-      const durationInSeconds = session.duration || 0;
-      const hours = Math.floor(durationInSeconds / 3600);
-      const minutes = Math.floor((durationInSeconds % 3600) / 60);
-      const seconds = durationInSeconds % 60;
-      
-      let durationFormatted = '';
-      if (hours > 0) durationFormatted += `${hours}h `;
-      if (minutes > 0 || hours > 0) durationFormatted += `${minutes}m `;
-      durationFormatted += `${seconds}s`;
-      
-      // Parse user agent to get device, browser, and OS
-      const userAgentInfo = parseUserAgentDetails(session.user_agent || '');
-      
-      // Parse referrer if present
-      const referrerParsed = session.referrer ? parseReferrers(
-        [{ referrer: session.referrer, visitors: 0, pageviews: 0 }]
-      )[0] : null;
-      
-      // Generate a session name
-      const sessionName = generateSessionName(session.session_id);
-      
-      // Get the number of sessions for this visitor
-      const visitorSessionCount = session.visitor_id ? visitorSessionCounts[session.visitor_id] || 1 : 1;
-      
-      return {
-        ...session,
-        session_name: sessionName,
-        device: userAgentInfo.device_type,
-        browser: userAgentInfo.browser_name,
-        os: userAgentInfo.os_name,
-        duration_formatted: durationFormatted,
-        referrer_parsed: referrerParsed,
-        is_returning_visitor: visitorSessionCount > 1,
-        visitor_session_count: visitorSessionCount
-      };
-    });
-    
-    return c.json({
-      success: true,
-      sessions: formattedSessions,
-      unique_visitors: visitorIds.length,
-      date_range: {
-        start_date: startDate,
-        end_date: endDate
-      }
-    });
-  } catch (error) {
-    logger.error('Error retrieving sessions data:', { 
-      error,
-      website_id: params.website_id
-    });
-    
-    return c.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to retrieve sessions data.'
-    }, 400);
-  }
-});
-
-// GET /analytics/session/{session_id} - retrieves details for a specific session
-analyticsRouter.get('/session/:session_id', zValidator('query', z.object({
-  website_id: z.string().min(1, 'Website ID is required')
-})), async (c) => {
-  const { session_id } = c.req.param();
-  const user = c.get('user');
-  const website = c.get('website');
-
-  if (!website || !website.id) {
-    return c.json({ success: false, error: 'Website not found' }, 404);
-  }
-
-  if (!user) {
-    return c.json({ success: false, error: 'Authentication required' }, 401);
-  }
-  
-  try {
-    // Get the session info first
-    const sessionsBuilder = createSessionsBuilder(website.id, '2000-01-01', '2100-01-01', 1);
-    sessionsBuilder.sb.where.session_filter = `session_id = '${session_id}'`;
-    
-    const sessionResult = await chQuery(sessionsBuilder.getSql());
-    
-    if (!sessionResult.length) {
-      return c.json({
-        success: false,
-        error: 'Session not found'
-      }, 404);
-    }
-    
-    const session = sessionResult[0];
-    
-    // Format the duration
-    const durationInSeconds = session.duration || 0;
-    const hours = Math.floor(durationInSeconds / 3600);
-    const minutes = Math.floor((durationInSeconds % 3600) / 60);
-    const seconds = durationInSeconds % 60;
-    
-    let durationFormatted = '';
-    if (hours > 0) durationFormatted += `${hours}h `;
-    if (minutes > 0 || hours > 0) durationFormatted += `${minutes}m `;
-    durationFormatted += `${seconds}s`;
-    
-    // Parse user agent to get device, browser, and OS
-    const userAgentInfo = parseUserAgentDetails(session.user_agent || '');
-    
-    // Parse referrer
-    const referrerParsed = session.referrer ? parseReferrers(
-      [{ referrer: session.referrer, visitors: 0, pageviews: 0 }]
-    )[0] : null;
-    
-    // Get all events for this session
-    const eventsBuilder = createSessionEventsBuilder(website.id, session_id);
-    const eventsResult = await chQuery(eventsBuilder.getSql());
-    
-    // Process events to add device, browser, OS info from user_agent
-    const processedEvents = eventsResult.map(event => {
-      const eventUserAgentInfo = parseUserAgentDetails(event.user_agent || '');
-      
-      // Create a new object without the user_agent field
-      const { user_agent, ...eventWithoutUserAgent } = event;
-      
-      return {
-        ...eventWithoutUserAgent,
-        device_type: eventUserAgentInfo.device_type,
-        browser: eventUserAgentInfo.browser_name,
-        os: eventUserAgentInfo.os_name
-      };
-    });
-    
-    // Generate a session name
-    const sessionName = generateSessionName(session_id);
-    
-    // Check if this visitor has other sessions (is a returning visitor)
-    const visitorSessionsBuilder = createSqlBuilder();
-    visitorSessionsBuilder.sb.select = {
-      session_count: 'COUNT(DISTINCT session_id) as session_count'
-    };
-    visitorSessionsBuilder.sb.from = 'analytics.events';
-    visitorSessionsBuilder.sb.where = {
-      client_filter: `client_id = '${website.id}'`,
-      visitor_filter: `anonymous_id = '${session.visitor_id}'`
-    };
-    
-    const visitorSessionsResult = await chQuery(visitorSessionsBuilder.getSql());
-    const visitorSessionCount = visitorSessionsResult[0]?.session_count || 1;
-    
-    // Format the session with events, but don't include the raw user_agent
-    const { user_agent, ...sessionWithoutUserAgent } = session;
-    
-    const formattedSession = {
-      ...sessionWithoutUserAgent,
-      session_name: sessionName,
-      device: userAgentInfo.device_type,
-      browser: userAgentInfo.browser_name,
-      os: userAgentInfo.os_name,
-      duration_formatted: durationFormatted,
-      referrer_parsed: referrerParsed,
-      is_returning_visitor: visitorSessionCount > 1,
-      visitor_session_count: visitorSessionCount,
-      events: processedEvents
-    };
-    
-    return c.json({
-      success: true,
-      session: formattedSession
-    });
-  } catch (error) {
-    logger.error('Error retrieving session details:', { 
-      error,
-      website_id: website.id,
-      session_id
-    });
-    
-    return c.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to retrieve session details.'
-    }, 400);
-  }
-});
-
-// GET /analytics/profiles - retrieves visitor profiles with their sessions
-analyticsRouter.get('/profiles', zValidator('query', analyticsQuerySchema), async (c) => {
-  const params = c.req.valid('query');
-  const user = c.get('user');
-  
-  if (!user) {
-    return c.json({ success: false, error: 'Authentication required' }, 401);
-  }
-
-  try {
-    // Set default date range if not provided
-    const endDate = params.end_date || new Date().toISOString().split('T')[0];
-    const startDate = params.start_date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const profilesLimit = params.limit;
-    
-    // First, get all unique visitor IDs
-    const visitorIdsBuilder = createSqlBuilder();
-    visitorIdsBuilder.sb.select = {
-      visitor_id: 'anonymous_id as visitor_id',
-      session_count: 'uniqExact(session_id) as session_count',
-      first_visit: 'MIN(time) as first_visit',
-      last_visit: 'MAX(time) as last_visit'
-    };
-    visitorIdsBuilder.sb.from = 'analytics.events';
-    visitorIdsBuilder.sb.where = {
-      client_filter: `client_id = '${params.website_id}'`,
-      date_filter: `time >= parseDateTimeBestEffort('${startDate}') AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')`
-    };
-    visitorIdsBuilder.sb.groupBy = {
-      visitor_id: 'anonymous_id'
-    };
-    visitorIdsBuilder.sb.orderBy = {
-      session_count: 'session_count DESC',
-      last_visit: 'last_visit DESC'
-    };
-    visitorIdsBuilder.sb.limit = profilesLimit;
-    
-    const visitorIdsResult = await chQuery(visitorIdsBuilder.getSql());
-    
-    if (!visitorIdsResult.length) {
-      return c.json({
-        success: true,
-        profiles: [],
-        date_range: {
-          start_date: startDate,
-          end_date: endDate
-        },
-        total_visitors: 0,
-        returning_visitors: 0
-      });
-    }
-    
-    // Get all sessions for these visitors
-    const sessions = [];
-    const profiles = [];
-    
-    // Get the count of all visitors and returning visitors
-    const visitorStatsBuilder = createSqlBuilder();
-    visitorStatsBuilder.sb.select = {
-      total_visitors: 'uniqExact(anonymous_id) as total_visitors',
-      returning_visitors: 'countIf(sessions > 1) as returning_visitors'
-    };
-    visitorStatsBuilder.sb.from = `(
-      SELECT 
-        anonymous_id, 
-        COUNT(DISTINCT session_id) as sessions
-      FROM analytics.events
-      WHERE 
-        client_id = '${params.website_id}'
-        AND time >= parseDateTimeBestEffort('${startDate}')
-        AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')
-      GROUP BY anonymous_id
-    )`;
-    
-    const visitorStatsResult = await chQuery(visitorStatsBuilder.getSql());
-    const totalVisitors = visitorStatsResult[0]?.total_visitors || 0;
-    const returningVisitors = visitorStatsResult[0]?.returning_visitors || 0;
-    
-    // Process each visitor
-    for (const visitor of visitorIdsResult) {
-      // Get sessions for this visitor
-      const visitorSessionsBuilder = createSqlBuilder();
-      visitorSessionsBuilder.sb.select = {
-        session_id: 'session_id',
-        first_visit: 'MIN(time) as first_visit',
-        last_visit: 'MAX(time) as last_visit',
-        duration: 'dateDiff(\'second\', MIN(time), MAX(time)) as duration',
-        page_views: 'countIf(event_name = \'screen_view\') as page_views',
-        user_agent: 'any(user_agent) as user_agent',
-        country: 'any(country) as country',
-        city: 'any(city) as city',
-        referrer: 'any(referrer) as referrer'
-      };
-      visitorSessionsBuilder.sb.from = 'analytics.events';
-      visitorSessionsBuilder.sb.where = {
-        client_filter: `client_id = '${params.website_id}'`,
-        date_filter: `time >= parseDateTimeBestEffort('${startDate}') AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')`,
-        visitor_filter: `anonymous_id = '${visitor.visitor_id}'`
-      };
-      visitorSessionsBuilder.sb.groupBy = {
-        session_id: 'session_id'
-      };
-      visitorSessionsBuilder.sb.orderBy = {
-        first_visit: 'first_visit DESC'
-      };
-      
-      const visitorSessionsResult = await chQuery(visitorSessionsBuilder.getSql());
-      
-      if (!visitorSessionsResult.length) {
-        continue;
-      }
-      
-      // Format the visitor's sessions
-      const formattedSessions = visitorSessionsResult.map(session => {
-        // Format the duration as Xh Ym Zs
-        const durationInSeconds = session.duration || 0;
-        const hours = Math.floor(durationInSeconds / 3600);
-        const minutes = Math.floor((durationInSeconds % 3600) / 60);
-        const seconds = durationInSeconds % 60;
-        
-        let durationFormatted = '';
-        if (hours > 0) durationFormatted += `${hours}h `;
-        if (minutes > 0 || hours > 0) durationFormatted += `${minutes}m `;
-        durationFormatted += `${seconds}s`;
-        
-        // Parse user agent
-        const userAgentInfo = parseUserAgentDetails(session.user_agent || '');
-        
-        // Parse referrer if present
-        const referrerParsed = session.referrer ? parseReferrers(
-          [{ referrer: session.referrer, visitors: 0, pageviews: 0 }]
-        )[0] : null;
-        
-        // Generate a session name
-        const sessionName = generateSessionName(session.session_id);
-        
-        return {
-          ...session,
-          session_name: sessionName,
-          device: userAgentInfo.device_type,
-          browser: userAgentInfo.browser_name,
-          os: userAgentInfo.os_name,
-          duration_formatted: durationFormatted,
-          referrer_parsed: referrerParsed,
-          visitor_id: visitor.visitor_id,
-          is_returning_visitor: visitor.session_count > 1,
-          visitor_session_count: visitor.session_count
-        };
-      }) as Array<typeof visitorSessionsResult[0] & {
-        session_name: string;
-        device: string;
-        browser: string;
-        os: string;
-        duration_formatted: string;
-        referrer_parsed: { type: string; name: string; domain: string; referrer: string; visitors: number; pageviews: number; } | null;
-        visitor_id: string;
-        is_returning_visitor: boolean;
-        visitor_session_count: number;
-        duration: number;
-        page_views: number;
-        country: string;
-        city: string;
-      }>;
-      
-      // Add sessions to the overall sessions array
-      sessions.push(...formattedSessions);
-      
-      // Calculate total duration across all sessions
-      const totalDuration = formattedSessions.reduce((sum, session) => sum + (session.duration || 0), 0);
-      const hours = Math.floor(totalDuration / 3600);
-      const minutes = Math.floor((totalDuration % 3600) / 60);
-      const seconds = totalDuration % 60;
-      
-      let totalDurationFormatted = '';
-      if (hours > 0) totalDurationFormatted += `${hours}h `;
-      if (minutes > 0 || hours > 0) totalDurationFormatted += `${minutes}m `;
-      totalDurationFormatted += `${seconds}s`;
-      
-      // Get the most recent session for device info
-      const latestSession = formattedSessions[0];
-      
-      // Create profile data
-      const profile = {
-        visitor_id: visitor.visitor_id,
-        first_visit: visitor.first_visit,
-        last_visit: visitor.last_visit,
-        total_sessions: visitor.session_count,
-        total_pageviews: formattedSessions.reduce((sum, session) => sum + (session.page_views || 0), 0),
-        total_duration: totalDuration,
-        total_duration_formatted: totalDurationFormatted,
-        device: latestSession?.device || 'Unknown',
-        browser: latestSession?.browser || 'Unknown',
-        os: latestSession?.os || 'Unknown',
-        country: latestSession?.country || 'Unknown',
-        city: latestSession?.city || 'Unknown',
-        sessions: formattedSessions
-      };
-      
-      profiles.push(profile);
-    }
-    
-    return c.json({
-      success: true,
-      profiles,
-      date_range: {
-        start_date: startDate,
-        end_date: endDate
-      },
-      total_visitors: totalVisitors,
-      returning_visitors: returningVisitors
-    });
-  } catch (error) {
-    logger.error('Error retrieving visitor profiles:', { 
-      error,
-      website_id: params.website_id
-    });
-    
-    return c.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to retrieve visitor profiles.'
-    }, 400);
-  }
-});
-
-// Define interface for parsed user agent details
-interface ParsedUserAgent {
-  browser_name: string;
-  browser_version: string;
-  os_name: string;
-  os_version: string;
-  device_type: string;
-  device_brand: string;
-  device_model: string;
-}
-
-// Helper function to parse user agent and return structured data
-function parseUserAgentDetails(userAgent: string): ParsedUserAgent {
-  const parser = new UAParser(userAgent);
-  const result = parser.getResult();
-  
-  return {
-    browser_name: result.browser.name || 'Unknown',
-    browser_version: result.browser.version || 'Unknown',
-    os_name: result.os.name || 'Unknown',
-    os_version: result.os.version || 'Unknown',
-    device_type: result.device.type || 'desktop', // Default to desktop if not detected
-    device_brand: result.device.vendor || 'Unknown',
-    device_model: result.device.model || 'Unknown'
-  };
-}
-/**
- * Get mini chart data for website card
- * GET /analytics/mini-chart/:website_id
- */
-analyticsRouter.get('/mini-chart/:website_id', async (c) => {
-  const websiteId = c.req.param('website_id');
-  const user = c.get('user');
-  
-  if (!user) {
-    return c.json({ error: 'Authentication required' }, 401);
-  }
-
-  try {
-    // Use our builder for the mini chart data
-    const miniChartBuilder = createMiniChartBuilder(websiteId);
-    
-    // Execute query
-    const chartData = await chQuery(miniChartBuilder.getSql());
-    
-    return c.json(createSuccessResponse({
-      data: chartData || []
-    }));
-    
-  } catch (error: any) {
-    logger.error('Error fetching mini chart data:', error);
-    return c.json(createErrorResponse({ 
-      message: 'Error fetching mini chart data',
-      error: error.message
-    }), 500);
-  }
-});
-
-/**
- * Get mini charts data for multiple websites in a single request
- * GET /analytics/batch-mini-charts?ids=id1,id2,id3
- */
-analyticsRouter.get('/batch-mini-charts', async (c) => {
-  const ids = c.req.query('ids');
-  const user = c.get('user');
-  
-  if (!user) {
-    return c.json({ error: 'Authentication required' }, 401);
-  }
-
-  if (!ids) {
-    return c.json(createErrorResponse({ 
-      message: 'Website IDs required',
-      error: 'Missing ids parameter'
-    }), 400);
-  }
-
-  try {
-    // Parse the comma-separated ids
-    const websiteIds = ids.split(',');
-    
-    // Fetch mini chart data for all websites in parallel
-    const promises = websiteIds.map(id => {
-      const miniChartBuilder = createMiniChartBuilder(id);
-      return chQuery(miniChartBuilder.getSql()).then(data => ({ 
-        id, 
-        data: data || [] 
-      }));
-    });
-    
-    const results = await Promise.all(promises);
-    
-    // Convert results array to an object with website IDs as keys
-    const batchData = results.reduce((acc, { id, data }) => {
-      acc[id] = data;
-      return acc;
-    }, {} as Record<string, any>);
-    
-    return c.json(createSuccessResponse({
-      data: batchData
-    }));
-    
-  } catch (error: any) {
-    logger.error('Error fetching batch mini chart data:', error);
-    return c.json(createErrorResponse({ 
-      message: 'Error fetching batch mini chart data',
-      error: error.message
-    }), 500);
-  }
-});
+analyticsRouter.route('/mini-chart', miniChartRouter);
+analyticsRouter.route('/sessions', sessionsRouter);
+analyticsRouter.route('/profiles', profilesRouter);
 
 export default analyticsRouter; 

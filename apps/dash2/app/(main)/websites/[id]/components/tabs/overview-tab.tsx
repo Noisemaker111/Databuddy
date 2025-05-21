@@ -32,6 +32,9 @@ import { MetricToggles, ExternalLinkButton, BORDER_RADIUS } from "../utils/ui-co
 import type { FullTabProps, MetricPoint } from "../utils/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import type { ColumnDef, CellContext } from "@tanstack/react-table";
+import { ReferrerSourceCell, type ReferrerSourceCellData } from "@/components/atomic/ReferrerSourceCell";
+import { PageLinkCell, type PageLinkCellData } from "@/components/atomic/PageLinkCell";
 
 // Define trend calculation return type
 interface TrendCalculation {
@@ -51,6 +54,14 @@ interface ReferrerItem {
   type?: string;
   name?: string;      // This is the primary display name, maps to 'value' if accessorKey is 'name'
   domain?: string;    // Used for favicon
+}
+
+// Re-define type for top pages data
+interface TopPageData {
+  path: string;
+  pageviews: number;
+  visitors: number;
+  [key: string]: any; 
 }
 
 const MIN_PREVIOUS_SESSIONS_FOR_TREND = 5;
@@ -207,73 +218,43 @@ export function WebsiteOverviewTab({
     [analytics.browser_versions]
   );
 
-  const topPagesColumns = useMemo(() => [
+  const topPagesColumns = useMemo((): ColumnDef<TopPageData, any>[] => [
     {
       accessorKey: 'path',
       header: 'Page',
-      cell: (value: string) => {
-        const link = formatDomainLink(value, websiteData?.domain);
-        return <ExternalLinkButton href={link.href} label={link.display} title={link.title} className="text-sm" />;
-      }
+      cell: (info: CellContext<TopPageData, string>) => (
+        <PageLinkCell 
+          path={info.getValue()} 
+          websiteDomain={websiteData?.domain} 
+        />
+      )
     },
     {
       accessorKey: 'pageviews',
       header: 'Views',
-      className: 'text-right text-sm',
     },
     {
       accessorKey: 'visitors',
       header: 'Visitors',
-      className: 'text-right text-sm',
     },
   ], [websiteData?.domain]);
 
-  const referrerColumns = useMemo(() => [
+  const referrerColumns = useMemo((): ColumnDef<ReferrerItem, any>[] => [
     {
       accessorKey: 'name',
       header: 'Source',
-      cell: (value: string | undefined, row: ReferrerItem) => {
-        const displayName = value || row.name || row.referrer || 'Direct';
-        const domain = row.domain;
-
-        if (displayName === 'Direct' || !domain) {
-          return (
-            <span className="font-medium text-sm">
-              {displayName}
-            </span>
-          );
-        }
-
-        const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
-
-        const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-          e.currentTarget.style.display = 'none';
-        };
-
-        return (
-          <span className="font-medium text-sm flex items-center gap-2">
-            <img
-              src={faviconUrl}
-              alt={`${displayName} favicon`}
-              width={16}
-              height={16}
-              className="rounded-sm"
-              onError={handleImageError}
-            />
-            {displayName}
-          </span>
-        );
+      cell: (info: CellContext<ReferrerItem, string | undefined>) => {
+        const cellData: ReferrerSourceCellData = info.row.original;
+        return <ReferrerSourceCell {...cellData} />;
       }
     },
     {
       accessorKey: 'visitors',
       header: 'Visitors',
-      className: 'text-right text-sm',
     },
     {
       accessorKey: 'pageviews',
       header: 'Views',
-      className: 'text-right text-sm',
     },
   ], []);
 
@@ -519,7 +500,7 @@ export function WebsiteOverviewTab({
               title="Top Referrers"
               description="Sources of your traffic"
               isLoading={isLoading}
-              limit={5}
+              initialPageSize={5}
             />
         </div>
         
@@ -539,7 +520,7 @@ export function WebsiteOverviewTab({
               title="Top Pages"
               description="Most viewed content"
               isLoading={isLoading}
-              limit={5}
+              initialPageSize={5}
             />
         </div>
       </div>

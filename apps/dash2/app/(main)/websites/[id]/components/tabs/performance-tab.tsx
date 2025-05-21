@@ -9,11 +9,6 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { StatCard } from "@/components/analytics/stat-card";
 import { useWebsiteAnalytics } from "@/hooks/use-analytics";
 import { getColorVariant, PERFORMANCE_THRESHOLDS } from "../utils/analytics-helpers";

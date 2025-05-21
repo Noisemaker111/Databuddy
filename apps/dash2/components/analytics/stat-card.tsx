@@ -4,6 +4,9 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { formatMetricNumber } from "@/lib/formatters";
+import TrendArrow from "@/components/atomic/TrendArrow";
+import TrendPercentage from "@/components/atomic/TrendPercentage";
 
 interface StatCardProps {
   title: string;
@@ -17,6 +20,7 @@ interface StatCardProps {
   variant?: "default" | "success" | "info" | "warning" | "danger";
   // Flag to indicate if decreasing values are positive (e.g., bounce rate, page load time)
   invertTrend?: boolean;
+  id?: string;
 }
 
 export function StatCard({
@@ -29,7 +33,8 @@ export function StatCard({
   isLoading = false,
   className,
   variant = "default",
-  invertTrend = false
+  invertTrend = false,
+  id,
 }: StatCardProps) {
   // Determine color based on variant
   const getVariantClasses = () => {
@@ -47,43 +52,9 @@ export function StatCard({
     }
   };
 
-  // Determine color for trend indicator
-  const getTrendColor = () => {
-    if (trend === undefined || trend === 0) return "text-muted-foreground";
-    
-    // For metrics where decreasing is positive (like bounce rate), invert the color logic
-    if (invertTrend) {
-      return trend < 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
-    }
-    
-    return trend > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
-  };
-
-  // Format value to fit smaller screens if needed
-  const formatValue = (val: string | number): string => {
-    // If it's a string that ends with '%', preserve it
-    if (typeof val === 'string' && val.endsWith('%')) {
-      return val;
-    }
-    
-    // For numeric values or strings that can be converted to numbers
-    const numVal = typeof val === 'number' ? val : Number.parseFloat(val);
-    if (! Number.isNaN(numVal)) {
-      // Handle larger numbers more compactly
-      if (numVal >= 1000000) {
-        return `${(numVal / 1000000).toFixed(1)}M`;
-      } 
-      if (numVal >= 1000) {
-        return `${(numVal / 1000).toFixed(1)}K`;
-      }
-    }
-    
-    return val.toString();
-  };
-
   if (isLoading) {
     return (
-      <Card className={cn("overflow-hidden", className)}>
+      <Card className={cn("overflow-hidden", className)} id={id}>
         <div className="p-2">
           <div className="flex items-center justify-between">
             <Skeleton className="h-4 w-20" />
@@ -99,8 +70,13 @@ export function StatCard({
   // Check if value is a time string (like "5h 9m 23s")
   const isTimeValue = typeof value === 'string' && /\d+[hm]\s+\d+[ms]/.test(value);
 
+  // Use formatMetricNumber for value display, unless it's a pre-formatted string (like time or already has %)
+  const displayValue = (typeof value === 'number' || (typeof value === 'string' && !value.endsWith('%') && !isTimeValue))
+    ? formatMetricNumber(Number(value)) // Ensure value is number for formatMetricNumber
+    : value.toString();
+
   return (
-    <Card className={cn("overflow-hidden transition-all hover:shadow-md py-1 sm:py-2", getVariantClasses(), className)}>
+    <Card className={cn("overflow-hidden transition-all hover:shadow-md py-1 sm:py-2", getVariantClasses(), className)} id={id}>
       <div className="p-1 sm:p-2">
         <div className="flex items-center justify-between">
           <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-tight line-clamp-1 pl-2">{title}</p>
@@ -113,20 +89,21 @@ export function StatCard({
           isTimeValue ? "text-sm sm:text-base" : "text-lg sm:text-xl",
           typeof value === 'string' && value.length > 8 ? "text-sm sm:text-base" : ""
         )}>
-          {formatValue(value)}
+          {displayValue}
         </div>
         <div className="flex items-center text-[10px] sm:text-xs mt-1 leading-none pl-2">
           {trend !== undefined && !Number.isNaN(trend) && (
-            <span className={cn("font-medium whitespace-nowrap", getTrendColor())}>
-              {trend > 0 ? "↑" : trend < 0 ? "↓" : "→"} {Math.abs(trend)}%
-            </span>
+            <>
+              <TrendArrow value={trend} invertColor={invertTrend} />
+              <TrendPercentage value={trend} invertColor={invertTrend} className="ml-0.5" />
+            </>
           )}
           {trendLabel && trend !== undefined && !Number.isNaN(trend) && (
             <span className="text-muted-foreground ml-1 hidden xs:inline">
               {trendLabel}
             </span>
           )}
-          {description && (!trendLabel || trend === undefined || Number.isNaN(trend)) && (
+          {description && (trend === undefined || Number.isNaN(trend)) && (
             <span className="text-muted-foreground line-clamp-1">
               {description}
             </span>
