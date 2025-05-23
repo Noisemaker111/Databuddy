@@ -1,8 +1,9 @@
-import { useMemo } from "react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { useMemo, useState, useCallback } from "react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Brush } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { SkeletonChart } from "./skeleton-chart";
-import { LineChart } from "lucide-react";
+import { LineChart, RotateCcw } from "lucide-react";
 
 // Simplified color palette for metrics
 const METRIC_COLORS = {
@@ -86,12 +87,33 @@ interface MetricsChartProps {
 export function MetricsChart({ 
   data, 
   isLoading, 
-  height = 300, 
+  height = 550, 
   title,
   description,
   className
 }: MetricsChartProps) {
   const chartData = useMemo(() => data || [], [data]);
+  
+  // Zoom state management
+  const [zoomDomain, setZoomDomain] = useState<{ startIndex?: number; endIndex?: number }>({});
+  const [isZoomed, setIsZoomed] = useState(false);
+
+  // Reset zoom function
+  const resetZoom = useCallback(() => {
+    setZoomDomain({});
+    setIsZoomed(false);
+  }, []);
+
+  // Handle brush change for zoom
+  const handleBrushChange = useCallback((brushData: any) => {
+    if (brushData && brushData.startIndex !== undefined && brushData.endIndex !== undefined) {
+      setZoomDomain({
+        startIndex: brushData.startIndex,
+        endIndex: brushData.endIndex
+      });
+      setIsZoomed(true);
+    }
+  }, []);
 
   // Formatter for Y axis values
   const valueFormatter = (value: number): string => {
@@ -122,7 +144,7 @@ export function MetricsChart({
         </CardHeader>
         <CardContent className="flex items-center justify-center p-4">
           <div className="text-center py-6">
-            <LineChart className="mx-auto h-8 w-8 text-muted-foreground/40" strokeWidth={1.5} />
+            <LineChart className="mx-auto h-8 w-8 text-muted-foreground/40" strokeWidth={2} />
             <p className="mt-2 text-sm font-medium">No data available</p>
             <p className="text-xs text-muted-foreground mt-1">Data will appear as it's collected</p>
           </div>
@@ -134,23 +156,42 @@ export function MetricsChart({
   // Determine which metrics are present in the data
   const hasPageviews = chartData.some(item => 'pageviews' in item && item.pageviews !== undefined);
   const hasVisitors = chartData.some(item => 'visitors' in item && item.visitors !== undefined);
-  const hasUniqueVisitors = chartData.some(item => 'unique_visitors' in item && item.unique_visitors !== undefined);
   const hasSessions = chartData.some(item => 'sessions' in item && item.sessions !== undefined);
   const hasBounceRate = chartData.some(item => 'bounce_rate' in item && item.bounce_rate !== undefined);
   const hasAvgSessionDuration = chartData.some(item => 'avg_session_duration' in item && item.avg_session_duration !== undefined);
 
   return (
     <Card className="w-full rounded-none border-none rounded-b-xl">
-      {title && <CardHeader className="py-3 px-4">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {description && <CardDescription className="text-xs">{description}</CardDescription>}
-      </CardHeader>}
-      <CardContent className="pt-0 px-0 pb-4">
-        <div style={{ width: '100%', height: height - 70 }}>
+      <CardHeader className="py-1 px-4 flex flex-row items-center justify-between">
+        <div>
+          {title && <CardTitle className="text-sm font-medium">{title}</CardTitle>}
+          {description && <CardDescription className="text-xs">{description}</CardDescription>}
+        </div>
+        {chartData.length > 5 && (
+          <div className="flex items-center gap-1">
+            {isZoomed && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetZoom}
+                className="h-7 px-1 text-xs"
+              >
+                <RotateCcw className="h-3 w-3 mr-1" />
+                Reset Zoom
+              </Button>
+            )}
+            <div className="text-xs text-muted-foreground ml-2">
+              Drag to zoom
+            </div>
+          </div>
+        )}
+      </CardHeader>
+      <CardContent className="pt-0 px-0 pb-1">
+        <div style={{ width: '100%', height: height - 50 }}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={chartData}
-              margin={{ top: 20, right: 20, left: 8, bottom: 20 }}
+              margin={{ top: 20, right: 20, left: 8, bottom: chartData.length > 5 ? 45 : 10 }}
             >
               <defs>
                 {Object.entries(METRIC_COLORS).map(([key, color]) => (
@@ -174,6 +215,7 @@ export function MetricsChart({
                 tickLine={false}
                 axisLine={false}
                 dy={8}
+                domain={zoomDomain.startIndex !== undefined && zoomDomain.endIndex !== undefined ? [zoomDomain.startIndex, zoomDomain.endIndex] : undefined}
               />
               
               <YAxis 
@@ -218,8 +260,8 @@ export function MetricsChart({
               <Legend 
                 wrapperStyle={{ 
                   fontSize: '10px', 
-                  paddingTop: '10px',
-                  bottom: 0
+                  paddingTop: '8px',
+                  bottom: chartData.length > 5 ? 25 : 0
                 }}
                 formatter={(value) => (
                   <span className="text-xs">{value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, ' ')}</span>
@@ -255,6 +297,7 @@ export function MetricsChart({
                   yAxisId="left"
                 />
               )}
+              
               {hasSessions && (
                 <Area 
                   type="monotone" 
@@ -266,6 +309,26 @@ export function MetricsChart({
                   activeDot={{ r: 4, strokeWidth: 1 }}
                   name="Sessions"
                   yAxisId="left"
+                />
+              )}
+              
+              {/* Add Brush component for zoom functionality - only show if there are enough data points */}
+              {chartData.length > 5 && (
+                  <Brush
+                    dataKey="date"
+                    padding={{ top: 10, bottom: 10 }}
+                    height={30}
+                    stroke="var(--border)"
+                    fill="var(--muted)"
+                    fillOpacity={0.1}
+                  onChange={handleBrushChange}
+                  startIndex={zoomDomain.startIndex}
+                  endIndex={zoomDomain.endIndex}
+                  tickFormatter={(value) => {
+                    // Show abbreviated date format for brush
+                    const date = new Date(value);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  }}
                 />
               )}
             </AreaChart>
