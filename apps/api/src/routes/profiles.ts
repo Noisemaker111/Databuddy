@@ -4,18 +4,16 @@ import { logger } from "../lib/logger";
 import { formatDuration } from "../utils/dates";
 import { generateSessionName } from "../utils/sessions";
 import { parseUserAgentDetails } from "../utils/ua";
+import { timezoneMiddleware, useTimezone, timezoneQuerySchema } from "../middleware/timezone";
 import { Hono } from "hono";
 import type { AppVariables } from "../types";
-import type { Session, User } from "@databuddy/auth";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 
-const profilesRouter = new Hono<{ 
-    Variables: AppVariables & { 
-        user?: User
-        session?: Session;
-    }
-}>();
+const profilesRouter = new Hono<{ Variables: AppVariables }>();
+
+// Apply timezone middleware
+profilesRouter.use('*', timezoneMiddleware);
 
 const analyticsQuerySchema = z.object({
     website_id: z.string().min(1, 'Website ID is required'),
@@ -24,12 +22,13 @@ const analyticsQuerySchema = z.object({
     interval: z.enum(['day', 'week', 'month', 'auto']).default('day'),
     granularity: z.enum(['daily', 'hourly']).default('daily'),
     limit: z.coerce.number().int().min(1).max(1000).default(30),
-  });
+}).merge(timezoneQuerySchema);
 
 // GET /analytics/profiles - retrieves visitor profiles with their sessions
 profilesRouter.get('/', zValidator('query', analyticsQuerySchema), async (c) => {
     const params = c.req.valid('query');
     const user = c.get('user');
+    const timezoneInfo = useTimezone(c);
     
     if (!user) {
       return c.json({ success: false, error: 'Authentication required' }, 401);
@@ -74,7 +73,12 @@ profilesRouter.get('/', zValidator('query', analyticsQuerySchema), async (c) => 
             end_date: endDate
           },
           total_visitors: 0,
-          returning_visitors: 0
+          returning_visitors: 0,
+          timezone: {
+            timezone: timezoneInfo.timezone,
+            detected: timezoneInfo.detected,
+            source: timezoneInfo.source
+          }
         });
       }
       
@@ -221,7 +225,12 @@ profilesRouter.get('/', zValidator('query', analyticsQuerySchema), async (c) => 
           end_date: endDate
         },
         total_visitors: totalVisitors,
-        returning_visitors: returningVisitors
+        returning_visitors: returningVisitors,
+        timezone: {
+          timezone: timezoneInfo.timezone,
+          detected: timezoneInfo.detected,
+          source: timezoneInfo.source
+        }
       });
     } catch (error) {
       logger.error('Error retrieving visitor profiles:', { 

@@ -1,5 +1,4 @@
 import { logger } from "../lib/logger";
-
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import type { AppVariables } from "../types";
@@ -7,19 +6,15 @@ import type { Session as AuthSession, User } from "@databuddy/auth";
 import { chQuery, createSqlBuilder } from "../clickhouse/client";
 import { createSessionEventsBuilder, createSessionsBuilder, parseReferrers } from "../builders";
 import { generateSessionName } from "../utils/sessions";
+import { timezoneMiddleware, useTimezone, timezoneQuerySchema } from "../middleware/timezone";
 import { z } from "zod";
 import { formatDuration } from "../utils/dates";
 import { parseUserAgentDetails } from "../utils/ua";
 
-type SessionsContext = {
-  Variables: AppVariables & { 
-    user?: User;
-    session?: AuthSession;
-    website?: { id: string };
-  }
-};
+const sessionsRouter = new Hono<{ Variables: AppVariables }>();
 
-const sessionsRouter = new Hono<SessionsContext>();
+// Apply timezone middleware
+sessionsRouter.use('*', timezoneMiddleware);
 
 const analyticsQuerySchema = z.object({
   website_id: z.string().min(1, 'Website ID is required'),
@@ -29,7 +24,7 @@ const analyticsQuerySchema = z.object({
   granularity: z.enum(['daily', 'hourly']).default('daily'),
   limit: z.coerce.number().int().min(1).max(1000).default(100),
   page: z.coerce.number().int().min(1).default(1),
-});
+}).merge(timezoneQuerySchema);
 
 const formatSessionObject = (session: any, visitorSessionCount: number) => {
   const durationFormatted = formatDuration(session.duration || 0);
@@ -55,6 +50,7 @@ const formatSessionObject = (session: any, visitorSessionCount: number) => {
 sessionsRouter.get('/', zValidator('query', analyticsQuerySchema), async (c) => {
   const params = c.req.valid('query');
   const user = c.get('user');
+  const timezoneInfo = useTimezone(c);
   
   if (!user) {
     return c.json({ success: false, error: 'Authentication required' }, 401);
@@ -87,7 +83,12 @@ sessionsRouter.get('/', zValidator('query', analyticsQuerySchema), async (c) => 
         hasNext: sessionsResult.length === params.limit,
         hasPrev: params.page > 1
       },
-      date_range: { start_date: startDate, end_date: endDate }
+      date_range: { start_date: startDate, end_date: endDate },
+      timezone: {
+        timezone: timezoneInfo.timezone,
+        detected: timezoneInfo.detected,
+        source: timezoneInfo.source
+      }
     });
   } catch (error) {
     logger.error('Error retrieving sessions data:', { error, website_id: params.website_id });
@@ -97,10 +98,11 @@ sessionsRouter.get('/', zValidator('query', analyticsQuerySchema), async (c) => 
 
 sessionsRouter.get('/:session_id', zValidator('query', z.object({
   website_id: z.string().min(1, 'Website ID is required')
-})), async (c) => {
+}).merge(timezoneQuerySchema)), async (c) => {
   const { session_id } = c.req.param();
   const user = c.get('user');
   const website = c.get('website');
+  const timezoneInfo = useTimezone(c);
 
   if (!website?.id) {
     return c.json({ success: false, error: 'Website not found' }, 404);
@@ -153,7 +155,15 @@ sessionsRouter.get('/:session_id', zValidator('query', z.object({
       events: processedEvents
     };
     
-    return c.json({ success: true, session: formattedSession });
+    return c.json({ 
+      success: true, 
+      session: formattedSession,
+      timezone: {
+        timezone: timezoneInfo.timezone,
+        detected: timezoneInfo.detected,
+        source: timezoneInfo.source
+      }
+    });
   } catch (error) {
     logger.error('Error retrieving session details:', { error, website_id: website.id, session_id });
     return c.json({ success: false, error: "Error retrieving session details" }, 500);

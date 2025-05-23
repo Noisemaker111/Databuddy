@@ -5,15 +5,14 @@ import { createSuccessResponse } from "../utils/analytics-helpers";
 import { chQuery } from "../clickhouse/client";
 import { logger } from "../lib/logger";
 import type { AppVariables } from "../types";
+import { timezoneMiddleware, useTimezone } from "../middleware/timezone";
 import { Hono } from "hono";
 
 
-const miniChartRouter = new Hono<{ 
-    Variables: AppVariables & { 
-        user?: { id: string, email: string } | null;
-        session?: any;
-    }
-}>();
+const miniChartRouter = new Hono<{ Variables: AppVariables }>();
+
+// Apply timezone middleware
+miniChartRouter.use('*', timezoneMiddleware);
 
 /**
  * Get mini chart data for website card
@@ -22,6 +21,7 @@ const miniChartRouter = new Hono<{
 miniChartRouter.get('/:website_id', async (c) => {
     const websiteId = c.req.param('website_id');
     const user = c.get('user');
+    const timezoneInfo = useTimezone(c);
     
     if (!user) {
       return c.json({ error: 'Authentication required' }, 401);
@@ -33,7 +33,12 @@ miniChartRouter.get('/:website_id', async (c) => {
       const chartData = await chQuery(miniChartBuilder.getSql());
       
       return c.json(createSuccessResponse({
-        data: chartData || []
+        data: chartData || [],
+        timezone: {
+          timezone: timezoneInfo.timezone,
+          detected: timezoneInfo.detected,
+          source: timezoneInfo.source
+        }
       }));
       
     } catch (error: any) {
@@ -52,6 +57,7 @@ miniChartRouter.get('/:website_id', async (c) => {
   miniChartRouter.get('/batch-mini-charts', async (c) => {
     const ids = c.req.query('ids');
     const user = c.get('user');
+    const timezoneInfo = useTimezone(c);
     
     if (!user) {
       return c.json({ error: 'Authentication required' }, 401);
@@ -87,7 +93,12 @@ miniChartRouter.get('/:website_id', async (c) => {
       }, {} as Record<string, any>);
       
       return c.json(createSuccessResponse({
-        data: batchData
+        data: batchData,
+        timezone: {
+          timezone: timezoneInfo.timezone,
+          detected: timezoneInfo.detected,
+          source: timezoneInfo.source
+        }
       }));
       
     } catch (error: any) {

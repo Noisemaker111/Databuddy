@@ -10,6 +10,7 @@ import { zValidator } from '@hono/zod-validator';
 import { chQuery } from '@databuddy/db';
 import type { AppVariables } from '../types';
 import { authMiddleware } from '../middleware/auth';
+import { timezoneMiddleware, useTimezone, timezoneQuerySchema } from '../middleware/timezone';
 import { 
   formatTime, 
   formatPerformanceMetric, 
@@ -18,6 +19,14 @@ import {
   formatBrowserData,
   formatDeviceData
 } from '../utils/analytics-helpers';
+import { adjustDateRangeForTimezone } from '../utils/timezone';
+import { 
+  processEventsForTimezone, 
+  filterEventsForTimezone,
+  processSummaryForTimezone,
+  adjustTodayDataForTimezone,
+  type AnalyticsEntry
+} from '../utils/analytics-timezone';
 import {
   createSummaryBuilder, 
   createTodayBuilder, 
@@ -51,37 +60,12 @@ interface ReferrerData {
   pageviews: number;
 }
 
-
 interface PageData {
   path: string;
   pageviews: number;
   visitors: number;
   avg_time_on_page: number | null;
 }
-
-interface AnalyticsEntry {
-  date: string;
-  pageviews: number;
-  unique_visitors?: number;
-  visitors?: number;
-  sessions: number;
-  bounce_rate: number;
-  avg_session_duration?: number;
-  [key: string]: any;
-}
-
-
-// Create router with typed context
-export const analyticsRouter = new Hono<{ 
-  Variables: AppVariables & { 
-    user?: { id: string, email: string } | null;
-    session?: any;
-  }
-}>();
-
-// Apply auth middleware to all routes
-analyticsRouter.use('*', authMiddleware);
-analyticsRouter.use('*', websiteAuthHook);
 
 // Validation schema for analytics query parameters
 const analyticsQuerySchema = z.object({
@@ -91,7 +75,15 @@ const analyticsQuerySchema = z.object({
   interval: z.enum(['day', 'week', 'month', 'auto']).default('day'),
   granularity: z.enum(['daily', 'hourly']).default('daily'),
   limit: z.coerce.number().int().min(1).max(1000).default(30),
-});
+}).merge(timezoneQuerySchema);
+
+// Create router with typed context
+export const analyticsRouter = new Hono<{ Variables: AppVariables }>();
+
+// Apply middleware to all routes
+analyticsRouter.use('*', authMiddleware);
+analyticsRouter.use('*', websiteAuthHook);
+analyticsRouter.use('*', timezoneMiddleware);
 
 /**
  * Get summary statistics
@@ -111,30 +103,42 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
   }
 
   try {
+    // Get timezone info from context
+    const timezoneInfo = useTimezone(c);
+    const userTimezone = timezoneInfo.timezone;
+    
     // Set default date range if not provided
     const { startDate, endDate } = getDefaultDateRange(params.end_date, params.start_date);
-    const todayDateStr = new Date().toISOString().split('T')[0];
     
-    // Use our builders for all queries
-    const summaryBuilder = createSummaryBuilder(params.website_id, startDate, endDate);
-    const todayBuilder = createTodayBuilder(params.website_id);
-    const todayByHourBuilder = createTodayByHourBuilder(params.website_id);
-    const topPagesBuilder = createTopPagesBuilder(params.website_id, startDate, endDate, 100);
-    const topReferrersBuilder = createTopReferrersBuilder(params.website_id, startDate, endDate, website.domain);
-    const eventsByDateBuilder = createEventsByDateBuilder(
-      params.website_id, 
+    // Adjust date range for user timezone to ensure we capture all relevant data
+    const { startDate: adjustedStartDate, endDate: adjustedEndDate } = adjustDateRangeForTimezone(
       startDate, 
       endDate, 
+      userTimezone
+    );
+    
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    
+    // Use our builders for all queries with adjusted date range
+    const summaryBuilder = createSummaryBuilder(params.website_id, adjustedStartDate, adjustedEndDate);
+    const todayBuilder = createTodayBuilder(params.website_id);
+    const todayByHourBuilder = createTodayByHourBuilder(params.website_id);
+    const topPagesBuilder = createTopPagesBuilder(params.website_id, adjustedStartDate, adjustedEndDate, 100);
+    const topReferrersBuilder = createTopReferrersBuilder(params.website_id, adjustedStartDate, adjustedEndDate, website.domain);
+    const eventsByDateBuilder = createEventsByDateBuilder(
+      params.website_id, 
+      adjustedStartDate, 
+      adjustedEndDate, 
       params.granularity as 'hourly' | 'daily'
     );
-    const resolutionsBuilder = createScreenResolutionsBuilder(params.website_id, startDate, endDate, 6);
-    const browserVersionsBuilder = createBrowserVersionsBuilder(params.website_id, startDate, endDate, 5);
-    const countriesBuilder = createCountriesBuilder(params.website_id, startDate, endDate, 5);
-    const deviceTypesBuilder = createDeviceTypesBuilder(params.website_id, startDate, endDate, 100);
-    const connectionTypesBuilder = createConnectionTypesBuilder(params.website_id, startDate, endDate, 5);
-    const languagesBuilder = createLanguagesBuilder(params.website_id, startDate, endDate, 5);
-    const timezonesBuilder = createTimezonesBuilder(params.website_id, startDate, endDate, 5);
-    const performanceBuilder = createPerformanceBuilder(params.website_id, startDate, endDate);
+    const resolutionsBuilder = createScreenResolutionsBuilder(params.website_id, adjustedStartDate, adjustedEndDate, 6);
+    const browserVersionsBuilder = createBrowserVersionsBuilder(params.website_id, adjustedStartDate, adjustedEndDate, 5);
+    const countriesBuilder = createCountriesBuilder(params.website_id, adjustedStartDate, adjustedEndDate, 5);
+    const deviceTypesBuilder = createDeviceTypesBuilder(params.website_id, adjustedStartDate, adjustedEndDate, 100);
+    const connectionTypesBuilder = createConnectionTypesBuilder(params.website_id, adjustedStartDate, adjustedEndDate, 5);
+    const languagesBuilder = createLanguagesBuilder(params.website_id, adjustedStartDate, adjustedEndDate, 5);
+    const timezonesBuilder = createTimezonesBuilder(params.website_id, adjustedStartDate, adjustedEndDate, 5);
+    const performanceBuilder = createPerformanceBuilder(params.website_id, adjustedStartDate, adjustedEndDate);
 
     // Execute all queries
     const [
@@ -182,15 +186,13 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
       avg_session_duration: 0
     };
 
-    const todaySummary = {
+    const todaySummary = adjustTodayDataForTimezone({
       pageviews: rawTodaySummary.pageviews || 0,
       visitors: rawTodaySummary.unique_visitors || 0, // createTodayBuilder uses 'unique_visitors'
       sessions: rawTodaySummary.sessions || 0,
       bounce_rate: rawTodaySummary.bounce_rate || 0,
       bounce_rate_pct: `${Math.round((rawTodaySummary.bounce_rate || 0) * 10) / 10}%`,
-      // avg_session_duration is already provided by todayBuilder, ensure it's handled if needed later for todaySummary object
-      // For now, keeping it consistent with previous structure where avg_session_duration was part of the main summary, not specifically 'todaySummary' display object
-    };
+    }, userTimezone);
     
     // Process browser data to include browser version and OS info
     const processedBrowserVersions = browserVersions.length > 0 ? formatBrowserData(browserVersions as Array<{ 
@@ -217,12 +219,19 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
     // Use utility to merge today's data with historical data
     const summary = mergeTodayDataIntoSummary(summaryData[0], todaySummary);
     
-    // Update events_by_date to include today's data
-    const updatedEventsByDate = updateEventsWithTodayData(
+    // Process summary for timezone context
+    const processedSummary = processSummaryForTimezone(summary, userTimezone, startDate, endDate);
+    
+    // Update events_by_date to include today's data and convert to user timezone
+    const rawEventsByDate = updateEventsWithTodayData(
       eventsByDate as AnalyticsEntry[], 
       todaySummary,
       params.granularity as 'hourly' | 'daily'
     );
+    
+    // Process events for user timezone and filter to original date range
+    const timezoneAwareEvents = processEventsForTimezone(rawEventsByDate, userTimezone);
+    const filteredEvents = filterEventsForTimezone(timezoneAwareEvents, startDate, endDate, userTimezone);
 
     // Process top pages data first for clarity before conditional logic
     const allProcessedTopPages = topPages.map(page => {
@@ -302,17 +311,27 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
         end_date: endDate,
         granularity: params.granularity
       },
-      summary: {
-        pageviews: summary.pageviews,
-        visitors: summary.unique_visitors,
-        unique_visitors: summary.unique_visitors,
-        sessions: summary.sessions,
-        bounce_rate: summary.bounce_rate,
-        bounce_rate_pct: `${Math.round(summary.bounce_rate * 10) / 10}%`,
-        avg_session_duration: Math.round(summary.avg_session_duration),
-        avg_session_duration_formatted: formatTime(summary.avg_session_duration)
+      timezone: {
+        timezone: timezoneInfo.timezone,
+        detected: timezoneInfo.detected,
+        source: timezoneInfo.source,
+        applied: timezoneInfo.timezone !== 'UTC',
+        adjusted_date_range: {
+          start_date: adjustedStartDate,
+          end_date: adjustedEndDate
+        }
       },
-      events_by_date: updatedEventsByDate.map((day: AnalyticsEntry) => ({
+      summary: {
+        pageviews: processedSummary.pageviews,
+        visitors: processedSummary.unique_visitors,
+        unique_visitors: processedSummary.unique_visitors,
+        sessions: processedSummary.sessions,
+        bounce_rate: processedSummary.bounce_rate,
+        bounce_rate_pct: `${Math.round(processedSummary.bounce_rate * 10) / 10}%`,
+        avg_session_duration: Math.round(processedSummary.avg_session_duration),
+        avg_session_duration_formatted: formatTime(processedSummary.avg_session_duration)
+      },
+      events_by_date: filteredEvents.map((day: AnalyticsEntry) => ({
         ...day,
         bounce_rate_pct: `${Math.round(day.bounce_rate * 10) / 10}%`,
         avg_session_duration_formatted: formatTime(day.avg_session_duration || 0)

@@ -4,7 +4,6 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { useAuthSession } from "@/app/providers";
 import { RedirectToSignIn } from "@/components/auth/redirect-to-sign-in";
 import { AuthLoading } from "@/components/auth/auth-loading";
-import { NuqsAdapter } from 'nuqs/adapters/next/app'
 
 export default function MainLayout({
   children,
@@ -26,7 +25,7 @@ export default function MainLayout({
       <Sidebar />
       <div className="md:pl-72 pt-16 h-screen relative">
         <div className="h-[calc(100vh-4rem)] overflow-y-scroll">
-          <NuqsAdapter>{children}</NuqsAdapter>
+          {children}
         </div>
       </div>
     </div>

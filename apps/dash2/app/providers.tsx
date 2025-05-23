@@ -7,6 +7,7 @@ import { useState, createContext, useContext, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { session } from "@databuddy/db";
 import { useWebsitesStore } from "@/stores/use-websites-store";
+import { NuqsAdapter } from 'nuqs/adapters/next/app'
 
 type Session = typeof session.$inferSelect;
 // Default query client configuration
@@ -87,7 +88,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <QueryClientProvider client={clientQueryClient}>
         <SessionProvider>
-            {children}
+          <NuqsAdapter>{children}</NuqsAdapter>
         </SessionProvider>
       </QueryClientProvider>
     </ThemeProvider>

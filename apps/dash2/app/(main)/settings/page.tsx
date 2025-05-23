@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQueryState } from "nuqs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { EmailForm } from "@/components/settings/email-form";
 import { PasswordForm } from "@/components/settings/password-form";
 import { TwoFactorForm } from "@/components/settings/two-factor-form";
@@ -10,78 +11,55 @@ import { SessionsForm } from "@/components/settings/sessions-form";
 import { AccountDeletion } from "@/components/settings/account-deletion";
 import { ProfileForm } from "@/components/settings/profile-form";
 import TimezonePreferences from "@/components/settings/timezone-preferences";
-import { Separator } from "@/components/ui/separator";
 import { 
   ShieldOff, 
   User, 
   Shield, 
-  Mail, 
-  Lock, 
   Bell, 
   Settings,
-  Info,
-  Clock
+  Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { useRouter } from "next/navigation";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+type SettingsTab = "profile" | "account" | "security" | "notifications";
+
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("profile");
-  const router = useRouter();
+  const [activeTab, setActiveTab] = useQueryState('tab', { defaultValue: 'profile' as SettingsTab });
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
 
-  // Handle URL params for direct navigation
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab");
-    if (tab && tabs.some(t => t.id === tab)) {
-      setActiveTab(tab);
-    }
-  }, []);
-
-  // Update URL when tab changes
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", value);
-    router.push(url.pathname + url.search, { scroll: false });
-  };
-
   const tabs = [
     {
-      id: "profile",
+      id: "profile" as SettingsTab,
       label: "Profile",
       icon: User,
       description: "Manage your personal information and profile settings",
     },
     {
-      id: "account",
+      id: "account" as SettingsTab,
       label: "Account",
       icon: Settings,
       description: "Manage your account settings and preferences",
     },
     {
-      id: "security",
+      id: "security" as SettingsTab,
       label: "Security",
       icon: Shield,
       description: "Manage your security settings and authentication methods",
     },
     {
-      id: "notifications",
+      id: "notifications" as SettingsTab,
       label: "Notifications",
       icon: Bell,
       description: "Configure your notification preferences",
       disabled: true,
     },
   ];
-
-  const activeTabData = tabs.find(tab => tab.id === activeTab);
 
   return (
     <div className="container max-w-6xl py-3 space-y-8">
@@ -119,7 +97,7 @@ export default function SettingsPage() {
                           activeTab === tab.id && "bg-secondary"
                         )}
                         onClick={() => {
-                          handleTabChange(tab.id);
+                          setActiveTab(tab.id);
                           if (isMobile) setIsSidebarOpen(false);
                         }}
                         disabled={tab.disabled}
@@ -145,7 +123,7 @@ export default function SettingsPage() {
           "col-span-12 md:col-span-9",
           isMobile && isSidebarOpen && "hidden md:block"
         )}>
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+          <Tabs value={activeTab} className="space-y-6">
             <TabsContent value="profile" className="space-y-6">
               <Alert>
                 <Info className="h-4 w-4" />

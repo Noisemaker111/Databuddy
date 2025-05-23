@@ -1,4 +1,6 @@
 import type { websiteStatus } from '@databuddy/db';
+import type { TimezoneInfo } from './utils/timezone';
+
 type WebsiteStatus = typeof websiteStatus.enumValues[number];
 
 
@@ -55,4 +57,7 @@ export interface AppVariables {
     deletedAt: Date | null;
   };
   enriched?: EnrichedData;
+  timezoneInfo?: TimezoneInfo;
+  user?: { id: string, email: string } | null;
+  session?: any;
 } 
