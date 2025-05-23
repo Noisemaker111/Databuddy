@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 interface Website {
   id: string;
@@ -16,6 +18,17 @@ interface WebsiteListProps {
 }
 
 export function WebsiteList({ websites, isLoading, pathname }: WebsiteListProps) {
+  const router = useRouter();
+
+  // Pre-fetch website details when component mounts
+  useEffect(() => {
+    if (websites?.length) {
+      for (const website of websites) {
+        router.prefetch(`/websites/${website.id}`);
+      }
+    }
+  }, [websites, router]);
+
   if (isLoading) {
     return (
       <>
@@ -43,6 +56,7 @@ export function WebsiteList({ websites, isLoading, pathname }: WebsiteListProps)
         <Link
           key={site.id}
           href={`/websites/${site.id}`}
+          prefetch={true}
           className={cn(
             "flex items-center gap-x-3 px-3 py-2 text-sm rounded-md transition-all cursor-pointer mx-1",
             pathname === `/websites/${site.id}`

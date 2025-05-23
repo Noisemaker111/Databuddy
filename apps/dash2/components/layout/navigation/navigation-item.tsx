@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { NavigationItem as NavigationItemType } from "./types";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 interface NavigationItemProps extends Omit<NavigationItemType, 'icon'> {
   icon: NavigationItemType['icon'];
@@ -22,11 +24,23 @@ export function NavigationItem({
   isHighlighted,
   currentWebsiteId
 }: NavigationItemProps) {
+  const router = useRouter();
   const fullPath = isRootLevel ? href : `/websites/${currentWebsiteId}${href}`;
   const LinkComponent = isExternal ? 'a' : Link;
+
+  // Pre-fetch the route when component mounts
+  useEffect(() => {
+    if (!isExternal) {
+      router.prefetch(fullPath);
+    }
+  }, [fullPath, isExternal, router]);
+
   const linkProps = isExternal 
     ? { href, target: "_blank", rel: "noopener noreferrer" } 
-    : { href: fullPath };
+    : { 
+        href: fullPath,
+        prefetch: true
+      };
 
   return (
     <LinkComponent

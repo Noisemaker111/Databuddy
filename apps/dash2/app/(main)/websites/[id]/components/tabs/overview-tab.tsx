@@ -486,7 +486,7 @@ export function WebsiteOverviewTab({
               title="Top Referrers"
               description="Sources of your traffic"
               isLoading={isLoading}
-              initialPageSize={5}
+              initialPageSize={7}
               minHeight={230}
             />
         </div>
@@ -507,7 +507,7 @@ export function WebsiteOverviewTab({
               title="Top Pages"
               description="Most viewed content"
               isLoading={isLoading}
-              initialPageSize={5}
+              initialPageSize={7}
               minHeight={230}
             />
         </div>
