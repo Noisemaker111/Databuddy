@@ -1,355 +1,265 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { CreditCard, History, Settings, CheckCircle2, XCircle, Download, Plus, Loader2 } from "lucide-react";
+import { Crown, RefreshCw, Activity, CreditCard, History, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 
-// Mock data - replace with actual API calls
-const subscriptionPlans = [
-  {
-    id: "free",
-    name: "Free",
-    price: "$0",
-    description: "Perfect for getting started",
-    features: [
-      "Up to 3 websites",
-      "Basic analytics",
-      "24-hour data retention",
-      "Community support"
-    ],
-    current: true,
-    popular: false
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "$29",
-    description: "For growing businesses",
-    features: [
-      "Unlimited websites",
-      "Advanced analytics",
-      "30-day data retention",
-      "Priority support",
-      "Custom domains",
-      "API access"
-    ],
-    current: false,
-    popular: true
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: "Custom",
-    description: "For large organizations",
-    features: [
-      "Everything in Pro",
-      "Unlimited data retention",
-      "Dedicated support",
-      "Custom integrations",
-      "SLA guarantee",
-      "On-premise deployment"
-    ],
-    current: false,
-    popular: false
-  }
-];
+import { BillingAlerts } from "./components/billing-alerts";
+import { 
+  subscriptionPlans, 
+  usageData, 
+  billingHistory, 
+  paymentMethods,
+  type SubscriptionPlan,
+  type BillingAlert 
+} from "./data/billing-data";
 
-const billingHistory = [
-  {
-    id: "INV001",
-    date: "2024-03-01",
-    amount: "$29.00",
-    status: "paid",
-    description: "Pro Plan - Monthly",
-    pdfUrl: "#"
-  },
-  {
-    id: "INV002",
-    date: "2024-02-01",
-    amount: "$29.00",
-    status: "paid",
-    description: "Pro Plan - Monthly",
-    pdfUrl: "#"
-  },
-  {
-    id: "INV003",
-    date: "2024-01-01",
-    amount: "$29.00",
-    status: "paid",
-    description: "Pro Plan - Monthly",
-    pdfUrl: "#"
-  }
-];
+// Dynamic imports for tabs
+const OverviewTab = lazy(() => import("./components/overview-tab").then(m => ({ default: m.OverviewTab })));
+const PlansTab = lazy(() => import("./components/plans-tab").then(m => ({ default: m.PlansTab })));
+const HistoryTab = lazy(() => import("./components/history-tab").then(m => ({ default: m.HistoryTab })));
+const PaymentTab = lazy(() => import("./components/payment-tab").then(m => ({ default: m.PaymentTab })));
+const BillingDialogs = lazy(() => import("./components/billing-dialogs").then(m => ({ default: m.BillingDialogs })));
 
-const paymentMethods = [
-  {
-    id: "pm_1",
-    type: "card",
-    last4: "4242",
-    brand: "visa",
-    expiry: "12/25",
-    default: true,
-    name: "John Doe"
-  },
-  {
-    id: "pm_2",
-    type: "card",
-    last4: "8888",
-    brand: "mastercard",
-    expiry: "06/24",
-    default: false,
-    name: "John Doe"
-  }
-];
+function TabSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-48 w-full" />
+    </div>
+  );
+}
 
-function BillingPage() {
-  const [activeTab, setActiveTab] = useState("subscription");
-  const [isLoading, setIsLoading] = useState(false);
+export default function BillingPage() {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
+  const [billingAlerts, setBillingAlerts] = useState<BillingAlert[]>([]);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
 
-  const handleUpgrade = async (plan: string) => {
-    setIsLoading(true);
+  const currentPlan = subscriptionPlans.find(p => p.current)?.name || "Starter";
+
+  useEffect(() => {
+    const alerts: BillingAlert[] = [];
+    
+    if (usageData.pageviews.limit && usageData.pageviews.current / usageData.pageviews.limit > 0.8) {
+      alerts.push({
+        id: "pageviews-warning",
+        type: "warning",
+        title: "Approaching pageview limit",
+        message: `You've used ${Math.round((usageData.pageviews.current / usageData.pageviews.limit) * 100)}% of your monthly pageviews.`,
+        action: { label: "Upgrade Plan", onClick: () => setActiveTab("plans") }
+      });
+    }
+
+    const failedPayment = billingHistory.find(invoice => invoice.status === "failed");
+    if (failedPayment) {
+      alerts.push({
+        id: "payment-failed",
+        type: "error",
+        title: "Payment failed",
+        message: `Your payment for ${failedPayment.description} failed. Please update your payment method.`,
+        action: { label: "Update Payment", onClick: () => setActiveTab("payment") }
+      });
+    }
+
+    setBillingAlerts(alerts);
+  }, []);
+
+  const setLoadingState = (key: string, loading: boolean) => {
+    setLoadingStates(prev => ({ ...prev, [key]: loading }));
+  };
+
+  const handleUpgrade = async (plan: SubscriptionPlan) => {
+    setSelectedPlan(plan);
+    setShowUpgradeDialog(true);
+  };
+
+  const confirmUpgrade = async () => {
+    if (!selectedPlan) return;
+    
+    setLoadingState("upgrade", true);
     try {
-      // Add your upgrade logic here
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(`Successfully upgraded to ${plan} plan`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast.success(`Successfully upgraded to ${selectedPlan.name} plan!`);
+      setShowUpgradeDialog(false);
+      setSelectedPlan(null);
     } catch (error) {
-      toast.error("Failed to upgrade plan");
+      toast.error("Failed to upgrade plan. Please try again.");
     } finally {
-      setIsLoading(false);
+      setLoadingState("upgrade", false);
     }
   };
 
-  const handleAddPaymentMethod = async () => {
-    setIsLoading(true);
+  const handleAddPaymentMethod = async () => { 
+    setLoadingState("add-payment", true);
     try {
-      // Add your payment method logic here
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       toast.success("Payment method added successfully");
     } catch (error) {
       toast.error("Failed to add payment method");
     } finally {
-      setIsLoading(false);
+      setLoadingState("add-payment", false);
     }
   };
 
   const handleDownloadInvoice = async (invoiceId: string) => {
-    setIsLoading(true);
+    setLoadingState(`download-${invoiceId}`, true);
     try {
-      // Add your download logic here
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success("Invoice downloaded successfully");
     } catch (error) {
       toast.error("Failed to download invoice");
     } finally {
-      setIsLoading(false);
+      setLoadingState(`download-${invoiceId}`, false);
     }
   };
 
-  return (
-    <div className="p-3 max-w-[1600px] mx-auto">
-      <header className="border-b pb-3">
-        <h1 className="text-2xl font-semibold">Billing & Subscription</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Manage your subscription, billing history, and payment methods
-        </p>
-      </header>
+  const handleDeletePaymentMethod = async (methodId: string) => {
+    setLoadingState(`delete-${methodId}`, true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success("Payment method removed");
+    } catch (error) {
+      toast.error("Failed to remove payment method");
+    } finally {
+      setLoadingState(`delete-${methodId}`, false);
+    }
+  };
 
-      <Tabs defaultValue="subscription" value={activeTab} onValueChange={setActiveTab} className="mt-6">
-        <TabsList className="h-9 bg-transparent p-0 w-full justify-start gap-1 border-b">
-          <TabsTrigger 
-            value="subscription" 
-            className="text-xs h-9 px-4 data-[state=active]:bg-background data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none"
-          >
-            <CreditCard className="h-4 w-4 mr-2" />
-            Subscription
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-6 max-w-6xl space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Billing & Subscription</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage your subscription, usage, and billing preferences
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="px-2 py-1">
+            <Crown className="h-3 w-3 mr-1" />
+            {currentPlan} Plan
+          </Badge>
+          <Button variant="outline" size="sm">
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Sync
+          </Button>
+        </div>
+      </div>
+
+      {/* Alerts */}
+      <BillingAlerts alerts={billingAlerts} />
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4 lg:w-fit">
+          <TabsTrigger value="overview" className="flex items-center gap-1 text-xs">
+            <Activity className="h-3 w-3" />
+            Overview
           </TabsTrigger>
-          <TabsTrigger 
-            value="history" 
-            className="text-xs h-9 px-4 data-[state=active]:bg-background data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none"
-          >
-            <History className="h-4 w-4 mr-2" />
-            Billing History
+          <TabsTrigger value="plans" className="flex items-center gap-1 text-xs">
+            <CreditCard className="h-3 w-3" />
+            Plans
           </TabsTrigger>
-          <TabsTrigger 
-            value="payment" 
-            className="text-xs h-9 px-4 data-[state=active]:bg-background data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none"
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Payment Methods
+          <TabsTrigger value="history" className="flex items-center gap-1 text-xs">
+            <History className="h-3 w-3" />
+            History
+          </TabsTrigger>
+          <TabsTrigger value="payment" className="flex items-center gap-1 text-xs">
+            <Settings className="h-3 w-3" />
+            Payment
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="subscription" className="mt-6">
-          <div className="grid gap-6 md:grid-cols-3">
-            {subscriptionPlans.map((plan) => (
-              <Card 
-                key={plan.id} 
-                className={`relative ${plan.current ? "border-primary" : ""} ${plan.popular ? "border-2 border-primary" : ""}`}
-              >
-                {plan.popular && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
-                    Most Popular
-                  </Badge>
-                )}
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    {plan.name}
-                    {plan.current && (
-                      <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/10">
-                        Current Plan
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                  <div className="mt-2">
-                    <span className="text-2xl font-bold">{plan.price}</span>
-                    {plan.price !== "Custom" && <span className="text-muted-foreground">/month</span>}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center text-sm">
-                        <CheckCircle2 className="h-4 w-4 text-primary mr-2" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button 
-                    className="w-full mt-6" 
-                    variant={plan.current ? "outline" : "default"}
-                    onClick={() => handleUpgrade(plan.name)}
-                    disabled={plan.current || isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : plan.current ? (
-                      "Current Plan"
-                    ) : (
-                      "Upgrade"
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <TabsContent value="overview">
+          <Suspense fallback={<TabSkeleton />}>
+            <OverviewTab
+              currentPlan={currentPlan}
+              usageData={usageData}
+              onUpgrade={() => setActiveTab("plans")}
+              onCancel={() => setShowCancelDialog(true)}
+              formatCurrency={formatCurrency}
+              formatDate={formatDate}
+            />
+          </Suspense>
         </TabsContent>
 
-        <TabsContent value="history" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Billing History</CardTitle>
-              <CardDescription>View and download your past invoices</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {billingHistory.map((invoice) => (
-                  <div
-                    key={invoice.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div>
-                      <div className="font-medium">{invoice.description}</div>
-                      <div className="text-sm text-muted-foreground">
-                        Invoice {invoice.id} • {new Date(invoice.date).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <div className="font-medium">{invoice.amount}</div>
-                        <div className="text-sm text-muted-foreground capitalize">{invoice.status}</div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDownloadInvoice(invoice.id)}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Download className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="plans">
+          <Suspense fallback={<TabSkeleton />}>
+            <PlansTab
+              plans={subscriptionPlans}
+              onUpgrade={handleUpgrade}
+              formatCurrency={formatCurrency}
+              isLoading={loadingStates.upgrade}
+            />
+          </Suspense>
         </TabsContent>
 
-        <TabsContent value="payment" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment Methods</CardTitle>
-              <CardDescription>Manage your payment methods and billing information</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {paymentMethods.map((method) => (
-                  <div
-                    key={method.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center">
-                      <CreditCard className="h-6 w-6 mr-4" />
-                      <div>
-                        <div className="font-medium capitalize">
-                          {method.brand} •••• {method.last4}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Expires {method.expiry}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {method.default && (
-                        <Badge variant="secondary" className="bg-primary/10 text-primary">
-                          Default
-                        </Badge>
-                      )}
-                      <Button variant="ghost" size="sm">
-                        Edit
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                <Separator className="my-4" />
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  onClick={handleAddPaymentMethod}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Payment Method
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="history">
+          <Suspense fallback={<TabSkeleton />}>
+            <HistoryTab
+              billingHistory={billingHistory}
+              onDownload={handleDownloadInvoice}
+              formatCurrency={formatCurrency}
+              formatDate={formatDate}
+              loadingStates={loadingStates}
+            />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="payment">
+          <Suspense fallback={<TabSkeleton />}>
+            <PaymentTab
+              paymentMethods={paymentMethods}
+              onAddPayment={handleAddPaymentMethod}
+              onDeletePayment={handleDeletePaymentMethod}
+              loadingStates={loadingStates}
+            />
+          </Suspense>
         </TabsContent>
       </Tabs>
+
+      {/* Dialogs */}
+      <Suspense fallback={null}>
+        <BillingDialogs
+          showUpgradeDialog={showUpgradeDialog}
+          showCancelDialog={showCancelDialog}
+          selectedPlan={selectedPlan}
+          isLoading={loadingStates.upgrade}
+          nextBillingDate={usageData.nextBillingDate}
+          onUpgradeClose={() => setShowUpgradeDialog(false)}
+          onCancelClose={() => setShowCancelDialog(false)}
+          onConfirmUpgrade={confirmUpgrade}
+          onConfirmCancel={() => {
+            toast.success("Subscription cancelled. You'll retain access until your next billing date.");
+            setShowCancelDialog(false);
+          }}
+          formatCurrency={formatCurrency}
+          formatDate={formatDate}
+        />
+      </Suspense>
     </div>
   );
-}
-
-export default BillingPage; 
+} 

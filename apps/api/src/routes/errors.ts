@@ -7,6 +7,7 @@ import { timezoneQuerySchema } from "../middleware/timezone";
 import { z } from "zod";
 import { logger } from "../lib/logger";
 import { chQuery } from "@databuddy/db";
+import { parseUserAgentDetails } from "../utils/ua";
 
 export const errorsRouter = new Hono<{ Variables: AppVariables }>();
 
@@ -108,26 +109,6 @@ function createErrorDetailsBuilder(websiteId: string, startDate: string, endDate
   return builder;
 }
 
-// Helper function to parse user agent details
-function parseUserAgentDetails(userAgent: string) {
-  // Simple user agent parsing - in production you might want to use a proper library
-  const browser_name = userAgent.includes('Chrome') ? 'Chrome' :
-                      userAgent.includes('Firefox') ? 'Firefox' :
-                      userAgent.includes('Safari') ? 'Safari' :
-                      userAgent.includes('Edge') ? 'Edge' : 'Unknown';
-  
-  const os_name = userAgent.includes('Windows') ? 'Windows' :
-                 userAgent.includes('Mac') ? 'macOS' :
-                 userAgent.includes('Linux') ? 'Linux' :
-                 userAgent.includes('Android') ? 'Android' :
-                 userAgent.includes('iOS') ? 'iOS' : 'Unknown';
-  
-  const device_type = userAgent.includes('Mobile') ? 'Mobile' :
-                     userAgent.includes('Tablet') ? 'Tablet' : 'Desktop';
-  
-  return { browser_name, os_name, device_type };
-}
-
 errorsRouter.get('/', zValidator('query', analyticsQuerySchema), async (c) => {
   const params = c.req.valid('query');
 
@@ -165,15 +146,29 @@ errorsRouter.get('/', zValidator('query', analyticsQuerySchema), async (c) => {
     
     const timeSeriesArray = Object.values(timeSeriesData);
     
-    // Process error details to include browser, OS, and device information
+    // Process error details to include parsed user agent information
     const processedErrorDetails = errorDetails.map(error => {
       const userAgentInfo = parseUserAgentDetails(error.user_agent as string);
       
+      // Return a sanitized version of the error details
       return {
-        ...error,
+        time: error.time,
+        error_type: error.error_type,
+        error_message: error.error_message,
+        error_stack: error.error_stack,
+        page_url: error.page_url,
+        session_id: error.session_id,
+        anonymous_id: error.anonymous_id,
+        country: error.country,
+        city: error.city,
+        // Include parsed user agent info instead of raw user agent
         browser: userAgentInfo.browser_name,
+        browser_version: userAgentInfo.browser_version,
         os: userAgentInfo.os_name,
-        device_type: userAgentInfo.device_type
+        os_version: userAgentInfo.os_version,
+        device_type: userAgentInfo.device_type,
+        device_brand: userAgentInfo.device_brand,
+        device_model: userAgentInfo.device_model
       };
     });
     
