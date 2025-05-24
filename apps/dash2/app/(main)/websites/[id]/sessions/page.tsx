@@ -29,26 +29,26 @@ export default function SessionsPage() {
   const totalPageViews = sessions.reduce((sum, session) => sum + (session.page_views || 0), 0);
 
   return (
-    <div className="h-screen overflow-hidden">
-      <div className="h-full flex flex-col overflow-hidden">
-        <div className="flex-shrink-0 pt-4 px-6">
-          <SessionStats
-            totalSessions={totalSessions}
-            avgDuration={Math.round(avgDuration)}
-            bounceRate={bounceRate}
-            totalPageViews={totalPageViews}
-          />
-        </div>
-        
-        <div className="flex-1 px-6 pb-6 min-h-0">
-          <SessionsTable
-            sessions={sessions}
-            isLoading={isLoading}
-            onSessionClick={setSelectedSession}
-          />
-        </div>
+    <div className="h-full overflow-hidden flex flex-col">
+      <div className="flex-shrink-0 p-4 sm:p-6">
+        <SessionStats
+          totalSessions={totalSessions}
+          avgDuration={Math.round(avgDuration)}
+          bounceRate={bounceRate}
+          totalPageViews={totalPageViews}
+        />
+      </div>
+      
+      {/* Table Section - Flexible height with scroll */}
+      <div className="flex-1 px-4 sm:px-6 pb-4 sm:pb-6 min-h-0">
+        <SessionsTable
+          sessions={sessions}
+          isLoading={isLoading}
+          onSessionClick={setSelectedSession}
+        />
       </div>
 
+      {/* Modal */}
       {selectedSession && (
         <SessionDetailsModal
           session={selectedSession}
