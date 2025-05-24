@@ -1,4 +1,5 @@
-import { chQuery, createSqlBuilder } from "../clickhouse/client";
+import { chQuery } from "@databuddy/db";
+import { createSqlBuilder } from "../builders/analytics";
 import { parseReferrers } from "../builders";
 import { logger } from "../lib/logger";
 import { formatDuration } from "../utils/dates";

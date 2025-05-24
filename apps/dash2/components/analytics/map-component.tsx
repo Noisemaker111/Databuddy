@@ -5,27 +5,23 @@ import type { Feature, GeoJsonObject } from "geojson";
 import type { Layer } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { GeoJSON, MapContainer, useMapEvent } from "react-leaflet";
+import { GeoJSON, MapContainer } from "react-leaflet";
 import { useCountries, useSubdivisions } from "@/lib/geo";
 import { CountryFlag } from "./icons/CountryFlag";
 import { getCountryPopulation } from "@/lib/data";
-import { useAnalyticsLocations } from "@/hooks/use-analytics";
-import { useWebsitesStore } from "@/stores/use-websites-store";
 
 interface TooltipContent {
   name: string;
   code: string;
   count: number;
   percentage: number;
-  perCapita?: number; // Visits per million people
+  perCapita?: number;
 }
 
 interface TooltipPosition {
   x: number;
   y: number;
 }
-
-type MeasureRef = (node: HTMLDivElement | null) => void;
 
 const roundToTwo = (num: number): number => {
   return Math.round((num + Number.EPSILON) * 100) / 100;
@@ -34,29 +30,32 @@ const roundToTwo = (num: number): number => {
 export function MapComponent({
   height,
   mode = "total",
+  locationData,
+  isLoading: passedIsLoading = false,
 }: {
   height: string;
   mode?: "total" | "perCapita";
+  locationData?: any;
+  isLoading?: boolean;
 }) {
-  const { selectedWebsite } = useWebsitesStore();
-  const websiteId = selectedWebsite?.id || "";
+  const locationsData = locationData;
 
-  // Use the existing analytics locations hook instead of useSingleCol
-  const {
-    data: locationsData,
-    isLoading: isLocationsLoading,
-    isFetching: isLocationsFetching,
-  } = useAnalyticsLocations(websiteId);
-
-  // Mock the country and subdivision data from locations data
+  // Process country data from locations data
   const countryData = useMemo(() => {
     if (!locationsData?.countries) return null;
     
+    // Filter out empty country codes and ensure proper formatting
+    const validCountries = locationsData.countries.filter((country: any) => 
+      country.country && country.country.trim() !== ""
+    );
+    
+    const totalVisitors = validCountries.reduce((sum: number, c: any) => sum + c.visitors, 0) || 1;
+    
     return {
-      data: locationsData.countries.map((country) => ({
-        value: country.country,
+      data: validCountries.map((country: any) => ({
+        value: country.country.toUpperCase(), // Ensure uppercase for ISO matching
         count: country.visitors,
-        percentage: (country.visitors / (locationsData.countries.reduce((sum, c) => sum + c.visitors, 0) || 1)) * 100,
+        percentage: (country.visitors / totalVisitors) * 100,
       })),
     };
   }, [locationsData?.countries]);
@@ -80,7 +79,7 @@ export function MapComponent({
       data: Object.entries(regions).map(([key, data]) => ({
         value: key,
         count: data.visitors,
-        percentage: (data.visitors / (locationsData.cities.reduce((sum, c) => sum + c.visitors, 0) || 1)) * 100,
+        percentage: (data.visitors / (locationsData.cities.reduce((sum: number, c: any) => sum + c.visitors, 0) || 1)) * 100,
       })),
     };
   }, [locationsData?.cities]);
@@ -93,16 +92,12 @@ export function MapComponent({
     }
   }, [countryData, subdivisionData]);
 
-  const [tooltipContent, setTooltipContent] = useState<TooltipContent | null>(
-    null
-  );
+  const [tooltipContent, setTooltipContent] = useState<TooltipContent | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<TooltipPosition>({
     x: 0,
     y: 0,
   });
-  const [mapView, setMapView] = useState<"countries" | "subdivisions">("countries");
-
-  // Track which feature is currently hovered to control opacity without conflicts
+  const [mapView] = useState<"countries" | "subdivisions">("countries");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Process data to include per capita metrics
@@ -119,29 +114,11 @@ export function MapComponent({
     });
   }, [countryData?.data]);
 
-//   const processedSubdivisionData = useMemo(() => {
-//     if (!subdivisionData?.data) return null;
-
-//     return subdivisionData.data.map((item: any) => {
-//       // For subdivisions, we'll use the country code from the beginning of the iso_3166_2 code
-//       const countryCode = item.value?.split("-")[0];
-//       const population = getCountryPopulation(countryCode);
-//       // For subdivisions, we divide by 10x the population since regions are smaller
-//       const perCapitaValue =
-//         population > 0 ? item.count / (population / 10) : 0;
-//       return {
-//         ...item,
-//         perCapita: perCapitaValue,
-//       };
-//     });
-//   }, [subdivisionData?.data]);
-
   const colorScale = useMemo(() => {
     if (!processedCountryData) return () => "#eee";
 
     // Get computed values from CSS variables
     const getComputedColor = (cssVar: string) => {
-      // Get the HSL values from CSS
       const hslValues = getComputedStyle(document.documentElement)
         .getPropertyValue(cssVar)
         .trim();
@@ -161,61 +138,46 @@ export function MapComponent({
     const values = processedCountryData?.map((d: any) => d[metricToUse]) || [0];
     const maxValue = Math.max(...values);
 
-    // Use a power scale with exponent 0.3 (more pronounced than before)
-    // This makes it more logarithmic to highlight differences better
+    // Use a power scale with exponent 0.3
     return scalePow<string>()
-      .exponent(0.3) // Reduced from 0.4 to make differences more pronounced
+      .exponent(0.3)
       .domain([0, maxValue])
-      .range([`hsla(${h}, ${s}, ${l}, 0.05)`, `hsla(${h}, ${s}, ${l}, 0.9)`]); // Increased max opacity from 0.8 to 0.9
+      .range([`hsla(${h}, ${s}, ${l}, 0.05)`, `hsla(${h}, ${s}, ${l}, 0.9)`]);
   }, [processedCountryData, mode]);
 
   const { data: subdivisionsGeoData } = useSubdivisions();
   const { data: countriesGeoData } = useCountries();
 
   const handleStyle = (feature: Feature<any>) => {
-    // Only working with countries now
     const dataKey = feature?.properties?.ISO_A2;
-    
-    // Only use country data
     const foundData = processedCountryData?.find(({ value }: any) => value === dataKey);
 
-    // Use count or per capita value based on mode
-    const metricValue =
-      mode === "perCapita" ? foundData?.perCapita || 0 : foundData?.count || 0;
+    const metricValue = mode === "perCapita" ? foundData?.perCapita || 0 : foundData?.count || 0;
 
-    // More pronounced color difference for countries with visitors
     const color = metricValue > 0 
       ? colorScale(metricValue) 
-      : "rgba(200, 200, 200, 0.2)"; // Lighter gray for countries with no visitors
+      : "rgba(200, 200, 200, 0.2)";
       
-    // Determine the border weight based on visitor count
-    // Countries with more visitors get thicker borders
     const weight = metricValue > 0 
       ? Math.min(1.5 + (metricValue / (mode === "perCapita" ? 0.05 : 5)), 3) 
       : 0.5;
 
     return {
-      color: metricValue > 0 ? color : "rgba(180, 180, 180, 0.3)", // Lighter border for countries with no visitors
+      color: metricValue > 0 ? color : "rgba(180, 180, 180, 0.3)",
       weight,
       fill: true,
       fillColor: color,
-      // Increase opacity if this feature is currently hovered
-      fillOpacity: hoveredId === dataKey?.toString() ? 0.9 : 0.6, // Increased from 0.8/0.5 to 0.9/0.6
+      fillOpacity: hoveredId === dataKey?.toString() ? 0.9 : 0.6,
     };
   };
 
   const handleEachFeature = (feature: Feature<any>, layer: Layer) => {
     layer.on({
       mouseover: () => {
-        // We only handle countries now
         const code = feature.properties?.ISO_A2;
-
-        // Mark this feature as hovered so handleStyle increases opacity
         setHoveredId(code);
 
         const name = feature.properties?.ADMIN;
-
-        // Use only country data
         const foundData = processedCountryData?.find(({ value }: any) => value === code);
         const count = foundData?.count || 0;
         const percentage = foundData?.percentage || 0;
@@ -230,7 +192,6 @@ export function MapComponent({
         });
       },
       mouseout: () => {
-        // Clear hover state
         setHoveredId(null);
         setTooltipContent(null);
       },
@@ -239,20 +200,6 @@ export function MapComponent({
       },
     });
   };
-
-//   const MapEventHandler = () => {
-//     const map = useMapEvent("zoomend", () => {
-//       // Commented out region switching functionality
-//       // const newMapView = map.getZoom() >= 5 ? "subdivisions" : "countries";
-//       // if (newMapView !== mapView) {
-//       //   setMapView(newMapView);
-//       //   setTooltipContent(null);
-//       // }
-//     });
-//     return null;
-//   };
-
-  const isLoading = isLocationsLoading || isLocationsFetching;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [resolvedHeight, setResolvedHeight] = useState<number>(0);
@@ -287,7 +234,7 @@ export function MapComponent({
       ref={containerRef}
       className="relative"
     >
-      {isLoading && (
+      {passedIsLoading && (
         <div className="absolute inset-0 bg-neutral-900/30 backdrop-blur-sm z-10 flex items-center justify-center">
           <div className="flex flex-col items-center gap-2">
             <div className="h-8 w-8 rounded-full border-2 border-accent-400 border-t-transparent animate-spin" />
@@ -313,15 +260,6 @@ export function MapComponent({
             zIndex: "1",
           }}
         >
-          {/* <MapEventHandler /> */}
-          {/* {mapView === "subdivisions" && subdivisionsGeoData && (
-            <GeoJSON
-              key={`subdivisions-${dataVersion}-${mode}`}
-              data={subdivisionsGeoData as GeoJsonObject}
-              style={handleStyle as any}
-              onEachFeature={handleEachFeature}
-            />
-          )} */}
           {mapView === "countries" && countriesGeoData && (
             <GeoJSON
               key={`countries-${dataVersion}-${mode}`}

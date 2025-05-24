@@ -382,9 +382,13 @@ analyticsRouter.get('/summary', zValidator('query', analyticsQuerySchema), async
 import miniChartRouter from './mini-chart';
 import sessionsRouter from './sessions';
 import profilesRouter from './profiles';
+import { locationsRouter } from './locations';
+import { errorsRouter } from './errors';
 
 analyticsRouter.route('/mini-chart', miniChartRouter);
 analyticsRouter.route('/sessions', sessionsRouter);
 analyticsRouter.route('/profiles', profilesRouter);
+analyticsRouter.route('/locations', locationsRouter);
+analyticsRouter.route('/errors', errorsRouter);
 
 export default analyticsRouter; 
