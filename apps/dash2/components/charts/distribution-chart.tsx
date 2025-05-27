@@ -95,7 +95,7 @@ export function DistributionChart({
   }, [data]);
   
   // Event handlers
-  const onPieEnter = useCallback((_: any, index: number) => {
+  const onPieEnter = useCallback((_: unknown, index: number) => {
     setActiveIndex(index);
   }, []);
   
@@ -162,7 +162,7 @@ export function DistributionChart({
                 layout="horizontal" 
                 verticalAlign="bottom" 
                 align="center"
-                formatter={(value, entry: any) => {
+                formatter={(value: string, entry: any) => {
                   const item = entry.payload;
                   const percentage = item.percent ? ` (${(item.percent * 100).toFixed(0)}%)` : '';
                   return <span className="text-xs">{value}{percentage}</span>;

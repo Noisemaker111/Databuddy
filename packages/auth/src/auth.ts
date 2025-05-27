@@ -112,15 +112,16 @@ export const auth = betterAuth({
             },
         }),
         magicLink({
-            sendMagicLink: async ({ email, token }) => {
+            sendMagicLink: async ({ email, token, url }) => {
+                // console.log(url);
                 const resend = new Resend(process.env.RESEND_API_KEY as string);
                 await resend.emails.send({
                     from: 'noreply@databuddy.cc',
                     to: email,
                     subject: 'Login to Databuddy',
-                    html: `<p>Click <a href="${process.env.BETTER_AUTH_URL}/login?token=${token}">here</a> to login to Databuddy</p>`,
+                    html: `<p>Click <a href="${url}">here</a> to verify your email</p>`
                 });
-            },
+            }
         }),
         twoFactor(),
         multiSession(),

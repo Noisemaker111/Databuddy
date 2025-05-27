@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import VisuallyHidden from "@/components/ui/visuallyhidden";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import Iridescence from "@/components/bits/Iridiscence";
 
 function RegisterPageContent() {
   const router = useRouter();
@@ -444,70 +443,34 @@ function RegisterPageContent() {
   };
 
   return (
-    <div className="flex h-screen">
-      {/* Iridescence side - Left column */}
-      <div className="hidden md:flex md:w-1/2 relative flex-col items-start justify-between p-12 overflow-hidden">
-        <div className="absolute inset-0">
-          <Iridescence 
-            color={[0.1, 0.2, 0.9]} 
-            speed={0.5} 
-            amplitude={0.2} 
-            mouseReact={true} 
-          />
+    <>
+      <div className="flex justify-center mb-6 md:hidden">
+        <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Databuddy</div>
+      </div>
+      <div className="text-center mb-8">
+        {renderHeaderContent()}
+      </div>
+      <div className="bg-card rounded-xl shadow p-6 border border-border relative overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10">
+          {renderContent()}
         </div>
-        
-        <Button variant="outline" className="relative z-10 bg-white/20 text-white border-white/10 hover:bg-white/30 group scale-100 hover:scale-105 transition-all duration-200 cursor-pointer">
-          <ChevronLeft className="h-4 w-4 group-hover:translate-x-[-4px] transition-all duration-200" />
-          Back
-        </Button>
-        
-        <div className="relative z-10 text-white">
-          <div className="mb-2 text-sm font-medium uppercase tracking-wide">databuddy</div>
-          <h1 className="text-4xl font-bold mb-4">
-            Start your <br />journey with <br />Databuddy
-          </h1>
-          <p className="text-white/70 max-w-md">
-            Connect your data sources, build insights, and share them with your team.
+      </div>
+      {registrationStep === "form" && (
+        <div className="mt-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link 
+              href="/login" 
+              className="text-primary hover:text-primary/80 font-medium"
+            >
+              Sign in
+            </Link>
           </p>
         </div>
-      </div>
-      
-      {/* Register form - Right column */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-12 bg-background overflow-hidden">
-        <div className="w-full max-w-md">
-          <div className="flex justify-center mb-6 md:hidden">
-            <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">databuddy</div>
-          </div>
-          
-          <div className="text-center mb-8">
-            {renderHeaderContent()}
-          </div>
-          
-          <div className="bg-card rounded-xl shadow p-6 border border-border relative overflow-hidden">
-            <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-            
-            <div className="relative z-10">
-              {renderContent()}
-            </div>
-          </div>
-          
-          {registrationStep === "form" && (
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <Link 
-                  href="/login" 
-                  className="text-primary hover:text-primary/80 font-medium"
-                >
-                  Sign in
-                </Link>
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 
