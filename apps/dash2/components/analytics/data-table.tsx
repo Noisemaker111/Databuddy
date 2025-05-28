@@ -26,6 +26,7 @@ interface DataTableProps<TData extends RowData, TValue> {
   className?: string;
   onRowClick?: (row: TData) => void;
   minHeight?: string | number;
+  showSearch?: boolean;
 }
 
 export function DataTable<TData extends RowData, TValue>(
@@ -39,7 +40,8 @@ export function DataTable<TData extends RowData, TValue>(
     emptyMessage = "No data available",
     className,
     onRowClick,
-    minHeight = 200
+    minHeight = 200,
+    showSearch = true
   }: DataTableProps<TData, TValue>
 ) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -54,7 +56,7 @@ export function DataTable<TData extends RowData, TValue>(
     columns,
     state: {
       sorting,
-      globalFilter,
+      globalFilter: showSearch ? globalFilter : '',
       pagination,
     },
     onSortingChange: setSorting,
@@ -71,19 +73,24 @@ export function DataTable<TData extends RowData, TValue>(
   if (isLoading) {
     return (
       <Card className={cn("w-full", className)}>
-        <CardHeader className="px-3 flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className={cn(
+          "px-3 space-y-0 pb-2",
+          showSearch ? "flex flex-row items-center justify-between" : ""
+        )}>
           <div>
             <h3 className="font-semibold text-foreground tracking-tight text-sm md:text-base leading-tight">{title}</h3>
             {description && (
               <div className="text-xs md:text-sm text-muted-foreground mt-0.5 leading-snug">{description}</div>
             )}
           </div>
-          <Input 
-            placeholder="Search all columns..."
-            value={globalFilter ?? ''}
-            onChange={(event) => setGlobalFilter(event.target.value)}
-            className="h-8 max-w-xs text-xs"
-          />
+          {showSearch && (
+            <Input 
+              placeholder="Search all columns..."
+              value={globalFilter ?? ''}
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              className="h-8 max-w-xs text-xs"
+            />
+          )}
         </CardHeader>
         <CardContent className="px-3 pb-2">
           <div className="space-y-1.5" style={{ minHeight }}>
@@ -99,19 +106,24 @@ export function DataTable<TData extends RowData, TValue>(
 
   return (
     <Card className={cn("w-full", className)}>
-      <CardHeader className="px-3 flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className={cn(
+        "px-3 space-y-0 pb-2",
+        showSearch ? "flex flex-row items-center justify-between" : ""
+      )}>
         <div>
           <h3 className="font-semibold text-foreground tracking-tight text-sm md:text-base leading-tight">{title}</h3>
           {description && (
             <div className="text-xs md:text-sm text-muted-foreground mt-0.5 leading-snug">{description}</div>
           )}
         </div>
-        <Input 
-          placeholder="Search all columns..."
-          value={globalFilter ?? ''}
-          onChange={(event) => setGlobalFilter(event.target.value)}
-          className="h-8 max-w-xs text-xs"
-        />
+        {showSearch && (
+          <Input 
+            placeholder="Search all columns..."
+            value={globalFilter ?? ''}
+            onChange={(event) => setGlobalFilter(event.target.value)}
+            className="h-8 max-w-xs text-xs"
+          />
+        )}
       </CardHeader>
       <CardContent className="px-3 pb-2">
         {!table.getRowModel().rows.length ? (
@@ -201,6 +213,7 @@ export function DataTable<TData extends RowData, TValue>(
                 return `Showing ${firstVisibleRow}-${lastVisibleRow} of ${filteredRowCount} rows`;
               })()}
             </div>
+            
             {table.getPageCount() > 1 && (
               <div className="flex items-center space-x-1">
 

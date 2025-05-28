@@ -8,37 +8,42 @@ import {
   AlertTriangle,
   BarChart,
   Timer,
-  LayoutDashboard
+  LayoutDashboard,
 } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { StatCard } from "@/components/analytics/stat-card";
 import { MetricsChart } from "@/components/charts/metrics-chart";
-import { DistributionChart } from "@/components/charts/distribution-chart";
 import { DataTable } from "@/components/analytics/data-table";
-import { useWebsiteAnalytics } from "@/hooks/use-analytics";
+import { useWebsiteAnalytics, type PageData } from "@/hooks/use-analytics";
 import { 
   formatDateByGranularity, 
-  handleDataRefresh, 
-  createMetricToggles,
   formatDistributionData,
   groupBrowserData,
-  formatDomainLink,
   getColorVariant,
   calculatePercentChange,
   isTrackingNotSetup
 } from "../utils/analytics-helpers";
-import { MetricToggles, ExternalLinkButton, BORDER_RADIUS } from "../utils/ui-components";
+import { MetricToggles } from "../utils/ui-components";
 import type { FullTabProps, MetricPoint } from "../utils/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import type { ColumnDef, CellContext } from "@tanstack/react-table";
 import { ReferrerSourceCell, type ReferrerSourceCellData } from "@/components/atomic/ReferrerSourceCell";
-import { PageLinkCell, type PageLinkCellData } from "@/components/atomic/PageLinkCell";
+import { PageLinkCell } from "@/components/atomic/PageLinkCell";
 import { TrackingSetupOverlay } from "../tracking-setup-overlay";
+import { 
+  processDeviceData, 
+  processBrowserData, 
+  inferOperatingSystems,
+  TechnologyIcon,
+  PercentageBadge,
+  type TechnologyTableEntry,
+  type DeviceTypeEntry,
+} from "../utils/technology-helpers";
 
-// Define trend calculation return type
+// Types
 interface TrendCalculation {
   visitors?: number;
   sessions?: number;
@@ -48,29 +53,40 @@ interface TrendCalculation {
   pages_per_session?: number;
 }
 
-// Define type for referrer row data from analytics API
 interface ReferrerItem {
   referrer: string;
   visitors: number;
   pageviews: number;
   type?: string;
-  name?: string;      // This is the primary display name, maps to 'value' if accessorKey is 'name'
-  domain?: string;    // Used for favicon
+  name?: string;
+  domain?: string;
 }
 
-// Re-define type for top pages data
-interface TopPageData {
-  path: string;
-  pageviews: number;
-  visitors: number;
-  [key: string]: any; 
+interface ChartDataPoint {
+  date: string;
+  pageviews?: number;
+  visitors?: number;
+  sessions?: number;
+  [key: string]: unknown;
 }
 
+// Constants
 const MIN_PREVIOUS_SESSIONS_FOR_TREND = 5;
 const MIN_PREVIOUS_VISITORS_FOR_TREND = 5;
 const MIN_PREVIOUS_PAGEVIEWS_FOR_TREND = 10;
 
-// Add UnauthorizedAccessError component
+
+// Helper function to create column definitions
+function col<T>(accessorKey: keyof T, header: string, cell?: (info: CellContext<T, unknown>) => React.ReactNode, meta?: object): ColumnDef<T, unknown> {
+  return {
+    accessorKey: accessorKey as string,
+    header,
+    ...(cell && { cell }),
+    ...(meta && { meta }),
+  };
+}
+
+// UnauthorizedAccessError component
 function UnauthorizedAccessError() {
   const router = useRouter();
   
@@ -115,57 +131,44 @@ export function WebsiteOverviewTab({
   const searchParams = useSearchParams();
   const currentTab = searchParams.get('tab') || 'overview';
   
-  // Fetch analytics data
   const { analytics, loading, error, refetch } = useWebsiteAnalytics(websiteId, dateRange);
 
-  // Chart metric visibility
   const [visibleMetrics, setVisibleMetrics] = useState<Record<string, boolean>>({
     pageviews: true,
     visitors: true,
     sessions: false,
   });
   
-  // State for tracking setup overlay with localStorage
   const [showTrackingOverlay, setShowTrackingOverlay] = useState(false);
   
-  // Check if overlay was dismissed
   const overlayDismissedKey = `tracking-overlay-dismissed-${websiteId}`;
   const isOverlayDismissed = typeof window !== 'undefined' ? localStorage.getItem(overlayDismissedKey) === 'true' : false;
   
-  // Toggle metric visibility
   const toggleMetric = useCallback((metric: string) => {
     setVisibleMetrics(prev => ({ ...prev, [metric]: !prev[metric] }));
   }, []);
 
-  // Check if tracking is not set up
   const trackingNotSetup = useMemo(() => {
-    // If there's an error, or still loading, or no analytics data, or not on overview, or overlay dismissed, don't show.
     if (error || loading.summary || !analytics || currentTab === 'settings' || isOverlayDismissed) {
       return false;
     }
     
-    // Use the utility function to check for tracking setup issues based on data patterns
     const isUtilIndicatingNotSetup = isTrackingNotSetup(analytics);
-    
-    // Fallback direct check for absolutely zero data across key metrics
     const summary = analytics.summary;
     const hasZeroData = summary && 
       (summary.pageviews || 0) === 0 && 
       (summary.visitors || summary.unique_visitors || 0) === 0 && 
       (summary.sessions || 0) === 0;
     
-    // Show overlay if either the utility function or the direct zero data check is true
     return isUtilIndicatingNotSetup || hasZeroData;
-  }, [analytics, loading.summary, currentTab, isOverlayDismissed, error]); // Added error to dependency array
+  }, [analytics, loading.summary, currentTab, isOverlayDismissed, error]);
 
-  // Show tracking overlay when data loads and no tracking is detected
   useEffect(() => {
     if (trackingNotSetup && !showTrackingOverlay && !isOverlayDismissed) {
       setShowTrackingOverlay(true);
     }
   }, [trackingNotSetup, showTrackingOverlay, isOverlayDismissed]);
 
-  // Handle overlay close
   const handleOverlayClose = () => {
     setShowTrackingOverlay(false);
     if (typeof window !== 'undefined') {
@@ -173,7 +176,6 @@ export function WebsiteOverviewTab({
     }
   };
 
-  // Handle refresh
   useEffect(() => {
     let isMounted = true;
     
@@ -198,30 +200,15 @@ export function WebsiteOverviewTab({
     };
   }, [isRefreshing, refetch, setIsRefreshing]);
 
-  // Define the structure for device type entries from the API
-  interface DeviceTypeEntry {
-    device_type: string;
-    device_brand: string;
-    device_model: string;
-    visitors: number;
-    pageviews: number;
-  }
-
-  // Combine loading states into one - component is loading if:
-  // 1. The API is loading
-  // 2. We are refreshing data
   const isLoading = loading.summary || isRefreshing;
 
-  // Show unauthorized access error
   if (error instanceof Error && error.message === 'UNAUTHORIZED_ACCESS') {
     return <UnauthorizedAccessError />;
   }
 
-  // Format data for UI
-  const deviceData = useMemo(() => { 
-    if (!analytics.device_types?.length) return [];
-
-    const processedDeviceData = (analytics.device_types as DeviceTypeEntry[]).map((item) => {
+  // Process data
+  const deviceData = useMemo(() => 
+    formatDistributionData(analytics.device_types?.map((item: DeviceTypeEntry) => {
       let name = item.device_type || 'Unknown Type';
       const brand = item.device_brand || 'Unknown';
       const model = item.device_model || 'Unknown';
@@ -232,32 +219,28 @@ export function WebsiteOverviewTab({
           name += ` ${model}`;
         }
       } else if (model !== 'Unknown') {
-        // If brand is Unknown/generic but model is known
         name += ` - ${model}`;
       }
       return {
-        ...item, // Keep original fields like visitors, pageviews
+        ...item,
         descriptiveName: name 
       };
-    });
-    
-    // Assuming formatDistributionData groups by the provided key ('descriptiveName')
-    // and sums a metric like 'visitors' or 'count' from the items.
-    return formatDistributionData(processedDeviceData, 'descriptiveName');
-  }, [analytics.device_types]);
+    }) || [], 'descriptiveName'), 
+    [analytics.device_types]
+  );
 
   const browserData = useMemo(() => 
     groupBrowserData(analytics.browser_versions), 
     [analytics.browser_versions]
   );
 
-  const topPagesColumns = useMemo((): ColumnDef<TopPageData, any>[] => [
+  const topPagesColumns = useMemo((): ColumnDef<PageData, unknown>[] => [
     {
       accessorKey: 'path',
       header: 'Page',
-      cell: (info: CellContext<TopPageData, string>) => (
+      cell: (info: CellContext<PageData, unknown>) => (
         <PageLinkCell 
-          path={info.getValue()} 
+          path={info.getValue() as string} 
           websiteDomain={websiteData?.domain} 
         />
       )
@@ -272,11 +255,11 @@ export function WebsiteOverviewTab({
     },
   ], [websiteData?.domain]);
 
-  const referrerColumns = useMemo((): ColumnDef<ReferrerItem, any>[] => [
+  const referrerColumns = useMemo((): ColumnDef<ReferrerItem, unknown>[] => [
     {
       accessorKey: 'name',
       header: 'Source',
-      cell: (info: CellContext<ReferrerItem, string | undefined>) => {
+      cell: (info: CellContext<ReferrerItem, unknown>) => {
         const cellData: ReferrerSourceCellData = info.row.original;
         return <ReferrerSourceCell {...cellData} />;
       }
@@ -291,23 +274,19 @@ export function WebsiteOverviewTab({
     },
   ], []);
 
-  // Format chart data
   const chartData = useMemo(() => {
     if (!analytics.events_by_date?.length) return [];
     
-    return analytics.events_by_date.map((event: any) => {
-      // Start with the date
-      const filtered: any = { 
+    return analytics.events_by_date.map((event: MetricPoint): ChartDataPoint => {
+      const filtered: ChartDataPoint = { 
         date: formatDateByGranularity(event.date, dateRange.granularity) 
       };
       
-      // Map the metrics from the API data
       if (visibleMetrics.pageviews) {
         filtered.pageviews = event.pageviews;
       }
       
       if (visibleMetrics.visitors) {
-        // Use visitors field from events_by_date
         filtered.visitors = event.visitors || event.unique_visitors || 0;
       }
       
@@ -319,19 +298,16 @@ export function WebsiteOverviewTab({
     });
   }, [analytics.events_by_date, visibleMetrics, dateRange.granularity]);
 
-  // Date range info for warning message
   const dateFrom = useMemo(() => new Date(dateRange.start_date), [dateRange.start_date]);
   const dateTo = useMemo(() => new Date(dateRange.end_date), [dateRange.end_date]);
   const dateDiff = useMemo(() => differenceInDays(dateTo, dateFrom), [dateTo, dateFrom]);
 
-  // Metric colors
   const metricColors = {
     pageviews: 'blue-500',
     visitors: 'green-500',
     sessions: 'purple-500'
   };
 
-  // Calculate trends
   const calculateTrends = useMemo<TrendCalculation>(() => {
     if (!analytics.events_by_date?.length || analytics.events_by_date.length < 2) {
       return {}; 
@@ -375,16 +351,15 @@ export function WebsiteOverviewTab({
 
     const calculateTrendPercentage = (current: number, previous: number, minimumBase = 0) => {
       if (previous < minimumBase && !(previous === 0 && current === 0) ) {
-        return undefined; // Base is too small for a meaningful trend, unless both are 0
+        return undefined;
       }
       if (previous === 0) {
-        return current === 0 ? 0 : undefined; // 0% change if both 0, else undefined for growth from 0 base
+        return current === 0 ? 0 : undefined;
       }
       const change = calculatePercentChange(current, previous);
       return Math.max(-100, Math.min(1000, Math.round(change)));
     };
 
-    // Determine if trends for session-dependent metrics are meaningful
     const canShowSessionBasedTrend = previousSumSessions >= MIN_PREVIOUS_SESSIONS_FOR_TREND;
 
     return {
@@ -403,82 +378,147 @@ export function WebsiteOverviewTab({
     };
   }, [analytics.events_by_date]);
 
-  return (
-    <div className="space-y-4">
-      {/* Key metrics */}
-      <div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <StatCard 
-            title="UNIQUE VISITORS"
-            value={analytics.summary?.unique_visitors || 0}
-            icon={Users}
-            description={`${analytics.today?.visitors || 0} today`}
-            isLoading={isLoading}
-            variant="default"
-            trend={calculateTrends.visitors}
-            trendLabel={calculateTrends.visitors !== undefined ? "vs previous period" : undefined}
-            className="h-full"
-          />
-          <StatCard 
-            title="SESSIONS"
-            value={analytics.summary?.sessions || 0}
-            icon={BarChart}
-            description={`${analytics.today?.sessions || 0} today`}
-            isLoading={isLoading}
-            variant="default"
-            trend={calculateTrends.sessions}
-            trendLabel={calculateTrends.sessions !== undefined ? "vs previous period" : undefined}
-            className="h-full"
-          />
-          <StatCard 
-            title="PAGE VIEWS"
-            value={analytics.summary?.pageviews || 0}
-            icon={Globe}
-            description={`${analytics.today?.pageviews || 0} today`}
-            isLoading={isLoading}
-            variant="default"
-            trend={calculateTrends.pageviews}
-            trendLabel={calculateTrends.pageviews !== undefined ? "vs previous period" : undefined}
-            className="h-full"
-          />
-          <StatCard 
-            title="PAGES/SESSION"
-            value={analytics.summary ? 
-              (analytics.summary.sessions > 0 ? 
-                (analytics.summary.pageviews / analytics.summary.sessions).toFixed(1) : 
-                '0'
-              ) : '0'
-            }
-            icon={LayoutDashboard}
-            isLoading={isLoading}
-            variant="default"
-            trend={calculateTrends.pages_per_session}
-            trendLabel={calculateTrends.pages_per_session !== undefined ? "vs previous period" : undefined}
-            className="h-full"
-          />
-          <StatCard 
-            title="BOUNCE RATE"
-            value={analytics.summary?.bounce_rate_pct || '0%'}
-            icon={MousePointer}
-            isLoading={isLoading}
-            trend={calculateTrends.bounce_rate}
-            trendLabel={calculateTrends.bounce_rate !== undefined ? "vs previous period" : undefined}
-            variant={getColorVariant(analytics.summary?.bounce_rate || 0, 70, 50)}
-            invertTrend={true}
-            className="h-full"
-          />
-          <StatCard 
-            title="AVG. SESSION"
-            value={analytics.summary?.avg_session_duration_formatted || '0s'}
-            icon={Timer}
-            isLoading={isLoading}
-            variant="default"
-            trend={calculateTrends.session_duration}
-            trendLabel={calculateTrends.session_duration !== undefined ? "vs previous period" : undefined}
-            className="h-full"
-          />
+  // Technology data processing
+  const processedDeviceData = useMemo(() => 
+    processDeviceData(analytics.device_types || []), 
+    [analytics.device_types]
+  );
+
+  const processedBrowserData = useMemo(() => 
+    processBrowserData(analytics.browser_versions || []), 
+    [analytics.browser_versions]
+  );
+
+  const processedOSData = useMemo(() => 
+    inferOperatingSystems(analytics.device_types || [], analytics.browser_versions || []), 
+    [analytics.device_types, analytics.browser_versions]
+  );
+
+  // Technology table columns with enhanced styling
+  const deviceColumns = useMemo((): ColumnDef<TechnologyTableEntry, unknown>[] => [
+    col<TechnologyTableEntry>('name', 'Device Type', (info) => {
+      const entry = info.row.original;
+      return (
+        <div className="flex items-center gap-3">
+          <TechnologyIcon entry={entry} size="md" />
+          <span className="font-medium">{entry.name}</span>
         </div>
+      );
+    }),
+    col<TechnologyTableEntry>('visitors', 'Visitors'),
+    col<TechnologyTableEntry>('percentage', 'Share', (info) => {
+      const percentage = info.getValue() as number;
+      return <PercentageBadge percentage={percentage} />;
+    }),
+  ], []);
+
+  const browserColumns = useMemo((): ColumnDef<TechnologyTableEntry, unknown>[] => [
+    col<TechnologyTableEntry>('name', 'Browser', (info) => {
+      const entry = info.row.original;
+      return (
+        <div className="flex items-center gap-3">
+          <TechnologyIcon entry={entry} size="md" />
+          <span className="font-medium">{entry.name}</span>
+        </div>
+      );
+    }),
+    col<TechnologyTableEntry>('visitors', 'Visitors'),
+    col<TechnologyTableEntry>('percentage', 'Share', (info) => {
+      const percentage = info.getValue() as number;
+      return <PercentageBadge percentage={percentage} />;
+    }),
+  ], []);
+
+  const osColumns = useMemo((): ColumnDef<TechnologyTableEntry, unknown>[] => [
+    col<TechnologyTableEntry>('name', 'Operating System', (info) => {
+      const entry = info.row.original;
+      return (
+        <div className="flex items-center gap-3">
+          <TechnologyIcon entry={entry} size="md" />
+          <span className="font-medium">{entry.name}</span>
+        </div>
+      );
+    }),
+    col<TechnologyTableEntry>('visitors', 'Visitors'),
+    col<TechnologyTableEntry>('percentage', 'Share', (info) => {
+      const percentage = info.getValue() as number;
+      return <PercentageBadge percentage={percentage} />;
+    }),
+  ], []);
+
+  return (
+    <div className="space-y-6">
+      {/* Key metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard 
+          title="UNIQUE VISITORS"
+          value={analytics.summary?.unique_visitors || 0}
+          icon={Users}
+          description={`${analytics.today?.visitors || 0} today`}
+          isLoading={isLoading}
+          variant="default"
+          trend={calculateTrends.visitors}
+          trendLabel={calculateTrends.visitors !== undefined ? "vs previous period" : undefined}
+          className="h-full"
+        />
+        <StatCard 
+          title="SESSIONS"
+          value={analytics.summary?.sessions || 0}
+          icon={BarChart}
+          description={`${analytics.today?.sessions || 0} today`}
+          isLoading={isLoading}
+          variant="default"
+          trend={calculateTrends.sessions}
+          trendLabel={calculateTrends.sessions !== undefined ? "vs previous period" : undefined}
+          className="h-full"
+        />
+        <StatCard 
+          title="PAGE VIEWS"
+          value={analytics.summary?.pageviews || 0}
+          icon={Globe}
+          description={`${analytics.today?.pageviews || 0} today`}
+          isLoading={isLoading}
+          variant="default"
+          trend={calculateTrends.pageviews}
+          trendLabel={calculateTrends.pageviews !== undefined ? "vs previous period" : undefined}
+          className="h-full"
+        />
+        <StatCard 
+          title="PAGES/SESSION"
+          value={analytics.summary ? 
+            (analytics.summary.sessions > 0 ? 
+              (analytics.summary.pageviews / analytics.summary.sessions).toFixed(1) : 
+              '0'
+            ) : '0'
+          }
+          icon={LayoutDashboard}
+          isLoading={isLoading}
+          variant="default"
+          trend={calculateTrends.pages_per_session}
+          trendLabel={calculateTrends.pages_per_session !== undefined ? "vs previous period" : undefined}
+          className="h-full"
+        />
+        <StatCard 
+          title="BOUNCE RATE"
+          value={analytics.summary?.bounce_rate_pct || '0%'}
+          icon={MousePointer}
+          isLoading={isLoading}
+          trend={calculateTrends.bounce_rate}
+          trendLabel={calculateTrends.bounce_rate !== undefined ? "vs previous period" : undefined}
+          variant={getColorVariant(analytics.summary?.bounce_rate || 0, 70, 50)}
+          invertTrend={true}
+          className="h-full"
+        />
+        <StatCard 
+          title="AVG. SESSION"
+          value={analytics.summary?.avg_session_duration_formatted || '0s'}
+          icon={Timer}
+          isLoading={isLoading}
+          variant="default"
+          trend={calculateTrends.session_duration}
+          trendLabel={calculateTrends.session_duration !== undefined ? "vs previous period" : undefined}
+          className="h-full"
+        />
       </div>
 
       {/* Visitor Trends */}
@@ -504,61 +544,72 @@ export function WebsiteOverviewTab({
             colors={metricColors}
           />
         </div>
-        <div className="">
+        <div>
           <MetricsChart 
             data={chartData}
             isLoading={isLoading} 
             height={350}
-            // title="Traffic Overview"
-            // description="Website performance metrics over time"
           />
-          {/* <div>Metrics Chart temporarily removed for debugging</div> */}
         </div>
       </div>
 
-      {/* Two column layout */}
+      {/* Content Tables */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Left column */}
-        <div className="space-y-4">
-            <DistributionChart 
-              data={deviceData} 
-              isLoading={isLoading}
-              title="Device Types"
-              description="Visitors by device type"
-              height={250}
-            />
-          
-            <DataTable 
-              data={analytics.top_referrers}
-              columns={referrerColumns}
-              title="Top Referrers"
-              description="Sources of your traffic"
-              isLoading={isLoading}
-              initialPageSize={7}
-              minHeight={230}
-            />
-        </div>
+        <DataTable 
+          data={analytics.top_referrers}
+          columns={referrerColumns}
+          title="Top Referrers"
+          description="Sources of your traffic"
+          isLoading={isLoading}
+          initialPageSize={7}
+          minHeight={230}
+        />
         
-        {/* Right column */}
-        <div className="space-y-4">
-            <DistributionChart 
-              data={browserData} 
-              isLoading={isLoading}
-              title="Browsers"
-              description="Visitors by browser"
-              height={250}
-            />
-          
-            <DataTable 
-              data={analytics.top_pages}
-              columns={topPagesColumns}
-              title="Top Pages"
-              description="Most viewed content"
-              isLoading={isLoading}
-              initialPageSize={7}
-              minHeight={230}
-            />
-        </div>
+        <DataTable 
+          data={analytics.top_pages || []}
+          columns={topPagesColumns}
+          title="Top Pages"
+          description="Most viewed content"
+          isLoading={isLoading}
+          initialPageSize={7}
+          minHeight={230}
+        />
+      </div>
+
+      {/* Technology Breakdown Tables */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <DataTable 
+          data={processedDeviceData}
+          columns={deviceColumns}
+          title="Device Types"
+          description="Visitors by device type"
+          isLoading={isLoading}
+          initialPageSize={8}
+          minHeight={200}
+          showSearch={false}
+        />
+        
+        <DataTable 
+          data={processedBrowserData}
+          columns={browserColumns}
+          title="Browsers"
+          description="Visitors by browser"
+          isLoading={isLoading}
+          initialPageSize={8}
+          minHeight={200}
+          showSearch={false}
+        />
+        
+        <DataTable 
+          data={processedOSData}
+          columns={osColumns}
+          title="Operating Systems"
+          description="Visitors by operating system"
+          isLoading={isLoading}
+          initialPageSize={8}
+          minHeight={200}
+          showSearch={false}
+        />
       </div>
 
       {/* Tracking Setup Overlay */}

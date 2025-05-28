@@ -12,6 +12,13 @@ import type { FullTabProps } from "../utils/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Globe, Laptop, Smartphone, Tablet, Monitor, HelpCircle, Languages, Wifi, WifiOff } from 'lucide-react';
 import { getLanguageName } from "@databuddy/shared";
+import { 
+  processDeviceData, 
+  processBrowserData, 
+  TechnologyIcon,
+  PercentageBadge,
+  type TechnologyTableEntry,
+} from "../utils/technology-helpers";
 
 interface DeviceTypeEntry {
   device_type: string;
@@ -33,6 +40,14 @@ interface CountryEntry {
   visitors: number;
   pageviews: number;
   // Potentially other fields from API if any
+}
+
+interface ConnectionEntry extends TechnologyTableEntry {
+  category: 'connection';
+}
+
+interface LanguageEntry extends TechnologyTableEntry {
+  category: 'language';
 }
 
 // Helper function to get browser icon
@@ -124,75 +139,133 @@ export function WebsiteAudienceTab({
     };
   }, [isRefreshing, refetch, setIsRefreshing]);
 
-  // Prepare device data with descriptive names and icons
-  const deviceData = useMemo(() => { 
-    if (!analytics.device_types?.length) return [];
+  // Technology data processing using the same helpers as overview
+  const processedDeviceData = useMemo(() => 
+    processDeviceData(analytics.device_types || []), 
+    [analytics.device_types]
+  );
 
-    const processedDeviceData = (analytics.device_types as DeviceTypeEntry[]).map((item) => {
-      let name = item.device_type || 'Unknown Type';
-      const brand = item.device_brand || 'Unknown';
-      const model = item.device_model || 'Unknown';
+  const processedBrowserData = useMemo(() => 
+    processBrowserData(analytics.browser_versions || []), 
+    [analytics.browser_versions]
+  );
 
-      if (brand !== 'Unknown' && brand.toLowerCase() !== 'generic') {
-        name += ` - ${brand}`;
-        if (model !== 'Unknown' && model.toLowerCase() !== brand.toLowerCase()) {
-          name += ` ${model}`;
-        }
-      } else if (model !== 'Unknown') {
-        name += ` - ${model}`;
-      }
-      
-      // Add icon property 
-      const icon = getDeviceIcon(item.device_type);
-      
-      return {
-        ...item,
-        descriptiveName: name,
-        icon
-      };
-    });
-    
-    return formatDistributionData(processedDeviceData, 'descriptiveName');
-  }, [analytics.device_types]);
-
-  // Prepare browser data with icons
-  const browserData = useMemo(() => {
-    const data = groupBrowserData(analytics.browser_versions);
-    
-    // Add icon property to each browser
-    return data.map(item => ({
-      ...item,
-      icon: getBrowserIcon(item.name),
-    }));
-  }, [analytics.browser_versions]);
-  // Prepare connection types data with icons
-  const connectionData = useMemo(() => {
+  // Process connection types data with percentages
+  const processedConnectionData = useMemo((): ConnectionEntry[] => {
     if (!analytics.connection_types?.length) return [];
     
-    const processedData = analytics.connection_types.map(item => ({
-      ...item,
-      connectionName: item.connection_type || 'Unknown',
-      icon: getConnectionIcon(item.connection_type || '')
-    }));
+    const totalVisitors = analytics.connection_types.reduce((sum, item) => sum + item.visitors, 0);
     
-    return formatDistributionData(processedData, 'connectionName');
+    return analytics.connection_types.map(item => ({
+      name: item.connection_type || 'Unknown',
+      visitors: item.visitors,
+      percentage: totalVisitors > 0 ? Math.round((item.visitors / totalVisitors) * 100) : 0,
+      iconComponent: getConnectionIcon(item.connection_type || ''),
+      category: 'connection' as const
+    })).sort((a, b) => b.visitors - a.visitors);
   }, [analytics.connection_types]);
 
-  // Prepare language data with better formatting
-  const languageData = useMemo(() => {
+  // Process language data with percentages
+  const processedLanguageData = useMemo((): TechnologyTableEntry[] => {
     if (!analytics.languages?.length) return [];
     
-    const processedData = analytics.languages.map(item => ({
-      ...item,
-      formattedLanguage: getLanguageName(item.language),
-      icon: <Languages className="h-4 w-4 text-primary" />
-    }));
+    // Group languages by base language code (before the hyphen)
+    const languageGroups: Record<string, number> = {};
     
-    return formatDistributionData(processedData, 'formattedLanguage');
+    for (const item of analytics.languages) {
+      const baseLanguage = item.language.split('-')[0]; // Get 'en' from 'en-US'
+      languageGroups[baseLanguage] = (languageGroups[baseLanguage] || 0) + (item.visitors || 0);
+    }
+    
+    const totalVisitors = Object.values(languageGroups).reduce((sum, count) => sum + count, 0);
+    
+    return Object.entries(languageGroups)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
+      .slice(0, 10)
+      .map(([baseLanguage, visitors]) => {
+        const languageName = getLanguageName(baseLanguage);
+        
+        return {
+          name: languageName !== 'Unknown' ? languageName : baseLanguage.toUpperCase(),
+          visitors,
+          percentage: totalVisitors > 0 ? Math.round((visitors / totalVisitors) * 100) : 0,
+          iconComponent: <Languages className="h-4 w-4 text-primary" />,
+          category: 'language'
+        };
+      });
   }, [analytics.languages]);
 
   // Combine loading states
   const isLoading = loading.summary || isRefreshing;
+
+  // Technology table columns
+  const deviceColumns = useMemo((): ColumnDef<TechnologyTableEntry, unknown>[] => [
+    col<TechnologyTableEntry>('name', 'Device Type', (info) => {
+      const entry = info.row.original;
+      return (
+        <div className="flex items-center gap-3">
+          <TechnologyIcon entry={entry} size="md" />
+          <span className="font-medium">{entry.name}</span>
+        </div>
+      );
+    }),
+    col<TechnologyTableEntry>('visitors', 'Visitors'),
+    col<TechnologyTableEntry>('percentage', 'Share', (info) => {
+      const percentage = info.getValue() as number;
+      return <PercentageBadge percentage={percentage} />;
+    }),
+  ], []);
+
+  const browserColumns = useMemo((): ColumnDef<TechnologyTableEntry, unknown>[] => [
+    col<TechnologyTableEntry>('name', 'Browser', (info) => {
+      const entry = info.row.original;
+      return (
+        <div className="flex items-center gap-3">
+          <TechnologyIcon entry={entry} size="md" />
+          <span className="font-medium">{entry.name}</span>
+        </div>
+      );
+    }),
+    col<TechnologyTableEntry>('visitors', 'Visitors'),
+    col<TechnologyTableEntry>('percentage', 'Share', (info) => {
+      const percentage = info.getValue() as number;
+      return <PercentageBadge percentage={percentage} />;
+    }),
+  ], []);
+
+  const connectionColumns = useMemo((): ColumnDef<ConnectionEntry, unknown>[] => [
+    col<ConnectionEntry>('name', 'Connection Type', (info) => {
+      const entry = info.row.original;
+      return (
+        <div className="flex items-center gap-3">
+          {entry.iconComponent}
+          <span className="font-medium">{entry.name}</span>
+        </div>
+      );
+    }),
+    col<ConnectionEntry>('visitors', 'Visitors'),
+    col<ConnectionEntry>('percentage', 'Share', (info) => {
+      const percentage = info.getValue() as number;
+      return <PercentageBadge percentage={percentage} />;
+    }),
+  ], []);
+
+  const languageColumns = useMemo((): ColumnDef<TechnologyTableEntry, unknown>[] => [
+    col<TechnologyTableEntry>('name', 'Language', (info) => {
+      const entry = info.row.original;
+      return (
+        <div className="flex items-center gap-3">
+          {entry.iconComponent}
+          <span className="font-medium">{entry.name}</span>
+        </div>
+      );
+    }),
+    col<TechnologyTableEntry>('visitors', 'Visitors'),
+    col<TechnologyTableEntry>('percentage', 'Share', (info) => {
+      const percentage = info.getValue() as number;
+      return <PercentageBadge percentage={percentage} />;
+    }),
+  ], []);
 
   return (
     <div className="space-y-4">
@@ -201,50 +274,54 @@ export function WebsiteAudienceTab({
         <p className="text-sm text-muted-foreground">Detailed information about your website visitors</p>
       </div>
       
-      {/* First row - Device and browser info */}
+      {/* Technology Breakdown Tables */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl border shadow-sm">
-          <DistributionChart 
-            data={deviceData} 
-            isLoading={isLoading}
-            title="Device Types"
-            description="Visitors by device type"
-            height={250}
-          />
-        </div>
+        <DataTable 
+          data={processedDeviceData}
+          columns={deviceColumns}
+          title="Device Types"
+          description="Visitors by device type"
+          isLoading={isLoading}
+          initialPageSize={8}
+          minHeight={200}
+          showSearch={false}
+        />
         
-        <div className="rounded-xl border shadow-sm">
-          <DistributionChart 
-            data={browserData} 
-            isLoading={isLoading}
-            title="Browsers"
-            description="Visitors by browser"
-            height={250}
-          />
-        </div>
+        <DataTable 
+          data={processedBrowserData}
+          columns={browserColumns}
+          title="Browsers"
+          description="Visitors by browser"
+          isLoading={isLoading}
+          initialPageSize={8}
+          minHeight={200}
+          showSearch={false}
+        />
       </div>
       
-      {/* Second row - Connection type and language data */}
+      {/* Connection and Language Tables */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl border shadow-sm">
-          <DistributionChart 
-            data={connectionData} 
-            isLoading={isLoading}
-            title="Connection Types"
-            description="Visitors by network connection"
-            height={250}
-          />
-        </div>
+        <DataTable 
+          data={processedConnectionData}
+          columns={connectionColumns}
+          title="Connection Types"
+          description="Visitors by network connection"
+          isLoading={isLoading}
+          initialPageSize={8}
+          minHeight={200}
+          showSearch={false}
+        />
         
-        <div className="rounded-xl border shadow-sm">
-          <DistributionChart 
-            data={languageData} 
-            isLoading={isLoading}
-            title="Languages"
-            description="Visitors by preferred language"
-            height={250}
-          />
-        </div>
+        <DataTable 
+          data={processedLanguageData}
+          columns={languageColumns}
+          title="Languages"
+          description="Visitors by preferred language"
+          isLoading={isLoading}
+          initialPageSize={8}
+          minHeight={200}
+          showSearch={false}
+        />
       </div>
       
       {/* Timezones */}
@@ -310,8 +387,8 @@ export function WebsiteAudienceTab({
                 </div>
               );
             }),
-            col<CountryEntry>('visitors', 'Visitors', undefined, { className: 'text-right justify-end' }),
-            col<CountryEntry>('pageviews', 'Pageviews', undefined, { className: 'text-right justify-end' }),
+            col<CountryEntry>('visitors', 'Visitors', undefined, { className: 'text-right justify-end' } as { className: string }),
+            col<CountryEntry>('pageviews', 'Pageviews', undefined, { className: 'text-right justify-end' } as { className: string }),
           ], [])}
           title="Geographic Distribution"
           description="Visitors by location"
