@@ -137,6 +137,10 @@ function WebsitesPage() {
     refetchDomains();
   };
 
+  const handleWebsiteCreated = () => {
+    refetchWebsites();
+  };
+
   // Handle opening the dialog
   const handleOpenDialog = () => {
     setInitialValues(null);
@@ -239,10 +243,9 @@ function WebsitesPage() {
         <WebsiteDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
-          isLoading={isCreating}
           verifiedDomains={verifiedDomains}
           initialValues={initialValues}
-          onCreate={createWebsite}
+          onCreationSuccess={handleWebsiteCreated}
         />
       </Suspense>
     </div>

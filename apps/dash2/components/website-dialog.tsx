@@ -62,25 +62,23 @@ interface WebsiteDialogProps {
   website?: Website | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  isLoading: boolean;
   verifiedDomains: VerifiedDomain[];
   trigger?: React.ReactNode;
   initialValues?: {
     name?: string;
     domainId?: string;
   } | null;
-  onCreate?: UseMutateFunction<Website | undefined, Error, CreateWebsiteData, unknown>;
+  onCreationSuccess?: () => void;
 }
 
 export function WebsiteDialog({
   website,
   open,
   onOpenChange,
-  isLoading,
   verifiedDomains = [],
   trigger,
   initialValues = null,
-  onCreate,
+  onCreationSuccess,
 }: WebsiteDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!website;
@@ -115,7 +113,7 @@ export function WebsiteDialog({
   const handleSubmit = async (data: CreateFormData | EditFormData) => {
     setIsSubmitting(true);
     try {
-      if (!website && onCreate) {
+      if (!website) {
         const createData = data as CreateFormData;
         const selectedDomain = verifiedDomains.find(d => d.id === createData.domainId);
         if (!selectedDomain) {
@@ -124,49 +122,38 @@ export function WebsiteDialog({
           return;
         }
 
-        await onCreate({
+        const result = await createWebsiteAction({
           name: createData.name,
           domainId: createData.domainId,
           domain: selectedDomain.name,
           subdomain: createData.subdomain,
-        }, {
-          onSuccess: () => {
-            toast.success("Website created successfully");
-            handleClose();
-          },
-          onError: (error) => {
-            toast.error(error.message || "Failed to create website");
-          },
-          onSettled: () => {
-            setIsSubmitting(false);
-          }
         });
-      } else if (website) {
+
+        if (result.error) {
+          toast.error(result.error);
+        } else {
+          toast.success("Website created successfully");
+          if (onCreationSuccess) {
+            onCreationSuccess();
+          }
+          handleClose();
+        }
+      } else {
         const editData = data as EditFormData;
         const result = await updateWebsite(website.id, editData.name);
 
         if (result.error) {
           toast.error(result.error);
-          setIsSubmitting(false);
-          return;
+        } else {
+          toast.success("Website updated successfully");
+          handleClose();
         }
-        toast.success("Website updated successfully");
-        handleClose();
-      } else if (!onCreate) {
-        console.error("onCreate prop is required for creating a new website but was not provided.");
-        toast.error("Configuration error: Cannot create website.");
-        setIsSubmitting(false);
-        return;
       }
     } catch (error) {
       console.error("[WebsiteDialog] Unexpected error:", error);
-      if (!isSubmitting) {
-          toast.error(error instanceof Error ? error.message : "Failed to save website");
-      }
+      toast.error(error instanceof Error ? error.message : "Failed to save website");
     } finally {
-      if (website || !onCreate) {
-        setIsSubmitting(false);
-      }
+      setIsSubmitting(false);
     }
   };
 
@@ -283,17 +270,17 @@ export function WebsiteDialog({
                   type="button"
                   variant="outline"
                   onClick={handleClose}
-                  disabled={isSubmitting || isLoading}
+                  disabled={isSubmitting}
                   className="flex-1 h-9"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting || isLoading}
+                  disabled={isSubmitting}
                   className="flex-1 h-9"
                 >
-                  {isSubmitting || isLoading ? "Saving..." : "Save"}
+                  {isSubmitting ? "Saving..." : "Save"}
                 </Button>
               </div>
             </DialogFooter>
