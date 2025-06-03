@@ -57,7 +57,7 @@ function AIAssistantLoadingSkeleton() {
   );
 }
 
-export default function WebsiteAIAssistantTab(props: WebsiteDataTabProps) {
+export default function Page(props: WebsiteDataTabProps) {
   return (
     <Suspense fallback={<AIAssistantLoadingSkeleton />}>
       <AIAssistantMain {...props} />
