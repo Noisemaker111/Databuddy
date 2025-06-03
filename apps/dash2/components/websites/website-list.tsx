@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Check, AlertCircle, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { WebsiteDialog } from "@/components/website-dialog";
+import { FaviconImage } from "@/components/analytics/favicon-image";
 import { 
   Table, 
   TableHeader, 
@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/table";
 import type { Website } from "@/hooks/use-websites";
 import { MiniChart } from "@/components/websites/mini-chart";
-import { cn } from "@/lib/utils";
 
 type VerifiedDomain = {
   id: string;
@@ -25,15 +24,11 @@ type VerifiedDomain = {
 
 interface WebsiteListProps {
   websites: Website[];
-  onUpdate: (id: string, name: string) => void;
-  isUpdating: boolean;
   verifiedDomains: VerifiedDomain[];
 }
 
 export function WebsiteList({
   websites,
-  onUpdate,
-  isUpdating,
   verifiedDomains
 }: WebsiteListProps) {
   return (
@@ -50,8 +45,6 @@ export function WebsiteList({
             <WebsiteRow
               key={website.id}
               website={website}
-              onUpdate={onUpdate}
-              isUpdating={isUpdating}
               verifiedDomains={verifiedDomains}
             />
           ))}
@@ -64,84 +57,17 @@ export function WebsiteList({
 
 interface WebsiteRowProps {
   website: Website;
-  onUpdate: (id: string, name: string) => void;
-  isUpdating: boolean;
   verifiedDomains: VerifiedDomain[];
 }
 
 function WebsiteRow({
   website,
-  onUpdate,
-  isUpdating,
   verifiedDomains
 }: WebsiteRowProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const router = useRouter();
   
   const domainValue = website.domain;
-
-  const isLocalhost = domainValue.includes('localhost') || domainValue.includes('127.0.0.1');
-
-  // Get verification status and badge
-  const getVerificationStatus = () => {
-    if (isLocalhost) {
-      return {
-        label: "Local",
-        variant: "outline" as const,
-        icon: <Check className="h-3 w-3" />
-      };
-    }
-    
-    let domainDetail: VerifiedDomain | undefined;
-    if (website.domainId) {
-      domainDetail = verifiedDomains.find(d => d.id === website.domainId);
-    } else if (website.domain) {
-      domainDetail = verifiedDomains.find(d => d.name === website.domain);
-    }
-    
-    if (!domainDetail) {
-      return {
-        label: "Unknown",
-        variant: "outline" as const,
-        icon: null
-      };
-    }
-    
-    switch (domainDetail.verificationStatus) {
-      case "VERIFIED":
-        return {
-          label: "Verified",
-          variant: "success" as const,
-          icon: <Check className="h-3 w-3" />
-        };
-      case "FAILED":
-        return {
-          label: "Failed",
-          variant: "destructive" as const,
-          icon: <AlertCircle className="h-3 w-3" />
-        };
-      case "PENDING":
-        return {
-          label: "Pending",
-          variant: "warning" as const,
-          icon: <Clock className="h-3 w-3" />
-        };
-      default:
-        return {
-          label: "Unknown",
-          variant: "outline" as const,
-          icon: null
-        };
-    }
-  };
-
-  const status = getVerificationStatus();
-  const badgeClass = {
-    success: "bg-[color-mix(in_oklch,var(--background),var(--success)_20%)] text-[var(--success)]",
-    destructive: "bg-[color-mix(in_oklch,var(--background),var(--destructive)_20%)] text-[var(--destructive)]",
-    warning: "bg-[color-mix(in_oklch,var(--background),var(--warning)_20%)] text-[var(--warning)]",
-    outline: "bg-[color-mix(in_oklch,var(--background),var(--muted-foreground)_15%)] text-muted-foreground"
-  };
 
   const viewAnalyticsLink = `/websites/${website.id}`;
 
@@ -171,23 +97,23 @@ function WebsiteRow({
           }
         }}
       >
-        <TableCell className="py-3 px-4 align-middle">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-3">
-              <span className="font-medium group-hover:text-primary transition-colors truncate">
+        <TableCell className="py-4 px-4 align-middle">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted/40 border border-border/40">
+              <FaviconImage 
+                domain={domainValue} 
+                size={24} 
+                className="flex-shrink-0" 
+              />
+            </div>
+            <div className="flex flex-col min-w-0 flex-1">
+              <div className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                 {website.name || 'Unnamed Website'}
-              </span>
-              <div className={cn(
-                "text-xs py-1 px-2 rounded-full flex items-center gap-1.5 font-medium",
-                badgeClass[status.variant]
-              )}>
-                {status.icon && <span>{status.icon}</span>}
-                <span>{status.label}</span>
+              </div>
+              <div className="text-sm text-muted-foreground truncate mt-0.5 flex items-center gap-1">
+                <span className="truncate">{domainValue}</span>
               </div>
             </div>
-            <span className="text-sm text-muted-foreground mt-1 truncate">
-              {domainValue}
-            </span>
           </div>
         </TableCell>
         <TableCell className="py-3 px-4 align-middle">

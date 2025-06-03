@@ -11,6 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle, Clock, Copy, Filter, Globe, Plus, RefreshCw, Search, Trash2, ChevronDown, ChevronRight, Circle } from "lucide-react";
+import { FaviconImage } from "@/components/analytics/favicon-image";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -348,8 +349,8 @@ export default function DomainsPage() {
     // Handle special retrying state
     if (retryingDomains[domainId]) {
       return (
-        <Badge className="bg-blue-100 text-blue-800">
-          <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+        <Badge variant="outline" className="gap-1">
+          <RefreshCw className="h-3 w-3 animate-spin" />
           Retrying
         </Badge>
       );
@@ -358,22 +359,22 @@ export default function DomainsPage() {
     switch (status) {
       case "VERIFIED":
         return (
-          <Badge className="bg-green-100 text-green-800">
-            <CheckCircle className="mr-1 h-3 w-3" />
+          <Badge variant="default" className="gap-1">
+            <CheckCircle className="h-3 w-3" />
             Verified
           </Badge>
         );
       case "PENDING":
         return (
-          <Badge className="bg-yellow-100 text-yellow-800">
-            <Clock className="mr-1 h-3 w-3" />
+          <Badge variant="secondary" className="gap-1">
+            <Clock className="h-3 w-3" />
             Pending
           </Badge>
         );
       case "FAILED":
         return (
-          <Badge variant="destructive" className="bg-red-100 text-red-800">
-            <AlertCircle className="mr-1 h-3 w-3" />
+          <Badge variant="destructive" className="gap-1">
+            <AlertCircle className="h-3 w-3" />
             Failed
           </Badge>
         );
@@ -487,7 +488,11 @@ export default function DomainsPage() {
                 {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </Button>
             )}
-            <Globe className="h-4 w-4 mr-2 text-muted-foreground" />
+            <FaviconImage 
+              domain={domain.name} 
+              size={20} 
+              className="h-5 w-5 mr-3 flex-shrink-0" 
+            />
             {domain.name}
           </div>
         </TableCell>

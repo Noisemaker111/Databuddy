@@ -117,11 +117,20 @@ export default async function AdminDomainsPage({
                           <div className="flex items-center gap-2">
                             <span className="font-medium truncate">{domain.name}</span>
                             {domain.verifiedAt ? (
-                              <BadgeCheck className="h-4 w-4 text-green-600" />
+                              <Badge variant="default" className="gap-1 h-5 px-1.5 text-xs">
+                                <BadgeCheck className="h-3 w-3" />
+                                Verified
+                              </Badge>
                             ) : domain.verificationStatus === "PENDING" ? (
-                              <div className="h-2 w-2 bg-yellow-500 rounded-full" />
+                              <Badge variant="secondary" className="gap-1 h-5 px-1.5 text-xs">
+                                <AlertCircle className="h-3 w-3" />
+                                Pending
+                              </Badge>
                             ) : (
-                              <AlertCircle className="h-4 w-4 text-red-500" />
+                              <Badge variant="destructive" className="gap-1 h-5 px-1.5 text-xs">
+                                <AlertCircle className="h-3 w-3" />
+                                Failed
+                              </Badge>
                             )}
                           </div>
                           <div className="md:hidden text-xs text-muted-foreground mt-1">

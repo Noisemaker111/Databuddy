@@ -216,17 +216,17 @@ export default async function UserProfilePage({
                           } className="gap-1">
                             {domain.verificationStatus === "VERIFIED" ? (
                               <>
-                                <BadgeCheck className="h-3.5 w-3.5" />
+                                <BadgeCheck className="h-3 w-3" />
                                 Verified
                               </>
                             ) : domain.verificationStatus === "PENDING" ? (
                               <>
-                                <AlertCircle className="h-3.5 w-3.5" />
+                                <AlertCircle className="h-3 w-3" />
                                 Pending
                               </>
                             ) : (
                               <>
-                                <ShieldAlert className="h-3.5 w-3.5" />
+                                <AlertCircle className="h-3 w-3" />
                                 Failed
                               </>
                             )}
