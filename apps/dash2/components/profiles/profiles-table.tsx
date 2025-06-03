@@ -84,7 +84,7 @@ export function ProfilesTable({ profiles, isLoading, onProfileClick }: ProfilesT
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground truncate">
-                {profile.city && profile.city !== 'Unknown' ? profile.city : 'Unknown City'}
+                {profile.region && profile.region !== 'Unknown' ? profile.region : 'Unknown Region'}
               </p>
             </div>
           </div>

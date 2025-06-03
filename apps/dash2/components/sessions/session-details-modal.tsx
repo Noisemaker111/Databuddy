@@ -70,7 +70,7 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
               <div>
                 <p className="text-muted-foreground">Location</p>
                 <p className="font-medium">
-                  {session.city && session.city !== 'Unknown' ? `${session.city}, ` : ''}
+                                      {session.region && session.region !== 'Unknown' ? `${session.region}, ` : ''}
                   {session.country || 'Unknown'}
                 </p>
               </div>

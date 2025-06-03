@@ -21,7 +21,7 @@ export function createSessionsBuilder(websiteId: string, startDate: string, endD
     visitor_id: 'any(anonymous_id) as visitor_id',
     user_agent: 'any(user_agent) as user_agent',
     country: 'any(country) as country',
-    city: 'any(city) as city',
+    region: 'any(region) as region',
     referrer: 'any(referrer) as referrer'
   };
   
@@ -60,7 +60,7 @@ export function createSessionDetailBuilder(websiteId: string, sessionId: string)
     visitor_id: 'any(anonymous_id) as visitor_id',
     user_agent: 'any(user_agent) as user_agent',
     country: 'any(country) as country',
-    city: 'any(city) as city',
+    region: 'any(region) as region',
     referrer: 'any(referrer) as referrer',
     browser_name: 'any(browser_name) as browser_name',
     browser_version: 'any(browser_version) as browser_version',

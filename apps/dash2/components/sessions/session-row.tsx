@@ -69,7 +69,7 @@ export function SessionRow({ session, onClick }: SessionRowProps) {
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground truncate">
-            {session.city && session.city !== 'Unknown' ? session.city : 'Unknown City'}
+                            {session.region && session.region !== 'Unknown' ? session.region : 'Unknown Region'}
           </p>
         </div>
       </div>

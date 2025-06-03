@@ -86,7 +86,7 @@ export function ProfileDetailsModal({ profile, isOpen, onClose }: ProfileDetails
                 <div className="flex items-center gap-1.5">
                   <Globe className="h-3 w-3" />
                   <p className="font-medium">
-                    {profile.city && profile.city !== 'Unknown' ? `${profile.city}, ` : ''}
+                    {profile.region && profile.region !== 'Unknown' ? `${profile.region}, ` : ''}
                     {profile.country || 'Unknown'}
                   </p>
                 </div>

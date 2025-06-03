@@ -34,7 +34,7 @@ function createErrorDetailsBuilder(websiteId: string, startDate: string, endDate
     session_id: 'session_id',
     anonymous_id: 'anonymous_id',
     country: 'COALESCE(country, \'Unknown\') as country',
-    city: 'COALESCE(city, \'Unknown\') as city'
+    region: 'COALESCE(region, \'Unknown\') as region'
   };
   
   builder.sb.where = {
@@ -123,7 +123,7 @@ errorsRouter.get('/', zValidator('query', analyticsQuerySchema), async (c) => {
         session_id: error.session_id,
         anonymous_id: error.anonymous_id,
         country: error.country,
-        city: error.city,
+        region: error.region,
         browser: userAgentInfo.browser_name,
         browser_version: userAgentInfo.browser_version,
         os: userAgentInfo.os_name,

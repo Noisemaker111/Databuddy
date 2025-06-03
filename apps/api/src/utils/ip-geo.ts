@@ -5,11 +5,8 @@ import { logger } from '../lib/logger';
 
 const GeoLocationSchema = z.object({
   ip: z.string(),
-  city: z.string().optional(),
   region: z.string().optional(),
   country: z.string().optional(),
-  loc: z.string().optional(),
-  org: z.string().optional(),
   timezone: z.string().optional(),
 });
 
@@ -17,11 +14,8 @@ type GeoLocation = z.infer<typeof GeoLocationSchema>;
 
 const DEFAULT_GEO: GeoLocation = {
   ip: '',
-  city: undefined,
   region: undefined,
   country: undefined,
-  loc: undefined,
-  org: undefined,
   timezone: undefined,
 };
 
@@ -116,11 +110,8 @@ export async function getGeoData(ip: string): Promise<GeoLocation> {
   const geo = await getGeoLocation(ip);
   return {
     ip: geo.ip,
-    city: geo.city,
     region: geo.region,
     country: geo.country,
-    loc: geo.loc,
-    org: geo.org,
     timezone: geo.timezone,
   };
 }

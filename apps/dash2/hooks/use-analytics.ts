@@ -88,10 +88,9 @@ export interface LocationData {
     visitors: number;
     pageviews: number;
   }>;
-  cities: Array<{
+  regions: Array<{
     country: string;
     region: string;
-    city: string;
     visitors: number;
     pageviews: number;
   }>;
@@ -127,7 +126,7 @@ export interface SessionData {
   browser: string;
   os: string;
   country: string;
-  city: string;
+  region: string;
   referrer: string;
   is_returning_visitor: boolean;
   visitor_session_count: number;
@@ -180,7 +179,7 @@ export interface ProfileData {
   browser: string;
   os: string;
   country: string;
-  city: string;
+  region: string;
   sessions: SessionData[];
 }
 
@@ -323,10 +322,9 @@ interface LocationsResponse extends ApiResponse {
     visitors: number;
     pageviews: number;
   }>;
-  cities: Array<{
+  regions: Array<{
     country: string;
     region: string;
-    city: string;
     visitors: number;
     pageviews: number;
   }>;

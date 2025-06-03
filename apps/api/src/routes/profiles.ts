@@ -83,7 +83,7 @@ profilesRouter.get('/', zValidator('query', analyticsQuerySchema), async (c) => 
         page_views: 'countIf(event_name = \'screen_view\') as page_views',
         user_agent: 'any(user_agent) as user_agent',
         country: 'any(country) as country',
-        city: 'any(city) as city',
+        region: 'any(region) as region',
         referrer: 'any(referrer) as referrer'
       };
       sessionsBuilder.sb.from = 'analytics.events';
@@ -171,7 +171,7 @@ profilesRouter.get('/', zValidator('query', analyticsQuerySchema), async (c) => 
           browser: latestSession?.browser || 'Unknown',
           os: latestSession?.os || 'Unknown',
           country: latestSession?.country || 'Unknown',
-          city: latestSession?.city || 'Unknown',
+          region: latestSession?.region || 'Unknown',
           sessions: formattedSessions
         };
         

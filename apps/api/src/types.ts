@@ -30,7 +30,6 @@ export interface EnrichedData {
   };
   geo: {
     ip?: string;
-    city?: string;
     region?: string;
     country?: string;
     timezone?: string;
