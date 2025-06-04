@@ -24,7 +24,7 @@ export const getWebsiteById = cacheable(
   
 
 export const websiteAuthHook = createMiddleware(async (c, next) => {
-  const websiteId = c.req.header('X-Website-Id') || c.req.query('website_id');
+  const websiteId = c.req.header('X-Website-Id') || c.req.query('website_id') || c.req.query('websiteId');
 
     if (!websiteId) {
       return c.json({

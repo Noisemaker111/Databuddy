@@ -1,6 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Message } from "../types/message";
-import { processAIRequestStreaming, type StreamingUpdate } from '../actions'; 
+
+// StreamingUpdate interface to match API
+interface StreamingUpdate {
+  type: 'thinking' | 'progress' | 'complete' | 'error';
+  content: string;
+  data?: any;
+  debugInfo?: Record<string, any>;
+}
 
 function generateWelcomeMessage(websiteName?: string): string {
   const examples = [
@@ -72,63 +79,102 @@ export function useChat(websiteId: string, websiteName?: string) {
     setMessages(prev => [...prev, assistantMessage]);
 
     try {
-      const updatesAsyncIterable = processAIRequestStreaming({
-        message: userMessage.content,
-        websiteId,
-        context: { previousMessages: messages }
+      // Stream the AI response using the new single endpoint
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/assistant/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Website-Id': websiteId,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          message: messageContent,
+          website_id: websiteId,
+          context: { previousMessages: messages }
+        }),
       });
-      
-      for await (const update of updatesAsyncIterable) {
-        if (update.type === 'thinking') {
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantId 
-              ? { 
-                  ...msg, 
-                  thinkingSteps: [...(msg.thinkingSteps || []), update.content]
-                }
-              : msg
-          ));
-        } else if (update.type === 'progress') {
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantId 
-              ? { 
-                  ...msg, 
-                  content: update.content,
-                  hasVisualization: update.data?.hasVisualization || false,
-                  chartType: update.data?.chartType,
-                  data: update.data?.queryData || update.data?.data,
-                }
-              : msg
-          ));
-          scrollToBottom();
-        } else if (update.type === 'complete') {
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantId 
-              ? { 
-                  ...msg, 
-                  content: update.content,
-                  hasVisualization: update.data?.hasVisualization || false,
-                  chartType: update.data?.chartType,
-                  data: update.data?.data,
-                  debugInfo: update.debugInfo,
-                }
-              : msg
-          ));
-          scrollToBottom();
-          break;
-        } else if (update.type === 'error') {
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantId 
-              ? { 
-                  ...msg, 
-                  content: update.content,
-                  debugInfo: update.debugInfo,
-                }
-              : msg
-          ));
-          break;
-        }
+
+      if (!response.ok) {
+        throw new Error('Failed to start stream');
       }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response stream available');
+      }
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const update: StreamingUpdate = JSON.parse(line.slice(6));
+                
+                if (update.type === 'thinking') {
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantId 
+                      ? { 
+                          ...msg, 
+                          thinkingSteps: [...(msg.thinkingSteps || []), update.content]
+                        }
+                      : msg
+                  ));
+                } else if (update.type === 'progress') {
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantId 
+                      ? { 
+                          ...msg, 
+                          content: update.content,
+                          hasVisualization: update.data?.hasVisualization || false,
+                          chartType: update.data?.chartType,
+                          data: update.data?.queryData || update.data?.data,
+                        }
+                      : msg
+                  ));
+                  scrollToBottom();
+                } else if (update.type === 'complete') {
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantId 
+                      ? { 
+                          ...msg, 
+                          content: update.content,
+                          hasVisualization: update.data?.hasVisualization || false,
+                          chartType: update.data?.chartType,
+                          data: update.data?.data,
+                          debugInfo: update.debugInfo,
+                        }
+                      : msg
+                  ));
+                  scrollToBottom();
+                  break;
+                } else if (update.type === 'error') {
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantId 
+                      ? { 
+                          ...msg, 
+                          content: update.content,
+                          debugInfo: update.debugInfo,
+                        }
+                      : msg
+                  ));
+                  break;
+                }
+              } catch (parseError) {
+                console.warn('Failed to parse SSE data:', line);
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
     } catch (error) {
       console.error('Failed to get AI response:', error);
       setMessages(prev => prev.map(msg => 

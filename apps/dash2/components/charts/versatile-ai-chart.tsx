@@ -278,7 +278,7 @@ export function VersatileAIChart({
     </BarChart>
   );
 
-  let chartComponent;
+  let chartComponent: React.ReactNode;
   switch (chartType) {
     case 'line':
     case 'multi_line':

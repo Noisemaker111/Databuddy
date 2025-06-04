@@ -1,15 +1,26 @@
-'use server';
+/**
+ * AI Assistant API
+ * 
+ * Provides AI-powered analytics assistant with streaming responses and SQL query generation.
+ */
 
+import { Hono } from 'hono';
 import { z } from 'zod';
-import { chQuery, db, eq, websites } from '@databuddy/db';
-import { generateText } from 'ai';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { cacheable } from '@databuddy/redis';
+import { zValidator } from '@hono/zod-validator';
+import { chQuery } from '@databuddy/db';
+import type { AppVariables } from '../types';
+import { authMiddleware } from '../middleware/auth';
+import { websiteAuthHook } from '../middleware/website';
+import { logger } from '../lib/logger';
+import OpenAI from 'openai';
 
-const openrouter = createOpenRouter({
-    apiKey: process.env.AI_API_KEY,
-  });
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.AI_API_KEY,
+  baseURL: 'https://openrouter.ai/api/v1',
+});
 
+// Analytics schema for AI context
 const AnalyticsSchema = {
   columns: [
     { name: 'client_id', type: 'String', description: 'Website identifier' },
@@ -35,9 +46,10 @@ const AnalyticsSchema = {
   ]
 };
 
-const AIRequestSchema = z.object({
+// Validation schemas
+const chatRequestSchema = z.object({
   message: z.string().min(1).max(1000),
-  websiteId: z.string().min(1),
+  website_id: z.string().min(1),
   context: z.object({
     previousMessages: z.array(z.any()).optional(),
     dateRange: z.any().optional()
@@ -45,17 +57,11 @@ const AIRequestSchema = z.object({
 });
 
 const AIResponseJsonSchema = z.object({
-    sql: z.string(),
-    chart_type: z.enum(['bar', 'line', 'pie', 'area', 'stacked_bar', 'multi_line'])
+  sql: z.string(),
+  chart_type: z.enum(['bar', 'line', 'pie', 'area', 'stacked_bar', 'multi_line'])
 });
 
-// This schema is for the final structure yielded by the streaming function
-const FinalAIResponseSchema = z.object({
-  hasVisualization: z.boolean(),
-  chartType: z.enum(['bar', 'line', 'pie', 'area', 'stacked_bar', 'multi_line']).optional(),
-  data: z.array(z.record(z.any())).optional(),
-});
-
+// StreamingUpdate interface to match original actions
 export interface StreamingUpdate {
   type: 'thinking' | 'progress' | 'complete' | 'error';
   content: string;
@@ -63,6 +69,7 @@ export interface StreamingUpdate {
   debugInfo?: Record<string, any>;
 }
 
+// SQL validation function
 function validateSQL(sql: string): boolean {
   const forbiddenKeywords = ['INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'EXEC', 'UNION'];
   const upperSQL = sql.toUpperCase();
@@ -74,15 +81,16 @@ function validateSQL(sql: string): boolean {
   return upperSQL.trim().startsWith('SELECT');
 }
 
-// === DEBUG HELPERS ===
+// Debug helper
 function debugLog(step: string, data: any) {
-  console.log(`🔍 [AI-Assistant] ${step}:`, JSON.stringify(data, null, 2));
+  logger.info(`🔍 [AI-Assistant] ${step}`, { step, data });
 }
 
 function createThinkingStep(step: string): string {
   return `🧠 ${step}`;
 }
 
+// Enhanced analysis prompt
 const enhancedAnalysisPrompt = (userQuery: string, websiteId: string, websiteHostname: string) => `
 You are DataBuddy AI - an advanced analytics assistant that creates optimal SQL queries and visualizations.
 
@@ -147,6 +155,7 @@ SQL OPTIMIZATION RULES:
 6. LIMIT results (e.g., LIMIT 100 for raw data, LIMIT 20-30 for aggregated time series unless many categories for multi-line) to keep visualizations readable and queries performant. For multi-line or stacked_bar charts with categories over time, a typical limit might be 7-14 distinct time points (e.g., days) if there are 2-3 categories, or up to 30 time points if only 1-2 categories. If categories are many (e.g. >5 browsers), limit time points further.;
 7. Use meaningful column aliases for ALL aggregated fields and dimensions (e.g., AVG(load_time) AS avg_load_time, browser_name AS browser, device_type AS device).;
 8. For multi-dimensional data intended for multi-line or stacked_bar charts, ensure the SQL query returns three key pieces of information: the time dimension (e.g., date), the category dimension (e.g., browser_name, device_type), and the metric value (e.g., pageviews, avg_load_time).;
+9. For countries, use their country code, like India is ID, USA is US, etc.
 
 ADVANCED SQL TECHNIQUES:
 - CASE statements for custom categorization.;
@@ -158,111 +167,172 @@ ADVANCED SQL TECHNIQUES:
 Return only valid JSON, no markdown or extra text. Ensure SQL is a single line string if possible, otherwise properly escaped. Ensure the SQL uses correct ClickHouse syntax. Use \`ILIKE\` for case-insensitive string matching if needed on user-provided filter values.;
 `;
 
-export async function* processAIRequestStreaming(input: unknown): AsyncGenerator<StreamingUpdate> {
+// Create router with typed context
+export const assistantRouter = new Hono<{ Variables: AppVariables }>();
+
+// Apply middleware to all routes
+assistantRouter.use('*', authMiddleware);
+assistantRouter.use('*', websiteAuthHook);
+
+/**
+ * Process AI request with streaming updates
+ * POST /assistant/stream
+ */
+assistantRouter.post('/stream', zValidator('json', chatRequestSchema), async (c) => {
+  const { message, website_id } = c.req.valid('json');
+  const website = c.get('website');
+
+  if (!website || !website.id) {
+    return c.json({ error: 'Website not found' }, 404);
+  }
+
+  const websiteHostname = website.domain;
   const startTime = Date.now();
   const debugInfo: Record<string, any> = {};
-  
-  try {
-    yield { type: 'thinking', content: createThinkingStep("Analyzing your analytics request...") };
-    
-    const validatedInput = AIRequestSchema.parse(input);
-    const { message, websiteId } = validatedInput;
 
-    const getWebsite = cacheable(async () => {
-      return db.query.websites.findFirst({
-        where: eq(websites.id, websiteId),
-      });
-    }, {
-      prefix: `website:${websiteId}`,
-      expireInSec: 60 * 60 * 15,
-      staleWhileRevalidate: true,
-      staleTime: 60 * 60 * 15,
-      maxRetries: 3
-    });
-    const website = await getWebsite();
-
-    if (!website) {
-      yield { type: 'error', content: "Website not found.", debugInfo };
-      return;
-    }
-    
-    const websiteHostname = website.domain;
-    
-    debugLog("✅ Input validated", { message, websiteId, websiteHostname });
-    debugInfo.validatedInput = { message, websiteId, websiteHostname };
-    
-    yield { type: 'thinking', content: createThinkingStep("Generating optimized query and visualization...") };
-    
-    const aiStart = Date.now();
-    const { text: aiResponseText } = await generateText({
-      model: openrouter('google/gemini-2.0-flash-001'),
-      prompt: enhancedAnalysisPrompt(message, websiteId, websiteHostname),
-      temperature: 0.1,
-    });
-    const aiTime = Date.now() - aiStart;
-    
-    debugLog("📝 Raw AI JSON response", { aiResponseText, timeTaken: `${aiTime}ms` });
-    
-    let parsedAiJson: z.infer<typeof AIResponseJsonSchema>;
-    try {
-      const cleanedResponse = aiResponseText.trim().replace(/```json\n?/g, '').replace(/```\n?/g, '');
-      parsedAiJson = AIResponseJsonSchema.parse(JSON.parse(cleanedResponse));
-      debugLog("✅ AI JSON response parsed", parsedAiJson);
-    } catch (parseError) {
-      debugLog("❌ AI JSON parsing failed", { error: parseError, rawText: aiResponseText });
-      yield { type: 'error', content: "AI response parsing failed. Please try rephrasing.", debugInfo };
-      return;
-    }
-    
-    yield { type: 'thinking', content: createThinkingStep("Executing database query...") };
-    
-    const sql = parsedAiJson.sql;
-    if (!validateSQL(sql)) {
-      yield { type: 'error', content: "Generated query failed security validation.", debugInfo };
-      return;
-    }
-    
-    try {
-      const queryStart = Date.now();
-      const queryData = await chQuery(sql);
-      const queryTime = Date.now() - queryStart;
-      const totalTime = Date.now() - startTime;
-      
-      debugLog("✅ Query executed successfully", { 
-        resultCount: queryData.length, 
-        timeTaken: `${queryTime}ms`,
-        totalTime: `${totalTime}ms`,
-        sampleData: queryData.slice(0, 3)
-      });
-      
-      debugInfo.processing = { aiTime, queryTime, totalTime };
-      
-      const finalContent = queryData.length > 0 
-        ? `Found ${queryData.length} data points. Displaying as a ${parsedAiJson.chart_type.replace(/_/g, ' ')} chart.`
-        : "No data found for your query.";
-      
-      yield { 
-        type: 'complete', 
-        content: finalContent,
-        data: {
-          hasVisualization: queryData.length > 0,
-          chartType: parsedAiJson.chart_type,
-          data: queryData
-        },
-        debugInfo
+  // Create streaming response
+  const stream = new ReadableStream({
+    async start(controller) {
+      const sendUpdate = (update: StreamingUpdate) => {
+        const data = `data: ${JSON.stringify(update)}\n\n`;
+        controller.enqueue(new TextEncoder().encode(data));
       };
-      
-    } catch (queryError: any) {
-      debugLog("❌ SQL execution error", { error: queryError.message, sql });
-      yield { type: 'error', content: "Database query failed. The data might not be available.", debugInfo };
+
+      try {
+        sendUpdate({ 
+          type: 'thinking', 
+          content: createThinkingStep("Analyzing your analytics request...") 
+        });
+
+        debugLog("✅ Input validated", { message, website_id, websiteHostname });
+        debugInfo.validatedInput = { message, website_id, websiteHostname };
+
+        sendUpdate({ 
+          type: 'thinking', 
+          content: createThinkingStep("Generating optimized query and visualization...") 
+        });
+
+        const aiStart = Date.now();
+        const completion = await openai.chat.completions.create({
+          model: 'google/gemini-2.0-flash-001',
+          messages: [
+            {
+              role: 'system',
+              content: enhancedAnalysisPrompt(message, website_id, websiteHostname)
+            },
+            {
+              role: 'user',
+              content: message
+            }
+          ],
+          temperature: 0.1,
+        });
+
+        const aiResponseText = completion.choices[0]?.message?.content || '';
+        const aiTime = Date.now() - aiStart;
+
+        debugLog("📝 Raw AI JSON response", { aiResponseText, timeTaken: `${aiTime}ms` });
+
+        let parsedAiJson: z.infer<typeof AIResponseJsonSchema>;
+        try {
+          const cleanedResponse = aiResponseText.trim().replace(/```json\n?/g, '').replace(/```\n?/g, '');
+          parsedAiJson = AIResponseJsonSchema.parse(JSON.parse(cleanedResponse));
+          debugLog("✅ AI JSON response parsed", parsedAiJson);
+        } catch (parseError) {
+          debugLog("❌ AI JSON parsing failed", { error: parseError, rawText: aiResponseText });
+          sendUpdate({ 
+            type: 'error', 
+            content: "AI response parsing failed. Please try rephrasing.", 
+            debugInfo 
+          });
+          controller.close();
+          return;
+        }
+
+        sendUpdate({ 
+          type: 'thinking', 
+          content: createThinkingStep("Executing database query...") 
+        });
+
+        const sql = parsedAiJson.sql;
+        if (!validateSQL(sql)) {
+          sendUpdate({ 
+            type: 'error', 
+            content: "Generated query failed security validation.", 
+            debugInfo 
+          });
+          controller.close();
+          return;
+        }
+
+        try {
+          const queryStart = Date.now();
+          const queryData = await chQuery(sql);
+          const queryTime = Date.now() - queryStart;
+          const totalTime = Date.now() - startTime;
+
+          debugLog("✅ Query executed successfully", {
+            resultCount: queryData.length,
+            timeTaken: `${queryTime}ms`,
+            totalTime: `${totalTime}ms`,
+            sampleData: queryData.slice(0, 3)
+          });
+
+          debugInfo.processing = { aiTime, queryTime, totalTime };
+
+          const finalContent = queryData.length > 0 
+            ? `Found ${queryData.length} data points. Displaying as a ${parsedAiJson.chart_type.replace(/_/g, ' ')} chart.`
+            : "No data found for your query.";
+
+          sendUpdate({
+            type: 'complete',
+            content: finalContent,
+            data: {
+              hasVisualization: queryData.length > 0,
+              chartType: parsedAiJson.chart_type,
+              data: queryData
+            },
+            debugInfo
+          });
+
+        } catch (queryError: any) {
+          debugLog("❌ SQL execution error", { error: queryError.message, sql });
+          sendUpdate({ 
+            type: 'error', 
+            content: "Database query failed. The data might not be available.", 
+            debugInfo 
+          });
+        }
+
+        controller.close();
+
+      } catch (error: any) {
+        debugLog("💥 Processing error", { error: error.message });
+        if (error.name === 'ZodError') {
+          sendUpdate({ 
+            type: 'error', 
+            content: `Invalid input: ${error.errors?.map((e: any) => e.message).join(', ')}`, 
+            debugInfo 
+          });
+        } else {
+          sendUpdate({ 
+            type: 'error', 
+            content: "An unexpected error occurred.", 
+            debugInfo: { error: error.message } 
+          });
+        }
+        controller.close();
+      }
     }
-    
-  } catch (error: any) {
-    debugLog("💥 Processing error", { error: error.message });
-    if (error instanceof z.ZodError) {
-        yield { type: 'error', content: `Invalid input: ${error.errors.map(e => e.message).join(', ')}`, debugInfo };
-    } else {
-        yield { type: 'error', content: "An unexpected error occurred.", debugInfo: { error: error.message } };
-    }
-  }
-}
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
+});
+
+export default assistantRouter; 
