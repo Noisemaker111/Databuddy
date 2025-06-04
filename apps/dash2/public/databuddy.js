@@ -1242,13 +1242,6 @@
             const clientId = getClientId(config);
             
             if (!clientId) return;
-            const dntEnabled = navigator.doNotTrack === '1' || 
-                             navigator.doNotTrack === 'yes' || 
-                             navigator.msDoNotTrack === '1' ||
-                             window.doNotTrack === '1';
-            if (dntEnabled && config.ignoreDnt !== true) {
-                return;
-            }
             window.databuddy = new d({
                 ...config,
                 clientId
