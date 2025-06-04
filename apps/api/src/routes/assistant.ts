@@ -12,15 +12,14 @@ import type { AppVariables } from '../types';
 import { authMiddleware } from '../middleware/auth';
 import { websiteAuthHook } from '../middleware/website';
 import { logger } from '../lib/logger';
+import { getRedisCache } from '@databuddy/redis';
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.AI_API_KEY,
   baseURL: 'https://openrouter.ai/api/v1',
 });
 
-// Analytics schema for AI context
 const AnalyticsSchema = {
   columns: [
     { name: 'client_id', type: 'String', description: 'Website identifier' },
@@ -61,7 +60,6 @@ const AIResponseJsonSchema = z.object({
   chart_type: z.enum(['bar', 'line', 'pie', 'area', 'stacked_bar', 'multi_line'])
 });
 
-// StreamingUpdate interface to match original actions
 export interface StreamingUpdate {
   type: 'thinking' | 'progress' | 'complete' | 'error';
   content: string;
@@ -69,7 +67,6 @@ export interface StreamingUpdate {
   debugInfo?: Record<string, any>;
 }
 
-// SQL validation function
 function validateSQL(sql: string): boolean {
   const forbiddenKeywords = ['INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'EXEC', 'UNION'];
   const upperSQL = sql.toUpperCase();
@@ -81,7 +78,6 @@ function validateSQL(sql: string): boolean {
   return upperSQL.trim().startsWith('SELECT');
 }
 
-// Debug helper
 function debugLog(step: string, data: any) {
   logger.info(`🔍 [AI-Assistant] ${step}`, { step, data });
 }
@@ -90,7 +86,33 @@ function createThinkingStep(step: string): string {
   return `🧠 ${step}`;
 }
 
-// Enhanced analysis prompt
+async function checkRateLimit(userId: string): Promise<boolean> {
+  const redis = getRedisCache();
+  const key = `rate_limit:assistant:${userId}`;
+  const limit = 5; // 5 requests per minute
+  const window = 60; // 60 seconds
+
+  try {
+    const current = await redis.get(key);
+    
+    if (!current) {
+      await redis.setex(key, window, '1');
+      return true;
+    }
+    
+    const count = Number.parseInt(current, 10);
+    if (count >= limit) {
+      return false;
+    }
+    
+    await redis.incr(key);
+    return true;
+  } catch (error: any) {
+    logger.error('Rate limit check failed:', error);
+    return false;
+  }
+}
+
 const enhancedAnalysisPrompt = (userQuery: string, websiteId: string, websiteHostname: string) => `
 You are DataBuddy AI - an advanced analytics assistant that creates optimal SQL queries and visualizations.
 
@@ -167,10 +189,8 @@ ADVANCED SQL TECHNIQUES:
 Return only valid JSON, no markdown or extra text. Ensure SQL is a single line string if possible, otherwise properly escaped. Ensure the SQL uses correct ClickHouse syntax. Use \`ILIKE\` for case-insensitive string matching if needed on user-provided filter values.;
 `;
 
-// Create router with typed context
 export const assistantRouter = new Hono<{ Variables: AppVariables }>();
 
-// Apply middleware to all routes
 assistantRouter.use('*', authMiddleware);
 assistantRouter.use('*', websiteAuthHook);
 
@@ -181,9 +201,23 @@ assistantRouter.use('*', websiteAuthHook);
 assistantRouter.post('/stream', zValidator('json', chatRequestSchema), async (c) => {
   const { message, website_id } = c.req.valid('json');
   const website = c.get('website');
+  const user = c.get('user');
 
   if (!website || !website.id) {
     return c.json({ error: 'Website not found' }, 404);
+  }
+
+  // Check rate limit
+  if (!user) {
+    return c.json({ error: 'User not found' }, 401);
+  }
+  
+  const rateLimitPassed = await checkRateLimit(user.id);
+  if (!rateLimitPassed) {
+    return c.json({ 
+      error: 'Rate limit exceeded. Please wait before making another request.',
+      code: 'RATE_LIMIT_EXCEEDED' 
+    }, 429);
   }
 
   const websiteHostname = website.domain;
@@ -205,7 +239,9 @@ assistantRouter.post('/stream', zValidator('json', chatRequestSchema), async (c)
         });
 
         debugLog("✅ Input validated", { message, website_id, websiteHostname });
-        debugInfo.validatedInput = { message, website_id, websiteHostname };
+        if ((user as any).role === 'ADMIN') {
+          debugInfo.validatedInput = { message, website_id, websiteHostname };
+        }
 
         sendUpdate({ 
           type: 'thinking', 
@@ -243,7 +279,7 @@ assistantRouter.post('/stream', zValidator('json', chatRequestSchema), async (c)
           sendUpdate({ 
             type: 'error', 
             content: "AI response parsing failed. Please try rephrasing.", 
-            debugInfo 
+            debugInfo: (user as any).role === 'ADMIN' ? debugInfo : undefined
           });
           controller.close();
           return;
@@ -259,7 +295,7 @@ assistantRouter.post('/stream', zValidator('json', chatRequestSchema), async (c)
           sendUpdate({ 
             type: 'error', 
             content: "Generated query failed security validation.", 
-            debugInfo 
+            debugInfo: (user as any).role === 'ADMIN' ? debugInfo : undefined
           });
           controller.close();
           return;
@@ -278,7 +314,9 @@ assistantRouter.post('/stream', zValidator('json', chatRequestSchema), async (c)
             sampleData: queryData.slice(0, 3)
           });
 
-          debugInfo.processing = { aiTime, queryTime, totalTime };
+          if ((user as any).role === 'ADMIN') {
+            debugInfo.processing = { aiTime, queryTime, totalTime };
+          }
 
           const finalContent = queryData.length > 0 
             ? `Found ${queryData.length} data points. Displaying as a ${parsedAiJson.chart_type.replace(/_/g, ' ')} chart.`
@@ -292,7 +330,7 @@ assistantRouter.post('/stream', zValidator('json', chatRequestSchema), async (c)
               chartType: parsedAiJson.chart_type,
               data: queryData
             },
-            debugInfo
+            debugInfo: (user as any).role === 'ADMIN' ? debugInfo : undefined
           });
 
         } catch (queryError: any) {
@@ -300,7 +338,7 @@ assistantRouter.post('/stream', zValidator('json', chatRequestSchema), async (c)
           sendUpdate({ 
             type: 'error', 
             content: "Database query failed. The data might not be available.", 
-            debugInfo 
+            debugInfo: (user as any).role === 'ADMIN' ? debugInfo : undefined
           });
         }
 
@@ -312,13 +350,13 @@ assistantRouter.post('/stream', zValidator('json', chatRequestSchema), async (c)
           sendUpdate({ 
             type: 'error', 
             content: `Invalid input: ${error.errors?.map((e: any) => e.message).join(', ')}`, 
-            debugInfo 
+            debugInfo: (user as any).role === 'ADMIN' ? debugInfo : undefined
           });
         } else {
           sendUpdate({ 
             type: 'error', 
             content: "An unexpected error occurred.", 
-            debugInfo: { error: error.message } 
+            debugInfo: (user as any).role === 'ADMIN' ? { error: error.message } : undefined
           });
         }
         controller.close();
