@@ -140,4 +140,18 @@
     - name: Ensure pip is latest version
       become: true
       ansible.builtin.shell: python3 -m pip install --yes --upgrade pip || exit 0
+    
+    - name: Install jsondiff python package if missing
+      become: yes
+      ansible.builtin.pip:
+        executable: pip3
+        name: jsondiff
+      when: inventory_hostname in groups['swarm-masters'] or inventory_hostname in groups['swarm-managers']
+        
+    - name: Install pyyaml python package if missing
+      become: yes
+      ansible.builtin.pip:
+        executable: pip3
+        name: pyyaml
+      when: inventory_hostname in groups['swarm-masters'] or inventory_hostname in groups['swarm-managers']
    

@@ -128,6 +128,43 @@
       delegate_to: "{{ (groups['swarm-managers'] | intersect(groups[hosts_group]))[0] }}"
       run_once: true
     
+
+    - name: Remove Ingress Label From Nodes                             
+      ansible.builtin.shell: "docker node update --label-rm ingress {{ hostvars[item]['ansible_facts']['nodename'] }} || true "
+      loop: "{{   (groups[hosts_group]) |  difference(groups['ingress']) }}"
+      delegate_to: "{{ (groups['swarm-managers'] | intersect(groups[hosts_group]))[0] }}"
+      run_once: true
+
+    - name: Add Ingress Label to Nodes                             
+      ansible.builtin.shell: "docker node update --label-add ingress=true {{ hostvars[item]['ansible_facts']['nodename'] }}"
+      loop: "{{ groups['ingress'] | intersect(groups[hosts_group]) }}"
+      delegate_to: "{{ (groups['swarm-managers'] | intersect(groups[hosts_group]))[0] }}"
+      run_once: true
+    
+    - name: Remove CI Root Label From Nodes                             
+      ansible.builtin.shell: "docker node update --label-rm ci-root {{ hostvars[item]['ansible_facts']['nodename'] }} || true "
+      loop: "{{   (groups[hosts_group]) |  difference(groups['ci-root']) }}"
+      delegate_to: "{{ (groups['swarm-managers'] | intersect(groups[hosts_group]))[0] }}"
+      run_once: true
+
+    - name: Add CI Root Label to Nodes                             
+      ansible.builtin.shell: "docker node update --label-add ci-root=true {{ hostvars[item]['ansible_facts']['nodename'] }}"
+      loop: "{{ groups['ci-root'] | intersect(groups[hosts_group]) }}"
+      delegate_to: "{{ (groups['swarm-managers'] | intersect(groups[hosts_group]))[0] }}"
+      run_once: true
+    
+    - name: Remove CI Worker Label From Nodes                             
+      ansible.builtin.shell: "docker node update --label-rm ci-worker {{ hostvars[item]['ansible_facts']['nodename'] }} || true "
+      loop: "{{ (groups[hosts_group]) |  difference(groups['ci-worker']) }}"
+      delegate_to: "{{ (groups['swarm-managers'] | intersect(groups[hosts_group]))[0] }}"
+      run_once: true
+
+    - name: Add CI Worker Label to Nodes                             
+      ansible.builtin.shell: "docker node update --label-add ci-worker=true {{ hostvars[item]['ansible_facts']['nodename'] }}"
+      loop: "{{ groups['ci-worker'] | intersect(groups[hosts_group]) }}"
+      delegate_to: "{{ (groups['swarm-managers'] | intersect(groups[hosts_group]))[0] }}"
+      run_once: true
+    
     
 
 
