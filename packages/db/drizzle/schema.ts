@@ -5,7 +5,7 @@ export const clientType = pgEnum("ClientType", ['INDIVIDUAL', 'COMPANY', 'NONPRO
 export const organizationRole = pgEnum("OrganizationRole", ['ADMIN', 'OWNER', 'MEMBER', 'VIEWER'])
 export const projectStatus = pgEnum("ProjectStatus", ['ACTIVE', 'COMPLETED', 'ON_HOLD', 'CANCELLED'])
 export const projectType = pgEnum("ProjectType", ['WEBSITE', 'MOBILE_APP', 'DESKTOP_APP', 'API'])
-export const role = pgEnum("Role", ['ADMIN', 'OWNER', 'EDITOR', 'AUTHOR', 'VIEWER', 'USER'])
+export const role = pgEnum("Role", ['ADMIN', 'USER', 'EARLY_ADOPTER', 'INVESTOR', 'BETA_TESTER', 'GUEST'])
 export const subscriptionStatus = pgEnum("SubscriptionStatus", ['ACTIVE', 'TRIALING', 'PAST_DUE', 'CANCELED', 'PAUSED', 'INCOMPLETE'])
 export const userStatus = pgEnum("UserStatus", ['ACTIVE', 'SUSPENDED', 'INACTIVE'])
 export const verificationStatus = pgEnum("VerificationStatus", ['PENDING', 'VERIFIED', 'FAILED'])
@@ -229,7 +229,7 @@ export const projectAccess = pgTable("project_access", {
 	id: text().primaryKey().notNull(),
 	projectId: text().notNull(),
 	userId: text().notNull(),
-	role: role().default('VIEWER').notNull(),
+	role: role().default('GUEST').notNull(),
 	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	deletedAt: timestamp({ precision: 3, mode: 'string' }),

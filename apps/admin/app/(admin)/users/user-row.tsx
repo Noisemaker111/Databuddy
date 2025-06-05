@@ -37,7 +37,7 @@ interface User {
   image: string | null;
   createdAt: Date | string;
   status: 'ACTIVE' | 'SUSPENDED' | 'INACTIVE';
-  role: 'USER' | 'ADMIN';
+  role: 'ADMIN' | 'USER' | 'EARLY_ADOPTER' | 'INVESTOR' | 'BETA_TESTER' | 'GUEST';
 }
 
 export function UserRow({ user }: { user: User }) {
@@ -93,9 +93,14 @@ export function UserRow({ user }: { user: User }) {
                 ) : (
                   <AlertCircle className="h-4 w-4 text-orange-500" />
                 )}
-                {user.role === 'ADMIN' && (
+                {user.role !== 'USER' && (
                   <Badge variant="secondary" className="text-xs h-4">
-                    Admin
+                    {user.role === 'ADMIN' ? 'Admin' : 
+                     user.role === 'EARLY_ADOPTER' ? 'Early Adopter' :
+                     user.role === 'INVESTOR' ? 'Investor' :
+                     user.role === 'BETA_TESTER' ? 'Beta Tester' :
+                     user.role === 'GUEST' ? 'Guest' : 
+                     user.role}
                   </Badge>
                 )}
               </div>

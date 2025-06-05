@@ -95,8 +95,8 @@ app.notFound((c) => {
   });
 });
 
-
-export default {
+Bun.serve({
   fetch: app.fetch,
   port: process.env.PORT || 4001,
-};
+  idleTimeout: 30,
+});

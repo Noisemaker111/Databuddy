@@ -107,7 +107,7 @@ export async function updateUserStatus(userId: string, status: 'ACTIVE' | 'SUSPE
   }
 }
 
-export async function updateUserRole(userId: string, role: 'USER' | 'ADMIN') {
+export async function updateUserRole(userId: string, role: 'ADMIN' | 'USER' | 'EARLY_ADOPTER' | 'INVESTOR' | 'BETA_TESTER' | 'GUEST') {
   try {
     await db.update(user)
       .set({ role })
@@ -270,7 +270,7 @@ export async function addProject(userId: string, projectData: { name: string; ty
         id: nanoid(),
         userId,
         projectId,
-        role: 'OWNER',
+        role: 'ADMIN',
         createdAt: now,
         updatedAt: now,
       });

@@ -33,7 +33,7 @@ interface UserActionsProps {
     createdAt: string;
     updatedAt: string;
     deletedAt: string | null;
-    role: 'USER' | 'ADMIN';
+    role: 'ADMIN' | 'USER' | 'EARLY_ADOPTER' | 'INVESTOR' | 'BETA_TESTER' | 'GUEST';
     twoFactorEnabled: boolean | null;
     domains: Array<{
       id: string;
@@ -123,39 +123,52 @@ export function UserActions({ user }: UserActionsProps) {
 }
 
 export function RoleActions({ user }: UserActionsProps) {
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'ADMIN': return 'Admin';
+      case 'USER': return 'User';
+      case 'EARLY_ADOPTER': return 'Early Adopter';
+      case 'INVESTOR': return 'Investor';
+      case 'BETA_TESTER': return 'Beta Tester';
+      case 'GUEST': return 'Guest';
+      default: return role;
+    }
+  };
+
+  const roles: Array<{value: 'ADMIN' | 'USER' | 'EARLY_ADOPTER' | 'INVESTOR' | 'BETA_TESTER' | 'GUEST', label: string}> = [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'USER', label: 'User' },
+    { value: 'EARLY_ADOPTER', label: 'Early Adopter' },
+    { value: 'INVESTOR', label: 'Investor' },
+    { value: 'BETA_TESTER', label: 'Beta Tester' },
+    { value: 'GUEST', label: 'Guest' },
+  ];
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
-          {user.role}
+          {getRoleDisplayName(user.role)}
           <ChevronDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          onClick={async () => {
-            const result = await updateUserRole(user.id, 'USER');
-            if (result.error) {
-              toast.error(result.error);
-            } else {
-              toast.success('Role updated to User');
-            }
-          }}
-        >
-          User
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={async () => {
-            const result = await updateUserRole(user.id, 'ADMIN');
-            if (result.error) {
-              toast.error(result.error);
-            } else {
-              toast.success('Role updated to Admin');
-            }
-          }}
-        >
-          Admin
-        </DropdownMenuItem>
+        {roles.map((role) => (
+          <DropdownMenuItem
+            key={role.value}
+            onClick={async () => {
+              const result = await updateUserRole(user.id, role.value);
+              if (result.error) {
+                toast.error(result.error);
+              } else {
+                toast.success(`Role updated to ${role.label}`);
+              }
+            }}
+            className={user.role === role.value ? 'bg-accent' : ''}
+          >
+            {role.label}
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );

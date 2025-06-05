@@ -29,7 +29,7 @@ interface User {
   createdAt: Date | string;
   updatedAt: Date | string;
   deletedAt: Date | string | null;
-  role: 'USER' | 'ADMIN';
+  role: 'ADMIN' | 'USER' | 'EARLY_ADOPTER' | 'INVESTOR' | 'BETA_TESTER' | 'GUEST';
   twoFactorEnabled: boolean | null;
 }
 

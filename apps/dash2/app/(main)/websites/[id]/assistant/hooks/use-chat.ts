@@ -5,21 +5,28 @@ import type { Message } from "../types/message";
 interface StreamingUpdate {
   type: 'thinking' | 'progress' | 'complete' | 'error';
   content: string;
-  data?: any;
+  data?: {
+    hasVisualization?: boolean;
+    chartType?: string;
+    data?: any[];
+    responseType?: 'chart' | 'text' | 'metric';
+    metricValue?: string | number;
+    metricLabel?: string;
+  };
   debugInfo?: Record<string, any>;
 }
 
 function generateWelcomeMessage(websiteName?: string): string {
   const examples = [
     "Show me page views over the last 7 days",
+    "How many visitors did I have yesterday?",
     "What are my top traffic sources?", 
-    "Which pages have the highest bounce rate?",
+    "What's my current bounce rate?",
     "How is my mobile vs desktop traffic?",
-    "Show me traffic by country",
-    "What's my average page load time?"
+    "Show me traffic by country"
   ];
 
-  return `Hello! I'm your analytics AI assistant for ${websiteName || 'your website'}. I can help you understand your data and create visualizations. Try asking me questions like:\n\n${examples.map((prompt: string) => `• "${prompt}"`).join('\n')}`;
+  return `Hello! I'm your analytics AI assistant for ${websiteName || 'your website'}. I can help you understand your data with charts, single metrics, or detailed answers. Try asking me questions like:\n\n${examples.map((prompt: string) => `• "${prompt}"`).join('\n')}\n\nI'll automatically choose the best way to present your data - whether it's a chart, a single number, or a detailed explanation.`;
 }
 
 export function useChat(websiteId: string, websiteName?: string) {
@@ -33,7 +40,9 @@ export function useChat(websiteId: string, websiteName?: string) {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRateLimited, setIsRateLimited] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const rateLimitTimeoutRef = useRef<number>();
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -51,9 +60,18 @@ export function useChat(websiteId: string, websiteName?: string) {
     scrollToBottom();
   }, [messages.length]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (rateLimitTimeoutRef.current) {
+        clearTimeout(rateLimitTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const sendMessage = useCallback(async (content?: string) => {
     const messageContent = content || inputValue.trim();
-    if (!messageContent || isLoading) return;
+    if (!messageContent || isLoading || isRateLimited) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -80,7 +98,7 @@ export function useChat(websiteId: string, websiteName?: string) {
 
     try {
       // Stream the AI response using the new single endpoint
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/assistant/stream`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/assistant/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,6 +113,34 @@ export function useChat(websiteId: string, websiteName?: string) {
       });
 
       if (!response.ok) {
+        // Handle rate limit specifically
+        if (response.status === 429) {
+          const errorData = await response.json();
+          if (errorData.code === 'RATE_LIMIT_EXCEEDED') {
+            setMessages(prev => prev.map(msg => 
+              msg.id === assistantId 
+                ? { 
+                    ...msg, 
+                    content: "⏱️ You've reached the rate limit. Please wait 60 seconds before sending another message."
+                  }
+                : msg
+            ));
+            setIsLoading(false);
+            setIsRateLimited(true);
+            
+            // Clear any existing timeout
+            if (rateLimitTimeoutRef.current) {
+              clearTimeout(rateLimitTimeoutRef.current);
+            }
+            
+            // Set a 60-second timeout to re-enable messaging
+            rateLimitTimeoutRef.current = setTimeout(() => {
+              setIsRateLimited(false);
+            }, 60000);
+            
+            return;
+          }
+        }
         throw new Error('Failed to start stream');
       }
 
@@ -132,8 +178,11 @@ export function useChat(websiteId: string, websiteName?: string) {
                           ...msg, 
                           content: update.content,
                           hasVisualization: update.data?.hasVisualization || false,
-                          chartType: update.data?.chartType,
-                          data: update.data?.queryData || update.data?.data,
+                          chartType: update.data?.chartType as any,
+                          data: update.data?.data,
+                          responseType: update.data?.responseType,
+                          metricValue: update.data?.metricValue,
+                          metricLabel: update.data?.metricLabel,
                         }
                       : msg
                   ));
@@ -145,8 +194,11 @@ export function useChat(websiteId: string, websiteName?: string) {
                           ...msg, 
                           content: update.content,
                           hasVisualization: update.data?.hasVisualization || false,
-                          chartType: update.data?.chartType,
+                          chartType: update.data?.chartType as any,
                           data: update.data?.data,
+                          responseType: update.data?.responseType,
+                          metricValue: update.data?.metricValue,
+                          metricLabel: update.data?.metricLabel,
                           debugInfo: update.debugInfo,
                         }
                       : msg
@@ -188,7 +240,7 @@ export function useChat(websiteId: string, websiteName?: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [inputValue, isLoading, websiteId, messages, scrollToBottom]);
+  }, [inputValue, isLoading, isRateLimited, websiteId, messages, scrollToBottom]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -207,6 +259,12 @@ export function useChat(websiteId: string, websiteName?: string) {
       }
     ]);
     setInputValue("");
+    setIsRateLimited(false);
+    
+    // Clear any existing timeout
+    if (rateLimitTimeoutRef.current) {
+      clearTimeout(rateLimitTimeoutRef.current);
+    }
   }, [websiteName]);
 
   return {
@@ -214,6 +272,7 @@ export function useChat(websiteId: string, websiteName?: string) {
     inputValue,
     setInputValue,
     isLoading,
+    isRateLimited,
     scrollAreaRef,
     sendMessage,
     handleKeyPress,

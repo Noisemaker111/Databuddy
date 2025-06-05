@@ -8,4 +8,7 @@ export interface Message {
   data?: any[];
   thinkingSteps?: string[];
   debugInfo?: Record<string, any>;
+  responseType?: 'chart' | 'text' | 'metric';
+  metricValue?: string | number;
+  metricLabel?: string;
 } 

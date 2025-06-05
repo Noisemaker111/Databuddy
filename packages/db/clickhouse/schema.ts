@@ -9,6 +9,13 @@ const CREATE_DATABASE = `
 CREATE DATABASE IF NOT EXISTS ${ANALYTICS_DATABASE}
 `;
 
+// Optimizations:
+// 1. Use LowCardinality(String) for fields with limited distinct values
+// 2. Reorder ORDER BY to prioritize time-based queries
+// 3. Add materialized views for common aggregations
+// 4. Remove Nullable where 0 is a sensible default
+
+
 // Events table stores all raw events
 const CREATE_EVENTS_TABLE = `
 CREATE TABLE IF NOT EXISTS ${ANALYTICS_DATABASE}.events (

@@ -43,9 +43,19 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return result.trim() || '0s';
   };
 
+  // Format the label for better display
+  const formatLabel = (rawLabel: string): string => {
+    // If it's a URL path, clean it up
+    if (typeof rawLabel === 'string' && rawLabel.startsWith('/')) {
+      if (rawLabel === '/') return 'Home';
+      return rawLabel.substring(1); // Remove leading slash
+    }
+    return String(rawLabel);
+  };
+
   return (
     <div className="bg-background border border-border p-3 shadow-md text-xs rounded-sm">
-      <p className="font-semibold mb-2 text-foreground">{label}</p>
+      <p className="font-semibold mb-2 text-foreground">{formatLabel(String(label))}</p>
       <div className="space-y-1.5">
         {payload.map((entry: any) => {
           const dataPoint = entry.payload;
@@ -66,7 +76,18 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                 className="w-2.5 h-2.5 rounded-full"
                 style={{ backgroundColor: entry.color || METRIC_COLORS[entryNameLower as keyof typeof METRIC_COLORS] || METRIC_COLORS.default }}
               />
-              <span className="text-muted-foreground">{entry.name.replace(/_/g, ' ')}:</span>
+              <span className="text-muted-foreground capitalize">
+                {(() => {
+                  const cleanName = entry.name.replace(/_/g, ' ').toLowerCase();
+                  if (cleanName === 'count' || cleanName === 'pageviews') return 'Page Views';
+                  if (cleanName === 'visitors' || cleanName === 'unique visitors') return 'Visitors';
+                  if (cleanName === 'sessions') return 'Sessions';
+                  if (cleanName === 'bounce rate') return 'Bounce Rate';
+                  if (cleanName.includes('load time')) return 'Load Time';
+                  if (cleanName.includes('duration')) return 'Duration';
+                  return entry.name.replace(/_/g, ' ');
+                })()}:
+              </span>
               <span className="font-medium text-foreground">{displayValue}</span>
             </div>
           );
@@ -160,6 +181,18 @@ export function VersatileAIChart({
     bottom: chartData.length > 5 && (chartType === 'area' || chartType === 'line' || chartType === 'multi_line') ? 45 : (chartType === 'bar' || chartType === 'stacked_bar' ? 30 : 10)
   };
 
+  const formatTickLabel = (value: any): string => {
+    if (typeof value === 'string' && value.startsWith('/')) {
+      if (value === '/') return 'Home';
+      let cleaned = value.substring(1); // Remove leading slash
+      if (cleaned.length > 15) {
+        cleaned = cleaned.substring(0, 12) + '...';
+      }
+      return cleaned;
+    }
+    return String(value);
+  };
+
   const commonXAxis = (
     <XAxis 
       dataKey={xAxisDataKey} 
@@ -172,6 +205,7 @@ export function VersatileAIChart({
       height={(chartType === 'bar' || chartType === 'stacked_bar') ? 50 : 30}
       angle={(chartType === 'bar' || chartType === 'stacked_bar') ? -30 : 0}
       textAnchor={(chartType === 'bar' || chartType === 'stacked_bar') ? 'end' : 'middle'}
+      tickFormatter={(chartType === 'bar' || chartType === 'stacked_bar') ? formatTickLabel : undefined}
     />
   );
   const commonYAxis = (

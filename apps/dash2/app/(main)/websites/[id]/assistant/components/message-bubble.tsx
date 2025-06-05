@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Bot, User, BarChart3, LineChart, PieChart, ChevronDown, ChevronRight, Bug, Clock } from "lucide-react";
+import { Bot, User, BarChart3, LineChart, PieChart, ChevronDown, ChevronRight, Bug, Clock, TrendingUp, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Message } from "../types/message";
 
@@ -54,6 +54,27 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <div className="text-sm whitespace-pre-wrap break-words leading-relaxed">
           {message.content}
         </div>
+        
+        {/* Metric Display */}
+        {message.responseType === 'metric' && message.metricValue !== undefined && message.type === 'assistant' && (
+          <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Hash className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  {message.metricLabel || 'Result'}
+                </div>
+                <div className="text-2xl font-bold text-foreground mt-1">
+                  {typeof message.metricValue === 'number' 
+                    ? message.metricValue.toLocaleString() 
+                    : message.metricValue}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Thinking Steps */}
         {message.thinkingSteps && message.thinkingSteps.length > 0 && message.type === 'assistant' && (

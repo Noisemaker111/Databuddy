@@ -16,13 +16,16 @@ interface VisualizationSectionProps extends WebsiteDataTabProps {
   latestVisualization?: Message;
   onQuickInsight?: (prompt: string) => void;
   currentMessage: Message | undefined;
+  hasVisualization?: boolean;
 }
 
 const quickInsights = [
   "Show me mobile vs desktop traffic by day",
-  "Page load times by browser over time",
+  "Page load times by browser over time", 
   "Traffic sources breakdown this month",
-  "Hourly traffic patterns today"
+  "How many page views yesterday?",
+  "What's my bounce rate?",
+  "Top 10 pages by traffic"
 ];
 
 const getChartIcon = (chartType: string) => {
@@ -74,7 +77,8 @@ export default function VisualizationSection({
   websiteData, 
   latestVisualization,
   onQuickInsight,
-  currentMessage
+  currentMessage,
+  hasVisualization = false
 }: VisualizationSectionProps) {
   const rawAiData = useMemo(() => {
     if (!latestVisualization?.data || latestVisualization.data.length === 0) return [];
@@ -85,6 +89,37 @@ export default function VisualizationSection({
     if (!rawAiData || rawAiData.length === 0) return { chartDataForDisplay: [], finalXAxisKey: 'date' };
     const chartType = latestVisualization?.chartType;
     
+    // For bar charts, use the raw data directly if it's already in the right format
+    if (chartType === 'bar' && rawAiData.length > 0) {
+      const firstRow = rawAiData[0];
+      const keys = Object.keys(firstRow);
+      
+      // Find the categorical key (string) and metric key (number)
+      const categoryKey = keys.find(k => typeof firstRow[k] === 'string') || keys[0];
+      const metricKey = keys.find(k => typeof firstRow[k] === 'number') || keys[1];
+      
+      if (categoryKey && metricKey) {
+        // Create properly formatted data for the chart
+        const formattedData = rawAiData.map(item => ({
+          [categoryKey]: String(item[categoryKey]),
+          [metricKey]: Number(item[metricKey]) || 0
+        }));
+        
+        // Sort by the metric value in descending order
+        formattedData.sort((a, b) => (Number(b[metricKey]) || 0) - (Number(a[metricKey]) || 0));
+        
+        const MAX_CHART_ITEMS = 10; // Show up to 10 items for "Top 10" queries
+        const finalData = formattedData.slice(0, MAX_CHART_ITEMS);
+        
+        return { 
+          chartDataForDisplay: finalData, 
+          finalXAxisKey: categoryKey,
+          metricKey: metricKey 
+        };
+      }
+    }
+    
+    // Fall back to the original transformation for other chart types
     const { chartData: transformedDataFromFunc, xAxisKey: xAxisKeyFromFunc } = 
       transformDataForMetricsChart(rawAiData, chartType);
 
@@ -132,15 +167,20 @@ export default function VisualizationSection({
   }, [rawAiData]);
 
   const renderChartContent = () => {
-    if (!rawAiData || rawAiData.length === 0 || !latestVisualization?.chartType) {
+    if (!hasVisualization || !rawAiData || rawAiData.length === 0 || !latestVisualization?.chartType) {
       return (
-        <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-6 text-center min-h-[200px]">
-          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3">
+        <div className={`flex flex-col items-center justify-center h-full text-muted-foreground py-6 text-center min-h-[200px] transition-all duration-300 ${hasVisualization ? 'animate-pulse' : 'animate-in fade-in-0 slide-in-from-bottom-2'}`}>
+          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3 transition-all duration-300">
             <Database className="h-6 w-6 opacity-50" />
           </div>
-          <h3 className="font-medium mb-1 text-sm">No Visualization Available</h3>
-          <p className="text-xs max-w-xs px-4">
-            Ask a question or select a quick insight to see your data visualized here. The AI will select the best chart type for your query.
+          <h3 className="font-medium mb-1 text-sm transition-all duration-300">
+            {hasVisualization ? 'Loading Visualization...' : 'No Visualization Available'}
+          </h3>
+          <p className="text-xs max-w-xs px-4 transition-all duration-300">
+            {hasVisualization 
+              ? 'Processing your data query...'
+              : 'Ask a question that needs a chart or table to see your data visualized here. For single metrics or general questions, check the chat area.'
+            }
           </p>
         </div>
       );
@@ -150,9 +190,9 @@ export default function VisualizationSection({
     const showMetricsChart = ['line', 'bar', 'area', 'multi_line', 'stacked_bar'].includes(aiChartType?.toLowerCase() || '');
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
         {showMetricsChart && chartDisplayConfig.chartDataForDisplay.length > 0 && (
-          <div className="bg-muted/30 p-2 rounded-lg shadow-sm">
+          <div className="bg-muted/30 p-2 rounded-lg shadow-sm animate-in fade-in-0 slide-in-from-top-1 duration-700 delay-100">
             <VersatileAIChart
               chartType={aiChartType ? aiChartType as VersatileChartType : 'area'}
               data={chartDisplayConfig.chartDataForDisplay} 
@@ -165,17 +205,19 @@ export default function VisualizationSection({
           </div>
         )}
         
-        <DataTable
-          columns={columnsForTable}
-          data={rawAiData}
-          title="Detailed Data"
-          description={`Full data (${rawAiData.length} rows). Click headers to sort.`}
-          showSearch={rawAiData.length > 7}
-          initialPageSize={7}
-          minHeight={150}
-          emptyMessage="No data to display in table."
-          className="bg-background/70 backdrop-blur-sm"
-        />
+        <div className="animate-in fade-in-0 slide-in-from-bottom-1 duration-700 delay-200">
+          <DataTable
+            columns={columnsForTable}
+            data={rawAiData}
+            title="Detailed Data"
+            description={`Full data (${rawAiData.length} rows). Click headers to sort.`}
+            showSearch={rawAiData.length > 7}
+            initialPageSize={7}
+            minHeight={150}
+            emptyMessage="No data to display in table."
+            className="bg-background/70 backdrop-blur-sm"
+          />
+        </div>
       </div>
     );
   };
@@ -194,16 +236,18 @@ export default function VisualizationSection({
   };
 
   return (
-    <div className="flex flex-col flex-1 bg-background border rounded shadow-sm overflow-hidden min-h-0">
-      <div className="flex items-center gap-2 p-3 border-b bg-muted/30 flex-shrink-0">
-        <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <TrendingUp className="h-4 w-4 text-primary" />
+    <div className="flex flex-col flex-1 bg-background border rounded shadow-sm overflow-hidden min-h-0 transition-all duration-300">
+      <div className={`flex items-center gap-2 p-3 border-b flex-shrink-0 transition-all duration-300 ${hasVisualization ? 'bg-muted/30' : 'bg-muted/10'}`}>
+        <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 transition-all duration-300 ${hasVisualization ? 'bg-primary/10' : 'bg-muted/20'}`}>
+          <TrendingUp className={`h-4 w-4 transition-all duration-300 ${hasVisualization ? 'text-primary' : 'text-muted-foreground/60'}`} />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="font-semibold text-base truncate">Data Visualization</h2>
+          <h2 className={`font-semibold text-base truncate transition-all duration-300 ${hasVisualization ? 'text-foreground' : 'text-muted-foreground/80'}`}>
+            Data Visualization
+          </h2>
         </div>
-        {latestVisualization?.chartType && (
-          <Badge variant="outline" className="gap-1 text-xs py-1 px-2 whitespace-nowrap">
+        {latestVisualization?.chartType && hasVisualization && (
+          <Badge variant="outline" className="gap-1 text-xs py-1 px-2 whitespace-nowrap animate-in fade-in-0 slide-in-from-right-1 duration-300">
             {getChartIcon(latestVisualization.chartType)}
             {getChartTypeDescription(latestVisualization.chartType)}
             {rawAiData && rawAiData.length > 0 && ` (${rawAiData.length})`}
@@ -213,26 +257,29 @@ export default function VisualizationSection({
       
       <div className="flex-1 overflow-y-auto min-h-0">
         <ScrollArea className="h-full">
-          <div className="p-3">
+          <div className={`p-3 transition-all duration-300 ${hasVisualization ? 'opacity-100' : 'opacity-90'}`}>
             {renderChartContent()}
           </div>
         </ScrollArea>
       </div>
         
-      <div className="border-t p-3 flex-shrink-0 bg-muted/20">
+      <div className={`border-t p-3 flex-shrink-0 transition-all duration-300 ${hasVisualization ? 'bg-muted/20' : 'bg-muted/10'}`}>
         <div className="flex items-center gap-1.5 mb-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-          <h3 className="text-xs font-medium">Quick Insights</h3>
+          <Sparkles className={`h-3.5 w-3.5 flex-shrink-0 transition-all duration-300 ${hasVisualization ? 'text-primary' : 'text-muted-foreground/60'}`} />
+          <h3 className={`text-xs font-medium transition-all duration-300 ${hasVisualization ? 'text-foreground' : 'text-muted-foreground/80'}`}>
+            Quick Insights
+          </h3>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-          {quickInsights.map((insight) => (
+          {quickInsights.map((insight, index) => (
             <Button
               key={insight}
               variant="ghost"
               size="sm"
-              className="text-xs justify-start h-auto py-1.5 px-2 text-left font-normal hover:bg-muted truncate"
+              className={`text-xs justify-start h-auto py-1.5 px-2 text-left font-normal hover:bg-muted truncate transition-all duration-300 ${hasVisualization ? 'opacity-100' : 'opacity-80'}`}
               onClick={() => onQuickInsight?.(insight)}
               title={insight}
+              style={{ animationDelay: `${index * 50}ms` }}
             >
               {insight}
             </Button>
