@@ -25,17 +25,17 @@ function WebsiteMapPage() {
   const unknownVisitors = locationData?.countries?.find(c => !c.country || c.country.trim() === "")?.visitors || 0;
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Compact Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-muted/20">
+    <div className="h-[calc(100vh-7rem)] flex flex-col space-y-4">
+      {/* Header with proper spacing */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-1.5 bg-primary/10 rounded-md">
-            <Globe className="h-4 w-4 text-primary" />
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Globe className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold">Geographic Data</h1>
+            <h1 className="text-xl font-semibold">Geographic Data</h1>
             {!isLoading && totalVisitors > 0 && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {totalVisitors.toLocaleString()} visitors across {topCountries.length} countries
               </p>
             )}
@@ -43,51 +43,51 @@ function WebsiteMapPage() {
         </div>
 
         <Tabs value={mode} onValueChange={(value) => setMode(value as "total" | "perCapita")}>
-          <TabsList className="h-8">
-            <TabsTrigger value="total" className="text-xs px-3">Total</TabsTrigger>
-            <TabsTrigger value="perCapita" className="text-xs px-3">Per Capita</TabsTrigger>
+          <TabsList>
+            <TabsTrigger value="total">Total</TabsTrigger>
+            <TabsTrigger value="perCapita">Per Capita</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex gap-3 p-3 overflow-hidden">
+      <div className="flex-1 flex gap-4 overflow-hidden min-h-0">
         {/* Map */}
-        <Card className="flex-1 flex flex-col overflow-hidden">
-          <CardHeader className="py-2 px-3 border-b">
-            <CardTitle className="text-sm flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" />
+        <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <CardHeader className="pb-3 flex-shrink-0">
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
                 World Map
               </span>
-              <Badge variant="outline" className="text-xs">
-                Hover countries
+              <Badge variant="secondary" className="text-xs">
+                Hover to explore
               </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 flex-1">
+          <CardContent className="p-0 flex-1 min-h-0">
             <MapComponent height="100%" mode={mode} locationData={locationData} isLoading={isLoading} />
           </CardContent>
         </Card>
         
         {/* Countries List */}
-        <Card className="w-72 flex flex-col overflow-hidden">
-          <CardHeader className="py-2 px-3 border-b">
-            <CardTitle className="text-sm flex items-center gap-1.5">
-              <Globe className="h-3.5 w-3.5" />
+        <Card className="w-72 flex flex-col overflow-hidden min-h-0">
+          <CardHeader className="pb-3 flex-shrink-0">
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-4 w-4" />
               Top Countries
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 flex-1 overflow-hidden">
+          <CardContent className="p-0 flex-1 overflow-hidden min-h-0">
             {isLoading ? (
-              <div className="space-y-1 p-2">
+              <div className="space-y-2 p-4">
                 {Array(6).fill(0).map((_, i) => (
-                  <div key={`country-skeleton-${i + 1}`} className="flex items-center justify-between p-2">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-3 w-5 rounded-sm" />
-                      <Skeleton className="h-3 w-16" />
+                  <div key={`country-skeleton-${i + 1}`} className="flex items-center justify-between p-3">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-4 w-6 rounded" />
+                      <Skeleton className="h-4 w-20" />
                     </div>
-                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-12" />
                   </div>
                 ))}
               </div>
@@ -101,12 +101,12 @@ function WebsiteMapPage() {
                         <div 
                           key={country.country} 
                           className={cn(
-                            "flex items-center justify-between p-2 hover:bg-muted/50 cursor-pointer transition-colors border-b border-border/30 last:border-b-0",
+                            "flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer transition-colors border-b border-border/20 last:border-b-0",
                             index === 0 && "bg-primary/5"
                           )}
                         >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <div className="w-5 h-3 relative overflow-hidden rounded-sm shadow-sm flex-shrink-0">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-6 h-4 relative overflow-hidden rounded shadow-sm flex-shrink-0">
                               <img 
                                 src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${country.country.toUpperCase()}.svg`}
                                 alt={country.country}
@@ -117,7 +117,7 @@ function WebsiteMapPage() {
                               />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="text-xs font-medium truncate">
+                              <div className="text-sm font-medium truncate">
                                 {country.country}
                               </div>
                               <div className="text-xs text-muted-foreground">
@@ -127,7 +127,7 @@ function WebsiteMapPage() {
                           </div>
                           <div className="text-right flex-shrink-0">
                             <div className={cn(
-                              "text-xs font-semibold",
+                              "text-sm font-semibold",
                               index === 0 && "text-primary"
                             )}>
                               {country.visitors.toLocaleString()}
@@ -145,20 +145,20 @@ function WebsiteMapPage() {
                 {/* Unknown Location */}
                 {unknownVisitors > 0 && (
                   <div className="border-t bg-muted/10">
-                    <div className="flex items-center justify-between p-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <div className="w-5 h-3 flex items-center justify-center rounded-sm bg-muted flex-shrink-0">
-                          <HelpCircle className="h-2 w-2 text-muted-foreground" />
+                    <div className="flex items-center justify-between p-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-6 h-4 flex items-center justify-center rounded bg-muted flex-shrink-0">
+                          <HelpCircle className="h-3 w-3 text-muted-foreground" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-medium">Unknown</div>
+                          <div className="text-sm font-medium">Unknown</div>
                           <div className="text-xs text-muted-foreground">
                             {totalVisitors > 0 ? ((unknownVisitors / totalVisitors) * 100).toFixed(1) : 0}%
                           </div>
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <div className="text-xs font-semibold">
+                        <div className="text-sm font-semibold">
                           {unknownVisitors.toLocaleString()}
                         </div>
                       </div>
@@ -167,9 +167,9 @@ function WebsiteMapPage() {
                 )}
                 
                 {topCountries.length === 0 && unknownVisitors === 0 && (
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <AlertCircle className="h-4 w-4 text-muted-foreground mb-2" />
-                    <p className="text-xs text-muted-foreground">No data available</p>
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <AlertCircle className="h-8 w-8 text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground">No geographic data available</p>
                   </div>
                 )}
               </div>
