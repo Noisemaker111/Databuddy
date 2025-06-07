@@ -1,0 +1,195 @@
+---
+title: WordPress
+description: Add privacy-first analytics to your WordPress site
+---
+
+# WordPress Integration
+
+Add Databuddy's privacy-first analytics to your WordPress site without slowing it down. No cookies, fully GDPR compliant, and 247x smaller than Google Analytics.
+
+## Installation Methods
+
+### Method 1: WordPress Plugin (Recommended)
+
+The easiest way to add Databuddy to WordPress:
+
+1. Download the [Databuddy WordPress Plugin](https://wordpress.org/plugins/databuddy-analytics/)
+2. Go to **Plugins** > **Add New** > **Upload Plugin**
+3. Upload and activate the plugin
+4. Go to **Settings** > **Databuddy Analytics**
+5. Enter your Site ID from your [Databuddy dashboard](https://app.databuddy.cc)
+6. Configure your tracking preferences
+7. Save changes
+
+### Method 2: Manual Header Installation
+
+If you prefer manual installation:
+
+1. Get your tracking script from your [Databuddy dashboard](https://app.databuddy.cc)
+2. Go to **Appearance** > **Theme Editor**
+3. Select **header.php**
+4. Add your script before the closing `</head>` tag:
+
+```html
+<script
+  src="https://app.databuddy.cc/databuddy.js"
+  data-site-id="YOUR_SITE_ID"
+  async
+></script>
+</head>
+```
+
+### Method 3: Using a Plugin (Insert Headers and Footers)
+
+For a safer approach without editing theme files:
+
+1. Install the "Insert Headers and Footers" plugin
+2. Go to **Settings** > **Insert Headers and Footers**
+3. Paste your Databuddy script in the "Scripts in Header" section
+4. Save settings
+
+## WordPress-Specific Features
+
+### WooCommerce Integration
+
+Track e-commerce events automatically:
+
+```html
+<script
+  src="https://app.databuddy.cc/databuddy.js"
+  data-site-id="YOUR_SITE_ID"
+  data-track-interactions="true"
+  data-track-ecommerce="true"
+  async
+></script>
+```
+
+### Contact Form Tracking
+
+Track form submissions from popular WordPress form plugins:
+
+```html
+<!-- Track Contact Form 7 submissions -->
+<input type="hidden" data-track="form_submit" data-form-type="contact">
+
+<!-- Track Gravity Forms submissions -->
+<input type="hidden" data-track="form_submit" data-form-type="gravity">
+```
+
+### Custom Post Type Tracking
+
+Track views of custom post types:
+
+```php
+// Add to your theme's functions.php
+function databuddy_track_custom_post() {
+    if (is_singular('your_custom_post_type')) {
+        echo '<script>
+            databuddy("track", "custom_post_view", {
+                post_type: "' . get_post_type() . '",
+                post_id: ' . get_the_ID() . '
+            });
+        </script>';
+    }
+}
+add_action('wp_footer', 'databuddy_track_custom_post');
+```
+
+## Configuration Options
+
+### Basic Setup
+
+```html
+<script
+  src="https://app.databuddy.cc/databuddy.js"
+  data-site-id="YOUR_SITE_ID"
+  data-track-screen-views="true"
+  data-track-hash-changes="true"
+  async
+></script>
+```
+
+### Advanced Configuration
+
+```html
+<script
+  src="https://app.databuddy.cc/databuddy.js"
+  data-site-id="YOUR_SITE_ID"
+  data-track-attributes="true"
+  data-track-outgoing-links="true"
+  data-track-performance="true"
+  data-track-web-vitals="true"
+  data-track-engagement="true"
+  data-track-scroll-depth="true"
+  async
+></script>
+```
+
+## WordPress Performance Benefits
+
+- **Faster Loading**: Improves your WordPress Core Web Vitals scores
+- **Lower Bounce Rate**: Better user experience leads to longer session times
+- **SEO Boost**: Improved performance metrics help search rankings
+- **Resource Efficient**: Minimal server load compared to other analytics solutions
+
+## Common WordPress Scenarios
+
+### Membership Sites
+
+Track member engagement and content consumption:
+
+```html
+<!-- Track premium content views -->
+<button data-track="premium_content_view" data-content-type="video">
+  Watch Premium Video
+</button>
+```
+
+### Blog Sites
+
+Track reading engagement and popular content:
+
+```html
+<!-- Track article engagement -->
+<article data-track="article_view" data-category="tutorials" data-author="john-doe">
+  <!-- article content -->
+</article>
+```
+
+### Business Sites
+
+Track lead generation and conversions:
+
+```html
+<!-- Track CTA clicks -->
+<a href="/contact" data-track="cta_click" data-cta-type="contact">
+  Get Quote
+</a>
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Plugin Conflicts**: If experiencing issues, temporarily deactivate other analytics plugins to identify conflicts.
+
+**Caching Issues**: Clear your WordPress cache after installation (WP Rocket, W3 Total Cache, etc.).
+
+**Theme Issues**: If manual installation doesn't work, ensure your theme includes `wp_head()` in header.php.
+
+### Verification Steps
+
+1. Check browser console for "Databuddy initialized" message
+2. Visit your Databuddy dashboard after 2-3 minutes
+3. Use browser dev tools to verify script is loading
+4. Test in incognito mode to avoid cache issues
+
+## WordPress Multisite
+
+For WordPress multisite networks:
+
+1. Install as a network plugin
+2. Configure each site individually with its own Site ID
+3. Use network admin settings for global configurations
+
+Need help with your WordPress integration? Contact us at [help@databuddy.cc](mailto:help@databuddy.cc). 

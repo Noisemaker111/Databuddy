@@ -1,0 +1,101 @@
+---
+title: Framer
+description: Add privacy-first analytics to your Framer site
+---
+
+# Framer Integration
+
+Databuddy enables you to gather privacy-first analytics on user behavior, capture custom events, track performance metrics, and more within your Framer site - all while maintaining GDPR compliance without cookies.
+
+## How to Add Databuddy to Framer
+
+### 1. Get Your Tracking Script
+
+Navigate to your [Databuddy dashboard](https://app.databuddy.cc) and copy your tracking code snippet:
+
+```html
+<script
+  src="https://app.databuddy.cc/databuddy.js"
+  data-site-id="YOUR_SITE_ID"
+  async
+></script>
+```
+
+### 2. Add the Script to Your Framer Project
+
+1. Open your Framer project
+2. Go to **Site Settings** > **General**
+3. Scroll down to **Custom Code**
+4. Paste your Databuddy snippet into the **Start of &lt;head&gt; tag** section
+5. Click **Save** and publish your changes
+
+### 3. Verify Installation
+
+Once published, you can verify that Databuddy is working by:
+
+1. Visiting your live Framer site
+2. Opening your browser's developer tools (F12)
+3. Checking the Console tab for a "Databuddy initialized" message
+4. Visiting your Databuddy dashboard to see real-time analytics
+
+## Advanced Features
+
+### Custom Event Tracking
+
+Track custom interactions in your Framer components using data attributes:
+
+```html
+<!-- Track button clicks -->
+<button data-track="cta_clicked" data-button-type="primary">
+  Get Started
+</button>
+
+<!-- Track form submissions -->
+<form data-track="newsletter_signup" data-form-location="header">
+  <!-- form content -->
+</form>
+```
+
+### Performance Monitoring
+
+Enable performance tracking by updating your script configuration:
+
+```html
+<script
+  src="https://app.databuddy.cc/databuddy.js"
+  data-site-id="YOUR_SITE_ID"
+  data-track-performance="true"
+  data-track-web-vitals="true"
+  async
+></script>
+```
+
+## Benefits for Framer Sites
+
+- **Lightweight**: Only 3KB script size (247x smaller than Google Analytics)
+- **Fast Loading**: Async loading won't slow down your Framer site
+- **SEO Friendly**: Improves Core Web Vitals and page speed scores
+- **Privacy Compliant**: No cookies required, fully GDPR/CCPA compliant
+- **Real-time Data**: See visitor activity as it happens
+
+## Troubleshooting
+
+### Script Not Loading
+
+If Databuddy isn't working:
+
+1. Ensure the script is in the **Start of &lt;head&gt; tag** section
+2. Check that your Site ID is correct
+3. Verify your site is published (not just preview mode)
+4. Check browser console for any error messages
+
+### Data Not Appearing
+
+If analytics data isn't showing:
+
+1. Wait 2-3 minutes for data processing
+2. Check that your domain is verified in Databuddy dashboard
+3. Ensure you're viewing the correct date range
+4. Try visiting your site in an incognito window
+
+Need help? Contact our support team at [help@databuddy.cc](mailto:help@databuddy.cc). 

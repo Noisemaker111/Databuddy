@@ -1,0 +1,396 @@
+---
+title: Next.js
+description: Add privacy-first analytics to your Next.js application
+---
+
+# Next.js Integration
+
+Integrate Databuddy with your Next.js application for server-side rendering support, automatic page tracking, and optimal performance.
+
+## Installation
+
+Install the Databuddy SDK:
+
+```bash
+npm install @databuddy/sdk
+```
+
+or with yarn:
+
+```bash
+yarn add @databuddy/sdk
+```
+
+## App Router Setup (Next.js 13+)
+
+### 1. Add Script Component to Layout
+
+```tsx
+// app/layout.tsx
+import { Databuddy } from '@databuddy/sdk';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <Databuddy 
+          clientId={process.env.NEXT_PUBLIC_DATABUDDY_SITE_ID!}
+          trackScreenViews={true}
+          trackHashChanges={true}
+          trackAttributes={true}
+        />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+### 2. Track Route Changes (Optional)
+
+If you need custom route tracking:
+
+```tsx
+// app/analytics.tsx
+'use client';
+
+import { useEffect } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { track } from '@databuddy/sdk';
+
+export function Analytics() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const url = pathname + searchParams.toString();
+    track('screen_view', {
+      screen_name: pathname,
+      screen_class: 'Next.js',
+      url: url
+    });
+  }, [pathname, searchParams]);
+
+  return null;
+}
+```
+
+Then add to your root layout:
+
+```tsx
+// app/layout.tsx
+import { Databuddy } from '@databuddy/sdk';
+import { Analytics } from './analytics';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <Databuddy 
+          clientId={process.env.NEXT_PUBLIC_DATABUDDY_SITE_ID!}
+          trackScreenViews={true}
+        />
+        {children}
+        <Analytics />
+      </body>
+    </html>
+  );
+}
+```
+
+## Pages Router Setup (Next.js 12 and below)
+
+### 1. Add to _app.tsx
+
+```tsx
+// pages/_app.tsx
+import type { AppProps } from 'next/app';
+import { Databuddy } from '@databuddy/sdk';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
+import { track } from '@databuddy/sdk';
+
+function MyApp({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleRouteChange = (url: string) => {
+      track('screen_view', {
+        screen_name: url,
+        screen_class: 'Next.js'
+      });
+    };
+
+    router.events.on('routeChangeComplete', handleRouteChange);
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [router.events]);
+
+  return (
+    <>
+      <Databuddy 
+        clientId={process.env.NEXT_PUBLIC_DATABUDDY_SITE_ID!}
+        trackScreenViews={true}
+        trackAttributes={true}
+      />
+      <Component {...pageProps} />
+    </>
+  );
+}
+
+export default MyApp;
+```
+
+### Alternative: Manual Script in _document.tsx
+
+If you prefer to add the script manually:
+
+```tsx
+// pages/_document.tsx
+import { Html, Head, Main, NextScript } from 'next/document';
+
+export default function Document() {
+  return (
+    <Html lang="en">
+      <Head>
+        <script
+          src="https://app.databuddy.cc/databuddy.js"
+          data-client-id={process.env.NEXT_PUBLIC_DATABUDDY_SITE_ID}
+          data-track-screen-views="true"
+          async
+        />
+      </Head>
+      <body>
+        <Main />
+        <NextScript />
+      </body>
+    </Html>
+  );
+}
+```
+
+## Environment Variables
+
+Add to your `.env.local`:
+
+```tsx
+NEXT_PUBLIC_DATABUDDY_SITE_ID=your_site_id_here
+```
+
+For production, add to your deployment environment:
+
+```tsx
+NEXT_PUBLIC_DATABUDDY_SITE_ID=your_production_site_id
+```
+
+## Tracking Events
+
+### Client-Side Tracking
+
+```tsx
+// components/Button.tsx
+import { track } from '@databuddy/sdk';
+
+export function Button() {
+  const handleClick = () => {
+    track('button_click', {
+      button_text: 'Subscribe',
+      location: 'header'
+    });
+  };
+
+  return (
+    <button onClick={handleClick}>
+      Subscribe
+    </button>
+  );
+}
+```
+
+### API Routes Integration
+
+Track API usage and performance:
+
+```tsx
+// pages/api/users.ts or app/api/users/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  
+  try {
+    const users = await fetchUsers();
+    const duration = Date.now() - startTime;
+    
+    // Note: Server-side tracking would require separate implementation
+    // This is client-side only SDK
+    
+    return NextResponse.json(users);
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+  }
+}
+```
+
+## E-commerce Integration
+
+### Track Purchases
+
+```tsx
+// app/checkout/success/page.tsx
+'use client';
+
+import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { track } from '@databuddy/sdk';
+
+export default function CheckoutSuccess() {
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    const orderId = searchParams.get('order_id');
+    const amount = searchParams.get('amount');
+    
+    if (orderId && amount) {
+      track('purchase', {
+        transaction_id: orderId,
+        value: parseFloat(amount),
+        currency: 'USD'
+      });
+    }
+  }, [searchParams]);
+
+  return <div>Thank you for your purchase!</div>;
+}
+```
+
+## Configuration Options
+
+### Advanced Configuration
+
+You can configure Databuddy with various options:
+
+```tsx
+// app/layout.tsx
+import { Databuddy } from '@databuddy/sdk';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <Databuddy 
+          clientId={process.env.NEXT_PUBLIC_DATABUDDY_SITE_ID!}
+          // Core tracking
+          trackScreenViews={true}
+          trackHashChanges={true}
+          trackSessions={true}
+          
+          // Interaction tracking
+          trackAttributes={true}
+          trackOutgoingLinks={true}
+          trackInteractions={true}
+          
+          // Performance tracking
+          trackPerformance={true}
+          trackWebVitals={true}
+          
+          // Optimization
+          enableBatching={true}
+          batchSize={10}
+          batchTimeout={2000}
+          
+          // Development
+          disabled={process.env.NODE_ENV !== 'production'}
+        />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+### Conditional Loading
+
+Only load in production:
+
+```tsx
+// app/layout.tsx
+import { Databuddy } from '@databuddy/sdk';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        {process.env.NODE_ENV === 'production' && (
+          <Databuddy 
+            clientId={process.env.NEXT_PUBLIC_DATABUDDY_SITE_ID!}
+            trackScreenViews={true}
+            trackAttributes={true}
+          />
+        )}
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+## Vercel Integration
+
+### Vercel Analytics Replacement
+
+Replace Vercel Analytics with Databuddy for better privacy:
+
+```tsx
+// Before (with Vercel Analytics)
+import { Analytics } from '@vercel/analytics/react';
+
+// After (with Databuddy)
+import { Databuddy } from '@databuddy/sdk';
+```
+
+### Environment Variables on Vercel
+
+1. Go to your Vercel project settings
+2. Add environment variable: `NEXT_PUBLIC_DATABUDDY_SITE_ID`
+3. Set different values for preview and production environments
+
+## Troubleshooting
+
+### Common Issues
+
+**Script Not Loading**: Ensure your environment variable `NEXT_PUBLIC_DATABUDDY_SITE_ID` is set correctly.
+
+**Events Not Tracking**: Check browser console for any JavaScript errors and verify the Databuddy script is loaded.
+
+**Route Tracking**: If using custom route tracking, make sure the Analytics component is properly added to your layout.
+
+### Debug Mode
+
+Enable debug mode in development:
+
+```tsx
+<Databuddy 
+  clientId={process.env.NEXT_PUBLIC_DATABUDDY_SITE_ID!}
+  debug={process.env.NODE_ENV === 'development'}
+/>
+```
+
+Need help with your Next.js integration? Contact us at [help@databuddy.cc](mailto:help@databuddy.cc). 

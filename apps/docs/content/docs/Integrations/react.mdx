@@ -1,0 +1,458 @@
+---
+title: React
+description: Integrate privacy-first analytics in your React application
+---
+
+# React Integration
+
+Add Databuddy's privacy-first analytics to your React application with TypeScript support and modern best practices.
+
+## Installation
+
+Install the Databuddy SDK:
+
+```bash
+npm install @databuddy/sdk
+```
+
+or with yarn:
+
+```bash
+yarn add @databuddy/sdk
+```
+
+## Basic Setup
+
+### 1. Add the Script Component
+
+Add the `<Databuddy />` component to inject the tracking script:
+
+```tsx
+// App.tsx
+import { Databuddy } from '@databuddy/sdk';
+
+function App() {
+  return (
+    <>
+      <Databuddy 
+        clientId="YOUR_SITE_ID"
+        trackScreenViews={true}
+        trackAttributes={true}
+      />
+      <YourAppContent />
+    </>
+  );
+}
+
+export default App;
+```
+
+### 2. Track Page Views
+
+For React Router integration:
+
+```tsx
+// App.tsx
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { track } from '@databuddy/sdk';
+
+function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    track('screen_view', {
+      screen_name: location.pathname,
+      screen_class: 'React'
+    });
+  }, [location]);
+
+  return <YourAppContent />;
+}
+```
+
+## Event Tracking
+
+### Basic Event Tracking
+
+Track events using the `track` function:
+
+```tsx
+import { track } from '@databuddy/sdk';
+
+function MyComponent() {
+  const handleButtonClick = () => {
+    track('button_click', {
+      button_text: 'Get Started',
+      location: 'header'
+    });
+  };
+
+  return (
+    <button onClick={handleButtonClick}>
+      Get Started
+    </button>
+  );
+}
+```
+
+### Custom Hook for Events
+
+Create a custom hook for cleaner tracking:
+
+```tsx
+import { useCallback } from 'react';
+import { track } from '@databuddy/sdk';
+
+function useTracking() {
+  const trackButtonClick = useCallback((buttonText: string, location: string) => {
+    track('button_click', {
+      button_text: buttonText,
+      location
+    });
+  }, []);
+
+  const trackPageView = useCallback((pageName: string) => {
+    track('screen_view', {
+      screen_name: pageName,
+      screen_class: 'React'
+    });
+  }, []);
+
+  return { trackButtonClick, trackPageView };
+}
+
+// Usage in component
+function MyComponent() {
+  const { trackButtonClick } = useTracking();
+
+  return (
+    <button onClick={() => trackButtonClick('Get Started', 'header')}>
+      Get Started
+    </button>
+  );
+}
+```
+
+### Product Tracking Example
+
+```tsx
+import { useEffect } from 'react';
+import { track } from '@databuddy/sdk';
+
+function ProductCard({ product }) {
+  useEffect(() => {
+    track('product_view', {
+      product_id: product.id,
+      product_name: product.name,
+      product_category: product.category,
+      product_price: product.price
+    });
+  }, [product]);
+
+  const handleAddToCart = () => {
+    track('add_to_cart', {
+      product_id: product.id,
+      quantity: 1,
+      value: product.price
+    });
+  };
+
+  return (
+    <div>
+      <h3>{product.name}</h3>
+      <button onClick={handleAddToCart}>Add to Cart</button>
+    </div>
+  );
+}
+```
+
+## Configuration Options
+
+### Advanced Provider Setup
+
+```tsx
+import { DatabuddyProvider } from '@databuddy/react';
+
+function App() {
+  return (
+    <DatabuddyProvider
+      siteId="YOUR_SITE_ID"
+      config={{
+        trackScreenViews: true,
+        trackHashChanges: true,
+        trackAttributes: true,
+        trackOutgoingLinks: true,
+        trackPerformance: true,
+        trackWebVitals: true,
+        enableBatching: true,
+        batchSize: 10,
+        batchTimeout: 2000
+      }}
+      debug={process.env.NODE_ENV === 'development'}
+    >
+      <YourAppContent />
+    </DatabuddyProvider>
+  );
+}
+```
+
+## Component-Level Tracking
+
+### Automatic Click Tracking
+
+Use data attributes for automatic tracking:
+
+```tsx
+function CallToAction() {
+  return (
+    <button
+      data-track="cta_click"
+      data-cta-type="primary"
+      data-location="hero"
+      className="bg-blue-500 text-white px-6 py-3 rounded"
+    >
+      Get Started Free
+    </button>
+  );
+}
+```
+
+### Form Tracking
+
+Track form interactions and submissions:
+
+```tsx
+import { useDatabuddy } from '@databuddy/react';
+
+function ContactForm() {
+  const { track } = useDatabuddy();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    track('form_submit', {
+      form_name: 'contact',
+      form_location: 'footer'
+    });
+  };
+
+  const handleFieldFocus = (fieldName: string) => {
+    track('form_field_focus', {
+      field_name: fieldName,
+      form_name: 'contact'
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="email"
+        onFocus={() => handleFieldFocus('email')}
+        placeholder="Your email"
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+## E-commerce Tracking
+
+### Purchase Events
+
+```tsx
+import { useDatabuddy } from '@databuddy/react';
+
+function CheckoutSuccess({ order }) {
+  const { track } = useDatabuddy();
+
+  useEffect(() => {
+    track('purchase', {
+      transaction_id: order.id,
+      value: order.total,
+      currency: 'USD',
+      items: order.items.map(item => ({
+        item_id: item.id,
+        item_name: item.name,
+        item_category: item.category,
+        quantity: item.quantity,
+        price: item.price
+      }))
+    });
+  }, [order, track]);
+
+  return <div>Thank you for your purchase!</div>;
+}
+```
+
+### Cart Events
+
+```tsx
+function AddToCartButton({ product }) {
+  const { track } = useDatabuddy();
+
+  const handleAddToCart = () => {
+    track('add_to_cart', {
+      currency: 'USD',
+      value: product.price,
+      items: [{
+        item_id: product.id,
+        item_name: product.name,
+        item_category: product.category,
+        quantity: 1,
+        price: product.price
+      }]
+    });
+  };
+
+  return (
+    <button onClick={handleAddToCart}>
+      Add to Cart
+    </button>
+  );
+}
+```
+
+## Error Tracking
+
+### Error Boundaries
+
+```tsx
+import { useDatabuddy } from '@databuddy/react';
+
+function ErrorBoundary({ children }) {
+  const { track } = useDatabuddy();
+
+  const handleError = (error: Error, errorInfo: any) => {
+    track('exception', {
+      description: error.message,
+      fatal: false,
+      error_stack: error.stack,
+      component_stack: errorInfo.componentStack
+    });
+  };
+
+  return (
+    <ErrorBoundary
+      onError={handleError}
+      fallback={<div>Something went wrong</div>}
+    >
+      {children}
+    </ErrorBoundary>
+  );
+}
+```
+
+## Performance Monitoring
+
+### Custom Performance Metrics
+
+```tsx
+import { useDatabuddy } from '@databuddy/react';
+
+function DataDashboard() {
+  const { track } = useDatabuddy();
+
+  useEffect(() => {
+    const startTime = performance.now();
+    
+    // Simulate data loading
+    fetchDashboardData().then(() => {
+      const loadTime = performance.now() - startTime;
+      
+      track('dashboard_load_time', {
+        load_time: Math.round(loadTime),
+        data_size: 'large'
+      });
+    });
+  }, [track]);
+
+  return <div>Dashboard content</div>;
+}
+```
+
+## TypeScript Support
+
+### Type-Safe Event Tracking
+
+```tsx
+import { useDatabuddy } from '@databuddy/react';
+
+interface CustomEvents {
+  button_click: {
+    button_text: string;
+    location: string;
+  };
+  form_submit: {
+    form_name: string;
+    form_location: string;
+  };
+}
+
+function TypedComponent() {
+  const { track } = useDatabuddy<CustomEvents>();
+
+  const handleClick = () => {
+    // TypeScript will ensure correct event properties
+    track('button_click', {
+      button_text: 'Subscribe',
+      location: 'header'
+    });
+  };
+
+  return <button onClick={handleClick}>Subscribe</button>;
+}
+```
+
+## Best Practices
+
+### 1. Environment-Based Configuration
+
+```tsx
+const config = {
+  siteId: process.env.REACT_APP_DATABUDDY_SITE_ID,
+  debug: process.env.NODE_ENV === 'development',
+  disabled: process.env.NODE_ENV === 'test'
+};
+```
+
+### 2. Lazy Loading
+
+```tsx
+import { lazy, Suspense } from 'react';
+
+const DatabuddyProvider = lazy(() => import('@databuddy/react'));
+
+function App() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DatabuddyProvider siteId="YOUR_SITE_ID">
+        <YourAppContent />
+      </DatabuddyProvider>
+    </Suspense>
+  );
+}
+```
+
+### 3. Custom Hook for Analytics
+
+```tsx
+import { useDatabuddy } from '@databuddy/react';
+
+export function useAnalytics() {
+  const { track } = useDatabuddy();
+
+  return {
+    trackButtonClick: (buttonText: string, location: string) =>
+      track('button_click', { button_text: buttonText, location }),
+    
+    trackPageView: (pageName: string, category?: string) =>
+      track('screen_view', { screen_name: pageName, screen_class: category }),
+    
+    trackError: (error: Error, context?: string) =>
+      track('exception', { description: error.message, context })
+  };
+}
+```
+
+Need help with React integration? Contact us at [help@databuddy.cc](mailto:help@databuddy.cc). 

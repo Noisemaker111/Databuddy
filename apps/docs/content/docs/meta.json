@@ -4,17 +4,16 @@
   "icon": "BarChart3",
   "root": true,
   "pages": [
-    "---Getting Started---",
-    "index",
-    "domain-verification",
+    "---Introduction---",
     "getting-started",
-    "---Implementation---", 
+    "domain-verification",
+    "---Implementation---",
     "sdk",
-    "Setup",
-    "---Analytics---",
+    "Integrations",
+    "---Dashboard & Analytics---",
     "dashboard",
     "api",
-    "---Security---",
+    "---Important---",
     "security"
   ]
 } 
