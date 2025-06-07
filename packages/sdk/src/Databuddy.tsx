@@ -16,7 +16,7 @@ export function Databuddy(props: DatabuddyConfig) {
     if (document.querySelector('script[data-databuddy-injected]')) return;
     const script = document.createElement('script');
     script.src = props.scriptUrl || 'https://app.databuddy.cc/databuddy.js';
-    script.defer = true;
+    script.async = true;
     script.crossOrigin = 'anonymous';
     script.setAttribute('data-databuddy-injected', 'true');
     // Always set sdkVersion from package.json unless explicitly overridden

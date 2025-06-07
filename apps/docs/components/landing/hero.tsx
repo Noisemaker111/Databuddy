@@ -12,7 +12,7 @@ const codeSnippets = [
   src="https://app.databuddy.cc/databuddy.js"
   data-site-id="your-site-id"
   data-auto-track="true"
-  defer>
+  async>
 </script>
 
 <!-- That's it! Analytics start automatically -->`,
