@@ -82,7 +82,8 @@ export default function ChatSection({
   scrollAreaRef,
   sendMessage,
   handleKeyPress,
-  onResetChat
+  onResetChat,
+  onSelectChat
 }: ChatSectionProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputFocused, setInputFocused] = useState(false);
