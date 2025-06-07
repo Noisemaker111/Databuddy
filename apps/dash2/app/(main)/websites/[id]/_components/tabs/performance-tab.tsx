@@ -1,278 +1,377 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Zap, Monitor, AlertCircle, HelpCircle, BarChart } from "lucide-react";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { StatCard } from "@/components/analytics/stat-card";
-import { useWebsiteAnalytics } from "@/hooks/use-analytics";
-import { getColorVariant, PERFORMANCE_THRESHOLDS } from "../utils/analytics-helpers";
+import { useEffect, useMemo } from "react";
+import { Monitor, Smartphone, Zap, MapPin, TrendingUp, TrendingDown, AlertTriangle, CheckCircle } from "lucide-react";
+import { DataTable } from "@/components/analytics/data-table";
+import { useEnhancedPerformanceData } from "@/hooks/use-dynamic-query";
 import type { FullTabProps } from "../utils/types";
-import { EmptyState, MetricTooltip } from "../utils/ui-components";
-import { Skeleton } from "@/components/ui/skeleton";
+import { BrowserIcon, OSIcon } from "@/components/icon";
+import { CountryFlag } from "@/components/analytics/icons/CountryFlag";
 
-interface PerformanceData {
+interface PerformanceEntry {
+  name: string;
+  visitors: number;
   avg_load_time: number;
-  avg_load_time_formatted: string;
-  avg_ttfb: number;
-  avg_ttfb_formatted: string;
-  avg_dom_ready_time: number;
-  avg_dom_ready_time_formatted: string;
-  avg_render_time: number;
-  avg_render_time_formatted: string;
-  avg_fcp: number | null;
-  avg_fcp_formatted: string | null;
-  avg_lcp: number | null;
-  avg_lcp_formatted: string | null;
-  avg_cls: number | null;
-  avg_cls_formatted: string | null;
+  avg_ttfb?: number;
+  avg_dom_ready_time?: number;
+  avg_render_time?: number;
+  avg_fcp?: number;
+  avg_lcp?: number;
+  avg_cls?: number;
+  _uniqueKey?: string;
 }
 
-// Skeleton for the performance tab content
-function PerformanceTabSkeleton() {
+interface PerformanceSummary {
+  avgLoadTime: number;
+  fastPages: number;
+  slowPages: number;
+  totalPages: number;
+  performanceScore: number;
+}
+
+function PerformanceMetricCell({ value, type = 'time' }: { value?: number; type?: 'time' | 'cls' }) {
+  if (!value || value === 0) {
+    return <span className="text-muted-foreground">N/A</span>;
+  }
+  
+  let formatted: string;
+  let colorClass: string;
+  let showIcon = false;
+  
+  if (type === 'cls') {
+    // CLS is a score (0-1, lower is better)
+    formatted = value.toFixed(3);
+    colorClass = value < 0.1 ? "text-green-600" : value < 0.25 ? "text-yellow-600" : "text-red-400";
+    showIcon = value < 0.1 || value >= 0.25;
+  } else {
+    // Time-based metrics
+    formatted = value < 1000 ? `${Math.round(value)}ms` : `${(value / 1000).toFixed(2)}s`;
+    colorClass = value < 1000 ? "text-green-600" : value < 3000 ? "text-yellow-600" : "text-red-400";
+    showIcon = value < 1000 || value >= 3000;
+  }
+  
   return (
-    <div className="space-y-4 pt-2">
-      <div className="flex items-center justify-between mb-3">
-        <Skeleton className="h-7 w-40" />
-        <Skeleton className="h-9 w-52" />
+    <div className="flex items-center gap-1">
+      <span className={colorClass}>{formatted}</span>
+      {showIcon && value < (type === 'cls' ? 0.1 : 1000) && <CheckCircle className="h-3 w-3 text-green-600" />}
+      {showIcon && value >= (type === 'cls' ? 0.25 : 3000) && <AlertTriangle className="h-3 w-3 text-red-400" />}
+    </div>
+  );
+}
+
+function PerformanceSummaryCard({ summary }: { summary: PerformanceSummary }) {
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return "text-green-600 bg-green-50 border-green-200";
+    if (score >= 70) return "text-yellow-600 bg-yellow-50 border-yellow-200";
+    return "text-red-600 border-red-600";
+  };
+
+  const getScoreIcon = (score: number) => {
+    if (score >= 90) return <TrendingUp className="h-4 w-4" />;
+    if (score >= 70) return <Zap className="h-4 w-4" />;
+    return <TrendingDown className="h-4 w-4" />;
+  };
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`p-4 rounded-lg border ${getScoreColor(summary.performanceScore)}`}>
+        <div className="flex items-center gap-2 mb-2">
+          {getScoreIcon(summary.performanceScore)}
+          <span className="text-sm font-medium">Performance Score</span>
+        </div>
+        <div className="text-2xl font-bold">{summary.performanceScore}/100</div>
       </div>
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        {/* Using a more unique key prefix to satisfy linter for static list */}
-        {["skel1", "skel2", "skel3", "skel4"].map((keySuffix) => (
-          <Card key={`perf-skeleton-${keySuffix}`} className="overflow-hidden">
-            <div className="p-2">
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-4 rounded-full" />
-              </div>
-              <Skeleton className="h-7 w-20 mt-2" />
-              <Skeleton className="h-3 w-16 mt-2" />
-            </div>
-          </Card>
-        ))}
+      
+      <div className="p-4 rounded-lg border bg-background">
+        <div className="flex items-center gap-2 mb-2">
+          <Zap className="h-4 w-4 text-blue-500" />
+          <span className="text-sm font-medium text-muted-foreground">Avg Load Time</span>
+        </div>
+        <div className="text-2xl font-bold">
+          {summary.avgLoadTime < 1000 
+            ? `${Math.round(summary.avgLoadTime)}ms` 
+            : `${(summary.avgLoadTime / 1000).toFixed(1)}s`
+          }
+        </div>
+      </div>
+      
+      <div className="p-4 rounded-lg border bg-background">
+        <div className="flex items-center gap-2 mb-2">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <span className="text-sm font-medium text-muted-foreground">Fast Pages</span>
+        </div>
+        <div className="text-2xl font-bold text-green-600">
+          {summary.fastPages}
+          <span className="text-sm text-muted-foreground ml-1">
+            ({Math.round((summary.fastPages / summary.totalPages) * 100)}%)
+          </span>
+        </div>
+      </div>
+      
+      <div className="p-4 rounded-lg border bg-background">
+        <div className="flex items-center gap-2 mb-2">
+          <AlertTriangle className="h-4 w-4 text-red-500" />
+          <span className="text-sm font-medium text-muted-foreground">Slow Pages</span>
+        </div>
+        <div className="text-2xl font-bold text-red-600">
+          {summary.slowPages}
+          <span className="text-sm text-muted-foreground ml-1">
+            ({Math.round((summary.slowPages / summary.totalPages) * 100)}%)
+          </span>
+        </div>
       </div>
     </div>
   );
 }
 
+const normalizeData = (data: any[]): PerformanceEntry[] => 
+  data?.map((item) => ({
+    name: item.name || 'Unknown',
+    visitors: item.visitors || 0,
+    avg_load_time: item.avg_load_time || 0,
+    avg_ttfb: item.avg_ttfb,
+    avg_dom_ready_time: item.avg_dom_ready_time,
+    avg_render_time: item.avg_render_time,
+    avg_fcp: item.avg_fcp,
+    avg_lcp: item.avg_lcp,
+    avg_cls: item.avg_cls,
+  })) || [];
+
+const createNameColumn = (
+  header: string, 
+  renderIcon?: (name: string) => React.ReactNode,
+  formatText?: (name: string) => string
+) => ({
+  id: 'name',
+  accessorKey: 'name',
+  header,
+  cell: (info: any) => {
+    const name = info.getValue() as string;
+    const displayText = formatText ? formatText(name) : name;
+    return (
+      <div className="flex items-center gap-2">
+        {renderIcon?.(name)}
+        <div className="font-medium max-w-xs truncate" title={name}>
+          {displayText}
+        </div>
+      </div>
+    );
+  }
+});
+
+const performanceColumns = [
+  {
+    id: 'visitors',
+    accessorKey: 'visitors',
+    header: 'Visitors',
+    cell: (info: any) => (info.getValue() as number)?.toLocaleString(),
+  },
+  {
+    id: 'avg_load_time',
+    accessorKey: 'avg_load_time',
+    header: 'Load Time',
+    cell: (info: any) => <PerformanceMetricCell value={info.getValue()} />,
+  },
+  {
+    id: 'avg_fcp',
+    accessorKey: 'avg_fcp',
+    header: 'FCP',
+    cell: (info: any) => <PerformanceMetricCell value={info.getValue()} />,
+  },
+  {
+    id: 'avg_lcp',
+    accessorKey: 'avg_lcp',
+    header: 'LCP',
+    cell: (info: any) => <PerformanceMetricCell value={info.getValue()} />,
+  },
+  {
+    id: 'avg_cls',
+    accessorKey: 'avg_cls',
+    header: 'CLS',
+    cell: (info: any) => <PerformanceMetricCell value={info.getValue()} type="cls" />,
+  },
+  {
+    id: 'avg_ttfb',
+    accessorKey: 'avg_ttfb',
+    header: 'TTFB',
+    cell: (info: any) => <PerformanceMetricCell value={info.getValue()} />,
+  },
+  {
+    id: 'avg_dom_ready_time',
+    accessorKey: 'avg_dom_ready_time',
+    header: 'DOM Ready',
+    cell: (info: any) => <PerformanceMetricCell value={info.getValue()} />,
+  },
+];
+
 export function WebsitePerformanceTab({
   websiteId,
   dateRange,
-  websiteData,
   isRefreshing,
   setIsRefreshing
 }: FullTabProps) {
-  const [activeTab, setActiveTab] = useState<string>("core");
   
   const {
-    analytics,
-    loading,
-    error,
-    refetch
-  } = useWebsiteAnalytics(websiteId, dateRange);
+    results: performanceResults,
+    isLoading,
+    refetch,
+    error
+  } = useEnhancedPerformanceData(websiteId, dateRange);
 
   useEffect(() => {
-    let isMounted = true;
     if (isRefreshing) {
-      const doRefresh = async () => {
-        try {
-          await refetch();
-        } catch (err) {
-          console.error("Failed to refresh performance data:", err);
-        } finally {
-          if (isMounted) {
-            setIsRefreshing(false);
-          }
-        }
-      };
-      doRefresh();
+      refetch().finally(() => setIsRefreshing(false));
     }
-    return () => {
-      isMounted = false;
-    };
   }, [isRefreshing, refetch, setIsRefreshing]);
 
-  // The `loading` object from `useWebsiteAnalytics` has a `summary` flag and potentially others.
-  // We are primarily concerned with `analytics.performance` which should be available if `loading.summary` is false and `analytics` itself is populated.
-  const isLoadingData = loading.summary || isRefreshing;
+  const processedData = useMemo(() => {
+    if (!performanceResults?.length) {
+      return { pages: [], countries: [], devices: [], browsers: [], operating_systems: [], regions: [] };
+    }
 
-  if (isLoadingData) {
-    return <PerformanceTabSkeleton />;
-  }
+    return {
+      pages: normalizeData(performanceResults.find(r => r.queryId === 'pages')?.data?.slow_pages),
+      countries: normalizeData(performanceResults.find(r => r.queryId === 'countries')?.data?.performance_by_country),
+      devices: normalizeData(performanceResults.find(r => r.queryId === 'devices')?.data?.performance_by_device),
+      browsers: normalizeData(performanceResults.find(r => r.queryId === 'browsers')?.data?.performance_by_browser),
+      operating_systems: normalizeData(performanceResults.find(r => r.queryId === 'operating_systems')?.data?.performance_by_os),
+      regions: normalizeData(performanceResults.find(r => r.queryId === 'regions')?.data?.performance_by_region),
+    };
+  }, [performanceResults]);
 
-  // Adjusted error handling: Check if error exists and if it specifically has a summary message
-  // or if it's a general string error. The hook might return error for specific data points (e.g., error.summary, error.performance)
-  // or a general error string.
-  const hasError = error && (typeof error === 'string' || (typeof error === 'object' && error.summary));
+  // Calculate performance summary
+  const performanceSummary = useMemo((): PerformanceSummary => {
+    const pages = processedData.pages;
+    if (!pages.length) {
+      return { avgLoadTime: 0, fastPages: 0, slowPages: 0, totalPages: 0, performanceScore: 0 };
+    }
 
-  if (hasError) {
-    return (
-      <div className="pt-6">
-        <EmptyState
-          icon={<AlertCircle className="h-10 w-10" />}
-          title="Error loading performance data"
-          description={typeof error === 'string' ? error : (error as any)?.summary || "Unable to load performance metrics. Please try refreshing."}
-          action={null}
-        />
-      </div>
-    );
-  }
-  
-  if (!analytics || !analytics.performance) {
-    return (
-      <div className="pt-6">
-        <EmptyState
-          icon={<BarChart className="h-10 w-10" />}
-          title="No performance data available"
-          description="We haven't collected any performance metrics for this website yet or for the selected period. Data will appear as users visit your site."
-          action={null}
-        />
-      </div>
-    );
-  }
+    const totalLoadTime = pages.reduce((sum, page) => sum + page.avg_load_time, 0);
+    const avgLoadTime = totalLoadTime / pages.length;
+    const fastPages = pages.filter(page => page.avg_load_time < 1000).length;
+    const slowPages = pages.filter(page => page.avg_load_time > 3000).length;
+    
+    // Calculate performance score (0-100)
+    const fastPercentage = fastPages / pages.length;
+    const slowPercentage = slowPages / pages.length;
+    const performanceScore = Math.round((fastPercentage * 100) - (slowPercentage * 50));
 
-  const performance = analytics.performance as PerformanceData;
+    return {
+      avgLoadTime,
+      fastPages,
+      slowPages,
+      totalPages: pages.length,
+      performanceScore: Math.max(0, Math.min(100, performanceScore))
+    };
+  }, [processedData.pages]);
 
-  const hasMeaningfulPerformanceData = 
-    performance.avg_load_time > 0 ||
-    performance.avg_ttfb > 0 ||
-    performance.avg_dom_ready_time > 0 ||
-    performance.avg_render_time > 0 ||
-    (performance.avg_fcp !== null && performance.avg_fcp > 0) ||
-    (performance.avg_lcp !== null && performance.avg_lcp > 0) ||
-    (performance.avg_cls !== null && performance.avg_cls >= 0);
-
-  if (!hasMeaningfulPerformanceData) {
-     return (
-      <div className="pt-6">
-        <EmptyState
-          icon={<BarChart className="h-10 w-10" />}
-          title="Performance data is zero"
-          description="Performance metrics have been collected, but all values are currently zero for the selected period. This might be due to very low traffic or specific configurations."
-          action={null}
-        />
-      </div>
-    );
-  }
+  const tabs = useMemo(() => [
+    {
+      id: 'pages',
+      label: 'Pages',
+      data: processedData.pages.map((item, i) => ({ ...item, _uniqueKey: `page-${i}` })),
+      columns: [
+        createNameColumn('Page', undefined, (name) => {
+          try {
+            return name.startsWith('http') ? new URL(name).pathname : name;
+          } catch {
+            return name.startsWith('/') ? name : `/${name}`;
+          }
+        }),
+        ...performanceColumns
+      ],
+    },
+    {
+      id: 'countries',
+      label: 'Countries',
+      data: processedData.countries.map((item, i) => ({ ...item, _uniqueKey: `country-${i}` })),
+      columns: [
+        createNameColumn('Country', (name) => <CountryFlag country={name} size={16} />),
+        ...performanceColumns
+      ],
+    },
+    {
+      id: 'regions',
+      label: 'Regions',
+      data: processedData.regions.map((item, i) => ({ ...item, _uniqueKey: `region-${i}` })),
+      columns: [
+        createNameColumn('Region', () => <MapPin className="h-4 w-4 text-primary" />),
+        ...performanceColumns
+      ],
+    },
+    {
+      id: 'devices',
+      label: 'Device Types',
+      data: processedData.devices.map((item, i) => ({ ...item, _uniqueKey: `device-${i}` })),
+      columns: [
+        createNameColumn('Device Type', (name) => {
+          const device = name.toLowerCase();
+          return device.includes('mobile') || device.includes('phone') ? 
+            <Smartphone className="h-4 w-4 text-blue-500" /> :
+            device.includes('tablet') ?
+            <Monitor className="h-4 w-4 text-purple-500" /> :
+            <Monitor className="h-4 w-4 text-gray-500" />;
+        }),
+        ...performanceColumns
+      ],
+    },
+    {
+      id: 'browsers',
+      label: 'Browsers',
+      data: processedData.browsers.map((item, i) => ({ ...item, _uniqueKey: `browser-${i}` })),
+      columns: [
+        createNameColumn('Browser', (name) => <BrowserIcon name={name} size="sm" />),
+        ...performanceColumns
+      ],
+    },
+    {
+      id: 'operating_systems',
+      label: 'Operating Systems',
+      data: processedData.operating_systems.map((item, i) => ({ ...item, _uniqueKey: `os-${i}` })),
+      columns: [
+        createNameColumn('Operating System', (name) => <OSIcon name={name} size="sm" />),
+        ...performanceColumns
+      ],
+    },
+  ], [processedData]);
 
   return (
-    <div className="space-y-4 pt-2">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">Performance Metrics</h2>
-          <TabsList className="bg-muted/60">
-            <TabsTrigger value="core">Core Metrics</TabsTrigger>
-            <TabsTrigger value="web-vitals">Web Vitals</TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="core" className="pt-1">
-          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-            <MetricTooltip metricKey="load_time" label="Page Load Time">
-              <StatCard 
-                title="Page Load Time"
-                value={performance.avg_load_time_formatted}
-                icon={Zap}
-                isLoading={isLoadingData}
-                variant={getColorVariant(performance.avg_load_time, PERFORMANCE_THRESHOLDS.load_time.average, PERFORMANCE_THRESHOLDS.load_time.good)}
-                className="shadow-sm h-full"
-                description="Total time to load the page"
-              />
-            </MetricTooltip>
-            
-            <MetricTooltip metricKey="ttfb" label="Time to First Byte">
-              <StatCard 
-                title="Time to First Byte"
-                value={performance.avg_ttfb_formatted}
-                icon={Zap}
-                isLoading={isLoadingData}
-                variant={getColorVariant(performance.avg_ttfb, PERFORMANCE_THRESHOLDS.ttfb.average, PERFORMANCE_THRESHOLDS.ttfb.good)}
-                className="shadow-sm h-full"
-                description="Server response time"
-              />
-            </MetricTooltip>
-            
-            <MetricTooltip metricKey="dom_ready" label="DOM Ready Time">
-              <StatCard 
-                title="DOM Ready"
-                value={performance.avg_dom_ready_time_formatted}
-                icon={Zap}
-                isLoading={isLoadingData}
-                variant={getColorVariant(performance.avg_dom_ready_time, PERFORMANCE_THRESHOLDS.dom_ready.average, PERFORMANCE_THRESHOLDS.dom_ready.good)}
-                className="shadow-sm h-full"
-                description="Time until DOM is ready"
-              />
-            </MetricTooltip>
-            
-            <MetricTooltip metricKey="render_time" label="Render Time">
-              <StatCard 
-                title="Render Time"
-                value={performance.avg_render_time_formatted}
-                icon={Zap}
-                isLoading={isLoadingData}
-                variant={getColorVariant(performance.avg_render_time, PERFORMANCE_THRESHOLDS.render_time.average, PERFORMANCE_THRESHOLDS.render_time.good)}
-                className="shadow-sm h-full"
-                description="Time until content renders"
-              />
-            </MetricTooltip>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="web-vitals" className="pt-1">
-          <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            <MetricTooltip metricKey="fcp" label="First Contentful Paint">
-              <StatCard 
-                title="First Contentful Paint"
-                value={performance.avg_fcp === null ? 'N/A' : performance.avg_fcp_formatted || '0 ms'}
-                icon={Monitor}
-                isLoading={isLoadingData}
-                variant={performance.avg_fcp === null ? 'default' : getColorVariant(performance.avg_fcp, PERFORMANCE_THRESHOLDS.fcp.average, PERFORMANCE_THRESHOLDS.fcp.good)}
-                className="shadow-sm h-full"
-                description="When first content is painted"
-              />
-            </MetricTooltip>
-            
-            <MetricTooltip metricKey="lcp" label="Largest Contentful Paint">
-              <StatCard 
-                title="Largest Contentful Paint"
-                value={performance.avg_lcp === null ? 'N/A' : performance.avg_lcp_formatted || '0 ms'}
-                icon={Monitor}
-                isLoading={isLoadingData}
-                variant={performance.avg_lcp === null ? 'default' : getColorVariant(performance.avg_lcp, PERFORMANCE_THRESHOLDS.lcp.average, PERFORMANCE_THRESHOLDS.lcp.good)}
-                className="shadow-sm h-full"
-                description="When largest content is painted"
-              />
-            </MetricTooltip>
-            
-            <MetricTooltip metricKey="cls" label="Cumulative Layout Shift">
-              <StatCard 
-                title="Cumulative Layout Shift"
-                value={performance.avg_cls === null ? 'N/A' : performance.avg_cls_formatted || '0'}
-                icon={Monitor}
-                isLoading={isLoadingData}
-                variant={performance.avg_cls === null ? 'default' : getColorVariant(performance.avg_cls, PERFORMANCE_THRESHOLDS.cls.average, PERFORMANCE_THRESHOLDS.cls.good)}
-                className="shadow-sm h-full"
-                description="Visual stability"
-              />
-            </MetricTooltip>
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      <Card className="p-4 text-sm text-muted-foreground border-muted bg-muted/10">
-        <div className="flex gap-2 items-start">
-          <HelpCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+    <div className="space-y-4">
+      <div className="p-4 bg-muted/20 rounded border">
+        <div className="flex gap-2 items-start mb-4">
+          <Zap className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
           <div>
-            <p className="font-medium text-foreground mb-1">About Performance Metrics</p>
-            <p>These metrics show the average values across all visitors. Faster loading times improve user experience and SEO ranking. <span className="text-green-600 dark:text-green-400 font-medium">Green</span> indicates good performance, <span className="text-yellow-600 dark:text-yellow-400 font-medium">yellow</span> needs improvement, and <span className="text-red-600 dark:text-red-400 font-medium">red</span> indicates poor performance.</p>
+            <p className="font-medium text-foreground mb-1">Performance Overview</p>
+            <p className="text-xs text-muted-foreground">
+              Core Web Vitals and performance metrics. 
+              <span className="text-green-600 font-medium">Good</span>, 
+              <span className="text-yellow-600 font-medium ml-1">Needs Improvement</span>, 
+              <span className="text-red-600 font-medium ml-1">Poor</span> ratings.
+            </p>
           </div>
         </div>
-      </Card>
+        
+        {!isLoading && processedData.pages.length > 0 && (
+          <PerformanceSummaryCard summary={performanceSummary} />
+        )}
+      </div>
+
+      <DataTable 
+        tabs={tabs}
+        title="Performance Analysis"
+        description="Detailed performance metrics across pages, locations, devices, and browsers"
+        isLoading={isLoading || isRefreshing}
+        initialPageSize={15}
+        minHeight={400}
+      />
+
+      {error && (
+        <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-md">
+          <p className="text-sm text-red-600 dark:text-red-400">
+            Failed to load performance data. Please try refreshing.
+          </p>
+        </div>
+      )}
     </div>
   );
 } 

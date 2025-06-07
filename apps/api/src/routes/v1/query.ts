@@ -63,7 +63,8 @@ const PARAMETER_BUILDERS = {
     SELECT 
       device_type as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      COUNT(*) as pageviews
+      COUNT(*) as pageviews,
+      COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -79,7 +80,8 @@ const PARAMETER_BUILDERS = {
     SELECT 
       browser_name as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      COUNT(*) as pageviews
+      COUNT(*) as pageviews,
+      COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -95,7 +97,8 @@ const PARAMETER_BUILDERS = {
     SELECT 
       os_name as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      COUNT(*) as pageviews
+      COUNT(*) as pageviews,
+      COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -112,7 +115,8 @@ const PARAMETER_BUILDERS = {
     SELECT 
       country as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      COUNT(*) as pageviews
+      COUNT(*) as pageviews,
+      COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -128,7 +132,8 @@ const PARAMETER_BUILDERS = {
     SELECT 
       CONCAT(region, ', ', country) as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      COUNT(*) as pageviews
+      COUNT(*) as pageviews,
+      COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -144,7 +149,8 @@ const PARAMETER_BUILDERS = {
     SELECT 
       timezone as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      COUNT(*) as pageviews
+      COUNT(*) as pageviews,
+      COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -178,8 +184,9 @@ const PARAMETER_BUILDERS = {
   top_pages: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
     SELECT 
       path as name,
+      COUNT(DISTINCT anonymous_id) as visitors,
       COUNT(*) as pageviews,
-      COUNT(DISTINCT anonymous_id) as visitors
+      COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -194,6 +201,7 @@ const PARAMETER_BUILDERS = {
   exit_page: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
     SELECT 
       path as name,
+      COUNT(DISTINCT anonymous_id) as visitors,
       COUNT(*) as exits,
       COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
@@ -212,7 +220,8 @@ const PARAMETER_BUILDERS = {
     SELECT 
       utm_source as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      COUNT(*) as pageviews
+      COUNT(*) as pageviews,
+      COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -228,7 +237,8 @@ const PARAMETER_BUILDERS = {
     SELECT 
       utm_medium as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      COUNT(*) as pageviews
+      COUNT(*) as pageviews,
+      COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -244,7 +254,8 @@ const PARAMETER_BUILDERS = {
     SELECT 
       utm_campaign as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      COUNT(*) as pageviews
+      COUNT(*) as pageviews,
+      COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -261,7 +272,8 @@ const PARAMETER_BUILDERS = {
     SELECT 
       referrer as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      COUNT(*) as pageviews
+      COUNT(*) as pageviews,
+      COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -273,19 +285,140 @@ const PARAMETER_BUILDERS = {
     LIMIT ${limit} OFFSET ${offset}
   `,
 
-  // Performance
   slow_pages: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
     SELECT 
       path as name,
+      COUNT(DISTINCT anonymous_id) as visitors,
       AVG(load_time) as avg_load_time,
-      COUNT(*) as pageviews
+      AVG(ttfb) as avg_ttfb,
+      AVG(dom_ready_time) as avg_dom_ready_time,
+      AVG(render_time) as avg_render_time,
+      AVG(fcp) as avg_fcp,
+      AVG(lcp) as avg_lcp,
+      AVG(cls) as avg_cls
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
       AND time <= '${endDate}'
+      AND event_name = 'screen_view'
       AND load_time > 0
       AND path != ''
     GROUP BY path
+    ORDER BY avg_load_time DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `,
+
+  performance_by_country: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
+    SELECT 
+      country as name,
+      COUNT(DISTINCT anonymous_id) as visitors,
+      AVG(load_time) as avg_load_time,
+      AVG(ttfb) as avg_ttfb,
+      AVG(dom_ready_time) as avg_dom_ready_time,
+      AVG(render_time) as avg_render_time,
+      AVG(fcp) as avg_fcp,
+      AVG(lcp) as avg_lcp,
+      AVG(cls) as avg_cls
+    FROM analytics.events
+    WHERE client_id = '${websiteId}'
+      AND time >= '${startDate}'
+      AND time <= '${endDate}'
+      AND event_name = 'screen_view'
+      AND load_time > 0
+      AND country != ''
+    GROUP BY country
+    ORDER BY avg_load_time DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `,
+
+  performance_by_device: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
+    SELECT 
+      device_type as name,
+      COUNT(DISTINCT anonymous_id) as visitors,
+      AVG(load_time) as avg_load_time,
+      AVG(ttfb) as avg_ttfb,
+      AVG(dom_ready_time) as avg_dom_ready_time,
+      AVG(render_time) as avg_render_time,
+      AVG(fcp) as avg_fcp,
+      AVG(lcp) as avg_lcp,
+      AVG(cls) as avg_cls
+    FROM analytics.events
+    WHERE client_id = '${websiteId}'
+      AND time >= '${startDate}'
+      AND time <= '${endDate}'
+      AND event_name = 'screen_view'
+      AND load_time > 0
+      AND device_type != ''
+    GROUP BY device_type
+    ORDER BY avg_load_time DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `,
+
+  performance_by_browser: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
+    SELECT 
+      browser_name as name,
+      COUNT(DISTINCT anonymous_id) as visitors,
+      AVG(load_time) as avg_load_time,
+      AVG(ttfb) as avg_ttfb,
+      AVG(dom_ready_time) as avg_dom_ready_time,
+      AVG(render_time) as avg_render_time,
+      AVG(fcp) as avg_fcp,
+      AVG(lcp) as avg_lcp,
+      AVG(cls) as avg_cls
+    FROM analytics.events
+    WHERE client_id = '${websiteId}'
+      AND time >= '${startDate}'
+      AND time <= '${endDate}'
+      AND event_name = 'screen_view'
+      AND load_time > 0
+      AND browser_name != ''
+    GROUP BY browser_name
+    ORDER BY avg_load_time DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `,
+
+  performance_by_os: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
+    SELECT 
+      os_name as name,
+      COUNT(DISTINCT anonymous_id) as visitors,
+      AVG(load_time) as avg_load_time,
+      AVG(ttfb) as avg_ttfb,
+      AVG(dom_ready_time) as avg_dom_ready_time,
+      AVG(render_time) as avg_render_time,
+      AVG(fcp) as avg_fcp,
+      AVG(lcp) as avg_lcp,
+      AVG(cls) as avg_cls
+    FROM analytics.events
+    WHERE client_id = '${websiteId}'
+      AND time >= '${startDate}'
+      AND time <= '${endDate}'
+      AND event_name = 'screen_view'
+      AND load_time > 0
+      AND os_name != ''
+    GROUP BY os_name
+    ORDER BY avg_load_time DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `,
+
+  performance_by_region: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
+    SELECT 
+      CONCAT(region, ', ', country) as name,
+      COUNT(DISTINCT anonymous_id) as visitors,
+      AVG(load_time) as avg_load_time,
+      AVG(ttfb) as avg_ttfb,
+      AVG(dom_ready_time) as avg_dom_ready_time,
+      AVG(render_time) as avg_render_time,
+      AVG(fcp) as avg_fcp,
+      AVG(lcp) as avg_lcp,
+      AVG(cls) as avg_cls
+    FROM analytics.events
+    WHERE client_id = '${websiteId}'
+      AND time >= '${startDate}'
+      AND time <= '${endDate}'
+      AND event_name = 'screen_view'
+      AND load_time > 0
+      AND region != ''
+    GROUP BY region, country
     ORDER BY avg_load_time DESC
     LIMIT ${limit} OFFSET ${offset}
   `
@@ -588,7 +721,6 @@ async function processBatchQueries(
   }
 }
 
-// Main dynamic query endpoint - supports both single and batch queries
 queryRouter.post(
   '/',
   zValidator('json', batchQuerySchema),
@@ -601,7 +733,6 @@ queryRouter.post(
         return c.json({ success: false, error: 'Invalid website access' }, 403)
       }
 
-      // Determine if it's a single query or batch
       const queries = Array.isArray(requestData) ? requestData : [requestData]
       
       // Add IDs to queries if not provided
@@ -610,15 +741,12 @@ queryRouter.post(
         id: query.id || `query_${index}`
       }))
       
-      // Process all queries with unified approach
       const results = await processBatchQueries(queriesWithIds, website.id)
 
-      // If it was a single query, return single result format for backward compatibility
       if (!Array.isArray(requestData)) {
         return c.json(results[0])
       }
 
-      // Return batch results
       return c.json({
         success: true,
         batch: true,
@@ -654,9 +782,9 @@ queryRouter.get('/parameters', async (c) => {
       device: ['device_type', 'browser_name', 'os_name'],
       geography: ['country', 'region', 'timezone', 'language'],
       pages: ['top_pages', 'exit_page'],
-      utm: ['utm_source', 'utm_medium', 'utm_campaign'],
+      utm: ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'],
       referrers: ['referrer'],
-      performance: ['slow_pages']
+      performance: ['slow_pages', 'performance_by_country', 'performance_by_device', 'performance_by_browser', 'performance_by_os', 'performance_by_region']
     }
   })
 })

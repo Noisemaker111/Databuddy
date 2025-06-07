@@ -129,9 +129,14 @@ export interface ExitPageData {
 }
 
 export interface PerformanceData {
-  name: string; // This is the path
-  avg_load_time: number;
+  name: string; // This is the path or dimension name
+  visitors: number;
   pageviews: number;
+  sessions: number;
+  avg_load_time: number;
+  avg_ttfb?: number;
+  avg_dom_ready_time?: number;
+  avg_render_time?: number;
 }
 
 // Parameter type mapping for better type safety
@@ -151,6 +156,11 @@ export type ParameterDataMap = {
   utm_campaign: UTMData;
   referrer: ReferrerData;
   slow_pages: PerformanceData;
+  performance_by_country: PerformanceData;
+  performance_by_device: PerformanceData;
+  performance_by_browser: PerformanceData;
+  performance_by_os: PerformanceData;
+  performance_by_region: PerformanceData;
 };
 
 // Helper type to extract data types from parameters
@@ -510,6 +520,50 @@ export function usePerformanceData(
     },
     options
   );
+}
+
+/**
+ * Convenience hook for comprehensive performance analytics using batch queries
+ */
+export function useEnhancedPerformanceData(
+  websiteId: string,
+  dateRange: DateRange,
+  options?: Partial<UseQueryOptions<BatchQueryResponse>>
+) {
+  const queries: DynamicQueryRequest[] = [
+    {
+      id: 'pages',
+      parameters: ['slow_pages'],
+      limit: 100,
+    },
+    {
+      id: 'countries',
+      parameters: ['performance_by_country'],
+      limit: 100,
+    },
+    {
+      id: 'devices',
+      parameters: ['performance_by_device'],
+      limit: 100,
+    },
+    {
+      id: 'browsers',
+      parameters: ['performance_by_browser'],
+      limit: 100,
+    },
+    {
+      id: 'operating_systems',
+      parameters: ['performance_by_os'],
+      limit: 100,
+    },
+    {
+      id: 'regions',
+      parameters: ['performance_by_region'],
+      limit: 100,
+    },
+  ];
+
+  return useBatchDynamicQuery(websiteId, dateRange, queries, options);
 }
 
 /**

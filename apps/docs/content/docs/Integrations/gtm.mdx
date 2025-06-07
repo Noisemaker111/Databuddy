@@ -23,16 +23,18 @@ Integrate Databuddy with Google Tag Manager for centralized tag management while
 2. Choose **Custom HTML** as the tag type
 3. Add the Databuddy script:
 
+> **Important**: GTM sanitizes HTML and removes non-standard attributes like `data-client-id`. Always use `createElement()` and `setAttribute()` as shown below:
+
 ```html
 <script>
   (function() {
-    var script = document.createElement('script');
-    script.src = 'https://app.databuddy.cc/databuddy.js';
-    script.setAttribute('data-client-id', '{{Databuddy Site ID}}');
-    script.setAttribute('data-track-screen-views', 'true');
-    script.setAttribute('data-track-attributes', 'true');
-    script.async = true;
-    document.head.appendChild(script);
+    var el = document.createElement("script");
+    el.src = "https://app.databuddy.cc/databuddy.js";
+    el.async = true;
+    el.setAttribute("data-client-id", "Databuddy Site ID");
+    el.setAttribute("data-track-screen-views", "true");
+    el.setAttribute("data-track-attributes", "true");
+    document.head.appendChild(el);
   })();
 </script>
 ```
@@ -72,14 +74,14 @@ Load different Databuddy configurations based on environment:
     var isProduction = {{Page Hostname}} === 'yourdomain.com';
     var siteId = isProduction ? '{{Databuddy Prod Site ID}}' : '{{Databuddy Dev Site ID}}';
     
-    var script = document.createElement('script');
-    script.src = 'https://app.databuddy.cc/databuddy.js';
-    script.setAttribute('data-client-id', siteId);
-    script.setAttribute('data-track-screen-views', 'true');
-    script.setAttribute('data-track-attributes', 'true');
-    script.setAttribute('data-debug', isProduction ? 'false' : 'true');
-    script.async = true;
-    document.head.appendChild(script);
+    var el = document.createElement("script");
+    el.src = "https://app.databuddy.cc/databuddy.js";
+    el.async = true;
+    el.setAttribute("data-client-id", siteId);
+    el.setAttribute("data-track-screen-views", "true");
+    el.setAttribute("data-track-attributes", "true");
+    el.setAttribute("data-debug", isProduction ? "false" : "true");
+    document.head.appendChild(el);
   })();
 </script>
 ```
@@ -93,12 +95,12 @@ Load Databuddy only for specific conditions:
   (function() {
     // Only load for non-internal traffic
     if ({{Internal Traffic}} === 'false') {
-      var script = document.createElement('script');
-      script.src = 'https://app.databuddy.cc/databuddy.js';
-      script.setAttribute('data-client-id', '{{Databuddy Site ID}}');
-      script.setAttribute('data-track-screen-views', 'true');
-      script.async = true;
-      document.head.appendChild(script);
+      var el = document.createElement("script");
+      el.src = "https://app.databuddy.cc/databuddy.js";
+      el.async = true;
+      el.setAttribute("data-client-id", "{{Databuddy Site ID}}");
+      el.setAttribute("data-track-screen-views", "true");
+      document.head.appendChild(el);
     }
   })();
 </script>
@@ -274,12 +276,12 @@ Respect user privacy choices:
     var hasConsent = {{Cookie Consent Status}} === 'granted';
     
     if (hasConsent) {
-      var script = document.createElement('script');
-      script.src = 'https://app.databuddy.cc/databuddy.js';
-      script.setAttribute('data-client-id', '{{Databuddy Site ID}}');
-      script.setAttribute('data-track-screen-views', 'true');
-      script.async = true;
-      document.head.appendChild(script);
+      var el = document.createElement("script");
+      el.src = "https://app.databuddy.cc/databuddy.js";
+      el.async = true;
+      el.setAttribute("data-client-id", "{{Databuddy Site ID}}");
+      el.setAttribute("data-track-screen-views", "true");
+      document.head.appendChild(el);
     }
   })();
 </script>
@@ -368,16 +370,16 @@ function() {
 <script>
   (function() {
     try {
-      var script = document.createElement('script');
-      script.src = 'https://app.databuddy.cc/databuddy.js';
-      script.setAttribute('data-client-id', '{{Databuddy Site ID}}');
-      script.async = true;
-      script.onerror = function() {
-        console.warn('Databuddy script failed to load');
+      var el = document.createElement("script");
+      el.src = "https://app.databuddy.cc/databuddy.js";
+      el.async = true;
+      el.setAttribute("data-client-id", "{{Databuddy Site ID}}");
+      el.onerror = function() {
+        console.warn("Databuddy script failed to load");
       };
-      document.head.appendChild(script);
+      document.head.appendChild(el);
     } catch (e) {
-      console.error('Error initializing Databuddy:', e);
+      console.error("Error initializing Databuddy:", e);
     }
   })();
 </script>
