@@ -331,13 +331,13 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
     SELECT 
       path as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      AVG(load_time) as avg_load_time,
-      AVG(ttfb) as avg_ttfb,
-      AVG(dom_ready_time) as avg_dom_ready_time,
-      AVG(render_time) as avg_render_time,
-      AVG(fcp) as avg_fcp,
-      AVG(lcp) as avg_lcp,
-      AVG(cls) as avg_cls
+      avgIf(load_time, load_time > 0) as avg_load_time,
+      avgIf(ttfb, ttfb > 0) as avg_ttfb,
+      avgIf(dom_ready_time, dom_ready_time > 0) as avg_dom_ready_time,
+      avgIf(render_time, render_time > 0) as avg_render_time,
+      avgIf(fcp, fcp > 0) as avg_fcp,
+      avgIf(lcp, lcp > 0) as avg_lcp,
+      avgIf(cls, cls >= 0) as avg_cls
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -354,13 +354,13 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
     SELECT 
       country as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      AVG(load_time) as avg_load_time,
-      AVG(ttfb) as avg_ttfb,
-      AVG(dom_ready_time) as avg_dom_ready_time,
-      AVG(render_time) as avg_render_time,
-      AVG(fcp) as avg_fcp,
-      AVG(lcp) as avg_lcp,
-      AVG(cls) as avg_cls
+      avgIf(load_time, load_time > 0) as avg_load_time,
+      avgIf(ttfb, ttfb > 0) as avg_ttfb,
+      avgIf(dom_ready_time, dom_ready_time > 0) as avg_dom_ready_time,
+      avgIf(render_time, render_time > 0) as avg_render_time,
+      avgIf(fcp, fcp > 0) as avg_fcp,
+      avgIf(lcp, lcp > 0) as avg_lcp,
+      avgIf(cls, cls >= 0) as avg_cls
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -377,13 +377,13 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
     SELECT 
       device_type as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      AVG(load_time) as avg_load_time,
-      AVG(ttfb) as avg_ttfb,
-      AVG(dom_ready_time) as avg_dom_ready_time,
-      AVG(render_time) as avg_render_time,
-      AVG(fcp) as avg_fcp,
-      AVG(lcp) as avg_lcp,
-      AVG(cls) as avg_cls
+      avgIf(load_time, load_time > 0) as avg_load_time,
+      avgIf(ttfb, ttfb > 0) as avg_ttfb,
+      avgIf(dom_ready_time, dom_ready_time > 0) as avg_dom_ready_time,
+      avgIf(render_time, render_time > 0) as avg_render_time,
+      avgIf(fcp, fcp > 0) as avg_fcp,
+      avgIf(lcp, lcp > 0) as avg_lcp,
+      avgIf(cls, cls >= 0) as avg_cls
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -400,13 +400,13 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
     SELECT 
       browser_name as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      AVG(load_time) as avg_load_time,
-      AVG(ttfb) as avg_ttfb,
-      AVG(dom_ready_time) as avg_dom_ready_time,
-      AVG(render_time) as avg_render_time,
-      AVG(fcp) as avg_fcp,
-      AVG(lcp) as avg_lcp,
-      AVG(cls) as avg_cls
+      avgIf(load_time, load_time > 0) as avg_load_time,
+      avgIf(ttfb, ttfb > 0) as avg_ttfb,
+      avgIf(dom_ready_time, dom_ready_time > 0) as avg_dom_ready_time,
+      avgIf(render_time, render_time > 0) as avg_render_time,
+      avgIf(fcp, fcp > 0) as avg_fcp,
+      avgIf(lcp, lcp > 0) as avg_lcp,
+      avgIf(cls, cls >= 0) as avg_cls
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -423,13 +423,13 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
     SELECT 
       os_name as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      AVG(load_time) as avg_load_time,
-      AVG(ttfb) as avg_ttfb,
-      AVG(dom_ready_time) as avg_dom_ready_time,
-      AVG(render_time) as avg_render_time,
-      AVG(fcp) as avg_fcp,
-      AVG(lcp) as avg_lcp,
-      AVG(cls) as avg_cls
+      avgIf(load_time, load_time > 0) as avg_load_time,
+      avgIf(ttfb, ttfb > 0) as avg_ttfb,
+      avgIf(dom_ready_time, dom_ready_time > 0) as avg_dom_ready_time,
+      avgIf(render_time, render_time > 0) as avg_render_time,
+      avgIf(fcp, fcp > 0) as avg_fcp,
+      avgIf(lcp, lcp > 0) as avg_lcp,
+      avgIf(cls, cls >= 0) as avg_cls
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
@@ -446,13 +446,13 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
     SELECT 
       CONCAT(region, ', ', country) as name,
       COUNT(DISTINCT anonymous_id) as visitors,
-      AVG(load_time) as avg_load_time,
-      AVG(ttfb) as avg_ttfb,
-      AVG(dom_ready_time) as avg_dom_ready_time,
-      AVG(render_time) as avg_render_time,
-      AVG(fcp) as avg_fcp,
-      AVG(lcp) as avg_lcp,
-      AVG(cls) as avg_cls
+      avgIf(load_time, load_time > 0) as avg_load_time,
+      avgIf(ttfb, ttfb > 0) as avg_ttfb,
+      avgIf(dom_ready_time, dom_ready_time > 0) as avg_dom_ready_time,
+      avgIf(render_time, render_time > 0) as avg_render_time,
+      avgIf(fcp, fcp > 0) as avg_fcp,
+      avgIf(lcp, lcp > 0) as avg_lcp,
+      avgIf(cls, cls >= 0) as avg_cls
     FROM analytics.events
     WHERE client_id = '${websiteId}'
       AND time >= '${startDate}'
