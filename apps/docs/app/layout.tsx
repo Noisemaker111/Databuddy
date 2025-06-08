@@ -13,7 +13,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={inter.className} suppressHydrationWarning>
       <Databuddy
-        clientId="EH70Yyf_C8E1yRDqBkI-k"
+        clientId="OXmNQsViBT-FOS_wZCTHc"
         trackErrors={true}
       />
       <body className="flex flex-col min-h-screen">
