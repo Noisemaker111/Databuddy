@@ -36,6 +36,13 @@ import {
   TechnologyIcon,
   PercentageBadge,
 } from "../utils/technology-helpers";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 // Types
 interface TrendCalculation {
@@ -60,6 +67,73 @@ interface ChartDataPoint {
 const MIN_PREVIOUS_SESSIONS_FOR_TREND = 5;
 const MIN_PREVIOUS_VISITORS_FOR_TREND = 5;
 const MIN_PREVIOUS_PAGEVIEWS_FOR_TREND = 10;
+
+function PropertyBreakdown({ websiteId, dateRange, eventName, propertyKey }: {
+  websiteId: string;
+  dateRange: { start_date: string, end_date: string };
+  eventName: string;
+  propertyKey: string;
+}) {
+  const { data, isLoading, error } = useDynamicQuery(
+    websiteId,
+    dateRange,
+    {
+      id: `prop-breakdown-${eventName}-${propertyKey}`,
+      parameters: ['custom_events'],
+      filters: [
+        { field: 'event_name', operator: 'eq', value: eventName },
+        { field: 'property_key', operator: 'eq', value: propertyKey }
+      ]
+    }
+  );
+
+  if (isLoading) {
+    return (
+      <div className="p-4 text-sm text-center text-muted-foreground">
+        Loading breakdown...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 text-sm text-center text-red-500">
+        Error loading data.
+      </div>
+    );
+  }
+
+  const breakdownData = data?.['custom_event_properties'] as { name: string; total_events: number }[] | undefined;
+
+  if (!breakdownData || breakdownData.length === 0) {
+    return (
+      <div className="p-4 text-sm text-center text-muted-foreground">
+        No breakdown available for this property.
+      </div>
+    );
+  }
+
+  const totalEvents = breakdownData.reduce((sum: number, item: { total_events: number }) => sum + item.total_events, 0);
+
+  return (
+    <div className="space-y-1">
+      {breakdownData.map((item: any) => (
+        <div key={item.name} className="flex justify-between items-center text-sm">
+          <span className="text-muted-foreground truncate" title={item.name}>{item.name}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{item.total_events.toLocaleString()}</span>
+            <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+              <div
+                className="bg-blue-500 h-1.5 rounded-full"
+                style={{ width: `${(item.total_events / totalEvents) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function UnauthorizedAccessError() {
   const router = useRouter();
@@ -104,6 +178,12 @@ export function WebsiteOverviewTab({
 }: FullTabProps) {
 
   const { analytics, loading, error, refetch } = useWebsiteAnalytics(websiteId, dateRange);
+
+  const [breakdownState, setBreakdownState] = useState<{
+    open: boolean;
+    eventName?: string;
+    propertyKey?: string;
+  }>({ open: false });
 
   // Fetch custom events data
   const {

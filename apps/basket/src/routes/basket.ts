@@ -238,11 +238,12 @@ basketRouter.post('/', async (c) => {
     const enriched = c.get('enriched');
     const properties = validationResult.data.payload.properties || {};
     
+    const enrichedProperties = enrichEvent(properties, enriched);
     const mappedEvent = {
       ...validationResult.data,
       payload: {
         ...validationResult.data.payload,
-        ...enrichEvent(properties, enriched)
+        properties: enrichedProperties
       }
     } as TrackingEvent;
     
@@ -286,11 +287,12 @@ basketRouter.post('/batch', async (c) => {
     for (const event of events) {
       const properties = event.payload.properties || {};
       
+      const enrichedProperties = enrichEvent(properties, enriched);
       const mappedEvent = {
         ...event,
         payload: {
           ...event.payload,
-          ...enrichEvent(properties, enriched)
+          properties: enrichedProperties
         }
       } as TrackingEvent;
       

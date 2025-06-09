@@ -89,9 +89,6 @@ export async function processEvent(c: Context) {
       // If cache fails, log and continue (better to risk duplicates than lose events)
       logger.warn('Event deduplication cache failed', { error: cacheError });
     }
-    
-    // Parse user agent
-    const userAgent = parseUserAgent(enriched.user_agent || '');
     // Map event data to ClickHouse columns
     const eventData = {
       id: randomUUID(),
@@ -151,13 +148,7 @@ export async function processEvent(c: Context) {
       error_colno: payload.name === 'error' ? properties.colno || null : null,
       error_stack: payload.name === 'error' ? properties.stack || '' : null,
       error_type: payload.name === 'error' ? properties.errorType || 'Error' : null,
-      properties: JSON.stringify({
-        __enriched: {
-          timestamp_ms: properties.__enriched?.timestamp_ms,
-          userAgent: userAgent,
-          geo: { country: enriched.country, region: enriched.region }
-        }
-      }),
+      properties: JSON.stringify(properties.__raw_properties || {}),
       created_at: now
     };
 
