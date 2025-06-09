@@ -7,6 +7,7 @@ import { useEnhancedPerformanceData } from "@/hooks/use-dynamic-query";
 import type { FullTabProps } from "../utils/types";
 import { BrowserIcon, OSIcon } from "@/components/icon";
 import { CountryFlag } from "@/components/analytics/icons/CountryFlag";
+import { PercentageBadge } from "../utils/technology-helpers";
 
 interface PerformanceEntry {
   name: string;
@@ -172,24 +173,24 @@ const performanceColumns = [
     header: 'Load Time',
     cell: (info: any) => <PerformanceMetricCell value={info.getValue()} />,
   },
-  {
-    id: 'avg_fcp',
-    accessorKey: 'avg_fcp',
-    header: 'FCP',
-    cell: (info: any) => <PerformanceMetricCell value={info.getValue()} />,
-  },
-  {
-    id: 'avg_lcp',
-    accessorKey: 'avg_lcp',
-    header: 'LCP',
-    cell: (info: any) => <PerformanceMetricCell value={info.getValue()} />,
-  },
-  {
-    id: 'avg_cls',
-    accessorKey: 'avg_cls',
-    header: 'CLS',
-    cell: (info: any) => <PerformanceMetricCell value={info.getValue()} type="cls" />,
-  },
+  // {
+  //   id: 'avg_fcp',
+  //   accessorKey: 'avg_fcp',
+  //   header: 'FCP',
+  //   cell: (info: any) => <PerformanceMetricCell value={info.getValue()} />,
+  // },
+  // {
+  //   id: 'avg_lcp',
+  //   accessorKey: 'avg_lcp',
+  //   header: 'LCP',
+  //   cell: (info: any) => <PerformanceMetricCell value={info.getValue()} />,
+  // },
+  // {
+  //   id: 'avg_cls',
+  //   accessorKey: 'avg_cls',
+  //   header: 'CLS',
+  //   cell: (info: any) => <PerformanceMetricCell value={info.getValue()} type="cls" />,
+  // },
   {
     id: 'avg_ttfb',
     accessorKey: 'avg_ttfb',
@@ -226,7 +227,7 @@ export function WebsitePerformanceTab({
 
   const processedData = useMemo(() => {
     if (!performanceResults?.length) {
-      return { pages: [], countries: [], devices: [], browsers: [], operating_systems: [], regions: [] };
+      return { pages: [], countries: [], devices: [], browsers: [], browsersWithVersions: [], operating_systems: [], regions: [] };
     }
 
     return {
@@ -234,6 +235,7 @@ export function WebsitePerformanceTab({
       countries: normalizeData(performanceResults.find(r => r.queryId === 'countries')?.data?.performance_by_country),
       devices: normalizeData(performanceResults.find(r => r.queryId === 'devices')?.data?.performance_by_device),
       browsers: normalizeData(performanceResults.find(r => r.queryId === 'browsers')?.data?.performance_by_browser),
+      browsersWithVersions: performanceResults.find(r => r.queryId === 'browsers_with_versions')?.data?.browsers_grouped || [],
       operating_systems: normalizeData(performanceResults.find(r => r.queryId === 'operating_systems')?.data?.performance_by_os),
       regions: normalizeData(performanceResults.find(r => r.queryId === 'regions')?.data?.performance_by_region),
     };
