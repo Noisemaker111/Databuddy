@@ -165,6 +165,18 @@
       delegate_to: "{{ (groups['swarm-managers'] | intersect(groups[hosts_group]))[0] }}"
       run_once: true
     
+    - name: Remove Monitoring Root Label From Nodes                             
+      ansible.builtin.shell: "docker node update --label-rm monitoring-root {{ hostvars[item]['ansible_facts']['nodename'] }} || true "
+      loop: "{{ (groups[hosts_group]) |  difference(groups['monitoring-root']) }}"
+      delegate_to: "{{ (groups['swarm-managers'] | intersect(groups[hosts_group]))[0] }}"
+      run_once: true
+
+    - name: Add Monitoring Root Label to Nodes                             
+      ansible.builtin.shell: "docker node update --label-add monitoring-root=true {{ hostvars[item]['ansible_facts']['nodename'] }}"
+      loop: "{{ groups['monitoring-root'] | intersect(groups[hosts_group]) }}"
+      delegate_to: "{{ (groups['swarm-managers'] | intersect(groups[hosts_group]))[0] }}"
+      run_once: true
+    
     
 
 
