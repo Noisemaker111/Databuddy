@@ -64,13 +64,23 @@ async function fetchIpGeo(ip: string): Promise<GeoLocation> {
   }
 }
 
-// Cache geo location data for 24 hours
-export const getGeoLocation = cacheable(fetchIpGeo, {
-  expireInSec: 60 * 60 * 24,
-  prefix: 'geo',
-  staleWhileRevalidate: true,
-  staleTime: 60 * 60 * 12, // Start revalidating after 12 hours
-});
+// Cache geo location data for 24 hours with Redis fallback
+export const getGeoLocation = async (ip: string): Promise<GeoLocation> => {
+  try {
+    // Try with caching first
+    const cachedFn = cacheable(fetchIpGeo, {
+      expireInSec: 60 * 60 * 24,
+      prefix: 'geo',
+      staleWhileRevalidate: true,
+      staleTime: 60 * 60 * 12,
+    });
+    return await cachedFn(ip);
+  } catch (error) {
+    // If caching fails, fall back to direct function call
+    logger.warn(new Error(`Redis caching failed for geo lookup, falling back to direct call: ${error instanceof Error ? error.message : String(error)}`));
+    return await fetchIpGeo(ip);
+  }
+};
 
 // Helper to get client IP from request
 export function getClientIp(req: Request): string | undefined {
