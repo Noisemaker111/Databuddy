@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { 
-  Globe, 
-  Users, 
-  MousePointer, 
+import {
+  Globe,
+  Users,
+  MousePointer,
   AlertTriangle,
   BarChart,
   Timer,
   LayoutDashboard,
+  Zap,
 } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { useRouter } from "next/navigation";
@@ -17,8 +18,9 @@ import { StatCard } from "@/components/analytics/stat-card";
 import { MetricsChart } from "@/components/charts/metrics-chart";
 import { DataTable } from "@/components/analytics/data-table";
 import { useWebsiteAnalytics } from "@/hooks/use-analytics";
-import { 
-  formatDateByGranularity, 
+import { useDynamicQuery } from "@/hooks/use-dynamic-query";
+import {
+  formatDateByGranularity,
   getColorVariant,
   calculatePercentChange,
 } from "../utils/analytics-helpers";
@@ -27,9 +29,9 @@ import type { FullTabProps, MetricPoint } from "../utils/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { ReferrerSourceCell, type ReferrerSourceCellData } from "@/components/atomic/ReferrerSourceCell";
-import { 
-  processDeviceData, 
-  processBrowserData, 
+import {
+  processDeviceData,
+  processBrowserData,
   inferOperatingSystems,
   TechnologyIcon,
   PercentageBadge,
@@ -61,7 +63,7 @@ const MIN_PREVIOUS_PAGEVIEWS_FOR_TREND = 10;
 
 function UnauthorizedAccessError() {
   const router = useRouter();
-  
+
   return (
     <Card className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800/50 w-full max-w-lg mx-auto my-8">
       <CardHeader className="pb-3">
@@ -81,7 +83,7 @@ function UnauthorizedAccessError() {
         <p className="text-sm text-muted-foreground mb-5">
           Contact the website owner if you think this is an error.
         </p>
-        <Button 
+        <Button
           onClick={() => router.push("/websites")}
           className="w-full sm:w-auto"
           variant="destructive"
@@ -100,26 +102,45 @@ export function WebsiteOverviewTab({
   isRefreshing,
   setIsRefreshing,
 }: FullTabProps) {
-  
+
   const { analytics, loading, error, refetch } = useWebsiteAnalytics(websiteId, dateRange);
+
+  // Fetch custom events data
+  const {
+    data: customEventsData,
+    isLoading: customEventsLoading,
+    error: customEventsError,
+    refetch: refetchCustomEvents
+  } = useDynamicQuery(
+    websiteId,
+    dateRange,
+    {
+      id: 'overview-custom-events',
+      parameters: ['custom_events'],
+      limit: 10
+    }
+  );
 
   const [visibleMetrics, setVisibleMetrics] = useState<Record<string, boolean>>({
     pageviews: true,
     visitors: true,
     sessions: false,
   });
-  
+
   const toggleMetric = useCallback((metric: string) => {
     setVisibleMetrics(prev => ({ ...prev, [metric]: !prev[metric] }));
   }, []);
 
   useEffect(() => {
     let isMounted = true;
-    
+
     if (isRefreshing) {
       const doRefresh = async () => {
         try {
-          await refetch();
+          await Promise.all([
+            refetch(),
+            refetchCustomEvents()
+          ]);
         } catch (error) {
           console.error("Failed to refresh data:", error);
         } finally {
@@ -128,10 +149,10 @@ export function WebsiteOverviewTab({
           }
         }
       };
-      
+
       doRefresh();
     }
-    
+
     return () => {
       isMounted = false;
     };
@@ -150,33 +171,33 @@ export function WebsiteOverviewTab({
 
   const chartData = useMemo(() => {
     if (!analytics.events_by_date?.length) return [];
-    
+
     return analytics.events_by_date.map((event: MetricPoint): ChartDataPoint => {
-      const filtered: ChartDataPoint = { 
-        date: formatDateByGranularity(event.date, dateRange.granularity) 
+      const filtered: ChartDataPoint = {
+        date: formatDateByGranularity(event.date, dateRange.granularity)
       };
-      
+
       if (visibleMetrics.pageviews) {
         filtered.pageviews = event.pageviews;
       }
-      
+
       if (visibleMetrics.visitors) {
         filtered.visitors = event.visitors || event.unique_visitors || 0;
       }
-      
+
       if (visibleMetrics.sessions) {
         filtered.sessions = event.sessions;
       }
-      
+
       return filtered;
     });
   }, [analytics.events_by_date, visibleMetrics, dateRange.granularity]);
 
   const processedTopPages = useMemo(() => {
     if (!analytics.top_pages?.length) return [];
-    
-          const totalPageviews = analytics.top_pages.reduce((sum: number, page: any) => sum + (page.pageviews || 0), 0);
-    
+
+    const totalPageviews = analytics.top_pages.reduce((sum: number, page: any) => sum + (page.pageviews || 0), 0);
+
     return analytics.top_pages.map(page => ({
       ...page,
       percentage: totalPageviews > 0 ? Math.round((page.pageviews / totalPageviews) * 100) : 0
@@ -185,7 +206,7 @@ export function WebsiteOverviewTab({
 
   const processedEntryPages = useMemo(() => {
     if (!analytics.entry_pages?.length) return [];
-    
+
     return analytics.entry_pages.map(page => ({
       ...page,
       pageviews: page.entries,
@@ -195,7 +216,7 @@ export function WebsiteOverviewTab({
 
   const processedExitPages = useMemo(() => {
     if (!analytics.exit_pages?.length) return [];
-    
+
     return analytics.exit_pages.map(page => ({
       ...page,
       pageviews: page.exits,
@@ -246,7 +267,7 @@ export function WebsiteOverviewTab({
     },
     exit_pages: {
       data: processedExitPages,
-      label: 'Exit Pages', 
+      label: 'Exit Pages',
       primaryField: 'path',
       primaryHeader: 'Page'
     }
@@ -264,7 +285,7 @@ export function WebsiteOverviewTab({
 
   const calculateTrends = useMemo<TrendCalculation>(() => {
     if (!analytics.events_by_date?.length || analytics.events_by_date.length < 2) {
-      return {}; 
+      return {};
     }
 
     const events = [...analytics.events_by_date].sort((a, b) =>
@@ -304,7 +325,7 @@ export function WebsiteOverviewTab({
     const previousSessionDurationAvg = averageRateMetric(previousPeriodData, 'avg_session_duration');
 
     const calculateTrendPercentage = (current: number, previous: number, minimumBase = 0) => {
-      if (previous < minimumBase && !(previous === 0 && current === 0) ) {
+      if (previous < minimumBase && !(previous === 0 && current === 0)) {
         return undefined;
       }
       if (previous === 0) {
@@ -320,32 +341,53 @@ export function WebsiteOverviewTab({
       visitors: calculateTrendPercentage(currentSumVisitors, previousSumVisitors, MIN_PREVIOUS_VISITORS_FOR_TREND),
       sessions: calculateTrendPercentage(currentSumSessions, previousSumSessions, MIN_PREVIOUS_SESSIONS_FOR_TREND),
       pageviews: calculateTrendPercentage(currentSumPageviews, previousSumPageviews, MIN_PREVIOUS_PAGEVIEWS_FOR_TREND),
-      pages_per_session: canShowSessionBasedTrend 
-        ? calculateTrendPercentage(currentPagesPerSession, previousPagesPerSession) 
+      pages_per_session: canShowSessionBasedTrend
+        ? calculateTrendPercentage(currentPagesPerSession, previousPagesPerSession)
         : undefined,
-      bounce_rate: canShowSessionBasedTrend 
-        ? calculateTrendPercentage(currentBounceRateAvg, previousBounceRateAvg) 
+      bounce_rate: canShowSessionBasedTrend
+        ? calculateTrendPercentage(currentBounceRateAvg, previousBounceRateAvg)
         : undefined,
-      session_duration: canShowSessionBasedTrend 
-        ? calculateTrendPercentage(currentSessionDurationAvg, previousSessionDurationAvg) 
+      session_duration: canShowSessionBasedTrend
+        ? calculateTrendPercentage(currentSessionDurationAvg, previousSessionDurationAvg)
         : undefined,
     };
   }, [analytics.events_by_date]);
 
-  const processedDeviceData = useMemo(() => 
-    processDeviceData(analytics.device_types || []), 
+  const processedDeviceData = useMemo(() =>
+    processDeviceData(analytics.device_types || []),
     [analytics.device_types]
   );
 
-  const processedBrowserData = useMemo(() => 
-    processBrowserData(analytics.browser_versions || []), 
+  const processedBrowserData = useMemo(() =>
+    processBrowserData(analytics.browser_versions || []),
     [analytics.browser_versions]
   );
 
-  const processedOSData = useMemo(() => 
-    inferOperatingSystems(analytics.device_types || [], analytics.browser_versions || []), 
+  const processedOSData = useMemo(() =>
+    inferOperatingSystems(analytics.device_types || [], analytics.browser_versions || []),
     [analytics.device_types, analytics.browser_versions]
   );
+
+  const processedCustomEventsData = useMemo(() => {
+    console.log("Raw custom events data:", customEventsData);
+    // useDynamicQuery returns data in the format: {custom_events: [...]}
+    if (!customEventsData?.custom_events?.length) {
+      return [];
+    }
+
+    const customEvents = customEventsData.custom_events;
+    console.log("Processing custom events:", customEvents);
+    const totalEvents = customEvents.reduce((sum: number, event: any) => sum + (event.total_events || 0), 0);
+
+    return customEvents.map((event: any) => ({
+      ...event,
+      percentage: totalEvents > 0 ? Math.round((event.total_events / totalEvents) * 100) : 0,
+      last_occurrence_formatted: event.last_occurrence ?
+        new Date(event.last_occurrence).toLocaleDateString() : 'N/A',
+      first_occurrence_formatted: event.first_occurrence ?
+        new Date(event.first_occurrence).toLocaleDateString() : 'N/A'
+    }));
+  }, [customEventsData]);
 
   const deviceColumns = useMemo(() => [
     {
@@ -440,11 +482,71 @@ export function WebsiteOverviewTab({
     },
   ], []);
 
+  const customEventsColumns = useMemo(() => [
+    {
+      id: 'name',
+      accessorKey: 'name',
+      header: 'Event Name',
+      cell: (info: any) => {
+        const eventName = info.getValue() as string;
+        return (
+          <div className="flex items-center gap-2">
+            <Zap className="w-3 h-3 text-blue-500 flex-shrink-0" />
+            <span className="font-medium truncate">{eventName}</span>
+          </div>
+        );
+      }
+    },
+    {
+      id: 'total_events',
+      accessorKey: 'total_events',
+      header: 'Events',
+      cell: (info: any) => {
+        const count = info.getValue() as number;
+        return <span className="font-medium">{count.toLocaleString()}</span>;
+      }
+    },
+    {
+      id: 'unique_users',
+      accessorKey: 'unique_users',
+      header: 'Users',
+    },
+    {
+      id: 'percentage',
+      accessorKey: 'percentage',
+      header: 'Share',
+      cell: (info: any) => {
+        const percentage = info.getValue() as number;
+        return <PercentageBadge percentage={percentage} />;
+      },
+    },
+    {
+      id: 'properties',
+      header: 'Properties',
+      cell: (info: any) => {
+        const keys = info.row.original.property_keys as string[];
+        if (!keys || keys.length === 0) {
+          return <span className="text-muted-foreground">-</span>;
+        }
+        return (
+          <div className="flex flex-wrap items-center gap-1">
+            {keys.slice(0, 3).map(key => (
+              <span key={key} className="text-xs bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded-full truncate" title={key}>{key}</span>
+            ))}
+            {keys.length > 3 && (
+              <span className="text-xs bg-gray-300 dark:bg-gray-600 px-1.5 py-0.5 rounded-full">+{keys.length - 3} more</span>
+            )}
+          </div>
+        );
+      }
+    },
+  ], []);
+
   return (
     <div className="space-y-6">
       {/* Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard 
+        <StatCard
           title="UNIQUE VISITORS"
           value={analytics.summary?.unique_visitors || 0}
           icon={Users}
@@ -455,7 +557,7 @@ export function WebsiteOverviewTab({
           trendLabel={calculateTrends.visitors !== undefined ? "vs previous period" : undefined}
           className="h-full"
         />
-        <StatCard 
+        <StatCard
           title="SESSIONS"
           value={analytics.summary?.sessions || 0}
           icon={BarChart}
@@ -466,7 +568,7 @@ export function WebsiteOverviewTab({
           trendLabel={calculateTrends.sessions !== undefined ? "vs previous period" : undefined}
           className="h-full"
         />
-        <StatCard 
+        <StatCard
           title="PAGEVIEWS"
           value={analytics.summary?.pageviews || 0}
           icon={Globe}
@@ -477,11 +579,11 @@ export function WebsiteOverviewTab({
           trendLabel={calculateTrends.pageviews !== undefined ? "vs previous period" : undefined}
           className="h-full"
         />
-        <StatCard 
+        <StatCard
           title="PAGES/SESSION"
-          value={analytics.summary ? 
-            (analytics.summary.sessions > 0 ? 
-              (analytics.summary.pageviews / analytics.summary.sessions).toFixed(1) : 
+          value={analytics.summary ?
+            (analytics.summary.sessions > 0 ?
+              (analytics.summary.pageviews / analytics.summary.sessions).toFixed(1) :
               '0'
             ) : '0'
           }
@@ -492,7 +594,7 @@ export function WebsiteOverviewTab({
           trendLabel={calculateTrends.pages_per_session !== undefined ? "vs previous period" : undefined}
           className="h-full"
         />
-        <StatCard 
+        <StatCard
           title="BOUNCE RATE"
           value={analytics.summary?.bounce_rate_pct || '0%'}
           icon={MousePointer}
@@ -503,7 +605,7 @@ export function WebsiteOverviewTab({
           invertTrend={true}
           className="h-full"
         />
-        <StatCard 
+        <StatCard
           title="SESSION DURATION"
           value={analytics.summary?.avg_session_duration_formatted || '0s'}
           icon={Timer}
@@ -530,17 +632,17 @@ export function WebsiteOverviewTab({
               </div>
             )}
           </div>
-          
-          <MetricToggles 
-            metrics={visibleMetrics} 
-            onToggle={toggleMetric} 
+
+          <MetricToggles
+            metrics={visibleMetrics}
+            onToggle={toggleMetric}
             colors={metricColors}
           />
         </div>
         <div>
-          <MetricsChart 
+          <MetricsChart
             data={chartData}
-            isLoading={isLoading} 
+            isLoading={isLoading}
             height={350}
           />
         </div>
@@ -548,7 +650,7 @@ export function WebsiteOverviewTab({
 
       {/* Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DataTable 
+        <DataTable
           tabs={referrerTabs}
           title="Traffic Sources"
           description="Referrers and campaign data"
@@ -556,8 +658,8 @@ export function WebsiteOverviewTab({
           initialPageSize={7}
           minHeight={230}
         />
-        
-        <DataTable 
+
+        <DataTable
           tabs={pagesTabs}
           title="Pages"
           description="Top pages and entry/exit points"
@@ -567,9 +669,21 @@ export function WebsiteOverviewTab({
         />
       </div>
 
+      {/* Custom Events Table */}
+      <DataTable
+        data={processedCustomEventsData}
+        columns={customEventsColumns}
+        title="Custom Events"
+        description="User-defined events and interactions"
+        isLoading={customEventsLoading}
+        initialPageSize={8}
+        minHeight={200}
+        emptyMessage="No custom events tracked yet"
+      />
+
       {/* Technology */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <DataTable 
+        <DataTable
           data={processedDeviceData}
           columns={deviceColumns}
           title="Devices"
@@ -579,8 +693,8 @@ export function WebsiteOverviewTab({
           minHeight={200}
           showSearch={false}
         />
-        
-        <DataTable 
+
+        <DataTable
           data={processedBrowserData}
           columns={browserColumns}
           title="Browsers"
@@ -590,8 +704,8 @@ export function WebsiteOverviewTab({
           minHeight={200}
           showSearch={false}
         />
-        
-        <DataTable 
+
+        <DataTable
           data={processedOSData}
           columns={osColumns}
           title="Operating Systems"

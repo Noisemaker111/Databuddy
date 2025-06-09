@@ -42,7 +42,25 @@ const basketRouter = new Hono<{ Variables: AppVariables & { enriched?: any } }>(
 basketRouter.use(websiteAuthHook());
 
 const enrichEvent = (properties: Record<string, any>, enriched: any) => {
-  const validatedProperties = validateProperties(properties);
+  const customProperties: Record<string, any> = {};
+  const standardProperties: Record<string, any> = {};
+
+  for (const key in properties) {
+    if (Object.prototype.hasOwnProperty.call(properties, key)) {
+      if (key.startsWith('__')) {
+        standardProperties[key] = properties[key];
+      } else {
+        const standardKeys = ['screen_resolution', 'viewport_size', 'language', 'timezone', 'timezone_offset', 'connection_type', 'connection_speed', 'rtt', 'load_time', 'dom_ready_time', 'ttfb', 'redirect_time', 'domain_lookup_time', 'connection_time', 'request_time', 'render_time', 'fcp', 'lcp', 'cls', 'page_size', 'time_on_page', 'page_count', 'scroll_depth', 'interaction_count', 'exit_intent', 'sessionId', 'sessionStartTime', 'is_bounce'];
+        if (standardKeys.includes(key)) {
+          standardProperties[key] = properties[key];
+        } else {
+          customProperties[key] = properties[key];
+        }
+      }
+    }
+  }
+
+  const validatedProperties = validateProperties(standardProperties);
   
   let currentDomain = '';
   try {
@@ -107,8 +125,8 @@ const enrichEvent = (properties: Record<string, any>, enriched: any) => {
     referrer_name: sanitizeString(referrerName, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
     sdk_name: sanitizeString(validatedProperties.__sdk_name || (validatedProperties.__enriched as any)?.sdk_name, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
     sdk_version: sanitizeString(validatedProperties.__sdk_version || (validatedProperties.__enriched as any)?.sdk_version, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
-    __raw_properties: validatedProperties,
-    __enriched: enriched
+    __raw_properties: customProperties,
+    __enriched: null
   };
 };
 

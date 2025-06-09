@@ -402,6 +402,15 @@
                     return { sampled: false };
                 }
             }
+
+            let finalProperties;
+            if (properties === undefined || properties === null) {
+                finalProperties = {};
+            } else if (typeof properties === 'object') {
+                finalProperties = properties;
+            } else {
+                finalProperties = { value: properties };
+            }
             
             const sessionData = {
                 sessionId: this.sessionId,
@@ -412,7 +421,7 @@
                 if (!this.isServer() && this.options.trackPerformance) {
                     const performanceData = this.collectNavigationTiming();
                     
-                    Object.assign(properties ?? {}, performanceData);
+                    Object.assign(finalProperties, performanceData);
                     
                     if (this.options.trackWebVitals) {
                         this.initWebVitalsObservers(eventName);
@@ -428,7 +437,7 @@
                     properties: {
                         ...this.global ?? {},
                         ...sessionData,
-                        ...properties ?? {}
+                        ...finalProperties
                     }
                 }
             };
@@ -842,6 +851,15 @@
 
         trackCustomEvent(eventName, properties = {}) {
             if (this.isServer()) return;
+
+            let finalProperties;
+            if (properties === undefined || properties === null) {
+                finalProperties = {};
+            } else if (typeof properties === 'object') {
+                finalProperties = properties;
+            } else {
+                finalProperties = { value: properties };
+            }
             
             const pageContext = {
                 __path: window.location.href,
@@ -863,7 +881,7 @@
 
             this.track(eventName, {
                 __timestamp_ms: Date.now(),
-                ...properties,
+                ...finalProperties,
                 ...pageContext,
                 ...viewportInfo,
                 ...timezoneInfo,
