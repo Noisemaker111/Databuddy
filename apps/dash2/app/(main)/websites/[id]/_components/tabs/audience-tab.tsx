@@ -236,8 +236,8 @@ export function WebsiteAudienceTab({
       }
       
       acc[browserName].visitors += browser.visitors || 0;
-      acc[browserName].pageviews += browser.pageviews || 0;
-      acc[browserName].sessions += browser.sessions || 0;
+      acc[browserName].pageviews = (acc[browserName].pageviews || 0) + (browser.pageviews || 0);
+      acc[browserName].sessions = (acc[browserName].sessions || 0) + (browser.sessions || 0);
       acc[browserName].versions.push({
         version: browser.browser_version,
         visitors: browser.visitors || 0,
