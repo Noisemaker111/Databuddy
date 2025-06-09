@@ -46,14 +46,6 @@ export function isValidOrigin(originHeader: string, dbDomain: string): boolean {
     let normalizedOriginHostname = originUrl.hostname; // .hostname already strips port
     normalizedOriginHostname = normalizedOriginHostname.replace(/^www\./, '');
 
-    // Use a generic logger here or pass execCtx if refactoring isValidOrigin to be called by other Hono handlers
-    logger.debug('[isValidOrigin Check]', {
-      requestOrigin: originHeader,
-      normalizedRequestHostname: normalizedOriginHostname,
-      databaseDomain: dbDomain,
-      normalizedDatabaseDomain: normalizedDbDomain
-    });
-
     if (normalizedOriginHostname === normalizedDbDomain) return true;
     // Subdomain check should be against a pure hostname
     if (normalizedOriginHostname.endsWith(`.${normalizedDbDomain}`)) return true;
