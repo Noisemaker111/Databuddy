@@ -54,7 +54,7 @@ const getConnectionIcon = (connection: string) => {
 const addPercentages = (data: any[], totalField: 'visitors' | 'pageviews' = 'visitors'): GeographicEntry[] => {
   if (!data?.length) return [];
   
-  const total = data.reduce((sum, item) => sum + (item[totalField] || 0), 0);
+  const total = data.reduce((sum: number, item: any) => sum + (item[totalField] || 0), 0);
   
   return data.map(item => ({
     name: item.name || 'Unknown',
@@ -230,7 +230,7 @@ export function WebsiteAudienceTab({
     const connectionData = processedData.device.connection_type;
     if (!connectionData?.length) return [];
     
-    const totalVisitors = connectionData.reduce((sum, item) => sum + item.visitors, 0);
+    const totalVisitors = connectionData.reduce((sum: number, item: any) => sum + item.visitors, 0);
     
     return connectionData.map(item => ({
       name: item.name || 'Unknown',
