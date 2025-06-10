@@ -10,6 +10,8 @@ export const subscriptionStatus = pgEnum("SubscriptionStatus", ['ACTIVE', 'TRIAL
 export const userStatus = pgEnum("UserStatus", ['ACTIVE', 'SUSPENDED', 'INACTIVE'])
 export const verificationStatus = pgEnum("VerificationStatus", ['PENDING', 'VERIFIED', 'FAILED'])
 export const websiteStatus = pgEnum("WebsiteStatus", ['ACTIVE', 'HEALTHY', 'UNHEALTHY', 'INACTIVE', 'PENDING'])
+export const funnelStepType = pgEnum("FunnelStepType", ['PAGE_VIEW', 'EVENT', 'CUSTOM'])
+export const funnelGoalType = pgEnum("FunnelGoalType", ['COMPLETION', 'STEP_CONVERSION', 'TIME_TO_CONVERT'])
 
 
 export const email = pgTable("Email", {
@@ -366,4 +368,48 @@ export const postToTag = pgTable("_PostToTag", {
 			name: "_PostToTag_B_fkey"
 		}).onUpdate("cascade").onDelete("cascade"),
 	primaryKey({ columns: [table.a, table.b], name: "_PostToTag_AB_pkey"}),
+]);
+
+export const funnelDefinitions = pgTable("funnel_definitions", {
+	id: text().primaryKey().notNull(),
+	websiteId: text().notNull(),
+	name: text().notNull(),
+	description: text(),
+	steps: jsonb().notNull(), // Array of step definitions with type, target, conditions
+	isActive: boolean().default(true).notNull(),
+	createdBy: text().notNull(),
+	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	deletedAt: timestamp({ precision: 3, mode: 'string' }),
+}, (table) => [
+	index("funnel_definitions_websiteId_idx").using("btree", table.websiteId.asc().nullsLast().op("text_ops")),
+	index("funnel_definitions_createdBy_idx").using("btree", table.createdBy.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.websiteId],
+			foreignColumns: [websites.id],
+			name: "funnel_definitions_websiteId_fkey"
+		}).onUpdate("cascade").onDelete("cascade"),
+	foreignKey({
+			columns: [table.createdBy],
+			foreignColumns: [user.id],
+			name: "funnel_definitions_createdBy_fkey"
+		}).onUpdate("cascade").onDelete("restrict"),
+]);
+
+export const funnelGoals = pgTable("funnel_goals", {
+	id: text().primaryKey().notNull(),
+	funnelId: text().notNull(),
+	goalType: funnelGoalType().notNull(),
+	targetValue: text(), // Flexible - could be percentage, count, duration
+	description: text(),
+	isActive: boolean().default(true).notNull(),
+	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => [
+	index("funnel_goals_funnelId_idx").using("btree", table.funnelId.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.funnelId],
+			foreignColumns: [funnelDefinitions.id],
+			name: "funnel_goals_funnelId_fkey"
+		}).onUpdate("cascade").onDelete("cascade"),
 ]);
