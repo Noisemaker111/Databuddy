@@ -28,10 +28,10 @@ COPY --from=builder /build/apps/dash2 /app
 WORKDIR /app
 
 # Set environment variables
-ENV NODE_ENV=production \
-    PORT=3000 \
-    BUN_ENV=production \
-    REDIS_URL=redis://localhost
+ENV NODE_ENV=production 
+ENV REDIS_URL=redis://localhost
+ENV PORT=3000
+ENV BUN_ENV=production 
 
 # Expose port
 EXPOSE 3000
