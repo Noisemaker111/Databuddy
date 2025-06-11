@@ -86,7 +86,6 @@ function CreateWebsiteForm({
   const { createWebsite, isCreating } = useWebsites();
   
   const form = useForm<CreateFormData>({
-    resolver: zodResolver(createFormSchema),
     defaultValues: {
       name: initialValues?.name || "",
       subdomain: "",
@@ -244,7 +243,6 @@ function EditWebsiteForm({
   const { updateWebsite, isUpdating } = useWebsites();
   
   const form = useForm<EditFormData>({
-    resolver: zodResolver(editFormSchema),
     defaultValues: {
       name: website.name || "",
     },

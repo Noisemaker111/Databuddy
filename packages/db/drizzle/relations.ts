@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, posts, categories, account, websites, projects, domains, eventMeta, subscriptions, clients, projectAccess, userPreferences, twoFactor, session, auditLogs, postToTag, tags } from "./schema";
+import { user, posts, categories, account, websites, projects, domains, eventMeta, subscriptions, clients, projectAccess, userPreferences, twoFactor, session, auditLogs, postToTag, tags, funnelDefinitions, funnelGoals } from "./schema";
 
 export const postsRelations = relations(posts, ({one, many}) => ({
 	user: one(user, {
@@ -24,6 +24,7 @@ export const userRelations = relations(user, ({many}) => ({
 	sessions: many(session),
 	auditLogs: many(auditLogs),
 	domains: many(domains),
+	funnelDefinitions: many(funnelDefinitions),
 }));
 
 export const categoriesRelations = relations(categories, ({many}) => ({
@@ -37,7 +38,7 @@ export const accountRelations = relations(account, ({one}) => ({
 	}),
 }));
 
-export const websitesRelations = relations(websites, ({one}) => ({
+export const websitesRelations = relations(websites, ({one, many}) => ({
 	user: one(user, {
 		fields: [websites.userId],
 		references: [user.id]
@@ -50,6 +51,7 @@ export const websitesRelations = relations(websites, ({one}) => ({
 		fields: [websites.domainId],
 		references: [domains.id]
 	}),
+	funnelDefinitions: many(funnelDefinitions),
 }));
 
 export const projectsRelations = relations(projects, ({one, many}) => ({
@@ -145,4 +147,23 @@ export const postToTagRelations = relations(postToTag, ({one}) => ({
 
 export const tagsRelations = relations(tags, ({many}) => ({
 	postToTags: many(postToTag),
+}));
+
+export const funnelDefinitionsRelations = relations(funnelDefinitions, ({one, many}) => ({
+	website: one(websites, {
+		fields: [funnelDefinitions.websiteId],
+		references: [websites.id]
+	}),
+	createdByUser: one(user, {
+		fields: [funnelDefinitions.createdBy],
+		references: [user.id]
+	}),
+	goals: many(funnelGoals),
+}));
+
+export const funnelGoalsRelations = relations(funnelGoals, ({one}) => ({
+	funnel: one(funnelDefinitions, {
+		fields: [funnelGoals.funnelId],
+		references: [funnelDefinitions.id]
+	}),
 }));

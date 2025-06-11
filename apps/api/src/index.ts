@@ -7,6 +7,7 @@ import queryRouter from './routes/v1/query';
 import domainInfoRouter from './routes/v1/domain-info';
 import websitesRouter from './routes/v1/websites';
 import domainsRouter from './routes/v1/domains';
+import funnelRouter from './routes/v1/funnels';
 import { logger } from './lib/logger';
 import { logger as HonoLogger } from "hono/logger"
 import { sentry } from '@hono/sentry'
@@ -44,6 +45,7 @@ app.use('*', cors({
     'Content-Type',
     'Authorization',
     'Cookie',
+    'Cache-Control',
     'X-Website-Id',
   ],
   allowMethods: ['POST', 'OPTIONS', 'GET', 'DELETE', 'PUT', 'PATCH', 'HEAD'],
@@ -76,6 +78,7 @@ app.route('/v1/query', queryRouter);
 app.route('/v1/domain-info', domainInfoRouter);
 app.route('/v1/websites', websitesRouter);
 app.route('/v1/domains', domainsRouter);
+app.route('/v1/funnels', funnelRouter);
 
 app.get('/health', (c) => c.json({ status: 'ok', version: '1.0.0' }));
 app.get('/', (c) => c.json({ status: 'ok', version: '1.0.0' }));

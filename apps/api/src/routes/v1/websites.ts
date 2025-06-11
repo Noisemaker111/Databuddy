@@ -5,7 +5,7 @@ import { db, websites, domains, projectAccess, eq, and, or, inArray } from '@dat
 import { authMiddleware } from '../../middleware/auth';
 import { logger } from '../../lib/logger';
 import { nanoid } from 'nanoid';
-import { cacheable } from '@databuddy/redis/cacheable';
+import { cacheable } from '@databuddy/redis';
 import type { AppVariables } from '../../types';
 
 // Validation schemas

@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { authMiddleware } from '../../middleware/auth'
 import { websiteAuthHook } from '../../middleware/website'
 import { timezoneMiddleware } from '../../middleware/timezone'
+import { adjustDateRangeForTimezone } from '../../utils/timezone'
 import { logger } from '../../lib/logger'
 import { chQuery } from '@databuddy/db'
 import { getLanguageName } from '@databuddy/shared'
@@ -29,7 +30,7 @@ const singleQuerySchema = z.object({
 
 const batchQuerySchema = z.union([
   singleQuerySchema,
-  z.array(singleQuerySchema).min(1).max(10)
+  z.array(singleQuerySchema).max(10)
 ]);
 
 interface Website {
@@ -297,8 +298,8 @@ function createQueryBuilder(config: BuilderConfig): ParameterBuilder {
   return (websiteId, startDate, endDate, limit, offset) => {
     const whereClauses = [
       `client_id = ${escapeSqlString(websiteId)}`,
-      `toDate(time) >= ${escapeSqlString(startDate)}`,
-      `toDate(time) <= ${escapeSqlString(endDate)}`,
+      `time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})`,
+      `time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})`,
       `event_name = 'screen_view'`
     ];
     
@@ -354,8 +355,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       uniq(session_id) as sessions
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name = 'screen_view'
       AND browser_name != ''
       AND browser_version IS NOT NULL 
@@ -554,8 +555,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       region
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name = 'error'
       AND error_message != ''
     ORDER BY time DESC
@@ -572,8 +573,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       MIN(time) as first_occurrence
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name = 'error'
       AND error_message != ''
     GROUP BY error_message
@@ -635,8 +636,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       uniq(session_id) as affected_sessions
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name = 'error'
       AND error_message != ''
     GROUP BY toDate(time)
@@ -657,8 +658,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       groupArray(JSONExtractKeys(properties)) as property_keys_arrays
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
       AND event_name != ''
     GROUP BY event_name
@@ -682,8 +683,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       CAST(properties AS String) as properties_json
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
       AND event_name != ''
     ORDER BY time DESC
@@ -700,8 +701,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       groupArray(DISTINCT event_name) as event_types
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
       AND event_name != ''
       AND path != ''
@@ -722,8 +723,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       MIN(time) as first_event_time
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
       AND event_name != ''
     GROUP BY anonymous_id
@@ -738,8 +739,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
         JSONExtractKeys(CAST(properties AS String)) as keys
       FROM analytics.events
       WHERE client_id = ${escapeSqlString(websiteId)}
-        AND toDate(time) >= ${escapeSqlString(startDate)}
-        AND toDate(time) <= ${escapeSqlString(endDate)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
         AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
         AND event_name != ''
         AND properties IS NOT NULL
@@ -771,8 +772,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       uniq(anonymous_id) as total_users
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name = 'screen_view'
   `,
 
@@ -785,8 +786,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name = 'screen_view'
   `,
 
@@ -815,9 +816,9 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
   connection_types: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => 
     PARAMETER_BUILDERS.connection_type(websiteId, startDate, endDate, limit, offset),
 
-  custom_event_property_values: (websiteId, startDate, endDate, limit, offset, filters = []) => {
-    const eventNameFilter = filters.find(f => f.field === 'event_name');
-    const propertyKeyFilter = filters.find(f => f.field === 'property_key');
+  custom_event_property_values: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, filters: any[] = []) => {
+    const eventNameFilter = filters.find((f: any) => f.field === 'event_name');
+    const propertyKeyFilter = filters.find((f: any) => f.field === 'property_key');
 
     if (!eventNameFilter || !propertyKeyFilter || typeof eventNameFilter.value !== 'string' || typeof propertyKeyFilter.value !== 'string') {
       return `SELECT '' as name, 0 as total_events, 0 as unique_users WHERE 1=0`;
@@ -833,8 +834,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
         uniq(anonymous_id) as unique_users
       FROM analytics.events
       WHERE client_id = ${escapeSqlString(websiteId)}
-        AND toDate(time) >= ${escapeSqlString(startDate)}
-        AND toDate(time) <= ${escapeSqlString(endDate)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
         AND event_name = ${escapeSqlString(eventName)}
         AND JSONHas(properties, ${escapeSqlString(propertyKey)})
         AND JSONExtractString(properties, ${escapeSqlString(propertyKey)}) != ''
@@ -843,6 +844,387 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       LIMIT ${limit} OFFSET ${offset}
     `;
   },
+
+  // Funnel Analysis queries
+  funnel_analysis: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, filters: any[] = []) => {
+    const funnelStepsFilter = filters.find((f: any) => f.field === 'funnel_steps');
+    if (!funnelStepsFilter || !Array.isArray(funnelStepsFilter.value)) {
+      return `SELECT '' as step_name, 0 as step_number, 0 as users, 0 as conversion_rate WHERE 1=0`;
+    }
+
+    const steps = funnelStepsFilter.value;
+    
+    // Build step CTEs dynamically
+    const stepCTEs = steps.map((step: any, index: number) => {
+      let whereCondition = '';
+      
+      if (step.type === 'PAGE_VIEW') {
+        whereCondition = `path = ${escapeSqlString(step.target)}`;
+      } else if (step.type === 'EVENT') {
+        whereCondition = `event_name = ${escapeSqlString(step.target)}`;
+      } else if (step.type === 'CUSTOM' && step.conditions) {
+        // Handle custom conditions - this can be expanded based on needs
+        whereCondition = `event_name = ${escapeSqlString(step.target)}`;
+      }
+      
+      return `
+        step_${index + 1}_users AS (
+          SELECT DISTINCT
+            session_id,
+            anonymous_id,
+            MIN(time) as step_time
+          FROM analytics.events
+          WHERE client_id = ${escapeSqlString(websiteId)}
+            AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+            AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+            AND ${whereCondition}
+          GROUP BY session_id, anonymous_id
+        )`;
+    }).join(',\n');
+
+    // Build step joins for funnel progression
+    const stepJoins = steps.map((step: any, index: number) => {
+      if (index === 0) return '';
+      
+      return `
+        LEFT JOIN step_${index + 1}_users s${index + 1} 
+          ON s1.session_id = s${index + 1}.session_id 
+          AND s${index + 1}.step_time >= s${index}.step_time`;
+    }).join('\n');
+
+    // Build step analysis
+    const stepAnalysis = steps.map((step: any, index: number) => {
+      const stepNum = index + 1;
+      return `
+        SELECT 
+          ${stepNum} as step_number,
+          ${escapeSqlString(step.name)} as step_name,
+          COUNT(DISTINCT s1.session_id) as total_users,
+          ${index === 0 ? 
+            'COUNT(DISTINCT s1.session_id)' : 
+            `COUNT(DISTINCT s${stepNum}.session_id)`} as users,
+          ${index === 0 ? 
+            '100.0' : 
+            `ROUND((COUNT(DISTINCT s${stepNum}.session_id) * 100.0 / COUNT(DISTINCT s1.session_id)), 2)`} as conversion_rate,
+          ${index === 0 ? 
+            '0' : 
+            `(COUNT(DISTINCT s1.session_id) - COUNT(DISTINCT s${stepNum}.session_id))`} as dropoffs
+        FROM step_1_users s1 ${stepJoins}`;
+    });
+
+    return `
+      WITH ${stepCTEs}
+      ${stepAnalysis.join('\nUNION ALL\n')}
+      ORDER BY step_number
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  },
+
+  funnel_performance: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
+    WITH funnel_sessions AS (
+      SELECT DISTINCT
+        session_id,
+        anonymous_id,
+        COUNT(DISTINCT path) as unique_pages_visited,
+        MIN(time) as session_start,
+        MAX(time) as session_end,
+        dateDiff('second', MIN(time), MAX(time)) as session_duration
+      FROM analytics.events
+      WHERE client_id = ${escapeSqlString(websiteId)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+        AND event_name = 'screen_view'
+      GROUP BY session_id, anonymous_id
+      HAVING unique_pages_visited >= 2
+    )
+    SELECT
+      'overall' as funnel_name,
+      COUNT(DISTINCT session_id) as total_sessions,
+      COUNT(DISTINCT anonymous_id) as total_users,
+      AVG(unique_pages_visited) as avg_pages_per_session,
+      AVG(session_duration) as avg_session_duration,
+      ROUND(AVG(session_duration) / 60, 2) as avg_duration_minutes
+    FROM funnel_sessions
+    LIMIT ${limit} OFFSET ${offset}
+  `,
+
+  // Enhanced funnel analytics queries
+  funnel_steps_breakdown: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, filters: any[] = []) => {
+    const funnelIdFilter = filters.find((f: any) => f.field === 'funnel_id');
+    if (!funnelIdFilter) {
+      return `SELECT '' as step_name, 0 as step_number, 0 as users, 0 as total_users, 0 as conversion_rate, 0 as dropoffs, 0 as dropoff_rate WHERE 1=0`;
+    }
+
+    // This would need to be enhanced to fetch funnel steps from the database
+    // For now, return a placeholder query
+    return `
+      WITH step_analysis AS (
+        SELECT 
+          1 as step_number,
+          'Landing Page' as step_name,
+          COUNT(DISTINCT session_id) as users,
+          COUNT(DISTINCT session_id) as total_users,
+          100.0 as conversion_rate,
+          0 as dropoffs,
+          0.0 as dropoff_rate,
+          0.0 as avg_time_to_complete
+        FROM analytics.events
+        WHERE client_id = ${escapeSqlString(websiteId)}
+          AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+          AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+          AND event_name = 'screen_view'
+        UNION ALL
+        SELECT 
+          2 as step_number,
+          'Conversion Page' as step_name,
+          COUNT(DISTINCT session_id) as users,
+          (SELECT COUNT(DISTINCT session_id) FROM analytics.events 
+           WHERE client_id = ${escapeSqlString(websiteId)}
+             AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+             AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+             AND event_name = 'screen_view') as total_users,
+          50.0 as conversion_rate,
+          COUNT(DISTINCT session_id) as dropoffs,
+          50.0 as dropoff_rate,
+          120.0 as avg_time_to_complete
+        FROM analytics.events
+        WHERE client_id = ${escapeSqlString(websiteId)}
+          AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+          AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+          AND event_name = 'screen_view'
+          AND path LIKE '%signup%'
+      )
+      SELECT * FROM step_analysis
+      ORDER BY step_number
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  },
+
+  funnel_user_segments: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, filters: any[] = []) => {
+    const funnelIdFilter = filters.find((f: any) => f.field === 'funnel_id');
+    if (!funnelIdFilter) {
+      return `SELECT '' as segment_name, 0 as users, 0 as conversion_rate WHERE 1=0`;
+    }
+
+    return `
+      WITH user_segments AS (
+        SELECT 
+          CASE 
+            WHEN device_type = 'desktop' THEN 'Desktop Users'
+            WHEN device_type = 'mobile' THEN 'Mobile Users'
+            WHEN device_type = 'tablet' THEN 'Tablet Users'
+            ELSE 'Other'
+          END as segment_name,
+          COUNT(DISTINCT anonymous_id) as users,
+          COUNT(DISTINCT session_id) as sessions,
+          AVG(load_time) as avg_load_time
+        FROM analytics.events
+        WHERE client_id = ${escapeSqlString(websiteId)}
+          AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+          AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+          AND event_name = 'screen_view'
+        GROUP BY segment_name
+      )
+      SELECT 
+        segment_name,
+        users,
+        sessions,
+        ROUND(users * 100.0 / SUM(users) OVER(), 2) as conversion_rate,
+        ROUND(avg_load_time, 2) as avg_load_time
+      FROM user_segments
+      ORDER BY users DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  },
+
+
+
+  // User Journey & Path Analysis queries
+  user_journeys: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
+    WITH ordered_events AS (
+      SELECT 
+        session_id,
+        anonymous_id,
+        path,
+        time,
+        ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY time) as step_number
+      FROM analytics.events
+      WHERE client_id = ${escapeSqlString(websiteId)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+        AND event_name = 'screen_view'
+        AND path != ''
+    ),
+    transitions AS (
+      SELECT 
+        e1.session_id,
+        e1.anonymous_id,
+        e1.path as from_page,
+        e2.path as to_page,
+        e1.step_number,
+        e2.step_number as next_step
+      FROM ordered_events e1
+      JOIN ordered_events e2 ON e1.session_id = e2.session_id AND e2.step_number = e1.step_number + 1
+      WHERE e1.path != e2.path
+    )
+    SELECT 
+      from_page,
+      to_page,
+      COUNT(*) as transitions,
+      COUNT(DISTINCT session_id) as sessions,
+      COUNT(DISTINCT anonymous_id) as users,
+      ROUND(AVG(step_number), 2) as avg_step_in_journey
+    FROM transitions
+    GROUP BY from_page, to_page
+    ORDER BY transitions DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `,
+
+  journey_paths: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
+    WITH session_paths AS (
+      SELECT 
+        session_id,
+        anonymous_id,
+        groupArray(path) as page_sequence,
+        COUNT(*) as page_count,
+        MIN(time) as session_start,
+        MAX(time) as session_end,
+        dateDiff('second', MIN(time), MAX(time)) as session_duration
+      FROM analytics.events
+      WHERE client_id = ${escapeSqlString(websiteId)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+        AND event_name = 'screen_view'
+        AND path != ''
+      GROUP BY session_id, anonymous_id
+      HAVING page_count >= 2
+    ),
+    path_analysis AS (
+      SELECT 
+        arrayStringConcat(arraySlice(page_sequence, 1, LEAST(length(page_sequence), 5)), ' → ') as journey_path,
+        page_sequence[1] as entry_page,
+        page_sequence[-1] as exit_page,
+        COUNT(*) as frequency,
+        COUNT(DISTINCT anonymous_id) as unique_users,
+        ROUND(AVG(page_count), 2) as avg_pages_in_path,
+        ROUND(AVG(session_duration), 2) as avg_duration_seconds
+      FROM session_paths
+      GROUP BY journey_path, entry_page, exit_page
+    )
+    SELECT 
+      journey_path as name,
+      entry_page,
+      exit_page,
+      frequency,
+      unique_users,
+      avg_pages_in_path,
+      avg_duration_seconds,
+      ROUND(avg_duration_seconds / 60, 2) as avg_duration_minutes
+    FROM path_analysis
+    ORDER BY frequency DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `,
+
+  journey_dropoffs: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
+    WITH session_steps AS (
+      SELECT 
+        session_id,
+        anonymous_id,
+        path,
+        time,
+        ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY time) as step_number,
+        COUNT(*) OVER (PARTITION BY session_id) as total_steps_in_session
+      FROM analytics.events
+      WHERE client_id = ${escapeSqlString(websiteId)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+        AND event_name = 'screen_view'
+        AND path != ''
+    ),
+    exit_analysis AS (
+      SELECT 
+        path,
+        COUNT(*) as total_visits,
+        COUNT(DISTINCT session_id) as total_sessions,
+        COUNT(DISTINCT anonymous_id) as total_users,
+        SUM(CASE WHEN step_number = total_steps_in_session THEN 1 ELSE 0 END) as exits,
+        SUM(CASE WHEN step_number < total_steps_in_session THEN 1 ELSE 0 END) as continuations
+      FROM session_steps
+      GROUP BY path
+      HAVING total_visits >= 10
+    )
+    SELECT 
+      path as name,
+      total_visits,
+      total_sessions,
+      total_users,
+      exits,
+      continuations,
+      ROUND((exits * 100.0 / total_visits), 2) as exit_rate,
+      ROUND((continuations * 100.0 / total_visits), 2) as continuation_rate
+    FROM exit_analysis
+    ORDER BY exit_rate DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `,
+
+  journey_entry_points: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number) => `
+    WITH session_entry AS (
+      SELECT 
+        session_id,
+        anonymous_id,
+        path as entry_page,
+        time as entry_time,
+        ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY time) as page_rank
+      FROM analytics.events
+      WHERE client_id = ${escapeSqlString(websiteId)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+        AND event_name = 'screen_view'
+        AND path != ''
+    ),
+    entry_analysis AS (
+      SELECT 
+        entry_page,
+        COUNT(*) as entries,
+        COUNT(DISTINCT session_id) as sessions,
+        COUNT(DISTINCT anonymous_id) as users
+      FROM session_entry
+      WHERE page_rank = 1
+      GROUP BY entry_page
+    ),
+    session_metrics AS (
+      SELECT 
+        session_id,
+        countIf(event_name = 'screen_view') as page_count
+      FROM analytics.events
+      WHERE client_id = ${escapeSqlString(websiteId)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+      GROUP BY session_id
+    ),
+    session_outcomes AS (
+      SELECT 
+        se.entry_page,
+        COUNT(DISTINCT se.session_id) as total_sessions,
+        COUNT(DISTINCT CASE WHEN sm.page_count = 1 THEN se.session_id END) as bounce_sessions,
+        AVG(COALESCE(sm.page_count, 1)) as avg_pages_per_session
+      FROM session_entry se
+      LEFT JOIN session_metrics sm ON se.session_id = sm.session_id
+      WHERE se.page_rank = 1
+      GROUP BY se.entry_page
+    )
+    SELECT 
+      ea.entry_page as name,
+      ea.entries,
+      ea.sessions,
+      ea.users,
+      ROUND((COALESCE(so.bounce_sessions, 0) * 100.0 / COALESCE(so.total_sessions, 1)), 2) as bounce_rate,
+      ROUND(so.avg_pages_per_session, 2) as avg_pages_per_session
+    FROM entry_analysis ea
+    JOIN session_outcomes so ON ea.entry_page = so.entry_page
+    ORDER BY ea.entries DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `,
 }
 
 // Helper function to get metric type for a parameter
@@ -901,13 +1283,15 @@ function buildUnifiedQuery(
     const subQueries: string[] = []
     
     for (const { query, parameter } of items) {
-      const { startDate, endDate, limit, page, filters } = query
+      const { startDate, endDate, limit, page, filters, timeZone } = query
       const offset = (page - 1) * limit
+      
+      const { startDate: adjStartDate, endDate: adjEndDate } = adjustDateRangeForTimezone(startDate, endDate, timeZone);
       
       const builder = PARAMETER_BUILDERS[parameter as keyof typeof PARAMETER_BUILDERS]
       if (!builder) continue
       
-      let sql = builder(websiteId, startDate, endDate, limit, offset)
+      let sql = builder(websiteId, adjStartDate, `${adjEndDate} 23:59:59`, limit, offset, filters)
       
       // Apply filters if provided
       if (filters.length > 0) {
@@ -1111,8 +1495,10 @@ async function processBatchQueries(
     return Promise.all(
       queries.map(async (query) => {
         try {
-          const { startDate, endDate, parameters, limit, page, filters } = query
+          const { startDate, endDate, parameters, limit, page, filters, timeZone } = query
           const offset = (page - 1) * limit
+
+          const { startDate: adjStartDate, endDate: adjEndDate } = adjustDateRangeForTimezone(startDate, endDate, timeZone);
 
           const unsupportedParams = parameters.filter((param: string) => 
             !PARAMETER_BUILDERS[param as keyof typeof PARAMETER_BUILDERS]
@@ -1130,7 +1516,7 @@ async function processBatchQueries(
           const results = await Promise.all(
             parameters.map(async (parameter: string) => {
               const builder = PARAMETER_BUILDERS[parameter as keyof typeof PARAMETER_BUILDERS]
-              let sql = builder(websiteId, startDate, endDate, limit, offset)
+              let sql = builder(websiteId, adjStartDate, `${adjEndDate} 23:59:59`, limit, offset, filters)
               
               if (filters.length > 0) {
                 const filterClauses = filters.map((filter: any) => {
@@ -1284,7 +1670,9 @@ queryRouter.get('/parameters', async (c) => {
       referrers: ['referrer'],
       performance: ['slow_pages', 'performance_by_country', 'performance_by_device', 'performance_by_browser', 'performance_by_os', 'performance_by_region'],
       errors: ['recent_errors', 'error_types', 'errors_by_page', 'errors_by_browser', 'errors_by_os', 'errors_by_country', 'errors_by_device', 'error_trends', 'sessions_summary'],
-      custom_events: ['custom_events', 'custom_event_details', 'custom_events_by_page', 'custom_events_by_user', 'custom_event_properties', 'custom_event_property_values']
+      custom_events: ['custom_events', 'custom_event_details', 'custom_events_by_page', 'custom_events_by_user', 'custom_event_properties', 'custom_event_property_values'],
+      user_journeys: ['user_journeys', 'journey_paths', 'journey_dropoffs', 'journey_entry_points'],
+      funnel_analysis: ['funnel_analysis', 'funnel_performance', 'funnel_steps_breakdown', 'funnel_user_segments']
     }
   })
 })

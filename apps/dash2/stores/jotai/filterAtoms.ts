@@ -51,6 +51,9 @@ export const setDateRangeAndAdjustGranularityAtom = atom(
   }
 );
 
+// --- Timezone ---
+export const timezoneAtom = atom<string>(Intl.DateTimeFormat().resolvedOptions().timeZone);
+
 // --- Basic Filters ---
 // Used for simple selections, e.g., a list of countries or device types.
 // Example: { countries: ['US', 'CA'], deviceTypes: ['desktop'] }
@@ -190,6 +193,7 @@ export const activeFiltersForApiAtom = atom((get) => {
   const granularityValue = get(timeGranularityAtom);
   const basicFiltersValue = get(basicFiltersAtom);
   const complexFiltersValue = get(complexFiltersAtom);
+  const timezoneValue = get(timezoneAtom);
 
   // Example: Convert array values in basic filters to comma-separated strings if API needs it
   const apiReadyBasicFilters: Record<string, string | number | boolean | undefined> = {};
@@ -205,6 +209,7 @@ export const activeFiltersForApiAtom = atom((get) => {
   return {
     dateRange: { startDate: fmtStartDate, endDate: fmtEndDate },
     granularity: granularityValue,
+    timezone: timezoneValue,
     basicFilters: apiReadyBasicFilters, // Or basicFiltersValue if API handles arrays
     complexFilters: complexFiltersValue,
   };

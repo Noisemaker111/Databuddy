@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Globe, X } from "lucide-react";
+import { Globe, X, ChevronLeft } from "lucide-react";
 import { TopHeader } from "./top-header";
 import { useWebsites } from "@/hooks/use-websites";
 import { WebsiteHeader } from "./navigation/website-header";
@@ -205,11 +205,11 @@ export function Sidebar() {
       {/* Top Navigation Bar */}
       <TopHeader setMobileOpen={openSidebar} />
 
-      {/* Mobile sidebar backdrop with swipe support */}
+      {/* Enhanced mobile backdrop */}
       {isMobileOpen && (
         <SwipeGesture
           onSwipeLeft={handleSwipeLeft}
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 md:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-md z-30 md:hidden animate-in fade-in duration-300"
         >
           <div 
             className="w-full h-full"
@@ -223,73 +223,98 @@ export function Sidebar() {
         </SwipeGesture>
       )}
 
-      {/* Sidebar with improved mobile animations */}
+      {/* Enhanced sidebar */}
       <SwipeGesture onSwipeLeft={handleSwipeLeft}>
         <div
           ref={sidebarRef}
           className={cn(
-            "fixed inset-y-0 left-0 z-40 w-72 bg-background border-r border-border/40 transition-all duration-300 ease-out md:translate-x-0 pt-16 shadow-2xl md:shadow-none",
+            "fixed inset-y-0 left-0 z-40 w-72 bg-gradient-to-b from-background via-background to-muted/20",
+            "border-r border-border/60 transition-all duration-300 ease-out md:translate-x-0 pt-16",
+            "shadow-2xl md:shadow-lg backdrop-blur-sm",
             isMobileOpen ? "translate-x-0" : "-translate-x-full",
             isAnimating && "transition-transform"
           )}
         >
-          {/* Mobile close button */}
+          {/* Enhanced mobile close button */}
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 right-4 z-50 md:hidden h-8 w-8 bg-background/80 backdrop-blur-sm border border-border/40"
+            className={cn(
+              "absolute top-4 right-4 z-50 md:hidden h-9 w-9",
+              "bg-background/90 backdrop-blur-sm border border-border/60 rounded-lg",
+              "hover:bg-muted/80 transition-all duration-200 group"
+            )}
             onClick={closeSidebar}
           >
-            <X className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform duration-200" />
             <span className="sr-only">Close sidebar</span>
           </Button>
 
           <ScrollArea className="h-[calc(100vh-4rem)]">
-            <div className="p-4 space-y-6 pb-8">
+            <div className="p-4 space-y-6 pb-8 animate-in fade-in slide-in-from-left-2 duration-300">
               {isInWebsiteContext ? (
                 // Website-specific navigation
-                <>
-                  <WebsiteHeader website={currentWebsite} />
+                <div className="space-y-6">
+                  <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+                    <WebsiteHeader website={currentWebsite} />
+                  </div>
                   
                   {/* Website navigation sections */}
-                  {websiteNavigation.map((section) => (
-                    <NavigationSection
+                  {websiteNavigation.map((section, index) => (
+                    <div
                       key={section.title}
-                      title={section.title}
-                      items={section.items}
-                      pathname={pathname}
-                      currentWebsiteId={currentWebsiteId}
-                    />
+                      className="animate-in fade-in slide-in-from-left-4"
+                      style={{ animationDelay: `${(index + 1) * 100}ms` }}
+                    >
+                      <NavigationSection
+                        title={section.title}
+                        items={section.items}
+                        pathname={pathname}
+                        currentWebsiteId={currentWebsiteId}
+                      />
+                    </div>
                   ))}
-                </>
+                </div>
               ) : (
                 // Main navigation
-                <>
+                <div className="space-y-6">
                   {/* Main navigation sections */}
-                  {mainNavigation.map((section) => (
-                    <NavigationSection
+                  {mainNavigation.map((section, index) => (
+                    <div
                       key={section.title}
-                      title={section.title}
-                      items={section.items}
-                      pathname={pathname}
-                    />
-                  ))}
-
-                  {/* Websites section */}
-                  <div>
-                    <h3 className="px-2 mb-2 text-xs font-semibold text-muted-foreground tracking-wider uppercase flex items-center">
-                      <Globe className="h-3 w-3 mr-1.5 text-primary/70" />
-                      Websites
-                    </h3>
-                    <div className="space-y-1 ml-1 mt-3">
-                      <WebsiteList
-                        websites={websites}
-                        isLoading={isLoading}
+                      className="animate-in fade-in slide-in-from-left-4"
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >
+                      <NavigationSection
+                        title={section.title}
+                        items={section.items}
                         pathname={pathname}
                       />
                     </div>
+                  ))}
+
+                  {/* Enhanced websites section */}
+                  <div 
+                    className="animate-in fade-in slide-in-from-left-4"
+                    style={{ animationDelay: `${mainNavigation.length * 100}ms` }}
+                  >
+                    <div className="bg-muted/30 rounded-lg p-3 border border-muted">
+                      <h3 className="px-2 mb-3 text-xs font-semibold text-muted-foreground tracking-wider uppercase flex items-center">
+                        <div className="p-1 rounded bg-primary/10 mr-2">
+                          <Globe className="h-3 w-3 text-primary" />
+                        </div>
+                        Websites
+                      </h3>
+                      <div className="space-y-1 ml-1">
+                        <WebsiteList
+                          websites={websites}
+                          isLoading={isLoading}
+                          pathname={pathname}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </>
+                </div>
               )}
 
               {/* Mobile-only bottom padding for safe area */}
@@ -297,11 +322,15 @@ export function Sidebar() {
             </div>
           </ScrollArea>
 
-          {/* Mobile visual indicator for swipe gesture */}
+          {/* Enhanced mobile visual indicator */}
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 md:hidden">
-            <div className="flex items-center space-x-1 text-xs text-muted-foreground/60">
-              <div className="w-8 h-1 bg-muted-foreground/20 rounded-full" />
-              <span>Swipe left to close</span>
+            <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground/60 bg-background/80 backdrop-blur-sm rounded-full px-3 py-2 border border-border/40">
+              <div className="flex space-x-1">
+                <div className="w-1 h-1 bg-muted-foreground/40 rounded-full animate-pulse" />
+                <div className="w-1 h-1 bg-muted-foreground/40 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                <div className="w-1 h-1 bg-muted-foreground/40 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+              </div>
+              <span className="font-medium">Swipe to close</span>
             </div>
           </div>
         </div>
