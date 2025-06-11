@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/analytics/stat-card";
+import { ClosableAlert } from "@/components/ui/closable-alert";
 import { useWebsite } from "@/hooks/use-websites";
 import { useAtom } from "jotai";
 import {
@@ -619,33 +620,43 @@ export default function FunnelsPage() {
 
                                                         {/* Performance Insights */}
                                                         {(summaryStats.overallConversion < 10 || summaryStats.overallConversion > 50) && (
-                                                            <div className="flex gap-4">
+                                                            <div className="space-y-3">
                                                                 {summaryStats.overallConversion < 10 && (
-                                                                    <Card className="flex-1 border-orange-200 dark:border-orange-800 rounded">
-                                                                        <CardContent className="p-4">
-                                                                            <div className="flex items-center gap-2 mb-2">
-                                                                                <AlertTriangle className="h-4 w-4 text-orange-500" />
-                                                                                <span className="text-sm font-medium">Low Conversion Alert</span>
-                                                                            </div>
-                                                                            <p className="text-xs text-muted-foreground">
-                                                                                This funnel has a low conversion rate. Consider optimizing steps with high drop-offs.
-                                                                            </p>
-                                                                        </CardContent>
-                                                                    </Card>
+                                                                    <ClosableAlert
+                                                                        id={`low-conversion-${funnel.id}`}
+                                                                        title="Low Conversion Alert"
+                                                                        description="This funnel has a low conversion rate. Consider optimizing steps with high drop-offs to improve user flow and increase conversions."
+                                                                        icon={AlertTriangle}
+                                                                        variant="warning"
+                                                                    >
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="text-xs font-medium">
+                                                                                Current rate: {summaryStats.overallConversion.toFixed(1)}%
+                                                                            </span>
+                                                                            <Badge variant="destructive" className="text-xs">
+                                                                                Needs attention
+                                                                            </Badge>
+                                                                        </div>
+                                                                    </ClosableAlert>
                                                                 )}
 
                                                                 {summaryStats.overallConversion > 50 && (
-                                                                    <Card className="flex-1 border-green-200 dark:border-green-800 rounded">
-                                                                        <CardContent className="p-4">
-                                                                            <div className="flex items-center gap-2 mb-2">
-                                                                                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                                                                <span className="text-sm font-medium">High Performance</span>
-                                                                            </div>
-                                                                            <p className="text-xs text-muted-foreground">
-                                                                                This funnel is performing excellently with a high conversion rate.
-                                                                            </p>
-                                                                        </CardContent>
-                                                                    </Card>
+                                                                    <ClosableAlert
+                                                                        id={`high-performance-${funnel.id}`}
+                                                                        title="High Performance Funnel"
+                                                                        description="This funnel is performing excellently with a high conversion rate. Great work on optimizing the user experience!"
+                                                                        icon={CheckCircle2}
+                                                                        variant="success"
+                                                                    >
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="text-xs font-medium">
+                                                                                Current rate: {summaryStats.overallConversion.toFixed(1)}%
+                                                                            </span>
+                                                                            <Badge variant="default" className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                                                Excellent
+                                                                            </Badge>
+                                                                        </div>
+                                                                    </ClosableAlert>
                                                                 )}
                                                             </div>
                                                         )}

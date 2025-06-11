@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/analytics/data-table";
 import { StatCard } from "@/components/analytics/stat-card";
+import { ClosableAlert } from "@/components/ui/closable-alert";
 import { useJourneyAnalytics, type JourneyTransition, type JourneyPath, type JourneyDropoff, type JourneyEntryPoint } from "@/hooks/use-dynamic-query";
 import { useWebsite } from "@/hooks/use-websites";
 import { useAtom } from "jotai";
@@ -518,35 +519,35 @@ export default function JourneysPage() {
 
             {/* Quick Insights Cards */}
             {!isLoading && (hasJourneyData || hasPathData || hasDropoffData || hasEntryPointData) && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-3">
                     {/* Drop-off Alert */}
                     {journeyData.dropoffs.length > 0 && journeyData.dropoffs[0].exit_rate > 70 && (
-                        <Card className="border-red-200 dark:border-red-800 rounded">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                    <TrendingDown className="h-4 w-4 text-red-500" />
-                                    High Drop-off Page Alert
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-2">
-                                    <div className="font-medium text-sm">
-                                        {getPageDisplayName(journeyData.dropoffs[0].name)}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground mb-2">
-                                        This page has an unusually high exit rate - many users leave your site from here instead of continuing their journey.
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-xs text-muted-foreground">
-                                            {journeyData.dropoffs[0].exits.toLocaleString()} visitors left here
-                                        </span>
-                                        <Badge variant="destructive" className="text-xs">
-                                            {journeyData.dropoffs[0].exit_rate}% exit rate
-                                        </Badge>
-                                    </div>
+                        <ClosableAlert
+                            id={`high-dropoff-${journeyData.dropoffs[0].name}`}
+                            title="High Drop-off Page Alert"
+                            description={`The page "${getPageDisplayName(journeyData.dropoffs[0].name)}" has an unusually high exit rate. Many users leave your site from here instead of continuing their journey.`}
+                            icon={TrendingDown}
+                            variant="error"
+                        >
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs font-medium">
+                                        Page: {getPageDisplayName(journeyData.dropoffs[0].name)}
+                                    </span>
+                                    <Badge variant="destructive" className="text-xs">
+                                        {journeyData.dropoffs[0].exit_rate}% exit rate
+                                    </Badge>
                                 </div>
-                            </CardContent>
-                        </Card>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="text-muted-foreground">
+                                        {journeyData.dropoffs[0].exits.toLocaleString()} exits
+                                    </span>
+                                    <span className="text-muted-foreground">
+                                        {journeyData.dropoffs[0].total_visits.toLocaleString()} total visits
+                                    </span>
+                                </div>
+                            </div>
+                        </ClosableAlert>
                     )}
                 </div>
             )}
