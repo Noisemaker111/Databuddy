@@ -57,7 +57,7 @@ const Chart = ({ data, id }: { data: MiniChartDataPoint[]; id: string }) => (
         <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
         <Tooltip 
           content={({ active, payload, label }) => 
-            active && payload?.[0] ? (
+            active && payload?.[0] && typeof payload[0].value === 'number' ? (
               <div className="bg-background border rounded-lg shadow-lg p-2 text-sm">
                 <p className="font-medium">{new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
                 <p className="text-primary">{formatNumber(payload[0].value)} views</p>
