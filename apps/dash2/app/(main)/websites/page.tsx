@@ -44,7 +44,7 @@ function WebsiteLoadingSkeleton() {
   );
 }
 
-function EnhancedEmptyState() {
+function EnhancedEmptyState({ onAddWebsite }: { onAddWebsite: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="relative mb-8">
@@ -63,7 +63,7 @@ function EnhancedEmptyState() {
 
       <Button
         size="lg"
-        onClick={() => setDialogOpen(true)}
+        onClick={onAddWebsite}
         className={cn(
           "gap-2 px-8 py-4 font-medium text-base",
           "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary",
