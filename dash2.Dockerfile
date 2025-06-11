@@ -11,6 +11,10 @@ WORKDIR /build
 # Install dependencies
 RUN bun install 
 
+WORKDIR /build/packages/sdk
+
+RUN bun run build
+
 # build dash2
 WORKDIR /build/apps/dash2
 RUN bun install 
