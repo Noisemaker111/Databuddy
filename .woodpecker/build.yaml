@@ -10,7 +10,7 @@ steps:
       dockerfile: api.Dockerfile
       tag: latest
       dry-run: false
-      context: apps/api
+
   - name: Build Basket
     image: woodpeckerci/plugin-docker-buildx:6.0.0
     settings:
@@ -18,4 +18,3 @@ steps:
       dockerfile: basket.Dockerfile
       tag: latest
       dry-run: false
-      context: apps/basket
