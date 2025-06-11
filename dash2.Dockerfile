@@ -3,16 +3,16 @@ FROM oven/bun:1-slim AS builder
 
 
 # Copy dependency files
-COPY package.json bun.lock turbo.json /app/
-COPY apps/dash2 /app/dash2
-COPY packages/ /app/packages
+COPY package.json bun.lock turbo.json /build/
+COPY apps/dash2 /build/apps/dash2
+COPY packages/ /build/packages
 
-WORKDIR /app
+WORKDIR /build
 # Install dependencies
 RUN bun install 
 
 # build dash2
-WORKDIR /app/dash2
+WORKDIR /build/apps/dash2
 RUN bun install 
 RUN bun run build
 
@@ -20,7 +20,7 @@ RUN bun run build
 FROM oven/bun:1-slim
 
 # Copy built files from builder
-COPY --from=builder /apps/dash2 /app
+COPY --from=builder /build/apps/dash2 /app
 WORKDIR /app
 
 # Set environment variables
