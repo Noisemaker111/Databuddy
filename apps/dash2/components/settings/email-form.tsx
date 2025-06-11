@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient, useSession } from "@databuddy/auth/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -32,7 +31,6 @@ export function EmailForm() {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       newEmail: "",
       password: "",
@@ -52,7 +50,7 @@ export function EmailForm() {
         form.reset();
         toast.success("Email update request sent");
       }
-      
+
       form.reset();
     } catch (error: any) {
       toast.error(error.message || "Failed to update email");
@@ -68,7 +66,7 @@ export function EmailForm() {
           <p className="text-sm font-medium">Current Email</p>
           <p className="text-sm">{session?.user?.email || "Not available"}</p>
         </div>
-        
+
         <FormField
           control={form.control}
           name="newEmail"

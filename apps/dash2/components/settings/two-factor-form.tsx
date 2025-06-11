@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession, authClient } from "@databuddy/auth/client";
 import { enableTwoFactor, verifyTwoFactorCode, generateBackupCodes } from "@databuddy/auth/client";
 import { toast } from "sonner";
@@ -43,7 +42,6 @@ export function TwoFactorForm() {
 
   // Setup form for entering password
   const setupForm = useForm({
-    resolver: zodResolver(setupFormSchema),
     defaultValues: {
       password: "",
     },
@@ -51,7 +49,6 @@ export function TwoFactorForm() {
 
   // Verify form for entering 2FA code
   const verifyForm = useForm({
-    resolver: zodResolver(verifyFormSchema),
     defaultValues: {
       code: "",
       trustDevice: false,
@@ -67,8 +64,8 @@ export function TwoFactorForm() {
         const user = session?.user;
         if (user) {
           setIsEnabled(
-            !!(user as any).twoFactorEnabled || 
-            !!(user as any).mfaEnabled || 
+            !!(user as any).twoFactorEnabled ||
+            !!(user as any).mfaEnabled ||
             !!(user as any).hasTwoFactor
           );
         }
@@ -105,7 +102,7 @@ export function TwoFactorForm() {
           toast.error(error.message || "Failed to enable 2FA");
         }
       });
-      
+
       if (!result.success) {
         toast.error("Failed to enable 2FA");
       }
@@ -133,7 +130,7 @@ export function TwoFactorForm() {
           toast.error(error.message || "Failed to verify code");
         }
       });
-      
+
       if (!result.success) {
         toast.error("Failed to verify code");
       }
@@ -175,7 +172,7 @@ export function TwoFactorForm() {
   const handleRegenerateBackupCodes = async () => {
     const password = prompt("Enter your password to generate new backup codes");
     if (!password) return;
-    
+
     setIsLoading(true);
     try {
       const result = await generateBackupCodes(password, {
@@ -187,7 +184,7 @@ export function TwoFactorForm() {
           toast.error(error.message || "Failed to generate backup codes");
         }
       });
-      
+
       if (!result.success) {
         toast.error("Failed to generate backup codes");
       }
@@ -210,7 +207,7 @@ export function TwoFactorForm() {
   // Download backup codes as a text file
   const downloadBackupCodes = () => {
     if (!backupCodes || backupCodes.length === 0) return;
-    
+
     const fileName = "databuddy-backup-codes.txt";
     const content = `
       Databuddy Two-Factor Authentication Backup Codes
@@ -218,15 +215,15 @@ export function TwoFactorForm() {
       ${backupCodes.join('\n')}
       Generated on: ${new Date().toLocaleString()}
     `;
-    
+
     const element = document.createElement('a');
-    const file = new Blob([content], {type: 'text/plain'});
+    const file = new Blob([content], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
     element.download = fileName;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-    
+
     toast.success("Backup codes downloaded");
   };
 
@@ -244,7 +241,7 @@ export function TwoFactorForm() {
   // Show backup codes component
   const BackupCodesDisplay = () => {
     if (!backupCodes || backupCodes.length === 0) return null;
-    
+
     return (
       <div className="p-4 border rounded-md bg-muted/50">
         <div className="flex justify-between items-center mb-2">
@@ -302,7 +299,7 @@ export function TwoFactorForm() {
               />
             </div>
           )}
-          
+
           <Form {...verifyForm}>
             <form onSubmit={verifyForm.handleSubmit(onVerifySubmit)} className="w-full max-w-md space-y-4">
               <FormField
@@ -312,8 +309,8 @@ export function TwoFactorForm() {
                   <FormItem>
                     <FormLabel>Authentication Code</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Enter 6-digit code" 
+                      <Input
+                        placeholder="Enter 6-digit code"
                         {...field}
                         autoComplete="one-time-code"
                         inputMode="numeric"
@@ -331,7 +328,7 @@ export function TwoFactorForm() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={verifyForm.control}
                 name="trustDevice"
@@ -351,7 +348,7 @@ export function TwoFactorForm() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="flex justify-between">
                 <Button type="button" variant="outline" onClick={() => setSetupStep('initial')}>
                   Back
@@ -377,7 +374,7 @@ export function TwoFactorForm() {
       </div>
     );
   }
-  
+
   if (setupStep === 'complete') {
     return (
       <div className="space-y-4">
@@ -416,7 +413,7 @@ export function TwoFactorForm() {
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Generate New Backup Codes
             </Button>
-            
+
             <Button variant="destructive" onClick={handleDisable2FA} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Disable Two-Factor Authentication

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { toast } from "sonner";
@@ -84,7 +83,7 @@ function CreateWebsiteForm({
   onCreationSuccess?: () => void;
 }) {
   const { createWebsite, isCreating } = useWebsites();
-  
+
   const form = useForm<CreateFormData>({
     defaultValues: {
       name: initialValues?.name || "",
@@ -138,7 +137,7 @@ function CreateWebsiteForm({
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="domainId"
@@ -180,7 +179,7 @@ function CreateWebsiteForm({
             </FormItem>
           )}
         />
-        
+
         {selectedDomain && (
           <FormField
             control={form.control}
@@ -190,9 +189,9 @@ function CreateWebsiteForm({
                 <FormLabel className="text-xs font-medium">Subdomain (Optional)</FormLabel>
                 <div className="flex items-center">
                   <FormControl>
-                    <Input 
-                      placeholder="blog" 
-                      {...field} 
+                    <Input
+                      placeholder="blog"
+                      {...field}
                       className="h-9 rounded-r-none border-r-0"
                     />
                   </FormControl>
@@ -205,7 +204,7 @@ function CreateWebsiteForm({
             )}
           />
         )}
-        
+
         <DialogFooter className="pt-2">
           <div className="flex w-full gap-2">
             <Button
@@ -241,7 +240,7 @@ function EditWebsiteForm({
   onUpdateSuccess?: () => void;
 }) {
   const { updateWebsite, isUpdating } = useWebsites();
-  
+
   const form = useForm<EditFormData>({
     defaultValues: {
       name: website.name || "",
@@ -279,7 +278,7 @@ function EditWebsiteForm({
             </FormItem>
           )}
         />
-        
+
         <DialogFooter className="pt-2">
           <div className="flex w-full gap-2">
             <Button
@@ -339,7 +338,7 @@ export function WebsiteDialog({
               : "Configure a new website for analytics tracking"}
           </DialogDescription>
         </DialogHeader>
-        
+
         {isEditing && website ? (
           <EditWebsiteForm
             website={website}

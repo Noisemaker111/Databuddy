@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@databuddy/auth/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -40,7 +39,6 @@ export function PasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       currentPassword: "",
       newPassword: "",
@@ -126,12 +124,12 @@ export function PasswordForm() {
           <Checkbox
             id="revokeOtherSessions"
             checked={form.watch("revokeOtherSessions")}
-            onCheckedChange={(checked) => 
+            onCheckedChange={(checked) =>
               form.setValue("revokeOtherSessions", checked === true)
             }
           />
-          <label 
-            htmlFor="revokeOtherSessions" 
+          <label
+            htmlFor="revokeOtherSessions"
             className="text-sm font-medium leading-none"
           >
             Log out from all other devices

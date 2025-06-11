@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient, useSession } from "@databuddy/auth/client";
 import { toast } from "sonner";
 import { Loader2, Check } from "lucide-react";
@@ -35,7 +34,6 @@ export function ProfileForm() {
   const [isSaved, setIsSaved] = useState(false);
 
   const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
     defaultValues: {
       name: session?.user?.name || "",
     },
@@ -44,23 +42,23 @@ export function ProfileForm() {
   async function onSubmit(data: ProfileFormValues) {
     setIsLoading(true);
     setIsSaved(false);
-    
+
     try {
       // Update user's name
       const response = await authClient.updateUser({
         name: data.name,
       });
-      
+
       // Refresh the page to update the session data
       router.refresh();
-      
+
       if (response.error) {
         toast.error(response.error.message || "Failed to update profile");
       } else {
         toast.success("Profile updated successfully");
         setIsSaved(true);
-        
-      // Reset saved indicator after a delay
+
+        // Reset saved indicator after a delay
         setTimeout(() => setIsSaved(false), 3000);
       }
     } catch (error: any) {
@@ -96,8 +94,8 @@ export function ProfileForm() {
         />
 
         <div className="flex justify-end">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={isLoading || session?.user?.name === form.watch("name")}
             className="flex items-center"
           >
