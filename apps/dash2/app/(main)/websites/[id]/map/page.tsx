@@ -2,7 +2,6 @@
 
 import { useState, Suspense } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapComponent } from "@/components/analytics/map-component";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useParams } from "next/navigation";
 import { useAnalyticsLocations } from "@/hooks/use-analytics";
@@ -10,15 +9,32 @@ import { AlertCircle, Globe, HelpCircle, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
+
+// Dynamic import for MapComponent (heavy Leaflet/D3 dependencies)
+const MapComponent = dynamic(
+  () => import("@/components/analytics/map-component").then(mod => ({ default: mod.MapComponent })),
+  {
+    loading: () => (
+      <div className="h-full flex items-center justify-center bg-muted/20 rounded">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <span className="text-sm font-medium text-muted-foreground">Loading map...</span>
+        </div>
+      </div>
+    ),
+    ssr: false
+  }
+);
 
 function WebsiteMapPage() {
   const { id } = useParams<{ id: string }>();
   const [mode, setMode] = useState<"total" | "perCapita">("total");
-  
+
   if (!id) {
     return <div>No website ID</div>;
   }
-  
+
   const { data: locationData, isLoading } = useAnalyticsLocations(id);
   const topCountries = locationData?.countries?.filter(c => c.country && c.country.trim() !== "").slice(0, 8) || [];
   const totalVisitors = locationData?.countries?.reduce((sum, country) => sum + country.visitors, 0) || 0;
@@ -45,7 +61,7 @@ function WebsiteMapPage() {
         <Tabs value={mode} onValueChange={(value) => setMode(value as "total" | "perCapita")}>
           <div className="border-b relative">
             <TabsList className="h-10 bg-transparent p-0 w-full justify-start overflow-x-auto">
-              <TabsTrigger 
+              <TabsTrigger
                 value="total"
                 className="text-xs sm:text-sm h-10 px-2 sm:px-4 rounded-none touch-manipulation hover:bg-muted/50 relative transition-colors whitespace-nowrap cursor-pointer"
               >
@@ -54,7 +70,7 @@ function WebsiteMapPage() {
                   <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary" />
                 )}
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="perCapita"
                 className="text-xs sm:text-sm h-10 px-2 sm:px-4 rounded-none touch-manipulation hover:bg-muted/50 relative transition-colors whitespace-nowrap cursor-pointer"
               >
@@ -87,7 +103,7 @@ function WebsiteMapPage() {
             <MapComponent height="100%" mode={mode} locationData={locationData} isLoading={isLoading} />
           </CardContent>
         </Card>
-        
+
         {/* Countries List */}
         <Card className="md:w-72 flex-1 md:flex-none flex flex-col overflow-hidden min-h-0 rounded">
           <CardHeader className="pb-3 flex-shrink-0">
@@ -116,8 +132,8 @@ function WebsiteMapPage() {
                     {topCountries.map((country, index) => {
                       const percentage = totalVisitors > 0 ? (country.visitors / totalVisitors) * 100 : 0;
                       return (
-                        <div 
-                          key={country.country} 
+                        <div
+                          key={country.country}
                           className={cn(
                             "flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer transition-colors border-b border-border/20 last:border-b-0",
                             index === 0 && "bg-primary/5"
@@ -125,7 +141,7 @@ function WebsiteMapPage() {
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div className="w-6 h-4 relative overflow-hidden rounded shadow-sm flex-shrink-0">
-                              <img 
+                              <img
                                 src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${country.country.toUpperCase()}.svg`}
                                 alt={country.country}
                                 className="absolute inset-0 w-full h-full object-cover"
@@ -159,7 +175,7 @@ function WebsiteMapPage() {
                     })}
                   </div>
                 )}
-                
+
                 {/* Unknown Location */}
                 {unknownVisitors > 0 && (
                   <div className="border-t bg-muted/10">
@@ -183,7 +199,7 @@ function WebsiteMapPage() {
                     </div>
                   </div>
                 )}
-                
+
                 {topCountries.length === 0 && unknownVisitors === 0 && (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <AlertCircle className="h-8 w-8 text-muted-foreground mb-3" />

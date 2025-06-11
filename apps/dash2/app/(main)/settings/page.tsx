@@ -1,21 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useQueryState } from "nuqs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { EmailForm } from "@/components/settings/email-form";
-import { PasswordForm } from "@/components/settings/password-form";
-import { TwoFactorForm } from "@/components/settings/two-factor-form";
-import { SessionsForm } from "@/components/settings/sessions-form";
-import { AccountDeletion } from "@/components/settings/account-deletion";
-import { ProfileForm } from "@/components/settings/profile-form";
-import TimezonePreferences from "@/components/settings/timezone-preferences";
-import { 
-  ShieldOff, 
-  User, 
-  Shield, 
-  Bell, 
+import {
+  ShieldOff,
+  User,
+  Shield,
+  Bell,
   Settings,
   Info
 } from "lucide-react";
@@ -25,6 +18,44 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import dynamic from "next/dynamic";
+
+// Dynamic imports for settings form components
+const EmailForm = dynamic(() => import("@/components/settings/email-form").then(mod => ({ default: mod.EmailForm })), {
+  loading: () => <Skeleton className="h-32 w-full" />,
+  ssr: false
+});
+
+const PasswordForm = dynamic(() => import("@/components/settings/password-form").then(mod => ({ default: mod.PasswordForm })), {
+  loading: () => <Skeleton className="h-40 w-full" />,
+  ssr: false
+});
+
+const TwoFactorForm = dynamic(() => import("@/components/settings/two-factor-form").then(mod => ({ default: mod.TwoFactorForm })), {
+  loading: () => <Skeleton className="h-48 w-full" />,
+  ssr: false
+});
+
+const SessionsForm = dynamic(() => import("@/components/settings/sessions-form").then(mod => ({ default: mod.SessionsForm })), {
+  loading: () => <Skeleton className="h-64 w-full" />,
+  ssr: false
+});
+
+const AccountDeletion = dynamic(() => import("@/components/settings/account-deletion").then(mod => ({ default: mod.AccountDeletion })), {
+  loading: () => <Skeleton className="h-24 w-full" />,
+  ssr: false
+});
+
+const ProfileForm = dynamic(() => import("@/components/settings/profile-form").then(mod => ({ default: mod.ProfileForm })), {
+  loading: () => <Skeleton className="h-56 w-full" />,
+  ssr: false
+});
+
+const TimezonePreferences = dynamic(() => import("@/components/settings/timezone-preferences"), {
+  loading: () => <Skeleton className="h-20 w-full" />,
+  ssr: false
+});
 
 type SettingsTab = "profile" | "account" | "security" | "notifications";
 
@@ -65,9 +96,9 @@ export default function SettingsPage() {
     <div className="container max-w-6xl py-3 space-y-8">
       <div className="flex items-center justify-between">
         {isMobile && (
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="md:hidden"
           >
@@ -133,7 +164,7 @@ export default function SettingsPage() {
                   This information is visible to other users.
                 </AlertDescription>
               </Alert>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>Personal Information</CardTitle>

@@ -10,11 +10,11 @@ interface WebsiteHeaderProps {
 
 export function WebsiteHeader({ website }: WebsiteHeaderProps) {
   return (
-    <>
+    <div className="flex flex-col gap-2">
       <div>
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="w-full justify-start text-muted-foreground hover:text-foreground cursor-pointer group"
           asChild
         >
@@ -24,7 +24,7 @@ export function WebsiteHeader({ website }: WebsiteHeaderProps) {
           </Link>
         </Button>
       </div>
-      
+
       <div className="px-2 py-2 bg-accent/30 rounded-lg border border-border/50">
         <h2 className="text-base font-semibold truncate flex items-center">
           <Globe className="h-4 w-4 mr-2 text-primary/70" />
@@ -36,6 +36,6 @@ export function WebsiteHeader({ website }: WebsiteHeaderProps) {
           {website?.domain || <Skeleton className="h-4 w-24" />}
         </div>
       </div>
-    </>
+    </div>
   );
 } 

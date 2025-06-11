@@ -6,6 +6,7 @@ import { Globe, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react
 import type { MiniChartDataPoint } from '@/hooks/use-analytics';
 import { useMiniChartData } from '@/hooks/use-analytics';
 import type { Website } from '@databuddy/shared';
+import { memo, useMemo } from 'react';
 
 interface WebsiteCardProps {
     website: Website;
@@ -36,7 +37,8 @@ const getTrend = (data: MiniChartDataPoint[]) => {
     return { type, value: Math.abs(change) };
 };
 
-const Chart = ({ data, id }: { data: MiniChartDataPoint[]; id: string }) => (
+// Memoized chart component
+const Chart = memo(({ data, id }: { data: MiniChartDataPoint[]; id: string }) => (
     <div className="chart-container">
         <ResponsiveContainer width="100%" height={50}>
             <AreaChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
@@ -69,14 +71,20 @@ const Chart = ({ data, id }: { data: MiniChartDataPoint[]; id: string }) => (
             </AreaChart>
         </ResponsiveContainer>
     </div>
-);
+));
 
-export function WebsiteCard({ website }: WebsiteCardProps) {
+Chart.displayName = 'Chart';
+
+export const WebsiteCard = memo(({ website }: WebsiteCardProps) => {
     const { data: response, isLoading, isError } = useMiniChartData(website.id);
 
     const data = response?.data || [];
-    const totalViews = data.reduce((sum, point) => sum + point.value, 0);
-    const trend = getTrend(data);
+
+    // Memoize expensive calculations
+    const { totalViews, trend } = useMemo(() => ({
+        totalViews: data.reduce((sum, point) => sum + point.value, 0),
+        trend: getTrend(data)
+    }), [data]);
 
     return (
         <Link href={`/websites/${website.id}`} className="block group">
@@ -115,7 +123,7 @@ export function WebsiteCard({ website }: WebsiteCardProps) {
                                 </span>
                                 {trend && (
                                     <div className={`flex items-center gap-1 text-xs font-medium ${trend.type === 'up' ? 'text-green-600' :
-                                            trend.type === 'down' ? 'text-red-600' : 'text-muted-foreground'
+                                        trend.type === 'down' ? 'text-red-600' : 'text-muted-foreground'
                                         }`}>
                                         {trend.type === 'up' ? <TrendingUp className="h-3 w-3" /> :
                                             trend.type === 'down' ? <TrendingDown className="h-3 w-3" /> :
@@ -135,7 +143,9 @@ export function WebsiteCard({ website }: WebsiteCardProps) {
             </Card>
         </Link>
     );
-}
+});
+
+WebsiteCard.displayName = 'WebsiteCard';
 
 export function WebsiteCardSkeleton() {
     return (
