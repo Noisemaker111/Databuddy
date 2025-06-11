@@ -1,0 +1,32 @@
+when:
+  - event: push
+    branch: main
+
+steps:
+
+  - name: Build Dash2
+    image: woodpeckerci/plugin-docker-buildx:6.0.0
+    settings:
+      repo: databuddy-analytics/dash2
+      dockerfile: dash2.Dockerfile
+      tag: latest
+      dry-run: true
+
+  - name: Build API
+    image: woodpeckerci/plugin-docker-buildx:6.0.0
+    settings:
+      repo: databuddy-analytics/api
+      dockerfile: api.Dockerfile
+      tag: latest
+      dry-run: true
+
+  - name: Build Basket
+    image: woodpeckerci/plugin-docker-buildx:6.0.0
+    settings:
+      repo: databuddy-analytics/basket
+      dockerfile: basket.Dockerfile
+      tag: latest
+      dry-run: true
+  
+  
+
