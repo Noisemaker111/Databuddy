@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Globe, Plus, TrendingUp } from "lucide-react";
+import { Globe, Plus, TrendingUp, Shield, Sparkles } from "lucide-react";
 import { useDomainManagement } from "./hooks/use-domain-management";
+import { cn } from "@/lib/utils";
 
 // Dynamic imports for tab components
 const DomainsTab = dynamic(() => import("./components/domains-tab").then(mod => ({ default: mod.DomainsTab })), {
@@ -25,23 +26,33 @@ const DomainRanksTab = dynamic(() => import("./components/domain-ranks-tab").the
 
 function TabSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="h-9 w-32" />
+        <Skeleton className="h-4 w-48 rounded" />
+        <Skeleton className="h-9 w-32 rounded" />
       </div>
-      <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="border rounded-lg p-4">
-            <div className="flex items-center justify-between">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="border rounded-lg p-4 animate-pulse">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-3">
-                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-8 w-8 rounded-full" />
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-4 w-32 rounded" />
+                  <Skeleton className="h-3 w-20 rounded" />
                 </div>
               </div>
-              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-6 w-16 rounded" />
+            </div>
+            <div className="space-y-2 pt-2 border-t">
+              <div className="flex justify-between">
+                <Skeleton className="h-3 w-16 rounded" />
+                <Skeleton className="h-3 w-24 rounded" />
+              </div>
+              <div className="flex justify-between">
+                <Skeleton className="h-3 w-12 rounded" />
+                <Skeleton className="h-3 w-20 rounded" />
+              </div>
             </div>
           </div>
         ))}
@@ -66,83 +77,134 @@ export default function DomainsPage() {
   } = useDomainManagement();
 
   return (
-    <div className="h-full flex flex-col animate-fadeIn">
-      {/* Compact header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:px-4 sm:py-4 border-b gap-3 sm:gap-0 sm:p-0">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate">
-            Domains
-          </h1>
-          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5 line-clamp-2 sm:line-clamp-1">
-            Manage your domains and DNS settings
-          </p>
-        </div>
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              size="default" 
-              className="h-9 sm:h-9 text-sm sm:text-base text-primary-foreground btn-hover-effect w-full sm:w-auto touch-manipulation"
-            >
-              <Plus className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span className="truncate">Add Domain</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Domain</DialogTitle>
-              <DialogDescription>
-                Add a new domain to your account
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="domain">Domain</Label>
-                <Input
-                  id="domain"
-                  placeholder="example.com"
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Enter only the top-level domain (e.g., example.com). Subdomains and protocols will be removed.
+    <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Enhanced header */}
+      <div className="border-b bg-gradient-to-r from-background via-background to-muted/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:px-4 sm:py-4 gap-3 sm:gap-0">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 animate-pulse">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate">
+                  Domains
+                </h1>
+                <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+                  Manage your domains and DNS verification
                 </p>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
-                Cancel
+          </div>
+          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                size="default" 
+                className={cn(
+                  "gap-2 w-full sm:w-auto px-6 py-3 font-medium",
+                  "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary",
+                  "shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
+                )}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300 relative z-10" />
+                <span className="truncate relative z-10">Add Domain</span>
               </Button>
-              <Button onClick={handleAddDomain} disabled={isAdding}>
-                {isAdding ? "Adding..." : "Add Domain"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <div className="flex items-center gap-2 mb-1">
+                  <Globe className="h-5 w-5" />
+                  <DialogTitle>Add New Domain</DialogTitle>
+                </div>
+                <DialogDescription className="text-xs">
+                  Add a domain to verify ownership and create websites
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="domain" className="text-xs font-medium">Domain</Label>
+                  <Input
+                    id="domain"
+                    placeholder="example.com"
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
+                    className="h-9"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Enter only the top-level domain (e.g., example.com)
+                  </p>
+                </div>
+                
+                <div className="bg-muted/50 rounded-lg p-3 border">
+                  <div className="flex items-start gap-2">
+                    <div className="p-1 rounded bg-primary/10">
+                      <Sparkles className="h-3 w-3 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-xs mb-1">💡 Next steps</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        After adding, you'll need to verify ownership by adding a DNS TXT record.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter className="pt-2">
+                <div className="flex w-full gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setAddDialogOpen(false)}
+                    disabled={isAdding}
+                    className="flex-1 h-9"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleAddDomain}
+                    disabled={isAdding}
+                    className="flex-1 h-9"
+                  >
+                    {isAdding ? "Adding..." : "Add Domain"}
+                  </Button>
+                </div>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {/* Tabbed content area */}
-      <div className="flex-1 overflow-y-auto p-3 sm:px-4 sm:pt-4 sm:pb-6 sm:p-0">
+      {/* Content area */}
+      <div className="flex-1 overflow-y-auto p-3 sm:px-4 sm:pt-4 sm:pb-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <div className="border-b relative mb-4">
-            <TabsList className="h-10 bg-transparent p-0 w-full justify-start overflow-x-auto">
+          <div className="border-b relative mb-6">
+            <TabsList className="h-12 bg-transparent p-0 w-full justify-start overflow-x-auto">
               <TabsTrigger 
                 value="domains" 
-                className="text-xs sm:text-sm h-10 px-2 sm:px-4 rounded-none touch-manipulation hover:bg-muted/50 relative transition-colors whitespace-nowrap cursor-pointer"
+                className={cn(
+                  "text-sm h-12 px-4 rounded-none relative transition-all duration-200",
+                  "hover:bg-muted/50 whitespace-nowrap cursor-pointer",
+                  "data-[state=active]:text-primary data-[state=active]:bg-transparent"
+                )}
               >
-                <Globe className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">Domains</span>
+                <Globe className="h-4 w-4 mr-2" />
+                <span>Domains</span>
                 {activeTab === "domains" && (
-                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary" />
+                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-t" />
                 )}
               </TabsTrigger>
               <TabsTrigger 
                 value="ranks" 
-                className="text-xs sm:text-sm h-10 px-2 sm:px-4 rounded-none touch-manipulation hover:bg-muted/50 relative transition-colors whitespace-nowrap cursor-pointer"
+                className={cn(
+                  "text-sm h-12 px-4 rounded-none relative transition-all duration-200",
+                  "hover:bg-muted/50 whitespace-nowrap cursor-pointer",
+                  "data-[state=active]:text-primary data-[state=active]:bg-transparent"
+                )}
               >
-                <TrendingUp className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">Domain Ranks</span>
+                <TrendingUp className="h-4 w-4 mr-2" />
+                <span>Domain Ranks</span>
                 {activeTab === "ranks" && (
-                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary" />
+                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-t" />
                 )}
               </TabsTrigger>
             </TabsList>

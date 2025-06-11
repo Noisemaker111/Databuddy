@@ -42,81 +42,55 @@ export function createEventsByDateBuilder(
           range(toUInt32(dateDiff('hour', toDateTime('${startDate} 00:00:00'), toDateTime('${endDate} 23:59:59')) + 1))
         )) AS datetime
       ),
-      session_metrics AS (
+      session_details AS (
         SELECT
-          toStartOfHour(time) as event_hour,
           session_id,
-          anonymous_id,
-          countIf(event_name = 'screen_view') as page_count
+          toStartOfHour(MIN(time)) as session_start_hour,
+          countIf(event_name = 'screen_view') as page_count,
+          dateDiff('second', MIN(time), MAX(time)) as duration
         FROM analytics.events
         WHERE 
           client_id = '${websiteId}'
           AND time >= parseDateTimeBestEffort('${startDate}')
           AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')
-        GROUP BY event_hour, session_id, anonymous_id
+        GROUP BY session_id
       ),
-      hourly_visitors AS (
+      hourly_session_metrics AS (
+        SELECT
+          session_start_hour as event_hour,
+          count(session_id) as sessions,
+          countIf(page_count = 1) as bounced_sessions,
+          avgIf(duration, duration > 0) as avg_session_duration
+        FROM session_details
+        GROUP BY session_start_hour
+      ),
+      hourly_event_metrics AS (
         SELECT
           toStartOfHour(time) as event_hour,
+          countIf(event_name = 'screen_view') as pageviews,
           count(distinct anonymous_id) as unique_visitors
         FROM analytics.events
         WHERE 
           client_id = '${websiteId}'
           AND time >= parseDateTimeBestEffort('${startDate}')
           AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')
-          AND event_name = 'screen_view'
-        GROUP BY event_hour
-      ),
-      session_durations AS (
-        SELECT
-          toStartOfHour(min_time) as event_hour,
-          session_id,
-          dateDiff('second', min_time, max_time) as duration
-        FROM (
-          SELECT 
-            session_id,
-            MIN(time) as min_time,
-            MAX(time) as max_time
-          FROM analytics.events
-          WHERE 
-            client_id = '${websiteId}'
-            AND time >= parseDateTimeBestEffort('${startDate}')
-            AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')
-          GROUP BY session_id
-          HAVING min_time < max_time
-        )
-      ),
-      hourly_metrics AS (
-        SELECT
-          event_hour,
-          sum(page_count) as pageviews,
-          count(distinct session_id) as sessions,
-          countIf(page_count = 1) as bounced_sessions
-        FROM session_metrics
         GROUP BY event_hour
       )
       SELECT
-        formatDateTime(hour_range.datetime, '%Y-%m-%d %H:00:00') as date,
-        COALESCE(hm.pageviews, 0) as pageviews,
-        COALESCE(hv.unique_visitors, 0) as unique_visitors,
-        COALESCE(hm.sessions, 0) as sessions,
+        formatDateTime(hr.datetime, '%Y-%m-%d %H:00:00') as date,
+        COALESCE(hem.pageviews, 0) as pageviews,
+        COALESCE(hem.unique_visitors, 0) as unique_visitors,
+        COALESCE(hsm.sessions, 0) as sessions,
         CASE 
-          WHEN COALESCE(hm.sessions, 0) > 0 
-          THEN (COALESCE(hm.bounced_sessions, 0) / COALESCE(hm.sessions, 0)) * 100 
+          WHEN COALESCE(hsm.sessions, 0) > 0 
+          THEN (COALESCE(hsm.bounced_sessions, 0) / hsm.sessions) * 100 
           ELSE 0 
         END as bounce_rate,
-        COALESCE(AVG(sd.duration), 0) as avg_session_duration
-      FROM hour_range
-      LEFT JOIN hourly_metrics hm ON hour_range.datetime = hm.event_hour
-      LEFT JOIN hourly_visitors hv ON hour_range.datetime = hv.event_hour
-      LEFT JOIN session_durations sd ON hour_range.datetime = sd.event_hour
-      GROUP BY 
-        hour_range.datetime, 
-        hm.pageviews, 
-        hv.unique_visitors, 
-        hm.sessions, 
-        hm.bounced_sessions
-      ORDER BY hour_range.datetime ASC
+        COALESCE(hsm.avg_session_duration, 0) as avg_session_duration
+      FROM hour_range hr
+      LEFT JOIN hourly_session_metrics hsm ON hr.datetime = hsm.event_hour
+      LEFT JOIN hourly_event_metrics hem ON hr.datetime = hem.event_hour
+      ORDER BY hr.datetime ASC
     `;
     
     // Override the getSql method to return our custom query
@@ -133,69 +107,55 @@ export function createEventsByDateBuilder(
         range(toUInt32(dateDiff('day', toDate('${startDate}'), toDate('${endDate}')) + 1))
       )) AS date
     ),
-    session_metrics AS (
-      SELECT 
-        toDate(time) as event_date,
+    session_details AS (
+      SELECT
         session_id,
-        anonymous_id,
-        countIf(event_name = 'screen_view') as page_count
+        toDate(MIN(time)) as session_start_date,
+        countIf(event_name = 'screen_view') as page_count,
+        dateDiff('second', MIN(time), MAX(time)) as duration
       FROM analytics.events
-      WHERE 
+      WHERE
         client_id = '${websiteId}'
         AND time >= parseDateTimeBestEffort('${startDate}')
         AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')
-      GROUP BY event_date, session_id, anonymous_id
+      GROUP BY session_id
     ),
-    session_durations AS (
-      SELECT 
-        toDate(min_time) as event_date,
-        session_id,
-        dateDiff('second', min_time, max_time) as duration
-      FROM (
-        SELECT 
-          session_id, 
-          MIN(time) as min_time, 
-          MAX(time) as max_time
-        FROM analytics.events
-        WHERE 
-          client_id = '${websiteId}'
-          AND time >= parseDateTimeBestEffort('${startDate}')
-          AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')
-        GROUP BY session_id
-        HAVING min_time < max_time
-      )
-    ),
-    daily_metrics AS (
+    daily_session_metrics AS (
       SELECT
-        event_date,
-        sum(page_count) as pageviews,
-        count(distinct session_id) as sessions,
+        session_start_date,
+        count(session_id) as sessions,
         countIf(page_count = 1) as bounced_sessions,
+        avgIf(duration, duration > 0) as avg_session_duration
+      FROM session_details
+      GROUP BY session_start_date
+    ),
+    daily_event_metrics AS (
+      SELECT
+        toDate(time) as event_date,
+        countIf(event_name = 'screen_view') as pageviews,
         count(distinct anonymous_id) as unique_visitors
-      FROM session_metrics
+      FROM analytics.events
+      WHERE
+        client_id = '${websiteId}'
+        AND time >= parseDateTimeBestEffort('${startDate}')
+        AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')
       GROUP BY event_date
     )
     SELECT
-      date_range.date,
-      COALESCE(dm.pageviews, 0) as pageviews,
-      COALESCE(dm.unique_visitors, 0) as unique_visitors,
-      COALESCE(dm.sessions, 0) as sessions,
+      dr.date,
+      COALESCE(dem.pageviews, 0) as pageviews,
+      COALESCE(dem.unique_visitors, 0) as unique_visitors,
+      COALESCE(dsm.sessions, 0) as sessions,
       CASE 
-        WHEN COALESCE(dm.sessions, 0) > 0
-        THEN (COALESCE(dm.bounced_sessions, 0) / COALESCE(dm.sessions, 0)) * 100 
+        WHEN COALESCE(dsm.sessions, 0) > 0 
+        THEN (COALESCE(dsm.bounced_sessions, 0) / dsm.sessions) * 100 
         ELSE 0 
       END as bounce_rate,
-      COALESCE(avg(sd.duration), 0) as avg_session_duration
-    FROM date_range
-    LEFT JOIN daily_metrics dm ON date_range.date = dm.event_date
-    LEFT JOIN session_durations sd ON date_range.date = sd.event_date
-    GROUP BY 
-      date_range.date, 
-      dm.pageviews, 
-      dm.unique_visitors, 
-      dm.sessions, 
-      dm.bounced_sessions
-    ORDER BY date_range.date ASC
+      COALESCE(dsm.avg_session_duration, 0) as avg_session_duration
+    FROM date_range dr
+    LEFT JOIN daily_session_metrics dsm ON dr.date = dsm.session_start_date
+    LEFT JOIN daily_event_metrics dem ON dr.date = dem.event_date
+    ORDER BY dr.date ASC
   `;
   
   // Override the getSql method to return our custom query

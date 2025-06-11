@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { authMiddleware } from '../../middleware/auth'
 import { websiteAuthHook } from '../../middleware/website'
 import { timezoneMiddleware } from '../../middleware/timezone'
+import { adjustDateRangeForTimezone } from '../../utils/timezone'
 import { logger } from '../../lib/logger'
 import { chQuery } from '@databuddy/db'
 import { getLanguageName } from '@databuddy/shared'
@@ -297,8 +298,8 @@ function createQueryBuilder(config: BuilderConfig): ParameterBuilder {
   return (websiteId, startDate, endDate, limit, offset) => {
     const whereClauses = [
       `client_id = ${escapeSqlString(websiteId)}`,
-      `toDate(time) >= ${escapeSqlString(startDate)}`,
-      `toDate(time) <= ${escapeSqlString(endDate)}`,
+      `time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})`,
+      `time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})`,
       `event_name = 'screen_view'`
     ];
     
@@ -354,8 +355,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       uniq(session_id) as sessions
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name = 'screen_view'
       AND browser_name != ''
       AND browser_version IS NOT NULL 
@@ -554,8 +555,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       region
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name = 'error'
       AND error_message != ''
     ORDER BY time DESC
@@ -572,8 +573,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       MIN(time) as first_occurrence
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name = 'error'
       AND error_message != ''
     GROUP BY error_message
@@ -635,8 +636,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       uniq(session_id) as affected_sessions
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name = 'error'
       AND error_message != ''
     GROUP BY toDate(time)
@@ -657,8 +658,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       groupArray(JSONExtractKeys(properties)) as property_keys_arrays
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
       AND event_name != ''
     GROUP BY event_name
@@ -682,8 +683,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       CAST(properties AS String) as properties_json
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
       AND event_name != ''
     ORDER BY time DESC
@@ -700,8 +701,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       groupArray(DISTINCT event_name) as event_types
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
       AND event_name != ''
       AND path != ''
@@ -722,8 +723,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       MIN(time) as first_event_time
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
       AND event_name != ''
     GROUP BY anonymous_id
@@ -738,8 +739,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
         JSONExtractKeys(CAST(properties AS String)) as keys
       FROM analytics.events
       WHERE client_id = ${escapeSqlString(websiteId)}
-        AND toDate(time) >= ${escapeSqlString(startDate)}
-        AND toDate(time) <= ${escapeSqlString(endDate)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
         AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
         AND event_name != ''
         AND properties IS NOT NULL
@@ -771,8 +772,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       uniq(anonymous_id) as total_users
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name = 'screen_view'
   `,
 
@@ -785,8 +786,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
       COUNT(DISTINCT session_id) as sessions
     FROM analytics.events
     WHERE client_id = ${escapeSqlString(websiteId)}
-      AND toDate(time) >= ${escapeSqlString(startDate)}
-      AND toDate(time) <= ${escapeSqlString(endDate)}
+      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND event_name = 'screen_view'
   `,
 
@@ -833,8 +834,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
         uniq(anonymous_id) as unique_users
       FROM analytics.events
       WHERE client_id = ${escapeSqlString(websiteId)}
-        AND toDate(time) >= ${escapeSqlString(startDate)}
-        AND toDate(time) <= ${escapeSqlString(endDate)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
         AND event_name = ${escapeSqlString(eventName)}
         AND JSONHas(properties, ${escapeSqlString(propertyKey)})
         AND JSONExtractString(properties, ${escapeSqlString(propertyKey)}) != ''
@@ -874,8 +875,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
             MIN(time) as step_time
           FROM analytics.events
           WHERE client_id = ${escapeSqlString(websiteId)}
-            AND toDate(time) >= ${escapeSqlString(startDate)}
-            AND toDate(time) <= ${escapeSqlString(endDate)}
+            AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+            AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
             AND ${whereCondition}
           GROUP BY session_id, anonymous_id
         )`;
@@ -930,8 +931,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
         dateDiff('second', MIN(time), MAX(time)) as session_duration
       FROM analytics.events
       WHERE client_id = ${escapeSqlString(websiteId)}
-        AND toDate(time) >= ${escapeSqlString(startDate)}
-        AND toDate(time) <= ${escapeSqlString(endDate)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
         AND event_name = 'screen_view'
       GROUP BY session_id, anonymous_id
       HAVING unique_pages_visited >= 2
@@ -969,8 +970,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
           0.0 as avg_time_to_complete
         FROM analytics.events
         WHERE client_id = ${escapeSqlString(websiteId)}
-          AND toDate(time) >= ${escapeSqlString(startDate)}
-          AND toDate(time) <= ${escapeSqlString(endDate)}
+          AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+          AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
           AND event_name = 'screen_view'
         UNION ALL
         SELECT 
@@ -979,8 +980,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
           COUNT(DISTINCT session_id) as users,
           (SELECT COUNT(DISTINCT session_id) FROM analytics.events 
            WHERE client_id = ${escapeSqlString(websiteId)}
-             AND toDate(time) >= ${escapeSqlString(startDate)}
-             AND toDate(time) <= ${escapeSqlString(endDate)}
+             AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+             AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
              AND event_name = 'screen_view') as total_users,
           50.0 as conversion_rate,
           COUNT(DISTINCT session_id) as dropoffs,
@@ -988,8 +989,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
           120.0 as avg_time_to_complete
         FROM analytics.events
         WHERE client_id = ${escapeSqlString(websiteId)}
-          AND toDate(time) >= ${escapeSqlString(startDate)}
-          AND toDate(time) <= ${escapeSqlString(endDate)}
+          AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+          AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
           AND event_name = 'screen_view'
           AND path LIKE '%signup%'
       )
@@ -1019,8 +1020,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
           AVG(load_time) as avg_load_time
         FROM analytics.events
         WHERE client_id = ${escapeSqlString(websiteId)}
-          AND toDate(time) >= ${escapeSqlString(startDate)}
-          AND toDate(time) <= ${escapeSqlString(endDate)}
+          AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+          AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
           AND event_name = 'screen_view'
         GROUP BY segment_name
       )
@@ -1049,8 +1050,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
         ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY time) as step_number
       FROM analytics.events
       WHERE client_id = ${escapeSqlString(websiteId)}
-        AND toDate(time) >= ${escapeSqlString(startDate)}
-        AND toDate(time) <= ${escapeSqlString(endDate)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
         AND event_name = 'screen_view'
         AND path != ''
     ),
@@ -1091,8 +1092,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
         dateDiff('second', MIN(time), MAX(time)) as session_duration
       FROM analytics.events
       WHERE client_id = ${escapeSqlString(websiteId)}
-        AND toDate(time) >= ${escapeSqlString(startDate)}
-        AND toDate(time) <= ${escapeSqlString(endDate)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
         AND event_name = 'screen_view'
         AND path != ''
       GROUP BY session_id, anonymous_id
@@ -1135,8 +1136,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
         COUNT(*) OVER (PARTITION BY session_id) as total_steps_in_session
       FROM analytics.events
       WHERE client_id = ${escapeSqlString(websiteId)}
-        AND toDate(time) >= ${escapeSqlString(startDate)}
-        AND toDate(time) <= ${escapeSqlString(endDate)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
         AND event_name = 'screen_view'
         AND path != ''
     ),
@@ -1176,8 +1177,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
         ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY time) as page_rank
       FROM analytics.events
       WHERE client_id = ${escapeSqlString(websiteId)}
-        AND toDate(time) >= ${escapeSqlString(startDate)}
-        AND toDate(time) <= ${escapeSqlString(endDate)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
         AND event_name = 'screen_view'
         AND path != ''
     ),
@@ -1197,8 +1198,8 @@ const PARAMETER_BUILDERS: Record<string, ParameterBuilder> = {
         countIf(event_name = 'screen_view') as page_count
       FROM analytics.events
       WHERE client_id = ${escapeSqlString(websiteId)}
-        AND toDate(time) >= ${escapeSqlString(startDate)}
-        AND toDate(time) <= ${escapeSqlString(endDate)}
+        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       GROUP BY session_id
     ),
     session_outcomes AS (
@@ -1282,13 +1283,15 @@ function buildUnifiedQuery(
     const subQueries: string[] = []
     
     for (const { query, parameter } of items) {
-      const { startDate, endDate, limit, page, filters } = query
+      const { startDate, endDate, limit, page, filters, timeZone } = query
       const offset = (page - 1) * limit
+      
+      const { startDate: adjStartDate, endDate: adjEndDate } = adjustDateRangeForTimezone(startDate, endDate, timeZone);
       
       const builder = PARAMETER_BUILDERS[parameter as keyof typeof PARAMETER_BUILDERS]
       if (!builder) continue
       
-      let sql = builder(websiteId, startDate, endDate, limit, offset)
+      let sql = builder(websiteId, adjStartDate, `${adjEndDate} 23:59:59`, limit, offset, filters)
       
       // Apply filters if provided
       if (filters.length > 0) {
@@ -1492,8 +1495,10 @@ async function processBatchQueries(
     return Promise.all(
       queries.map(async (query) => {
         try {
-          const { startDate, endDate, parameters, limit, page, filters } = query
+          const { startDate, endDate, parameters, limit, page, filters, timeZone } = query
           const offset = (page - 1) * limit
+
+          const { startDate: adjStartDate, endDate: adjEndDate } = adjustDateRangeForTimezone(startDate, endDate, timeZone);
 
           const unsupportedParams = parameters.filter((param: string) => 
             !PARAMETER_BUILDERS[param as keyof typeof PARAMETER_BUILDERS]
@@ -1511,7 +1516,7 @@ async function processBatchQueries(
           const results = await Promise.all(
             parameters.map(async (parameter: string) => {
               const builder = PARAMETER_BUILDERS[parameter as keyof typeof PARAMETER_BUILDERS]
-              let sql = builder(websiteId, startDate, endDate, limit, offset)
+              let sql = builder(websiteId, adjStartDate, `${adjEndDate} 23:59:59`, limit, offset, filters)
               
               if (filters.length > 0) {
                 const filterClauses = filters.map((filter: any) => {

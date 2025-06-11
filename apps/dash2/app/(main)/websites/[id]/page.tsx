@@ -24,6 +24,7 @@ import {
   timeGranularityAtom,
   setDateRangeAndAdjustGranularityAtom,
   formattedDateRangeAtom,
+  timezoneAtom,
 } from "@/stores/jotai/filterAtoms";
 import { EmptyState } from "./_components/utils/ui-components";
 
@@ -70,6 +71,7 @@ function WebsiteDetailsPage() {
   const [currentGranularity, setCurrentGranularityAtomState] = useAtom(timeGranularityAtom);
   const [, setDateRangeAction] = useAtom(setDateRangeAndAdjustGranularityAtom);
   const [formattedDateRangeState] = useAtom(formattedDateRangeAtom);
+  const [timezone] = useAtom(timezoneAtom);
 
   const dayPickerSelectedRange: DayPickerRange | undefined = useMemo(() => ({
     from: currentDateRange.startDate,
@@ -92,7 +94,8 @@ function WebsiteDetailsPage() {
     start_date: formattedDateRangeState.startDate,
     end_date: formattedDateRangeState.endDate,
     granularity: currentGranularity,
-  }), [formattedDateRangeState, currentGranularity]);
+    timezone,
+  }), [formattedDateRangeState, currentGranularity, timezone]);
 
   const handleDateRangeChange = useCallback((range: DayPickerRange | undefined) => {
     if (range?.from && range?.to) {

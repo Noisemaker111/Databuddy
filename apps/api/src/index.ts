@@ -45,6 +45,7 @@ app.use('*', cors({
     'Content-Type',
     'Authorization',
     'Cookie',
+    'Cache-Control',
     'X-Website-Id',
   ],
   allowMethods: ['POST', 'OPTIONS', 'GET', 'DELETE', 'PUT', 'PATCH', 'HEAD'],

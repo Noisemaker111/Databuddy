@@ -119,7 +119,7 @@ const enrichEvent = (properties: Record<string, any>, enriched: any) => {
     title: sanitizeString(validatedProperties.__title, VALIDATION_LIMITS.STRING_MAX_LENGTH),
     path: sanitizeString(validatedProperties.__path || enriched.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
     session_id: validateSessionId(validatedProperties.sessionId),
-    session_start_time: sanitizeString(validatedProperties.sessionStartTime, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
+    session_start_time: validatePerformanceMetric(validatedProperties.sessionStartTime),
     referrer: sanitizeString(referrer, VALIDATION_LIMITS.STRING_MAX_LENGTH),
     referrer_type: sanitizeString(referrerType, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
     referrer_name: sanitizeString(referrerName, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),

@@ -25,6 +25,7 @@ export interface DateRange {
   start_date: string;
   end_date: string;
   granularity?: 'hourly' | 'daily';
+  timezone?: string;
 }
 
 export interface PageData {
@@ -394,6 +395,10 @@ interface MiniChartResponse extends ApiResponse {
   data: MiniChartDataPoint[];
 }
 
+interface BatchMiniChartResponse extends ApiResponse {
+  data: Record<string, MiniChartDataPoint[]>;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 // Base params builder
@@ -404,19 +409,23 @@ function buildParams(
 ): URLSearchParams {
   const params = new URLSearchParams({
     website_id: websiteId,
-    ...additionalParams
   });
   
-  if (dateRange?.start_date) {
+  if (dateRange) {
     params.append('start_date', dateRange.start_date);
-  }
-  
-  if (dateRange?.end_date) {
     params.append('end_date', dateRange.end_date);
+    if (dateRange.granularity) {
+      params.append('granularity', dateRange.granularity);
+    }
+    if (dateRange.timezone) {
+      params.append('timezone', dateRange.timezone);
+    }
   }
 
-  if (dateRange?.granularity) {
-    params.append('granularity', dateRange.granularity);
+  if (additionalParams) {
+    for (const [key, value] of Object.entries(additionalParams)) {
+      params.append(key, value.toString());
+    }
   }
   
   // Add cache busting
@@ -557,25 +566,18 @@ export function useBatchedMiniCharts(websiteIds: string[]) {
   const query = useQuery({
     queryKey: ['analytics', 'batch-mini-charts', idsString],
     queryFn: async () => {
-      if (!websiteIds.length) return { data: {} };
+      if (!websiteIds.length) return {};
       
-      // Build URL with comma-separated IDs
-      const url = `${API_BASE_URL}/analytics/batch-mini-charts?ids=${idsString}`;
-      
-      console.log('[DataBuddy] Fetching batch mini charts with a single request for', websiteIds.length, 'websites');
-      
-      const response = await fetch(url, { 
-        credentials: 'include',
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch batch mini chart data');
-      }
-      
-      return await response.json();
+      // Use the first ID for the middleware, and pass all IDs in the query
+      const primaryWebsiteId = websiteIds[0];
+      const response = await fetchAnalyticsData<BatchMiniChartResponse>(
+        '/analytics/mini-chart/batch-mini-charts',
+        primaryWebsiteId,
+        undefined,
+        { ids: idsString }
+      );
+
+      return response.data || {};
     },
     ...defaultQueryOptions,
     staleTime: 10 * 60 * 1000, // 10 minutes for mini charts
@@ -585,8 +587,8 @@ export function useBatchedMiniCharts(websiteIds: string[]) {
     }
   });
   
-  // Process the results into a more usable format
-  const chartsData: Record<string, MiniChartDataPoint[]> = query.data?.data || {};
+  // The query function now directly returns the data object
+  const chartsData: Record<string, MiniChartDataPoint[]> = query.data || {};
   
   return {
     chartsData,
