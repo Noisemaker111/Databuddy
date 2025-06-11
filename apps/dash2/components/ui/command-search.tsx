@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import type { DialogProps } from "@radix-ui/react-dialog"
+import { type DialogProps } from "radix-ui"
 import { LayoutDashboard, CogIcon } from "lucide-react"
 
 import {
