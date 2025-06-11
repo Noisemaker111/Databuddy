@@ -11,7 +11,6 @@ steps:
       dockerfile: dash2.Dockerfile
       tag: latest
       dry-run: true
-      context: apps/dash2
 
   - name: Build API
     image: woodpeckerci/plugin-docker-buildx:6.0.0
