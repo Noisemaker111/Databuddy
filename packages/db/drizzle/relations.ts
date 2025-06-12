@@ -1,34 +1,23 @@
 import { relations } from "drizzle-orm/relations";
-import { user, posts, categories, account, websites, projects, domains, eventMeta, subscriptions, clients, projectAccess, userPreferences, twoFactor, session, auditLogs, postToTag, tags, funnelDefinitions, funnelGoals } from "./schema";
+import { 
+	user,
+	account, websites, projects, domains, eventMeta, subscriptions, userPreferences, twoFactor, session, auditLogs, funnelDefinitions, funnelGoals, apikey, organization, member, invitation, team
+} from "./schema";
 
-export const postsRelations = relations(posts, ({one, many}) => ({
-	user: one(user, {
-		fields: [posts.authorId],
-		references: [user.id]
-	}),
-	category: one(categories, {
-		fields: [posts.categoryId],
-		references: [categories.id]
-	}),
-	postToTags: many(postToTag),
-}));
 
 export const userRelations = relations(user, ({many}) => ({
-	posts: many(posts),
 	accounts: many(account),
 	websites: many(websites),
 	subscriptions: many(subscriptions),
-	projectAccesses: many(projectAccess),
 	userPreferences: many(userPreferences),
 	twoFactors: many(twoFactor),
 	sessions: many(session),
 	auditLogs: many(auditLogs),
 	domains: many(domains),
 	funnelDefinitions: many(funnelDefinitions),
-}));
-
-export const categoriesRelations = relations(categories, ({many}) => ({
-	posts: many(posts),
+	apikeys: many(apikey),
+	members: many(member),
+	invitations: many(invitation),
 }));
 
 export const accountRelations = relations(account, ({one}) => ({
@@ -47,6 +36,10 @@ export const websitesRelations = relations(websites, ({one, many}) => ({
 		fields: [websites.projectId],
 		references: [projects.id]
 	}),
+	organization: one(organization, {
+		fields: [websites.organizationId],
+		references: [organization.id]
+	}),
 	domain: one(domains, {
 		fields: [websites.domainId],
 		references: [domains.id]
@@ -57,11 +50,10 @@ export const websitesRelations = relations(websites, ({one, many}) => ({
 export const projectsRelations = relations(projects, ({one, many}) => ({
 	websites: many(websites),
 	eventMetas: many(eventMeta),
-	client: one(clients, {
-		fields: [projects.clientId],
-		references: [clients.id]
+	organization: one(organization, {
+		fields: [projects.organizationId],
+		references: [organization.id]
 	}),
-	projectAccesses: many(projectAccess),
 	domains: many(domains),
 }));
 
@@ -74,6 +66,10 @@ export const domainsRelations = relations(domains, ({one, many}) => ({
 	project: one(projects, {
 		fields: [domains.projectId],
 		references: [projects.id]
+	}),
+	organization: one(organization, {
+		fields: [domains.organizationId],
+		references: [organization.id]
 	}),
 }));
 
@@ -89,21 +85,10 @@ export const subscriptionsRelations = relations(subscriptions, ({one}) => ({
 		fields: [subscriptions.createdByUserId],
 		references: [user.id]
 	}),
-}));
-
-export const clientsRelations = relations(clients, ({many}) => ({
-	projects: many(projects),
-}));
-
-export const projectAccessRelations = relations(projectAccess, ({one}) => ({
-	project: one(projects, {
-		fields: [projectAccess.projectId],
-		references: [projects.id]
-	}),
-	user: one(user, {
-		fields: [projectAccess.userId],
-		references: [user.id]
-	}),
+	organization: one(organization, {
+		fields: [subscriptions.organizationId],
+		references: [organization.id]
+	})
 }));
 
 export const userPreferencesRelations = relations(userPreferences, ({one}) => ({
@@ -125,6 +110,10 @@ export const sessionRelations = relations(session, ({one}) => ({
 		fields: [session.userId],
 		references: [user.id]
 	}),
+	organization: one(organization, {
+		fields: [session.activeOrganizationId],
+		references: [organization.id]
+	})
 }));
 
 export const auditLogsRelations = relations(auditLogs, ({one}) => ({
@@ -132,21 +121,6 @@ export const auditLogsRelations = relations(auditLogs, ({one}) => ({
 		fields: [auditLogs.userId],
 		references: [user.id]
 	}),
-}));
-
-export const postToTagRelations = relations(postToTag, ({one}) => ({
-	post: one(posts, {
-		fields: [postToTag.a],
-		references: [posts.id]
-	}),
-	tag: one(tags, {
-		fields: [postToTag.b],
-		references: [tags.id]
-	}),
-}));
-
-export const tagsRelations = relations(tags, ({many}) => ({
-	postToTags: many(postToTag),
 }));
 
 export const funnelDefinitionsRelations = relations(funnelDefinitions, ({one, many}) => ({
@@ -166,4 +140,60 @@ export const funnelGoalsRelations = relations(funnelGoals, ({one}) => ({
 		fields: [funnelGoals.funnelId],
 		references: [funnelDefinitions.id]
 	}),
+}));
+
+export const apikeyRelations = relations(apikey, ({one}) => ({
+	user: one(user, {
+		fields: [apikey.userId],
+		references: [user.id]
+	}),
+}));
+
+export const organizationRelations = relations(organization, ({many}) => ({
+	members: many(member),
+	invitations: many(invitation),
+	teams: many(team),
+	projects: many(projects),
+	websites: many(websites),
+	domains: many(domains),
+	subscriptions: many(subscriptions),
+}));
+
+export const memberRelations = relations(member, ({one}) => ({
+	organization: one(organization, {
+		fields: [member.organizationId],
+		references: [organization.id]
+	}),
+	user: one(user, {
+		fields: [member.userId],
+		references: [user.id]
+	}),
+	team: one(team, {
+		fields: [member.teamId],
+		references: [team.id]
+	}),
+}));
+
+export const invitationRelations = relations(invitation, ({one}) => ({
+	organization: one(organization, {
+		fields: [invitation.organizationId],
+		references: [organization.id]
+	}),
+	inviter: one(user, {
+		fields: [invitation.inviterId],
+		references: [user.id]
+	}),
+	team: one(team, {
+		fields: [invitation.teamId],
+		references: [team.id]
+	}),
+}));
+
+export const teamRelations = relations(team, ({one, many}) => ({
+	organization: one(organization, {
+		fields: [team.organizationId],
+		references: [organization.id]
+	}),
+	members: many(member),
+	invitations: many(invitation),
 }));
