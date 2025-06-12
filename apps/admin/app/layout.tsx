@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <Script src="http://localhost:3000/databuddy.js" data-track-performance="true" data-api-url="http://localhost:4001" strategy="afterInteractive" data-client-id="KLeXlL5zrgyV6P9IlqyL3" data-track-screen-views="true" data-track-performance="true" data-track-errors="true" data-track />
+      <Script src="http://localhost:3000/databuddy.js" data-api-url="http://localhost:4001" strategy="afterInteractive" data-client-id="KLeXlL5zrgyV6P9IlqyL3" data-track-screen-views="true" data-track-performance="true" data-track-errors="true" />
       <body className={inter.className}>
         {children}
       </body>
