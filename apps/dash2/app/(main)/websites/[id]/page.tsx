@@ -11,7 +11,6 @@ import { RefreshCw, Calendar, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
 import { useWebsite } from "@/hooks/use-websites";
 import { useWebsiteAnalytics } from "@/hooks/use-analytics";
 import { format, subDays, subHours } from "date-fns";
@@ -38,10 +37,6 @@ const WebsiteOverviewTab = dynamic(
 );
 const WebsiteAudienceTab = dynamic(
   () => import("./_components/tabs/audience-tab").then(mod => ({ default: mod.WebsiteAudienceTab })),
-  { loading: () => <TabLoadingSkeleton />, ssr: false }
-);
-const WebsiteContentTab = dynamic(
-  () => import("./_components/tabs/content-tab").then(mod => ({ default: mod.WebsiteContentTab })),
   { loading: () => <TabLoadingSkeleton />, ssr: false }
 );
 const WebsitePerformanceTab = dynamic(
@@ -153,7 +148,6 @@ function WebsiteDetailsPage() {
       switch (tabId) {
         case "overview": return <WebsiteOverviewTab {...tabProps} />;
         case "audience": return <WebsiteAudienceTab {...tabProps} />;
-        case "content": return <WebsiteContentTab {...tabProps} />;
         case "performance": return <WebsitePerformanceTab {...tabProps} />;
         case "settings": return <WebsiteSettingsTab {...settingsProps} />;
         case "tracking-setup": return <WebsiteTrackingSetupTab {...settingsProps} />;
@@ -188,7 +182,6 @@ function WebsiteDetailsPage() {
   const tabs: TabDefinition[] = isTrackingSetup ? [
     { id: "overview", label: "Overview", className: "pt-2 space-y-2" },
     { id: "audience", label: "Audience" },
-    { id: "content", label: "Content" },
     { id: "performance", label: "Performance" },
     { id: "settings", label: "Settings" },
   ] : [

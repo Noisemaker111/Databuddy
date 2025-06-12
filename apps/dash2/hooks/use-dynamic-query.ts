@@ -127,6 +127,7 @@ export interface ExitPageData {
   name: string; // This is the path
   exits: number;
   sessions: number;
+  visitors?: number;
 }
 
 export interface PerformanceData {
@@ -197,6 +198,42 @@ export interface CustomEventData {
   unique_pages: number;
 }
 
+// Summary metrics data interfaces
+export interface SummaryMetricsData {
+  unique_visitors: number;
+  sessions: number;
+  pageviews: number;
+  bounce_rate: number;
+  bounce_rate_pct: string;
+  avg_session_duration: number;
+  avg_session_duration_formatted: string;
+  pages_per_session: number;
+}
+
+export interface TodayMetricsData {
+  visitors: number;
+  sessions: number;
+  pageviews: number;
+}
+
+export interface EventsByDateData {
+  date: string;
+  pageviews: number;
+  visitors: number;
+  unique_visitors: number;
+  sessions: number;
+  bounce_rate: number;
+  avg_session_duration: number;
+}
+
+export interface EntryPageData {
+  name: string; // This is the path
+  entries: number;
+  visitors: number;
+  sessions: number;
+  bounce_rate: number;
+}
+
 // Parameter type mapping for better type safety
 export interface GroupedBrowserData {
   name: string; // browser name (e.g., "Chrome", "Firefox")
@@ -253,6 +290,18 @@ export type ParameterDataMap = {
   custom_events_by_user: any;
   custom_event_properties: any;
   custom_event_property_values: { name: string; total_events: number; unique_users: number };
+  // Summary and overview parameters
+  summary_metrics: SummaryMetricsData;
+  today_metrics: TodayMetricsData;
+  events_by_date: EventsByDateData;
+  entry_pages: EntryPageData;
+  exit_pages: ExitPageData;
+  top_referrers: ReferrerData;
+  utm_sources: UTMData;
+  utm_mediums: UTMData;
+  utm_campaigns: UTMData;
+  device_types: DeviceTypeData;
+  browser_versions: BrowserData;
 };
 
 // Helper type to extract data types from parameters

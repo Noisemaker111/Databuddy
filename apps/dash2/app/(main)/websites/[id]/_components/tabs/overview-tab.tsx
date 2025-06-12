@@ -21,8 +21,7 @@ import { useRouter } from "next/navigation";
 import { StatCard } from "@/components/analytics/stat-card";
 import { MetricsChart } from "@/components/charts/metrics-chart";
 import { DataTable } from "@/components/analytics/data-table";
-import { useWebsiteAnalytics } from "@/hooks/use-analytics";
-import { useDynamicQuery } from "@/hooks/use-dynamic-query";
+import { useDynamicQuery, useBatchDynamicQuery } from "@/hooks/use-dynamic-query";
 import {
   formatDateByGranularity,
   getColorVariant,
@@ -111,25 +110,72 @@ export function WebsiteOverviewTab({
   setIsRefreshing,
 }: FullTabProps) {
 
-  const { analytics, loading, error, refetch } = useWebsiteAnalytics(websiteId, dateRange);
-
-
-
-  // Fetch custom events data with property details
+  // Fetch all overview data in a single batch query
   const {
-    data: customEventsData,
-    isLoading: customEventsLoading,
-    error: customEventsError,
-    refetch: refetchCustomEvents
-  } = useDynamicQuery(
+    results,
+    isLoading: batchLoading,
+    error: batchError,
+    refetch: refetchBatch,
+    getDataForQuery
+  } = useBatchDynamicQuery(
     websiteId,
     dateRange,
-    {
-      id: 'overview-custom-events',
-      parameters: ['custom_events', 'custom_event_details'],
-      limit: 10
-    }
+    [
+      {
+        id: 'overview-summary',
+        parameters: ['summary_metrics', 'today_metrics', 'events_by_date'],
+        limit: 100
+      },
+      {
+        id: 'overview-pages',
+        parameters: ['top_pages', 'entry_pages', 'exit_pages'],
+        limit: 20
+      },
+      {
+        id: 'overview-traffic',
+        parameters: ['top_referrers', 'utm_sources', 'utm_mediums', 'utm_campaigns'],
+        limit: 20
+      },
+      {
+        id: 'overview-tech',
+        parameters: ['device_types', 'browser_versions'],
+        limit: 20
+      },
+      {
+        id: 'overview-custom-events',
+        parameters: ['custom_events', 'custom_event_details'],
+        limit: 10
+      }
+    ]
   );
+
+  // Combine all data into analytics object for backward compatibility
+  const analytics = useMemo(() => ({
+    summary: getDataForQuery('overview-summary', 'summary_metrics')?.[0] || null,
+    today: getDataForQuery('overview-summary', 'today_metrics')?.[0] || null,
+    events_by_date: getDataForQuery('overview-summary', 'events_by_date') || [],
+    top_pages: getDataForQuery('overview-pages', 'top_pages') || [],
+    entry_pages: getDataForQuery('overview-pages', 'entry_pages') || [],
+    exit_pages: getDataForQuery('overview-pages', 'exit_pages') || [],
+    top_referrers: getDataForQuery('overview-traffic', 'top_referrers') || [],
+    utm_sources: getDataForQuery('overview-traffic', 'utm_sources') || [],
+    utm_mediums: getDataForQuery('overview-traffic', 'utm_mediums') || [],
+    utm_campaigns: getDataForQuery('overview-traffic', 'utm_campaigns') || [],
+    device_types: getDataForQuery('overview-tech', 'device_types') || [],
+    browser_versions: getDataForQuery('overview-tech', 'browser_versions') || []
+  }), [getDataForQuery]);
+
+  // Extract custom events data
+  const customEventsData = useMemo(() => ({
+    custom_events: getDataForQuery('overview-custom-events', 'custom_events') || [],
+    custom_event_details: getDataForQuery('overview-custom-events', 'custom_event_details') || []
+  }), [getDataForQuery]);
+
+  const loading = {
+    summary: batchLoading || isRefreshing
+  };
+
+  const error = batchError;
 
   const [visibleMetrics, setVisibleMetrics] = useState<Record<string, boolean>>({
     pageviews: true,
@@ -147,10 +193,7 @@ export function WebsiteOverviewTab({
     if (isRefreshing) {
       const doRefresh = async () => {
         try {
-          await Promise.all([
-            refetch(),
-            refetchCustomEvents()
-          ]);
+          await refetchBatch();
         } catch (error) {
           console.error("Failed to refresh data:", error);
         } finally {
@@ -166,7 +209,7 @@ export function WebsiteOverviewTab({
     return () => {
       isMounted = false;
     };
-  }, [isRefreshing, refetch, setIsRefreshing]);
+  }, [isRefreshing, refetchBatch, setIsRefreshing]);
 
   const isLoading = loading.summary || isRefreshing;
 
@@ -182,7 +225,7 @@ export function WebsiteOverviewTab({
   const chartData = useMemo(() => {
     if (!analytics.events_by_date?.length) return [];
 
-    return analytics.events_by_date.map((event: MetricPoint): ChartDataPoint => {
+    return analytics.events_by_date.map((event: any): ChartDataPoint => {
       const filtered: ChartDataPoint = {
         date: formatDateByGranularity(event.date, dateRange.granularity)
       };
@@ -207,34 +250,34 @@ export function WebsiteOverviewTab({
   const miniChartData = useMemo(() => {
     if (!analytics.events_by_date?.length) return {};
 
-    const visitors = analytics.events_by_date.map(event => ({
+    const visitors = analytics.events_by_date.map((event: any) => ({
       date: event.date,
       value: event.visitors || 0
     }));
 
-    const sessions = analytics.events_by_date.map(event => ({
+    const sessions = analytics.events_by_date.map((event: any) => ({
       date: event.date,
       value: event.sessions || 0
     }));
 
-    const pageviews = analytics.events_by_date.map(event => ({
+    const pageviews = analytics.events_by_date.map((event: any) => ({
       date: event.date,
       value: event.pageviews || 0
     }));
 
-    const pagesPerSession = analytics.events_by_date.map(event => ({
+    const pagesPerSession = analytics.events_by_date.map((event: any) => ({
       date: event.date,
       value: event.sessions > 0 ? (event.pageviews || 0) / event.sessions : 0
     }));
 
-    const bounceRate = analytics.events_by_date.map(event => ({
+    const bounceRate = analytics.events_by_date.map((event: any) => ({
       date: event.date,
       value: event.bounce_rate || 0
     }));
 
-    const sessionDuration = analytics.events_by_date.map(event => ({
+    const sessionDuration = analytics.events_by_date.map((event: any) => ({
       date: event.date,
-      value: (event as any).avg_session_duration || 0
+      value: event.avg_session_duration || 0
     }));
 
     return {
@@ -252,7 +295,7 @@ export function WebsiteOverviewTab({
 
     const totalPageviews = analytics.top_pages.reduce((sum: number, page: any) => sum + (page.pageviews || 0), 0);
 
-    return analytics.top_pages.map(page => ({
+    return analytics.top_pages.map((page: any) => ({
       ...page,
       percentage: totalPageviews > 0 ? Math.round((page.pageviews / totalPageviews) * 100) : 0
     }));
@@ -261,7 +304,7 @@ export function WebsiteOverviewTab({
   const processedEntryPages = useMemo(() => {
     if (!analytics.entry_pages?.length) return [];
 
-    return analytics.entry_pages.map(page => ({
+    return analytics.entry_pages.map((page: any) => ({
       ...page,
       pageviews: page.entries,
       visitors: page.visitors
@@ -271,10 +314,10 @@ export function WebsiteOverviewTab({
   const processedExitPages = useMemo(() => {
     if (!analytics.exit_pages?.length) return [];
 
-    return analytics.exit_pages.map(page => ({
+    return analytics.exit_pages.map((page: any) => ({
       ...page,
       pageviews: page.exits,
-      visitors: page.visitors
+      visitors: page.visitors || page.sessions // fallback to sessions if visitors not available
     }));
   }, [analytics.exit_pages]);
 
@@ -289,19 +332,19 @@ export function WebsiteOverviewTab({
     utm_sources: {
       data: analytics.utm_sources || [],
       label: 'UTM Sources',
-      primaryField: 'utm_source',
+      primaryField: 'name',
       primaryHeader: 'Source'
     },
     utm_mediums: {
       data: analytics.utm_mediums || [],
       label: 'UTM Mediums',
-      primaryField: 'utm_medium',
+      primaryField: 'name',
       primaryHeader: 'Medium'
     },
     utm_campaigns: {
       data: analytics.utm_campaigns || [],
       label: 'UTM Campaigns',
-      primaryField: 'utm_campaign',
+      primaryField: 'name',
       primaryHeader: 'Campaign'
     }
   });
@@ -310,19 +353,19 @@ export function WebsiteOverviewTab({
     top_pages: {
       data: processedTopPages,
       label: 'Top Pages',
-      primaryField: 'path',
+      primaryField: 'name',
       primaryHeader: 'Page'
     },
     entry_pages: {
       data: processedEntryPages,
       label: 'Entry Pages',
-      primaryField: 'path',
+      primaryField: 'name',
       primaryHeader: 'Page'
     },
     exit_pages: {
       data: processedExitPages,
       label: 'Exit Pages',
-      primaryField: 'path',
+      primaryField: 'name',
       primaryHeader: 'Page'
     }
   });
@@ -407,20 +450,44 @@ export function WebsiteOverviewTab({
     };
   }, [analytics.events_by_date]);
 
-  const processedDeviceData = useMemo(() =>
-    processDeviceData(analytics.device_types || []),
-    [analytics.device_types]
-  );
+  const processedDeviceData = useMemo(() => {
+    const deviceData = analytics.device_types || [];
+    // Transform data to match expected structure
+    const transformedData = deviceData.map((item: any) => ({
+      device_type: item.name,
+      visitors: item.visitors,
+      pageviews: item.pageviews
+    }));
+    return processDeviceData(transformedData);
+  }, [analytics.device_types]);
 
-  const processedBrowserData = useMemo(() =>
-    processBrowserData(analytics.browser_versions || []),
-    [analytics.browser_versions]
-  );
+  const processedBrowserData = useMemo(() => {
+    const browserData = analytics.browser_versions || [];
+    // Transform data to match expected structure
+    const transformedData = browserData.map((item: any) => ({
+      browser: item.name,
+      visitors: item.visitors,
+      pageviews: item.pageviews
+    }));
+    return processBrowserData(transformedData);
+  }, [analytics.browser_versions]);
 
-  const processedOSData = useMemo(() =>
-    inferOperatingSystems(analytics.device_types || [], analytics.browser_versions || []),
-    [analytics.device_types, analytics.browser_versions]
-  );
+  const processedOSData = useMemo(() => {
+    const deviceData = analytics.device_types || [];
+    const browserData = analytics.browser_versions || [];
+    // Transform data to match expected structure
+    const transformedDeviceData = deviceData.map((item: any) => ({
+      device_type: item.name,
+      visitors: item.visitors,
+      pageviews: item.pageviews
+    }));
+    const transformedBrowserData = browserData.map((item: any) => ({
+      browser: item.name,
+      visitors: item.visitors,
+      pageviews: item.pageviews
+    }));
+    return inferOperatingSystems(transformedDeviceData, transformedBrowserData);
+  }, [analytics.device_types, analytics.browser_versions]);
 
   const [expandedProperties, setExpandedProperties] = useState<Set<string>>(new Set());
 
@@ -785,7 +852,7 @@ export function WebsiteOverviewTab({
         columns={customEventsColumns}
         title="Custom Events"
         description="User-defined events and interactions with property breakdowns"
-        isLoading={customEventsLoading}
+        isLoading={isLoading}
         initialPageSize={8}
         minHeight={200}
         emptyMessage="No custom events tracked yet"

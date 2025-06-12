@@ -244,17 +244,17 @@ PERFORMANCE ANALYSIS PATTERNS:
 ERROR ANALYSIS PATTERNS:
 11. Top Error Types:
     Query: "what are my most common errors?", "top javascript errors";
-    SQL: "SELECT error_message, COUNT(*) as total_occurrences, uniq(anonymous_id) as affected_users FROM analytics.events WHERE client_id = '${websiteId}' AND event_name = 'error' AND error_message != '' GROUP BY error_message ORDER BY total_occurrences DESC LIMIT 10";
+    SQL: "SELECT message as error_message, COUNT(*) as total_occurrences, uniq(anonymous_id) as affected_users FROM analytics.errors WHERE client_id = '${websiteId}' AND message != '' GROUP BY message ORDER BY total_occurrences DESC LIMIT 10";
     Chart Type: "bar";
 
 12. Errors by Page:
     Query: "which pages have the most errors?";
-    SQL: "SELECT path, COUNT(*) as total_errors FROM analytics.events WHERE client_id = '${websiteId}' AND event_name = 'error' AND path != '' AND error_message IS NOT NULL GROUP BY path ORDER BY total_errors DESC LIMIT 10";
+    SQL: "SELECT path, COUNT(*) as total_errors FROM analytics.errors WHERE client_id = '${websiteId}' AND path != '' AND message IS NOT NULL GROUP BY path ORDER BY total_errors DESC LIMIT 10";
     Chart Type: "bar";
 
 13. Error Trends Over Time:
     Query: "error count daily for last 14 days";
-    SQL: "SELECT toDate(time) as date, COUNT(*) as total_errors FROM analytics.events WHERE client_id = '${websiteId}' AND event_name = 'error' AND time >= today() - INTERVAL '14' DAY AND error_message IS NOT NULL GROUP BY date ORDER BY date";
+    SQL: "SELECT toDate(timestamp) as date, COUNT(*) as total_errors FROM analytics.errors WHERE client_id = '${websiteId}' AND timestamp >= today() - INTERVAL '14' DAY AND message IS NOT NULL GROUP BY date ORDER BY date";
     Chart Type: "line";
 
 COMPLEX ANALYTICS CHART PATTERNS:
