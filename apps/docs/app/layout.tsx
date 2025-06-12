@@ -70,11 +70,14 @@ export default function Layout({ children }: { children: ReactNode }) {
     <html lang="en" className={inter.className} suppressHydrationWarning>
       <Databuddy
         clientId="OXmNQsViBT-FOS_wZCTHc"
+        trackAttributes={true}
+        trackPerformance={true}
+        trackScreenViews={true}
         trackErrors={true}
       />
       <body className="flex flex-col min-h-screen">
         <RootProvider >
-            {children}
+          {children}
         </RootProvider>
       </body>
     </html>
