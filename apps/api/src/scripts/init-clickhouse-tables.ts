@@ -5,7 +5,7 @@
  * It uses the schema definitions from the @databuddy/db package.
  */
 
-import { initClickHouseSchema } from '../clickhouse/schema';
+import { initClickHouseSchema } from '@databuddy/db';
 
 const logger = console;
 

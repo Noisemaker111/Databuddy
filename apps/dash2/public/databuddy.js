@@ -270,15 +270,14 @@
 
             if (this.options.trackErrors) {
                 window.addEventListener('error', (event) => {
-                    this.track('error', {
+                    this.trackError({
+                        timestamp: Date.now(),
                         message: event.message,
                         filename: event.filename,
                         lineno: event.lineno,
                         colno: event.colno,
                         stack: event.error?.stack,
-                        __path: window.location.href,
-                        __title: document.title,
-                        __referrer: document.referrer || 'direct'
+                        errorType: event.error?.name || 'Error'
                     });
                 });
             }
@@ -293,17 +292,18 @@
         }
         
         async send(event) {
-            const pEvent = this.prepareEventData(event);
-            if (this.options.disabled || (this.options.filter && !this.options.filter(pEvent))) {
+            const eventData = (event.type === "track" && event.payload) ? event.payload : event;
+            
+            if (this.options.disabled || (this.options.filter && !this.options.filter(eventData))) {
                 return Promise.resolve();
             }
             if (this.options.enableBatching && !event.isForceSend) {
-                return this.addToBatch(pEvent);
+                return this.addToBatch(eventData);
             }
             const fetchOptions = {
                 keepalive: true,
             };
-            return this.api.fetch("/", pEvent, fetchOptions);
+            return this.api.fetch("/", eventData, fetchOptions);
         }
         
         addToBatch(event) {
@@ -351,8 +351,13 @@
                 
                 if (isNetworkError) {
                     for (const event of batchEvents) {
-                        event.isForceSend = true;
-                        this.send(event);
+                        // Re-wrap the event for retry
+                        const originalEvent = {
+                            type: "track",
+                            payload: event,
+                            isForceSend: true
+                        };
+                        this.send(originalEvent);
                     }
                 } else {
                 }
@@ -412,16 +417,14 @@
                 finalProperties = { value: properties };
             }
             
-            const sessionData = {
-                sessionId: this.sessionId,
-                sessionStartTime: this.sessionStartTime,
-            };
+            // Collect base context data
+            const baseContext = this.getBaseContext();
             
+            // Collect performance data for page views
+            let performanceData = {};
             if (eventName === 'screen_view' || eventName === 'page_view') {
                 if (!this.isServer() && this.options.trackPerformance) {
-                    const performanceData = this.collectNavigationTiming();
-                    
-                    Object.assign(finalProperties, performanceData);
+                    performanceData = this.collectNavigationTiming();
                     
                     if (this.options.trackWebVitals) {
                         this.initWebVitalsObservers(eventName);
@@ -432,13 +435,15 @@
             const payload = {
                 type: "track",
                 payload: {
+                    eventId: crypto.randomUUID(),
                     name: eventName,
                     anonymousId: this.anonymousId,
-                    properties: {
-                        ...this.global ?? {},
-                        ...sessionData,
-                        ...finalProperties
-                    }
+                    sessionId: this.sessionId,
+                    sessionStartTime: this.sessionStartTime,
+                    timestamp: Date.now(),
+                    ...baseContext,
+                    ...performanceData,
+                    ...finalProperties
                 }
             };
 
@@ -461,9 +466,9 @@
             if (this.isServer()) return null;
             
             try {
-                const pEvent = this.prepareEventData(event);
+                const eventData = (event.type === "track" && event.payload) ? event.payload : event;
                 
-                if (this.options.disabled || (this.options.filter && !this.options.filter(pEvent))) {
+                if (this.options.disabled || (this.options.filter && !this.options.filter(eventData))) {
                     return null;
                 }
                 
@@ -471,7 +476,6 @@
                 if (!baseUrl) {
                     return null;
                 }
-
 
                 const clientId = this.options.clientId;
                 const sdkName = this.options.sdk || "web";
@@ -482,8 +486,7 @@
                 url.searchParams.set('sdk_name', sdkName);
                 url.searchParams.set('sdk_version', sdkVersion);
                 
-                
-                const data = JSON.stringify(pEvent);
+                const data = JSON.stringify(eventData);
                 
                 if (navigator.sendBeacon) {
                     try {
@@ -568,15 +571,6 @@
             }
         }
 
-        prepareEventData(event) {
-            if (event.payload) {
-                if (event.payload.properties) {
-                    event.payload.properties.sessionId = this.sessionId;
-                }
-            }
-            return event;
-        }
-
         getUtmParams() {
             if (typeof window === 'undefined') return {};
             
@@ -642,32 +636,25 @@
         trackExitData() {
             if (this.isServer()) return;
             
-            const exitData = {
-                time_on_page: Math.round((Date.now() - this.pageEngagementStart) / 1000),
-                scroll_depth: Math.round(this.maxScrollDepth),
-                interaction_count: this.interactionCount,
-                has_exit_intent: this.hasExitIntent,
-                page_count: this.pageCount,
-                is_bounce: this.pageCount <= 1 ? 1 : 0,
-                __path: window.location.href,
-                __title: document.title,
-                __timestamp_ms: Date.now(),
-                ...this.getUtmParams()
-            };
+            const baseContext = this.getBaseContext();
             
             const exitEvent = {
                 type: "track",
                 payload: {
+                    eventId: crypto.randomUUID(),
                     name: "page_exit",
                     anonymousId: this.anonymousId,
-                    properties: {
-                        ...this.global ?? {},
-                        sessionId: this.sessionId,
-                        sessionStartTime: this.sessionStartTime,
-                        ...exitData
-                    }
-                },
-                priority: "high"
+                    sessionId: this.sessionId,
+                    sessionStartTime: this.sessionStartTime,
+                    timestamp: Date.now(),
+                    ...baseContext,
+                    time_on_page: Math.round((Date.now() - this.pageEngagementStart) / 1000),
+                    scroll_depth: Math.round(this.maxScrollDepth),
+                    interaction_count: this.interactionCount,
+                    has_exit_intent: this.hasExitIntent,
+                    page_count: this.pageCount,
+                    is_bounce: this.pageCount <= 1 ? 1 : 0,
+                }
             };
             
             if (this.options.enableBatching) {
@@ -728,124 +715,91 @@
             }
 
             try {
-                const metrics = {
-                    fcp: null,
-                    lcp: null,
-                    cls: null,
-                    fid: null,
-                    inp: null,
-                    ttfb: null
-                };
+                const metrics = { fcp: null, lcp: null, cls: 0, fid: null, inp: null };
+                let reported = false;
 
-                const reportWebVitals = () => {
-                    const hasMetrics = Object.values(metrics).some(m => m !== null);
-                    if (!hasMetrics) return;
-
-                    this.track('web_vitals', {
-                        __timestamp_ms: Date.now(),
-                        avg_fcp: metrics.fcp,
-                        avg_lcp: metrics.lcp,
-                        avg_cls: metrics.cls !== null ? Number(metrics.cls.toFixed(4)) : null,
-                        avg_fid: metrics.fid,
-                        avg_inp: metrics.inp,
-                        avg_ttfb: metrics.ttfb,
-                        __path: this.lastPath || window.location.pathname,
-                        __title: document.title,
-                        __referrer: this.global?.__referrer || document.referrer || 'direct',
-                        screen_resolution: `${window.screen.width}x${window.screen.height}`,
-                        viewport_size: `${window.innerWidth}x${window.innerHeight}`,
-                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                        language: navigator.language,
-                        ...this.getConnectionInfo(),
-                    });
-                    
+                const report = () => {
+                    if (reported || !Object.values(metrics).some(m => m !== null && m !== 0)) return;
+                    reported = true;
+                    this.trackWebVitals({ timestamp: Date.now(), ...metrics });
                     this.cleanupWebVitals();
                 };
-
-                try {
-                    const navEntries = window.performance.getEntriesByType('navigation');
-                    if (navEntries?.[0]) {
-                        metrics.ttfb = Math.round(navEntries[0].responseStart - navEntries[0].fetchStart);
-                    }
-                } catch (e) {}
 
                 const observe = (type, callback) => {
                     try {
                         if (PerformanceObserver.supportedEntryTypes?.includes(type)) {
-                            const observer = new PerformanceObserver((list) => {
-                                callback(list.getEntries());
-                            });
+                            const observer = new PerformanceObserver(list => callback(list.getEntries()));
                             observer.observe({ type, buffered: true });
                             this.webVitalObservers.push(observer);
                         }
                     } catch (e) {}
                 };
 
-                observe('paint', (entries) => {
+                observe('paint', entries => {
                     for (const entry of entries) {
-                        if (entry.name === 'first-contentful-paint' && metrics.fcp === null) {
+                        if (entry.name === 'first-contentful-paint' && !metrics.fcp) {
                             metrics.fcp = Math.round(entry.startTime);
                         }
                     }
                 });
 
-                observe('largest-contentful-paint', (entries) => {
-                    const lcpEntry = entries[entries.length - 1];
-                    if (lcpEntry) {
-                        metrics.lcp = Math.round(lcpEntry.startTime);
-                    }
+                observe('largest-contentful-paint', entries => {
+                    const entry = entries[entries.length - 1];
+                    if (entry) metrics.lcp = Math.round(entry.startTime);
                 });
                 
-                observe('layout-shift', (entries) => {
-                    let clsValue = 0;
+                observe('layout-shift', entries => {
                     for (const entry of entries) {
                         if (!entry.hadRecentInput) {
-                            clsValue += entry.value;
+                            metrics.cls += entry.value;
                         }
                     }
-                    metrics.cls = clsValue;
                 });
 
-                observe('first-input', (entries) => {
+                observe('first-input', entries => {
                     const entry = entries[0];
-                    if (entry && metrics.fid === null) {
+                    if (entry && !metrics.fid) {
                         metrics.fid = Math.round(entry.processingStart - entry.startTime);
                     }
                 });
 
-                observe('event', (entries) => {
-                    let maxInp = 0;
+                observe('event', entries => {
                     for (const entry of entries) {
-                        if (entry.interactionId && entry.duration > maxInp) {
-                            maxInp = entry.duration;
+                        if (entry.interactionId && entry.duration > (metrics.inp || 0)) {
+                            metrics.inp = Math.round(entry.duration);
                         }
-                    }
-                    if (maxInp > 0) {
-                        metrics.inp = Math.round(maxInp);
                     }
                 });
 
                 this.webVitalsVisibilityChangeHandler = () => {
-                    if (document.visibilityState === 'hidden') {
-                        reportWebVitals();
-                    }
+                    if (document.visibilityState === 'hidden') report();
                 };
                 document.addEventListener('visibilitychange', this.webVitalsVisibilityChangeHandler, { once: true });
                 
-                this.webVitalsPageHideHandler = () => reportWebVitals();
+                this.webVitalsPageHideHandler = report;
                 window.addEventListener('pagehide', this.webVitalsPageHideHandler, { once: true });
 
-                this.webVitalsReportTimeoutId = setTimeout(reportWebVitals, 10000);
+                this.webVitalsReportTimeoutId = setTimeout(report, 10000);
 
             } catch (e) {}
         }
 
 
         getConnectionInfo() {
-            if (!navigator.connection) return {};
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            
+            if (!connection) {
+                return {
+                    connection_type: null,
+                    rtt: null,
+                    downlink: null
+                };
+            }
 
             return {
-                connection_type: navigator.connection.effectiveType || navigator.connection.type || 'unknown'
+                connection_type: connection.effectiveType || connection.type || null,
+                rtt: connection.rtt || null,
+                downlink: connection.downlink || null
             };
         }
 
@@ -861,32 +815,106 @@
                 finalProperties = { value: properties };
             }
             
-            const pageContext = {
-                __path: window.location.href,
-                __title: document.title,
-                __referrer: this.global?.__referrer || document.referrer || 'direct'
-            };
+            // Use the standard track method with new schema
+            this.track(eventName, finalProperties);
+        }
 
-            const viewportInfo = {
-                screen_resolution: `${window.screen.width}x${window.screen.height}`,
-                viewport_size: `${window.innerWidth}x${window.innerHeight}`
-            };
-
-            const timezoneInfo = {
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                language: navigator.language
-            };
-
+        getBaseContext() {
+            if (this.isServer()) return {};
+            
+            const utmParams = this.getUtmParams();
             const connectionInfo = this.getConnectionInfo();
+            
+            return {
+                // Page context
+                path: window.location.href,
+                title: document.title,
+                referrer: this.global?.referrer || document.referrer || 'direct',
+                // User context
+                screen_resolution: `${window.screen.width}x${window.screen.height}`,
+                viewport_size: `${window.innerWidth}x${window.innerHeight}`,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                language: navigator.language,
+                // Connection info
+                connection_type: connectionInfo.connection_type,
+                rtt: connectionInfo.rtt,
+                downlink: connectionInfo.downlink,
+                // UTM parameters
+                utm_source: utmParams.utm_source,
+                utm_medium: utmParams.utm_medium,
+                utm_campaign: utmParams.utm_campaign,
+                utm_term: utmParams.utm_term,
+                utm_content: utmParams.utm_content,
+            };
+        }
 
-            this.track(eventName, {
-                __timestamp_ms: Date.now(),
-                ...finalProperties,
-                ...pageContext,
-                ...viewportInfo,
-                ...timezoneInfo,
-                ...connectionInfo,
-            });
+        async trackError(errorData) {
+            if (this.isServer()) return;
+            
+            const errorEvent = {
+                type: "error",
+                payload: {
+                    eventId: crypto.randomUUID(),
+                    anonymousId: this.anonymousId,
+                    sessionId: this.sessionId,
+                    timestamp: errorData.timestamp || Date.now(),
+                    path: window.location.pathname,
+                    message: errorData.message,
+                    filename: errorData.filename,
+                    lineno: errorData.lineno,
+                    colno: errorData.colno,
+                    stack: errorData.stack,
+                    errorType: errorData.errorType || 'Error'
+                }
+            };
+            
+            if (this.options.enableBatching) {
+                return this.send(errorEvent);
+            }
+            
+            try {
+                const beaconResult = await this.sendBeacon(errorEvent);
+                if (beaconResult) {
+                    return beaconResult;
+                }
+            } catch (e) {
+            }
+            
+            return this.send(errorEvent);
+        }
+
+        async trackWebVitals(vitalsData) {
+            if (this.isServer()) return;
+            
+            const webVitalsEvent = {
+                type: "web_vitals",
+                payload: {
+                    eventId: crypto.randomUUID(),
+                    anonymousId: this.anonymousId,
+                    sessionId: this.sessionId,
+                    timestamp: vitalsData.timestamp || Date.now(),
+                    path: window.location.pathname,
+                    fcp: vitalsData.fcp,
+                    lcp: vitalsData.lcp,
+                    cls: vitalsData.cls,
+                    fid: vitalsData.fid,
+                    inp: vitalsData.inp
+                }
+            };
+            
+            if (this.options.enableBatching) {
+                return this.send(webVitalsEvent);
+            }
+            
+            try {
+                const beaconResult = await this.sendBeacon(webVitalsEvent);
+                if (beaconResult) {
+                    return beaconResult;
+                }
+            } catch (e) {
+            }
+            
+            return this.send(webVitalsEvent);
         }
     };
 
@@ -903,10 +931,6 @@
             });
             
             if (this.isServer()) return;
-            
-            this.setGlobalProperties({
-                __anonymized: t.anonymized !== false
-            });
             
             if (this.options.trackScreenViews) {
                 this.trackScreenViews();
@@ -978,7 +1002,7 @@
             const i = () => this.debounce(() => {
                 const previous_path = this.lastPath || window.location.href;
                 this.setGlobalProperties({
-                    __referrer: previous_path
+                    referrer: previous_path
                 });
                 this.isInternalNavigation = true;
                 this.screenView();
@@ -1034,18 +1058,8 @@
                 this.pageCount++;
                 
                 const pageData = {
-                    ...n ?? {},
-                    __path: i,
-                    __title: document.title,
-                    __timestamp_ms: Date.now(),
                     page_count: this.pageCount,
-                    ...this.getUtmParams(),
-                    ...this.getConnectionInfo(),
-                    screen_resolution: `${window.screen.width}x${window.screen.height}`,
-                    viewport_size: `${window.innerWidth}x${window.innerHeight}`,
-                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    language: navigator.language,
-                    __referrer: this.global?.__referrer || document.referrer || 'direct'
+                    ...n ?? {}
                 };
 
                 this.track("screen_view", pageData);
