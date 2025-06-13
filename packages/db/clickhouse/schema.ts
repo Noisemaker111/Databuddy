@@ -256,7 +256,6 @@ CREATE TABLE IF NOT EXISTS ${ANALYTICS_DATABASE}.stripe_refunds (
   currency LowCardinality(String),
   charge_id String,
   payment_intent_id Nullable(String),
-  livemode UInt8,
   metadata JSON,
   session_id Nullable(String),
   created_at DateTime64(3, 'UTC') DEFAULT now()
@@ -376,7 +375,6 @@ export interface StripeRefund {
   currency: string;
   charge_id: string;
   payment_intent_id?: string;
-  livemode: number;
   metadata: Record<string, any>;
   session_id?: string;
 }

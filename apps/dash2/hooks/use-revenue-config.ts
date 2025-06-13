@@ -99,7 +99,11 @@ export function useRevenueConfig() {
     onSuccess: () => {
       toast.success("Revenue configuration saved successfully");
       queryClient.invalidateQueries({ queryKey: revenueKeys.config() });
-      queryClient.invalidateQueries({ queryKey: ['batch-dynamic-query'], type: 'all' });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          return query.queryKey[0] === 'batch-dynamic-query';
+        }
+      });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to save revenue configuration');

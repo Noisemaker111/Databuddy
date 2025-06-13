@@ -174,8 +174,13 @@ function buildUnifiedQuery(
       const builder = PARAMETER_BUILDERS[parameter as keyof typeof PARAMETER_BUILDERS]
       if (!builder) continue
       
-      let sql = builder(websiteId, startDate, `${endDate} 23:59:59`, limit, offset, granularity, timeZone)
-      sql = applyFilters(sql, filters)
+      let sql = builder(websiteId, startDate, `${endDate} 23:59:59`, limit, offset, granularity, timeZone, filters)
+      
+      // Don't apply generic filters to revenue queries - they handle filtering internally
+      const isRevenueQuery = parameter.startsWith('revenue_') || parameter.startsWith('recent_') || parameter === 'all_revenue_by_client'
+      if (!isRevenueQuery) {
+        sql = applyFilters(sql, filters)
+      }
       
       // Add query and parameter identifiers to the result
       const wrappedQuery = `
@@ -292,8 +297,12 @@ async function executeIndividualQuery(query: QueryRequest, websiteId: string, we
   const results = await Promise.all(
     parameters.map(async (parameter: string) => {
       const builder = PARAMETER_BUILDERS[parameter as keyof typeof PARAMETER_BUILDERS]
-      let sql = builder(websiteId, startDate, `${endDate} 23:59:59`, limit, offset, granularity, timeZone)
-      sql = applyFilters(sql, filters)
+      let sql = builder(websiteId, startDate, `${endDate} 23:59:59`, limit, offset, granularity, timeZone, filters)
+      
+      const isRevenueQuery = parameter.startsWith('revenue_') || parameter.startsWith('recent_') || parameter === 'all_revenue_by_client'
+      if (!isRevenueQuery) {
+        sql = applyFilters(sql, filters)
+      }
 
       const result = await chQuery<Record<string, any>>(sql)
       const processedData = processParameterData(parameter, result, websiteDomain)

@@ -7,16 +7,24 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
     const liveModeFilter = filters?.find(f => f.field === 'livemode');
     const liveModeCondition = liveModeFilter ? `AND livemode = ${liveModeFilter.value}` : '';
     
+    const refundsQuery = liveModeFilter ? 
+      `(SELECT COUNT(*) FROM analytics.stripe_refunds r
+         JOIN analytics.stripe_payment_intents pi ON r.payment_intent_id = pi.id
+         WHERE r.created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+         AND r.created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+         AND r.client_id = ${escapeSqlString(websiteId)}
+         AND pi.livemode = ${liveModeFilter.value})` :
+      `(SELECT COUNT(*) FROM analytics.stripe_refunds 
+         WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+         AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+         AND client_id = ${escapeSqlString(websiteId)})`;
+    
     return `
       SELECT 
         SUM(CASE WHEN status = 'succeeded' THEN amount ELSE 0 END) / 100 as total_revenue,
         COUNT(DISTINCT CASE WHEN status = 'succeeded' THEN id END) as total_transactions,
         COUNT(DISTINCT CASE WHEN status = 'succeeded' THEN id END) as successful_transactions,
-        (SELECT COUNT(*) FROM analytics.stripe_refunds 
-           WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
-           AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-           AND client_id = ${escapeSqlString(websiteId)}
-           ${liveModeCondition}) as total_refunds,
+        ${refundsQuery} as total_refunds,
         AVG(CASE WHEN status = 'succeeded' THEN amount ELSE NULL END) / 100 as avg_order_value,
         100.0 as success_rate
       FROM analytics.stripe_payment_intents 
@@ -74,6 +82,7 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
       WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
         AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
         AND client_id = ${escapeSqlString(websiteId)}
+        AND status = 'succeeded'
         ${liveModeCondition}
       ORDER BY created DESC 
       LIMIT ${offset}, ${limit}
@@ -81,26 +90,26 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
   },
 
   recent_refunds: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily', timezone?: string, filters?: any[]) => {
-    // Build live mode filter if provided
     const liveModeFilter = filters?.find(f => f.field === 'livemode');
-    const liveModeCondition = liveModeFilter ? `AND livemode = ${liveModeFilter.value}` : '';
+    const liveModeCondition = liveModeFilter ? `AND pi.livemode = ${liveModeFilter.value}` : '';
     
     return `
       SELECT 
-        id,
-        toDateTime(created) as created,
-        status,
-        reason,
-        currency,
-        amount / 100 as amount,
-        payment_intent_id,
-        session_id
-      FROM analytics.stripe_refunds 
-      WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
-        AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-        AND client_id = ${escapeSqlString(websiteId)}
+        r.id,
+        toDateTime(r.created) as created,
+        r.status,
+        r.reason,
+        r.currency,
+        r.amount / 100 as amount,
+        r.payment_intent_id,
+        r.session_id
+      FROM analytics.stripe_refunds r
+      JOIN analytics.stripe_payment_intents pi ON r.payment_intent_id = pi.id
+      WHERE r.created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+        AND r.created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+        AND r.client_id = ${escapeSqlString(websiteId)}
         ${liveModeCondition}
-      ORDER BY created DESC 
+      ORDER BY r.created DESC 
       LIMIT ${offset}, ${limit}
     `;
   },
@@ -108,7 +117,7 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
   revenue_by_country: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily', timezone?: string, filters?: any[]) => {
     // Build live mode filter if provided
     const liveModeFilter = filters?.find(f => f.field === 'livemode');
-    const liveModeCondition = liveModeFilter ? `AND livemode = ${liveModeFilter.value}` : '';
+    const liveModeCondition = liveModeFilter ? `AND pi.livemode = ${liveModeFilter.value}` : '';
     
     return `
       SELECT 
@@ -176,95 +185,6 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
       LIMIT ${offset}, ${limit}
     `;
   },
-
-  // New builders that show all events without client filtering
-  all_events_summary: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily') => `
-    SELECT 
-      COUNT(*) as total_events,
-      COUNT(DISTINCT client_id) as unique_clients,
-      COUNT(DISTINCT session_id) as unique_sessions,
-      COUNT(DISTINCT anonymous_id) as unique_users,
-      COUNT(DISTINCT event_name) as unique_event_types,
-      COUNT(CASE WHEN event_type = 'error' THEN 1 END) as error_events,
-      COUNT(CASE WHEN event_type = 'web_vitals' THEN 1 END) as web_vitals_events,
-      COUNT(CASE WHEN event_type = 'track' THEN 1 END) as track_events
-    FROM analytics.events 
-    WHERE time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
-      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-  `,
-
-  all_events_by_client: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily') => `
-    SELECT 
-      client_id,
-      COUNT(*) as total_events,
-      COUNT(DISTINCT session_id) as unique_sessions,
-      COUNT(DISTINCT anonymous_id) as unique_users,
-      COUNT(DISTINCT event_name) as unique_event_types,
-      MIN(time) as first_event,
-      MAX(time) as last_event
-    FROM analytics.events 
-    WHERE time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
-      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-    GROUP BY client_id 
-    ORDER BY total_events DESC 
-    LIMIT ${offset}, ${limit}
-  `,
-
-  all_events_trends: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily') => {
-    const timeFormat = granularity === 'hourly' 
-      ? 'toDateTime(toStartOfHour(toDateTime(time)))' 
-      : 'toDate(toDateTime(time))';
-    
-    return `
-      SELECT 
-        ${timeFormat} as time,
-        COUNT(*) as total_events,
-        COUNT(DISTINCT client_id) as unique_clients,
-        COUNT(DISTINCT session_id) as unique_sessions,
-        COUNT(DISTINCT anonymous_id) as unique_users,
-        COUNT(CASE WHEN event_type = 'error' THEN 1 END) as error_events,
-        COUNT(CASE WHEN event_type = 'web_vitals' THEN 1 END) as web_vitals_events,
-        COUNT(CASE WHEN event_type = 'track' THEN 1 END) as track_events
-      FROM analytics.events 
-      WHERE time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
-        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-      GROUP BY time 
-      ORDER BY time DESC 
-      LIMIT ${offset}, ${limit}
-    `;
-  },
-
-  all_events_by_country: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily') => `
-    SELECT 
-      country as name,
-      COUNT(*) as total_events,
-      COUNT(DISTINCT client_id) as unique_clients,
-      COUNT(DISTINCT session_id) as unique_sessions,
-      COUNT(DISTINCT anonymous_id) as unique_users
-    FROM analytics.events 
-    WHERE time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
-      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-      AND country IS NOT NULL 
-      AND country != ''
-    GROUP BY country 
-    ORDER BY total_events DESC 
-    LIMIT ${offset}, ${limit}
-  `,
-
-  all_events_by_type: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily') => `
-    SELECT 
-      event_name as name,
-      COUNT(*) as total_events,
-      COUNT(DISTINCT client_id) as unique_clients,
-      COUNT(DISTINCT session_id) as unique_sessions,
-      COUNT(DISTINCT anonymous_id) as unique_users
-    FROM analytics.events 
-    WHERE time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
-      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-    GROUP BY event_name 
-    ORDER BY total_events DESC 
-    LIMIT ${offset}, ${limit}
-  `,
 
   all_revenue_by_client: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily') => `
     SELECT 

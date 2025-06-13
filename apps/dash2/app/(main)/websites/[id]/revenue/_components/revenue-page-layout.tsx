@@ -13,6 +13,8 @@ export function RevenuePageLayout() {
     const [activeTab, setActiveTab] = useState('overview');
     const revenueConfig = useRevenueConfig();
 
+    const currentIsLiveMode = revenueConfig.isLiveMode;
+
     if (revenueConfig.isLoading) {
         return (
             <div className="p-3 sm:p-4 max-w-[1600px] mx-auto">
@@ -56,7 +58,7 @@ export function RevenuePageLayout() {
                         <QuickSettingsModal
                             webhookToken={revenueConfig.webhookToken}
                             webhookSecret={revenueConfig.webhookSecret}
-                            isLiveMode={revenueConfig.isLiveMode}
+                            isLiveMode={currentIsLiveMode}
                             webhookUrl={revenueConfig.webhookUrl}
                             onSave={(data) => {
                                 revenueConfig.updateConfig({
@@ -117,7 +119,7 @@ export function RevenuePageLayout() {
                         onSetupClick={() => setActiveTab('settings')}
                         isSetupComplete={revenueConfig.isSetupComplete}
                         setupProgress={revenueConfig.setupProgress}
-                        isLiveMode={revenueConfig.isLiveMode}
+                        isLiveMode={currentIsLiveMode}
                     />
                 </TabsContent>
 
@@ -131,7 +133,7 @@ export function RevenuePageLayout() {
                         setOnboardingStep={revenueConfig.setOnboardingStep}
                         webhookToken={revenueConfig.webhookToken}
                         webhookSecret={revenueConfig.webhookSecret}
-                        isLiveMode={revenueConfig.isLiveMode}
+                        isLiveMode={currentIsLiveMode}
                         copied={revenueConfig.copied}
                         copyToClipboard={revenueConfig.copyToClipboard}
                         webhookUrl={revenueConfig.webhookUrl}

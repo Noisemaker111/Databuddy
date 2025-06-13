@@ -22,64 +22,58 @@ export function useRevenueAnalytics(dateRange: DateRange) {
   const websiteId = params.id as string;
   
   // Get user's revenue config to determine live mode setting
-  const { isLiveMode } = useRevenueConfig();
+  const { isLiveMode, isLoading: configLoading } = useRevenueConfig();
 
-  // Debug logging
-  console.log('Revenue Analytics - isLiveMode:', isLiveMode);
-
-  // Create custom queries with livemode filter
-  const queries = useMemo(() => {
-    console.log('Revenue Analytics - Creating queries with isLiveMode:', isLiveMode);
-    return [
-      {
-        id: 'revenue-summary',
-        parameters: ['revenue_summary'],
-        limit: 1,
-        filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
-      },
-      {
-        id: 'revenue-trends',
-        parameters: ['revenue_trends'],
-        limit: 100,
-        filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
-      },
-      {
-        id: 'recent-transactions',
-        parameters: ['recent_transactions'],
-        limit: 50,
-        filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
-      },
-      {
-        id: 'recent-refunds',
-        parameters: ['recent_refunds'],
-        limit: 50,
-        filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
-      },
-      {
-        id: 'revenue-by-country',
-        parameters: ['revenue_by_country'],
-        limit: 20,
-        filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
-      },
-      {
-        id: 'revenue-by-currency',
-        parameters: ['revenue_by_currency'],
-        limit: 10,
-        filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
-      },
-      {
-        id: 'revenue-by-card-brand',
-        parameters: ['revenue_by_card_brand'],
-        limit: 10,
-        filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
-      },
-    ];
-  }, [isLiveMode]);
+    // Create custom queries with livemode filter
+  const queries = useMemo(() => [
+    {
+      id: 'revenue-summary',
+      parameters: ['revenue_summary'],
+      limit: 1,
+      filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
+    },
+    {
+      id: 'revenue-trends',
+      parameters: ['revenue_trends'],
+      limit: 100,
+      filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
+    },
+    {
+      id: 'recent-transactions',
+      parameters: ['recent_transactions'],
+      limit: 50,
+      filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
+    },
+    {
+      id: 'recent-refunds',
+      parameters: ['recent_refunds'],
+      limit: 50,
+      filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
+    },
+    {
+      id: 'revenue-by-country',
+      parameters: ['revenue_by_country'],
+      limit: 20,
+      filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
+    },
+    {
+      id: 'revenue-by-currency',
+      parameters: ['revenue_by_currency'],
+      limit: 10,
+      filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
+    },
+    {
+      id: 'revenue-by-card-brand',
+      parameters: ['revenue_by_card_brand'],
+      limit: 10,
+      filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
+    },
+  ], [isLiveMode]);
 
   const batchResult = useBatchDynamicQuery(websiteId, dateRange, queries, {
-    enabled: !!websiteId,
-    staleTime: 2 * 60 * 1000, // 2 minutes for revenue data
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    enabled: !!websiteId && !configLoading, // Wait for config to load
+    staleTime: 0, // Always fresh data for revenue
+    refetchInterval: false, // Don't auto-refetch, let user control
   });
 
   // Process the batch results into revenue data structure
@@ -212,55 +206,5 @@ export function useRevenueAnalytics(dateRange: DateRange) {
     // Convenience flags
     hasAnyData: result.hasSummaryData || result.hasTrendsData || result.hasTransactionsData,
     isEmpty: !result.isLoading && !(result.hasSummaryData || result.hasTrendsData || result.hasTransactionsData),
-  };
-}
-
-/**
- * Hook for revenue summary metrics only (lighter weight)
- */
-export function useRevenueSummary(dateRange: DateRange) {
-  const params = useParams();
-  const websiteId = params.id as string;
-  
-  // Get user's revenue config to determine live mode setting
-  const { isLiveMode } = useRevenueConfig();
-
-  // Create a single query for summary only
-  const queries = useMemo(() => [
-    {
-      id: 'revenue-summary',
-      parameters: ['revenue_summary'],
-      limit: 1,
-      filters: [{ field: 'livemode', operator: 'eq' as const, value: isLiveMode ? 1 : 0 }]
-    },
-  ], [isLiveMode]);
-
-  const result = useBatchDynamicQuery(websiteId, dateRange, queries, {
-    enabled: !!websiteId,
-    staleTime: 1 * 60 * 1000, // 1 minute for summary
-  });
-
-  const summaryData = result.getDataForQuery('revenue-summary', 'revenue_summary') as RevenueSummaryData[];
-  const summary = summaryData?.[0] || {
-    total_revenue: 0,
-    total_transactions: 0,
-    total_refunds: 0,
-    avg_order_value: 0,
-    success_rate: 0,
-  };
-
-  return {
-    summary,
-    summaryStats: {
-      revenueGrowth: 0,
-      transactionGrowth: 0,
-      refundRate: summary.total_transactions > 0 ? (summary.total_refunds / summary.total_transactions) * 100 : 0,
-      totalRecentTransactions: 0,
-      totalRecentRefunds: 0,
-    },
-    isLoading: result.isLoading,
-    isError: result.isError,
-    error: result.error,
-    hasSummaryData: result.hasDataForQuery('revenue-summary', 'revenue_summary'),
   };
 } 

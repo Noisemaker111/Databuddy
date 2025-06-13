@@ -11,11 +11,8 @@ import {
     Receipt,
     AlertCircle
 } from "lucide-react";
-import { useRevenueSummary } from "../hooks/use-revenue-analytics";
-import { useAtom } from 'jotai';
-import { formattedDateRangeAtom } from '@/stores/jotai/filterAtoms';
 import { cn } from "@/lib/utils";
-import { useMemo } from 'react';
+import type { useRevenueAnalytics } from "../hooks/use-revenue-analytics";
 
 interface MetricCardProps {
     title: string;
@@ -74,27 +71,19 @@ function MetricCard({ title, value, change, changeType, icon, description, isLoa
 
 interface RevenueSummaryCardsProps {
     className?: string;
+    analytics: ReturnType<typeof useRevenueAnalytics>;
 }
 
-export function RevenueSummaryCards({ className }: RevenueSummaryCardsProps) {
-    const [formattedDateRange] = useAtom(formattedDateRangeAtom);
-
-    // Convert the formatted date range to the expected format
-    const dateRange = useMemo(() => ({
-        start_date: formattedDateRange.startDate,
-        end_date: formattedDateRange.endDate,
-        granularity: 'daily' as const,
-        timezone: 'UTC'
-    }), [formattedDateRange]);
-
+export function RevenueSummaryCards({ className, analytics }: RevenueSummaryCardsProps) {
     const {
-        summary,
-        summaryStats,
+        formattedData,
         isLoading,
         isError,
         error,
-        hasSummaryData
-    } = useRevenueSummary(dateRange);
+    } = analytics;
+
+    const summary = formattedData?.summary;
+    const summaryStats = formattedData?.summaryStats;
 
     if (isError) {
         return (
@@ -107,48 +96,34 @@ export function RevenueSummaryCards({ className }: RevenueSummaryCardsProps) {
         );
     }
 
-    // Format currency values
-    const formatCurrency = (amount: number, currency = 'USD') => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(amount);
-    };
-
-    const formatPercentage = (value: number) => {
-        return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
-    };
-
     return (
         <div className={cn("grid gap-4 md:grid-cols-2 lg:grid-cols-4", className)}>
             <MetricCard
                 title="Total Revenue"
-                value={summary ? formatCurrency(summary.total_revenue) : '$0.00'}
-                change={summaryStats ? formatPercentage(summaryStats.revenueGrowth) : undefined}
+                value={summary?.total_revenue_formatted ?? '$0.00'}
+                change={summaryStats?.revenueGrowth_formatted}
                 changeType={summaryStats?.revenueGrowth && summaryStats.revenueGrowth >= 0 ? 'positive' : 'negative'}
                 icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
                 isLoading={isLoading}
             />
             <MetricCard
                 title="Total Transactions"
-                value={summary ? summary.total_transactions.toLocaleString() : '0'}
-                change={summaryStats ? formatPercentage(summaryStats.transactionGrowth) : undefined}
+                value={summary?.total_transactions.toLocaleString() ?? '0'}
+                change={summaryStats?.transactionGrowth_formatted}
                 changeType={summaryStats?.transactionGrowth && summaryStats.transactionGrowth >= 0 ? 'positive' : 'negative'}
                 icon={<Receipt className="h-4 w-4 text-muted-foreground" />}
                 isLoading={isLoading}
             />
             <MetricCard
                 title="Average Order Value"
-                value={summary ? formatCurrency(summary.avg_order_value) : '$0.00'}
+                value={summary?.avg_order_value_formatted ?? '$0.00'}
                 icon={<CreditCard className="h-4 w-4 text-muted-foreground" />}
                 isLoading={isLoading}
             />
             <MetricCard
                 title="Success Rate"
                 value={summary ? `${summary.success_rate.toFixed(1)}%` : '0%'}
-                description={summary ? `${summary.total_refunds} refunds (${summaryStats ? summaryStats.refundRate.toFixed(1) : '0'}%)` : undefined}
+                description={summary ? `${summary.total_refunds} refunds (${summaryStats?.refundRate_formatted})` : undefined}
                 icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
                 isLoading={isLoading}
             />
