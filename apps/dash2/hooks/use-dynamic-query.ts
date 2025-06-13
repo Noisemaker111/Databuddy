@@ -951,6 +951,8 @@ export interface RevenueTrendData {
   time: string;
   revenue: number;
   transactions: number;
+  avg_order_value: number;
+  success_rate: number;
 }
 
 export interface RecentTransactionData {

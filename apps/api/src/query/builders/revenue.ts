@@ -8,14 +8,12 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
       COUNT(*) as total_transactions,
       COUNT(DISTINCT CASE WHEN status = 'succeeded' THEN id END) as successful_transactions,
       (SELECT COUNT(*) FROM analytics.stripe_refunds 
-       WHERE client_id = ${escapeSqlString(websiteId)}
-         AND created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+         WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
          AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})) as total_refunds,
       AVG(amount) / 100 as avg_order_value,
       (COUNT(DISTINCT CASE WHEN status = 'succeeded' THEN id END) * 100.0 / COUNT(*)) as success_rate
     FROM analytics.stripe_payment_intents 
-    WHERE client_id = ${escapeSqlString(websiteId)}
-      AND created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+    WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
       AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
   `,
 
@@ -27,13 +25,13 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
     return `
       SELECT 
         ${timeFormat} as time,
-        SUM(amount) / 100 as revenue,
-        COUNT(*) as transactions
+        SUM(amount) / 100 as total_revenue,
+        COUNT(*) as total_transactions,
+        AVG(amount) / 100 as avg_order_value,
+        (COUNT(DISTINCT CASE WHEN status = 'succeeded' THEN id END) * 100.0 / COUNT(*)) as success_rate
       FROM analytics.stripe_payment_intents 
-      WHERE client_id = ${escapeSqlString(websiteId)}
-        AND created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+      WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
         AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-        AND status = 'succeeded'
       GROUP BY time 
       ORDER BY time DESC 
       LIMIT ${offset}, ${limit}
@@ -50,8 +48,7 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
       customer_id,
       anonymized_user_id as session_id
     FROM analytics.stripe_payment_intents 
-    WHERE client_id = ${escapeSqlString(websiteId)}
-      AND created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+    WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
       AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
     ORDER BY created DESC 
     LIMIT ${offset}, ${limit}
@@ -68,8 +65,7 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
       payment_intent_id,
       anonymized_user_id as session_id
     FROM analytics.stripe_refunds 
-    WHERE client_id = ${escapeSqlString(websiteId)}
-      AND created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+    WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
       AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
     ORDER BY created DESC 
     LIMIT ${offset}, ${limit}
@@ -83,8 +79,7 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
       AVG(pi.amount) / 100 as avg_order_value
     FROM analytics.stripe_payment_intents pi
     LEFT JOIN analytics.events e ON pi.anonymized_user_id = e.session_id
-    WHERE pi.client_id = ${escapeSqlString(websiteId)}
-      AND pi.created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+    WHERE pi.created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
       AND pi.created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND pi.status = 'succeeded'
       AND e.country IS NOT NULL 
@@ -101,8 +96,7 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
       COUNT(*) as total_transactions,
       AVG(amount) / 100 as avg_order_value
     FROM analytics.stripe_payment_intents 
-    WHERE client_id = ${escapeSqlString(websiteId)}
-      AND created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+    WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
       AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND status = 'succeeded'
     GROUP BY currency 
@@ -118,8 +112,7 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
       AVG(pi.amount) / 100 as avg_order_value
     FROM analytics.stripe_payment_intents pi
     LEFT JOIN analytics.stripe_charges c ON pi.id = c.payment_intent_id
-    WHERE pi.client_id = ${escapeSqlString(websiteId)}
-      AND pi.created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+    WHERE pi.created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
       AND pi.created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND pi.status = 'succeeded'
       AND c.card_brand IS NOT NULL 

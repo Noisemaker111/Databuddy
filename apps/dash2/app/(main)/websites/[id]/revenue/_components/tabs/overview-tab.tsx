@@ -4,8 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CreditCard, CheckCircle, Clock, Settings, AlertCircle, TrendingUp, DollarSign } from "lucide-react";
+import { CreditCard, CheckCircle, Clock, Settings, AlertCircle, TrendingUp, DollarSign, BarChart3, PieChart } from "lucide-react";
 import { RevenueSummaryCards } from "../revenue-summary-cards";
+import { useRevenueAnalytics } from "../../hooks/use-revenue-analytics";
+import { useAtom } from 'jotai';
+import { formattedDateRangeAtom } from '@/stores/jotai/filterAtoms';
+import { useMemo } from 'react';
+import { MetricsChart } from "@/components/charts/metrics-chart";
+import { DistributionChart } from "@/components/charts/distribution-chart";
+import { VersatileAIChart } from "@/components/charts/versatile-ai-chart";
 
 interface OverviewTabProps {
     onSetupClick: () => void;
@@ -14,12 +21,50 @@ interface OverviewTabProps {
     isLiveMode: boolean;
 }
 
+// Process revenue trend data for charts
+function processRevenueTrendData(trends: any[]) {
+    if (!trends || trends.length === 0) return [];
+
+    return trends.map(item => ({
+        date: item.date,
+        revenue: item.revenue || 0,
+        transactions: item.transactions || 0
+    }));
+}
+
+// Process distribution data
+function processDistributionData(data: any[], valueKey: string = 'total_revenue', nameKey: string = 'name') {
+    if (!data || data.length === 0) return [];
+
+    return data.slice(0, 5).map(item => ({
+        name: item[nameKey] || 'Unknown',
+        value: item[valueKey] || 0
+    }));
+}
+
 export function RevenueOverviewTab({
     onSetupClick,
     isSetupComplete,
     setupProgress,
     isLiveMode
 }: OverviewTabProps) {
+    const [formattedDateRange] = useAtom(formattedDateRangeAtom);
+
+    // Convert the formatted date range to the expected format
+    const dateRange = useMemo(() => ({
+        start_date: formattedDateRange.startDate,
+        end_date: formattedDateRange.endDate,
+        granularity: 'daily' as const,
+        timezone: 'UTC'
+    }), [formattedDateRange]);
+
+    const {
+        formattedData,
+        isLoading,
+        isError,
+        isEmpty
+    } = useRevenueAnalytics(dateRange);
+
     if (!isSetupComplete) {
         return (
             <div className="space-y-6">
@@ -70,24 +115,40 @@ export function RevenueOverviewTab({
                 {/* Preview Card */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Revenue Overview</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                            <DollarSign className="h-5 w-5" />
+                            Revenue Overview
+                        </CardTitle>
                         <CardDescription>
                             Your revenue analytics will appear here once setup is complete
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="text-center py-12">
-                            <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                            <h3 className="text-lg font-medium mb-2">No revenue data yet</h3>
-                            <p className="text-muted-foreground mb-4">
-                                Complete the Stripe integration to start tracking revenue metrics
+                            <div className="relative">
+                                <BarChart3 className="h-16 w-16 text-muted-foreground/20 mx-auto" strokeWidth={1.5} />
+                                <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent rounded-full blur-xl" />
+                            </div>
+                            <h3 className="text-lg font-semibold mt-6 mb-2">No revenue data yet</h3>
+                            <p className="text-muted-foreground mb-4 max-w-sm mx-auto">
+                                Complete the Stripe integration to start tracking comprehensive revenue metrics and insights
                             </p>
+                            <div className="mt-6 p-4 bg-muted/50 rounded-lg max-w-md mx-auto">
+                                <p className="text-sm text-muted-foreground">
+                                    Once configured, you'll see revenue trends, transaction analytics, and geographic insights
+                                </p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
         );
     }
+
+    // Process chart data
+    const chartData = processRevenueTrendData(formattedData?.trends || []);
+    const countryDistribution = processDistributionData(formattedData?.byCountry || []);
+    const currencyDistribution = processDistributionData(formattedData?.byCurrency || []);
 
     return (
         <div className="space-y-6">
@@ -125,23 +186,105 @@ export function RevenueOverviewTab({
             {/* Revenue Metrics */}
             <RevenueSummaryCards />
 
-            {/* Revenue Chart Placeholder */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Revenue Over Time</CardTitle>
-                    <CardDescription>
-                        Revenue trends will be displayed here once data is available
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="h-[300px] flex items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                        <div className="text-center">
-                            <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                            <p className="text-muted-foreground">Revenue chart will appear here</p>
+            {/* Revenue Chart */}
+            {!isEmpty && !isError && (
+                <div className="rounded border shadow-sm">
+                    <div className="p-4 border-b">
+                        <div>
+                            <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
+                                <TrendingUp className="h-5 w-5" />
+                                Revenue Trends
+                            </h2>
+                            <p className="text-sm text-muted-foreground">
+                                Daily revenue and transaction performance
+                            </p>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
+                    <div>
+                        <MetricsChart
+                            data={chartData}
+                            isLoading={isLoading}
+                            height={320}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Distribution Charts */}
+            {!isEmpty && !isError && (
+                <div className="grid gap-4 md:grid-cols-2">
+                    <DistributionChart
+                        data={countryDistribution}
+                        isLoading={isLoading}
+                        title="Revenue by Country"
+                        description="Top performing countries"
+                        height={250}
+                    />
+                    <DistributionChart
+                        data={currencyDistribution}
+                        isLoading={isLoading}
+                        title="Revenue by Currency"
+                        description="Currency breakdown"
+                        height={250}
+                    />
+                </div>
+            )}
+
+            {/* Empty State for Revenue Data */}
+            {isEmpty && !isLoading && !isError && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5" />
+                            Revenue Over Time
+                        </CardTitle>
+                        <CardDescription>
+                            Revenue trends and analytics
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-center py-12">
+                            <div className="relative">
+                                <BarChart3 className="h-16 w-16 text-muted-foreground/20 mx-auto" strokeWidth={1.5} />
+                                <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent rounded-full blur-xl" />
+                            </div>
+                            <h3 className="text-lg font-semibold mt-6 mb-2">No revenue data yet</h3>
+                            <p className="text-muted-foreground max-w-sm mx-auto">
+                                Revenue analytics will appear here once you start receiving payments through your Stripe integration
+                            </p>
+                            <div className="mt-6 p-4 bg-muted/50 rounded-lg max-w-md mx-auto">
+                                <p className="text-sm text-muted-foreground">
+                                    Make sure your Stripe webhook is properly configured and receiving events
+                                </p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Error State */}
+            {isError && (
+                <Card className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
+                    <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5 text-red-600" />
+                            Error Loading Revenue Data
+                        </CardTitle>
+                        <CardDescription>
+                            There was an issue loading your revenue analytics
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            Please check your Stripe integration settings or try refreshing the page.
+                        </p>
+                        <Button onClick={onSetupClick} variant="outline">
+                            <Settings className="h-4 w-4 mr-2" />
+                            Check Settings
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 } 

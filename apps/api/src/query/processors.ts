@@ -278,8 +278,10 @@ export const processRevenueSummary = (data: any[]) => {
 export const processRevenueTrends = (data: any[]) => {
   return data.map(item => ({
     time: new Date(item.time).toISOString(),
-    revenue: Number(item.revenue) || 0,
-    transactions: Number(item.transactions) || 0,
+    revenue: Number(item.total_revenue) || 0,
+    transactions: Number(item.total_transactions) || 0,
+    avg_order_value: Number(item.avg_order_value) || 0,
+    success_rate: Number(item.success_rate) || 0,
   }));
 };
 
