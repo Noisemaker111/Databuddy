@@ -956,7 +956,7 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
                               </h4>
                               <div className="bg-muted/50 p-3 rounded-md max-h-60 overflow-y-auto">
                                 <pre className="text-xs font-mono whitespace-pre-wrap break-words">
-                                  {error.sample_error.error_stack}
+                                  {error.sample_error?.error_stack || 'No stack trace available'}
                                 </pre>
                               </div>
                             </Card>
@@ -972,11 +972,11 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
                               <div className="space-y-2">
                                 <div>
                                   <div className="text-xs font-medium text-muted-foreground mb-0.5">Last Seen</div>
-                                  <p className="text-sm">{safeFormatDate(error.sample_error.time, 'MMM d, yyyy HH:mm:ss')}</p>
+                                  <p className="text-sm">{safeFormatDate(error.sample_error?.time || '', 'MMM d, yyyy HH:mm:ss')}</p>
                                 </div>
                                 <div>
                                   <div className="text-xs font-medium text-muted-foreground mb-0.5">Page URL</div>
-                                  <p className="text-sm break-all">{error.sample_error.page_url}</p>
+                                  <p className="text-sm break-all">{error.sample_error?.page_url || 'Unknown'}</p>
                                 </div>
                               </div>
                             </Card>
@@ -989,7 +989,7 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
                               <div className="space-y-2">
                                 <div>
                                   <div className="text-xs font-medium text-muted-foreground mb-0.5">User ID</div>
-                                  <p className="text-sm font-mono">{error.sample_error.anonymous_id}</p>
+                                  <p className="text-sm font-mono">{error.sample_error?.anonymous_id || 'Unknown'}</p>
                                 </div>
                                 <div>
                                   <div className="text-xs font-medium text-muted-foreground mb-0.5">Device</div>
@@ -1002,9 +1002,9 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
                                   <div className="text-xs font-medium text-muted-foreground mb-0.5">Location</div>
                                   <p className="text-sm flex items-center gap-1">
                                     <MapPin className="h-3 w-3" />
-                                    {error.sample_error.city && error.sample_error.country
-                                      ? `${error.sample_error.city}, ${error.sample_error.country}`
-                                      : error.sample_error.country || 'Unknown'
+                                    {error.sample_error?.city && error.sample_error?.country
+                                      ? `${error.sample_error?.city}, ${error.sample_error?.country}`
+                                      : error.sample_error?.country || 'Unknown'
                                     }
                                   </p>
                                 </div>
