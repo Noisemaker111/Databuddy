@@ -1,0 +1,705 @@
+---
+title: Stripe
+description: Track revenue analytics with Stripe webhook integration
+---
+
+# Stripe Integration
+
+Connect Stripe payments to Databuddy's analytics to track revenue, conversion funnels, and customer behavior. This integration automatically links payment events to your website analytics for complete revenue attribution.
+
+## Overview
+
+The Stripe integration captures:
+- **Payment Intents**: Track payment attempts, successes, and failures
+- **Charges**: Monitor successful payments and refunds
+- **Refunds**: Track refund events and amounts
+- **Revenue Attribution**: Link payments to specific user sessions and marketing campaigns
+
+All payment data is automatically linked to your website analytics using session IDs, enabling powerful revenue attribution and conversion tracking.
+
+## Prerequisites
+
+Before setting up the Stripe integration, ensure you have:
+
+1. **Databuddy Account**: [Sign up](https://app.databuddy.cc) and get your Client ID
+2. **Stripe Account**: Active Stripe account with API access
+3. **Website Analytics**: Databuddy tracking script installed on your website
+4. **Server-side Integration**: Ability to modify your server-side Stripe checkout code
+
+## How Session Tracking Works
+
+Databuddy automatically handles session and user IDs:
+
+### Automatic Session Management
+- **Session ID**: Automatically generated and stored in `sessionStorage` as `did_session`
+- **Session Format**: `sess_{timestamp}_{random_string}` (e.g., `sess_lm8k9x_abc123def456`)
+- **Session Duration**: 30 minutes of inactivity, then a new session is created
+
+### Anonymous User Tracking
+- **Anonymous ID**: Automatically generated and stored in `localStorage` as `did`
+- **Anonymous Format**: `anon_{uuid}` (e.g., `anon_123e4567-e89b-12d3-a456-426614174000`)
+- **Persistence**: Persists across browser sessions until localStorage is cleared
+- **Privacy**: No personal information is stored, fully anonymous
+
+### Data Linking
+When you pass the session ID to Stripe via `client_reference_id`, Databuddy can:
+- Link payment events to specific user sessions
+- Track the complete customer journey from first visit to purchase
+- Attribute revenue to marketing campaigns and traffic sources
+- Calculate conversion rates and customer lifetime value
+
+## Setup Process
+
+### Step 1: Ensure Databuddy Script is Properly Configured
+
+Before setting up webhooks, make sure your Databuddy tracking script is configured correctly:
+
+```html
+<script
+  src="https://app.databuddy.cc/databuddy.js"
+  data-client-id="your_databuddy_client_id"
+  data-track-screen-views="true"
+  data-track-sessions="true"
+  async
+></script>
+```
+
+**Important Configuration Options**:
+- `data-track-sessions="true"` - **Required** for session tracking (default: true)
+- `data-client-id` - **Required** - Your Databuddy Client ID
+
+### Step 2: Configure Webhook Endpoint
+
+1. **Log into your Databuddy Dashboard**
+2. **Navigate to Integrations** > **Stripe**
+3. **Create a new Stripe configuration**:
+   - Enter your **Stripe Webhook Secret** (we'll get this in Step 2)
+   - Choose **Test Mode** or **Live Mode**
+   - Copy your unique **Webhook URL** (e.g., `https://basket.databuddy.cc/stripe/webhook/wh_abc123`)
+
+### Step 3: Create Stripe Webhook
+
+1. **Log into your Stripe Dashboard**
+2. **Go to Developers** > **Webhooks**
+3. **Click "Add endpoint"**
+4. **Configure the webhook**:
+   - **Endpoint URL**: Paste your Databuddy webhook URL from Step 1
+   - **Events to send**: Select these specific events:
+     ```
+     payment_intent.succeeded
+     payment_intent.created
+     payment_intent.canceled
+     payment_intent.payment_failed
+     payment_intent.requires_action
+     charge.succeeded
+     charge.failed
+     charge.captured
+     charge.dispute.created
+     refund.created
+     refund.updated
+     refund.failed
+     ```
+5. **Click "Add endpoint"**
+6. **Copy the Webhook Secret**:
+   - Click on your newly created webhook
+   - In the "Signing secret" section, click "Reveal"
+   - Copy the secret (starts with `whsec_`)
+7. **Return to Databuddy** and paste the webhook secret
+
+### Step 4: Update Your Checkout Code
+
+Modify your server-side Stripe checkout session creation to include required metadata:
+
+#### Node.js/JavaScript Example
+
+```javascript
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Create checkout session
+const session = await stripe.checkout.sessions.create({
+  payment_method_types: ['card'],
+  mode: 'payment',
+  line_items: [
+    {
+      price: 'price_1234567890', // Your price ID
+      quantity: 1,
+    },
+  ],
+  success_url: 'https://yoursite.com/success?session_id={CHECKOUT_SESSION_ID}',
+  cancel_url: 'https://yoursite.com/cancel',
+  
+  // REQUIRED: Link to your analytics
+  client_reference_id: sessionId, // Your analytics session ID
+  metadata: {
+    client_id: 'your_databuddy_client_id', // Your Databuddy Client ID
+    // Optional: Add any custom metadata
+    user_id: 'user_123',
+    campaign: 'summer_sale',
+  },
+});
+```
+
+#### Python Example
+
+```python
+import stripe
+
+stripe.api_key = os.environ['STRIPE_SECRET_KEY']
+
+session = stripe.checkout.Session.create(
+    payment_method_types=['card'],
+    mode='payment',
+    line_items=[{
+        'price': 'price_1234567890',  # Your price ID
+        'quantity': 1,
+    }],
+    success_url='https://yoursite.com/success?session_id={CHECKOUT_SESSION_ID}',
+    cancel_url='https://yoursite.com/cancel',
+    
+    # REQUIRED: Link to your analytics
+    client_reference_id=session_id,  # Your analytics session ID
+    metadata={
+        'client_id': 'your_databuddy_client_id',  # Your Databuddy Client ID
+        # Optional: Add any custom metadata
+        'user_id': 'user_123',
+        'campaign': 'summer_sale',
+    },
+)
+```
+
+#### PHP Example
+
+```php
+<?php
+require_once 'vendor/autoload.php';
+
+\Stripe\Stripe::setApiKey($_ENV['STRIPE_SECRET_KEY']);
+
+$session = \Stripe\Checkout\Session::create([
+    'payment_method_types' => ['card'],
+    'mode' => 'payment',
+    'line_items' => [[
+        'price' => 'price_1234567890', // Your price ID
+        'quantity' => 1,
+    ]],
+    'success_url' => 'https://yoursite.com/success?session_id={CHECKOUT_SESSION_ID}',
+    'cancel_url' => 'https://yoursite.com/cancel',
+    
+    // REQUIRED: Link to your analytics
+    'client_reference_id' => $sessionId, // Your analytics session ID
+    'metadata' => [
+        'client_id' => 'your_databuddy_client_id', // Your Databuddy Client ID
+        // Optional: Add any custom metadata
+        'user_id' => 'user_123',
+        'campaign' => 'summer_sale',
+    ],
+]);
+?>
+```
+
+### Step 5: Get Your Analytics Session ID
+
+The `client_reference_id` should contain your website's analytics session ID. Databuddy automatically generates and manages session IDs, so you can easily access them:
+
+#### Frontend JavaScript
+
+```javascript
+// Get the session ID from Databuddy
+let sessionId;
+
+// Method 1: From Databuddy sessionStorage (automatic generation)
+// Databuddy stores session ID in sessionStorage as 'did_session'
+if (typeof window !== 'undefined' && sessionStorage) {
+  sessionId = sessionStorage.getItem('did_session');
+}
+
+// Method 2: If Databuddy hasn't initialized yet, wait for it
+if (!sessionId && window.databuddy) {
+  // Access the session ID directly from the Databuddy instance
+  sessionId = window.databuddy.sessionId;
+}
+
+// Method 3: Wait for Databuddy to initialize
+if (!sessionId) {
+  // Databuddy will automatically generate a session ID when it loads
+  // You can wait for it or check periodically
+  const waitForDatabuddy = () => {
+    if (window.databuddy && window.databuddy.sessionId) {
+      sessionId = window.databuddy.sessionId;
+      createCheckoutSession(sessionId);
+    } else {
+      setTimeout(waitForDatabuddy, 100);
+    }
+  };
+  waitForDatabuddy();
+  return; // Exit early, will continue in callback
+}
+
+// Send to your backend when creating checkout
+createCheckoutSession(sessionId);
+
+function createCheckoutSession(sessionId) {
+  fetch('/create-checkout-session', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sessionId: sessionId,
+      // ... other checkout data
+    }),
+  });
+}
+```
+
+#### Alternative: Use a Helper Function
+
+```javascript
+// Helper function to get session ID reliably
+function getDatabuddySessionId() {
+  return new Promise((resolve) => {
+    // Check if session ID is already available
+    const existingSessionId = sessionStorage.getItem('did_session');
+    if (existingSessionId) {
+      resolve(existingSessionId);
+      return;
+    }
+
+    // Wait for Databuddy to initialize and generate session ID
+    const checkForSession = () => {
+      const sessionId = sessionStorage.getItem('did_session') || 
+                       (window.databuddy && window.databuddy.sessionId);
+      
+      if (sessionId) {
+        resolve(sessionId);
+      } else {
+        setTimeout(checkForSession, 50);
+      }
+    };
+    
+    checkForSession();
+  });
+}
+
+// Usage
+async function handleCheckout() {
+  const sessionId = await getDatabuddySessionId();
+  
+  const response = await fetch('/create-checkout-session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sessionId: sessionId,
+      clientId: 'your_databuddy_client_id',
+      // ... other data
+    }),
+  });
+  
+  const { url } = await response.json();
+  window.location.href = url;
+}
+```
+
+## Implementation Examples
+
+### React/Next.js Integration
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function CheckoutButton({ priceId, productName }) {
+  const [sessionId, setSessionId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Get session ID from Databuddy (automatically generated)
+    const getSessionId = () => {
+      // Check if session ID is already available in sessionStorage
+      const existingSessionId = sessionStorage.getItem('did_session');
+      if (existingSessionId) {
+        setSessionId(existingSessionId);
+        return;
+      }
+
+      // Wait for Databuddy to initialize and generate session ID
+      const checkForSession = () => {
+        const sessionId = sessionStorage.getItem('did_session') || 
+                         (window.databuddy && window.databuddy.sessionId);
+        
+        if (sessionId) {
+          setSessionId(sessionId);
+        } else {
+          setTimeout(checkForSession, 100);
+        }
+      };
+      
+      checkForSession();
+    };
+
+    getSessionId();
+  }, []);
+
+  const handleCheckout = async () => {
+    if (!sessionId) {
+      console.warn('Session ID not available yet');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          priceId,
+          sessionId,
+          clientId: process.env.NEXT_PUBLIC_DATABUDDY_CLIENT_ID,
+        }),
+      });
+
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (error) {
+      console.error('Checkout error:', error);
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <button 
+      onClick={handleCheckout}
+      disabled={!sessionId || isLoading}
+      className="bg-blue-600 text-white px-6 py-2 rounded disabled:opacity-50"
+    >
+      {isLoading ? 'Processing...' : `Buy ${productName}`}
+    </button>
+  );
+}
+```
+
+#### Custom Hook for Session Management
+
+```jsx
+import { useState, useEffect } from 'react';
+
+// Custom hook to manage Databuddy session ID
+function useDatabuddySession() {
+  const [sessionId, setSessionId] = useState(null);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const getSessionId = async () => {
+      return new Promise((resolve) => {
+        // Check if session ID is already available
+        const existingSessionId = sessionStorage.getItem('did_session');
+        if (existingSessionId) {
+          resolve(existingSessionId);
+          return;
+        }
+
+        // Wait for Databuddy to initialize
+        const checkForSession = () => {
+          const sessionId = sessionStorage.getItem('did_session') || 
+                           (window.databuddy && window.databuddy.sessionId);
+          
+          if (sessionId) {
+            resolve(sessionId);
+          } else {
+            setTimeout(checkForSession, 50);
+          }
+        };
+        
+        checkForSession();
+      });
+    };
+
+    getSessionId().then((id) => {
+      setSessionId(id);
+      setIsReady(true);
+    });
+  }, []);
+
+  return { sessionId, isReady };
+}
+
+// Usage in component
+function CheckoutButton({ priceId, productName }) {
+  const { sessionId, isReady } = useDatabuddySession();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleCheckout = async () => {
+    if (!sessionId) return;
+
+    setIsLoading(true);
+    // ... checkout logic
+  };
+
+  return (
+    <button 
+      onClick={handleCheckout}
+      disabled={!isReady || isLoading}
+      className="bg-blue-600 text-white px-6 py-2 rounded disabled:opacity-50"
+    >
+      {!isReady ? 'Loading...' : isLoading ? 'Processing...' : `Buy ${productName}`}
+    </button>
+  );
+}
+```
+
+### API Route (Next.js)
+
+```javascript
+// pages/api/create-checkout-session.js
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { priceId, sessionId, clientId } = req.body;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.origin}/cancel`,
+      
+      // REQUIRED: Link to analytics
+      client_reference_id: sessionId,
+      metadata: {
+        client_id: clientId,
+      },
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+}
+```
+
+### Express.js Integration
+
+```javascript
+const express = require('express');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+app.post('/create-checkout-session', async (req, res) => {
+  const { priceId, sessionId, clientId } = req.body;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: 'https://yoursite.com/success?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: 'https://yoursite.com/cancel',
+      
+      // REQUIRED: Link to analytics
+      client_reference_id: sessionId,
+      metadata: {
+        client_id: clientId,
+      },
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed to create session' });
+  }
+});
+```
+
+## Testing Your Integration
+
+### 1. Test Mode Setup
+
+1. **Use Stripe Test Mode**: Ensure your webhook is configured for test mode
+2. **Use Test Cards**: Use Stripe's test card numbers
+3. **Monitor Webhook Events**: Check your Databuddy dashboard for incoming events
+
+### 2. Test Card Numbers
+
+Use these Stripe test cards:
+
+- **Successful Payment**: `4242424242424242`
+- **Payment Requires Authentication**: `4000002500003155`
+- **Payment Fails**: `4000000000000002`
+- **Insufficient Funds**: `4000000000009995`
+
+### 3. Verify Data Flow
+
+1. **Create a test purchase** using a test card
+2. **Check Stripe Dashboard**: Verify the webhook was called successfully
+3. **Check Databuddy Dashboard**: Confirm payment data appears in your analytics
+4. **Verify Attribution**: Ensure payment is linked to the correct session
+
+## Troubleshooting
+
+### Common Issues
+
+#### Webhook Not Receiving Events
+
+**Problem**: Stripe webhook shows failed deliveries
+
+**Solutions**:
+- Verify your webhook URL is correct and accessible
+- Check that your webhook secret matches exactly
+- Ensure your server accepts POST requests
+- Verify SSL certificate is valid
+
+#### Missing client_id Error
+
+**Problem**: Webhook receives events but shows "Missing required client_id" error
+
+**Solutions**:
+- Ensure `metadata.client_id` is set in your checkout session
+- Verify the client_id matches your Databuddy Client ID exactly
+- Check that metadata is being passed correctly
+
+#### Session ID Not Linking
+
+**Problem**: Payments appear in Databuddy but aren't linked to user sessions
+
+**Solutions**:
+- Verify `client_reference_id` contains the correct session ID from `sessionStorage.getItem('did_session')`
+- Ensure Databuddy has initialized before creating the checkout session
+- Check that the session ID format matches: `sess_{timestamp}_{random_string}`
+- Verify the session ID exists in your analytics events by checking the Databuddy dashboard
+- Make sure the session hasn't expired (30-minute timeout) between page load and checkout
+
+#### Session ID Not Available
+
+**Problem**: `sessionStorage.getItem('did_session')` returns null
+
+**Solutions**:
+- Ensure Databuddy script is loaded and initialized before accessing session ID
+- Check that `data-track-sessions` is not set to `false` in your Databuddy script
+- Verify sessionStorage is available (not in private/incognito mode with restrictions)
+- Wait for Databuddy initialization using the helper functions provided above
+- Check browser console for any Databuddy initialization errors
+
+#### Webhook Signature Verification Failed
+
+**Problem**: Webhook returns "Invalid signature" error
+
+**Solutions**:
+- Verify webhook secret is correct (starts with `whsec_`)
+- Ensure webhook secret matches between Stripe and Databuddy
+- Check that webhook endpoint URL is exactly as configured
+
+### Debug Mode
+
+Enable debug logging in your Databuddy dashboard:
+
+1. Go to **Integrations** > **Stripe**
+2. Enable **Debug Mode**
+3. Monitor webhook logs for detailed error information
+
+## Security Considerations
+
+### IP Validation
+
+Databuddy automatically validates that webhook requests come from Stripe's official IP addresses. This prevents malicious requests from unauthorized sources.
+
+### Signature Verification
+
+All webhook payloads are cryptographically verified using your webhook secret to ensure authenticity and prevent tampering.
+
+### Data Privacy
+
+- Payment data is processed securely and stored encrypted
+- Only necessary payment metadata is stored for analytics
+- Full PCI compliance maintained through Stripe's infrastructure
+
+## Advanced Configuration
+
+### Custom Metadata
+
+Add custom metadata to track additional information:
+
+```javascript
+const session = await stripe.checkout.sessions.create({
+  // ... other configuration
+  metadata: {
+    client_id: 'your_databuddy_client_id', // Required
+    user_id: 'user_123',                   // Optional
+    campaign: 'summer_sale',               // Optional
+    source: 'email_campaign',              // Optional
+    affiliate_id: 'aff_456',               // Optional
+  },
+});
+```
+
+### Multiple Environments
+
+Set up separate webhooks for different environments:
+
+- **Development**: Use test mode with localhost tunneling (ngrok)
+- **Staging**: Use test mode with staging webhook URL
+- **Production**: Use live mode with production webhook URL
+
+### Subscription Tracking
+
+For subscription businesses, also track these events:
+
+```
+customer.subscription.created
+customer.subscription.updated
+customer.subscription.deleted
+invoice.payment_succeeded
+invoice.payment_failed
+```
+
+## Analytics and Reporting
+
+Once configured, you'll have access to:
+
+### Revenue Analytics
+- Total revenue by time period
+- Average order value
+- Conversion rates
+- Payment method analysis
+
+### Customer Insights
+- Customer lifetime value
+- Purchase frequency
+- Geographic revenue distribution
+- Device and browser revenue attribution
+
+### Marketing Attribution
+- Revenue by traffic source
+- Campaign performance
+- UTM parameter tracking
+- Customer journey analysis
+
+## Support
+
+Need help with your Stripe integration?
+
+- **Documentation**: Check our [API documentation](/docs/api)
+- **Support**: Contact support@databuddy.cc
+- **Community**: Join our [Discord community](https://discord.gg/databuddy)
+
+---
+
+**Next Steps**: Once your Stripe integration is working, explore our [Dashboard](/docs/dashboard) to analyze your revenue data and [API](/docs/api) to build custom reports. 

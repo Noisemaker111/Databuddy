@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useCallback, use } from "react";
 import { format, parseISO, isValid } from "date-fns";
 import { toast } from "sonner";
-import { 
+import {
   Bug,
   AlertTriangle,
   Monitor,
@@ -72,17 +72,17 @@ interface ErrorSummary {
 // Helper function to safely parse dates
 const safeDateParse = (dateString: string): Date => {
   if (!dateString) return new Date();
-  
+
   let date = parseISO(dateString);
   if (isValid(date)) return date;
-  
+
   const isoString = dateString.replace(' ', 'T');
   date = parseISO(isoString);
   if (isValid(date)) return date;
-  
+
   date = new Date(dateString);
   if (isValid(date)) return date;
-  
+
   console.warn('Failed to parse date:', dateString);
   return new Date();
 };
@@ -99,8 +99,12 @@ const safeFormatDate = (dateString: string, formatString: string): string => {
 
 // Helper function to categorize errors
 const categorizeError = (errorMessage: string): { type: string; category: string; severity: 'high' | 'medium' | 'low' } => {
+  if (!errorMessage) {
+    return { type: 'Unknown Error', category: 'Other', severity: 'low' };
+  }
+
   const message = errorMessage.toLowerCase();
-  
+
   if (message.includes('react error #185') || message.includes('react error #418') || message.includes('react error #419')) {
     return { type: 'React Error', category: 'React', severity: 'high' };
   }
@@ -119,7 +123,7 @@ const categorizeError = (errorMessage: string): { type: string; category: string
   if (message.includes('type')) {
     return { type: 'Type Error', category: 'JavaScript', severity: 'medium' };
   }
-  
+
   return { type: 'Unknown Error', category: 'Other', severity: 'low' };
 };
 
@@ -134,6 +138,8 @@ const getSeverityColor = (severity: 'high' | 'medium' | 'low') => {
 
 // Get icon for error type
 const getErrorTypeIcon = (type: string) => {
+  if (!type) return <Bug className="h-4 w-4" />;
+
   const lowerType = type.toLowerCase();
   if (lowerType.includes('react')) return <Code className="h-4 w-4" />;
   if (lowerType.includes('network')) return <Network className="h-4 w-4" />;
@@ -144,6 +150,8 @@ const getErrorTypeIcon = (type: string) => {
 
 // Get device icon
 const getDeviceIcon = (deviceType: string) => {
+  if (!deviceType) return <Monitor className="h-4 w-4" />;
+
   switch (deviceType.toLowerCase()) {
     case 'mobile': return <Smartphone className="h-4 w-4" />;
     case 'tablet': return <Tablet className="h-4 w-4" />;
@@ -162,8 +170,8 @@ const ErrorChartTooltip = ({ active, payload, label }: any) => {
       <div className="space-y-1.5">
         {payload.map((entry: any) => (
           <div key={`tooltip-${entry.dataKey}-${entry.value}`} className="flex items-center gap-2">
-            <div 
-              className="w-2.5 h-2.5 rounded-full" 
+            <div
+              className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
             <span className="text-muted-foreground">{entry.name}:</span>
@@ -175,14 +183,14 @@ const ErrorChartTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-const normalizeData = (data: any[]): any[] => 
+const normalizeData = (data: any[]): any[] =>
   data?.map((item) => ({
     ...item,
     name: item.name || 'Unknown',
   })) || [];
 
 const createNameColumn = (
-  header: string, 
+  header: string,
   renderIcon?: (name: string) => React.ReactNode,
   formatText?: (name: string) => string
 ) => ({
@@ -191,11 +199,12 @@ const createNameColumn = (
   header,
   cell: (info: any) => {
     const name = info.getValue() as string;
-    const displayText = formatText ? formatText(name) : name;
+    const safeName = name || 'Unknown';
+    const displayText = formatText ? formatText(safeName) : safeName;
     return (
       <div className="flex items-center gap-2">
-        {renderIcon?.(name)}
-        <div className="font-medium max-w-xs truncate" title={name}>
+        {renderIcon?.(safeName)}
+        <div className="font-medium max-w-xs truncate" title={safeName}>
           {displayText}
         </div>
       </div>
@@ -234,17 +243,17 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
   const router = useRouter();
   const resolvedParams = use(params);
   const websiteId = resolvedParams.id;
-  
+
   // Default to last 7 days
   const dateRange: DateRange = {
     start_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     end_date: new Date().toISOString().split('T')[0],
     granularity: 'daily'
   };
-  
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
-  
+
   // Chart zoom state
   const [zoomDomain, setZoomDomain] = useState<{ startIndex?: number; endIndex?: number }>({});
   const [isZoomed, setIsZoomed] = useState(false);
@@ -256,7 +265,7 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
   const addFilter = (field: string, value: string | number) => {
     // Prevent adding duplicate filters
     if (activeFilters.some(f => f.field === field && f.value === value)) return;
-    
+
     const newFilter: DynamicQueryFilter = { field, operator: 'eq', value };
     setActiveFilters(prev => [...prev, newFilter]);
   };
@@ -317,32 +326,32 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
   // Process all error data
   const processedData = useMemo(() => {
     if (isLoading || !errorResults || errorResults.length === 0) {
-      return { 
-        recent_errors: [], error_types: [], errors_by_page: [], errors_by_browser: [], 
+      return {
+        recent_errors: [], error_types: [], errors_by_page: [], errors_by_browser: [],
         errors_by_os: [], errors_by_country: [], errors_by_device: [], error_trends: [],
         sessions_summary: []
       };
     }
 
     const extractData = (queryId: string) => {
-        const result = errorResults.find((r: any) => r.queryId === queryId);
-        if (!result) {
-            return [];
-        }
+      const result = errorResults.find((r: any) => r.queryId === queryId);
+      if (!result) {
+        return [];
+      }
 
-        const dataObject = result.data;
+      const dataObject = result.data;
 
-        if (!dataObject || typeof dataObject !== 'object' || Array.isArray(dataObject)) {
-            return [];
-        }
+      if (!dataObject || typeof dataObject !== 'object' || Array.isArray(dataObject)) {
+        return [];
+      }
 
-        const finalData = dataObject[queryId];
+      const finalData = dataObject[queryId];
 
-        if (!Array.isArray(finalData)) {
-            return [];
-        }
-        
-        return normalizeData(finalData);
+      if (!Array.isArray(finalData)) {
+        return [];
+      }
+
+      return normalizeData(finalData);
     };
 
     const data = {
@@ -364,7 +373,7 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
   const errorSummary = useMemo((): ErrorSummary => {
     const recentErrors = processedData.recent_errors;
     const errorTypes = processedData.error_types;
-    
+
     const summaryData = processedData.sessions_summary?.[0] || { total_sessions: 0, total_users: 0 };
 
     if (!recentErrors.length && !errorTypes.length) {
@@ -375,9 +384,9 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
     const uniqueErrorTypes = errorTypes.length;
     const affectedUsers = errorTypes.reduce((sum: number, type: any) => sum + (type.affected_users || 0), 0);
     const affectedSessions = errorTypes.reduce((sum: number, type: any) => sum + (type.affected_sessions || 0), 0);
-    
-    const errorRate = summaryData.total_sessions > 0 
-      ? (affectedSessions / summaryData.total_sessions) * 100 
+
+    const errorRate = summaryData.total_sessions > 0
+      ? (affectedSessions / summaryData.total_sessions) * 100
       : 0;
 
     return {
@@ -392,9 +401,9 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
   // Find the top error
   const topError = useMemo(() => {
     if (!processedData.error_types?.length) return null;
-    
-    return processedData.error_types.reduce((max, error) => 
-      (error.total_occurrences > max.total_occurrences) ? error : max, 
+
+    return processedData.error_types.reduce((max, error) =>
+      (error.total_occurrences > max.total_occurrences) ? error : max,
       processedData.error_types[0]
     );
   }, [processedData.error_types]);
@@ -402,7 +411,7 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
   // Chart data for error trends
   const errorChartData = useMemo(() => {
     if (!processedData.error_trends?.length) return [];
-    
+
     return processedData.error_trends.map((point: any) => ({
       date: safeFormatDate(point.date, 'MMM d'),
       'Total Errors': point.total_errors || 0,
@@ -413,13 +422,16 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
   // Process recent errors for display
   const processedRecentErrors = useMemo(() => {
     if (!processedData.recent_errors?.length) return [];
-    
+
     const errorMap = new Map();
-    
+
     for (const error of processedData.recent_errors) {
+      // Add null check for error_message
+      if (!error || !error.error_message) continue;
+
       const { type, category, severity } = categorizeError(error.error_message);
       const key = `${type}-${error.error_message}`;
-      
+
       if (errorMap.has(key)) {
         const existing = errorMap.get(key);
         existing.count += 1;
@@ -441,7 +453,7 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
         });
       }
     }
-    
+
     return Array.from(errorMap.values())
       .map(error => ({
         ...error,
@@ -463,6 +475,20 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
           header: 'Error Message',
           cell: (info: any) => {
             const message = info.getValue() as string;
+            if (!message) {
+              return (
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <Bug className="h-4 w-4" />
+                    <Badge className="bg-gray-100 text-gray-800 border-gray-200">
+                      Unknown Error
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">No error message available</p>
+                </div>
+              );
+            }
+
             const { type, severity } = categorizeError(message);
             return (
               <div className="flex flex-col gap-1">
@@ -553,12 +579,14 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
       data: processedData.errors_by_device.map((item: any, i: number) => ({ ...item, _uniqueKey: `device-${i}` })),
       columns: [
         createNameColumn('Device Type', (name) => {
+          if (!name) return <Monitor className="h-4 w-4 text-gray-500" />;
+
           const device = name.toLowerCase();
-          return device.includes('mobile') || device.includes('phone') ? 
+          return device.includes('mobile') || device.includes('phone') ?
             <Smartphone className="h-4 w-4 text-blue-500" /> :
             device.includes('tablet') ?
-            <Tablet className="h-4 w-4 text-purple-500" /> :
-            <Monitor className="h-4 w-4 text-gray-500" />;
+              <Tablet className="h-4 w-4 text-purple-500" /> :
+              <Monitor className="h-4 w-4 text-gray-500" />;
         }),
         ...errorColumns
       ],
@@ -574,29 +602,29 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
         { target: 70, duration: 1800 },
         { target: 90, duration: 2000 }
       ];
-      
+
       const cleanup: NodeJS.Timeout[] = [];
-      
+
       intervals.forEach((interval, index) => {
         const timeout = setTimeout(() => {
           setLoadingProgress(interval.target);
         }, interval.duration * (index === 0 ? 1 : index));
-        
+
         cleanup.push(timeout);
       });
-      
+
       return () => {
         for (const timeout of cleanup) {
           clearTimeout(timeout);
         }
       };
     }
-    
+
     setLoadingProgress(100);
     const timeout = setTimeout(() => {
       setLoadingProgress(0);
     }, 1000);
-    
+
     return () => clearTimeout(timeout);
   }, [isLoading]);
 
@@ -625,9 +653,9 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => router.back()}
               className="p-2"
             >
@@ -639,7 +667,7 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
             </div>
           </div>
         </div>
-        
+
         <EmptyState
           icon={<Bug className="h-10 w-10" />}
           title="No errors detected"
@@ -660,9 +688,9 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => router.back()}
             className="p-2"
           >
@@ -675,38 +703,38 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
-            <Button 
+          <Button
             onClick={handleRefresh}
             disabled={isLoading || isRefreshing}
             variant="outline"
             size="sm"
-            >
+          >
             <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             Refresh
-            </Button>
+          </Button>
         </div>
       </div>
 
       {/* Active Filters Display */}
       {activeFilters.length > 0 && (
         <div className="p-3 bg-muted/50 rounded-lg border">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium">Active Filters:</span>
-                    {activeFilters.map((filter) => (
-                    <Badge key={filter.field} variant="secondary" className="flex items-center gap-1">
-                        <span className="font-normal">{filter.field}:</span>
-                        <span>{filter.value}</span>
-                        <button type="button" onClick={() => removeFilter(filter)} className="ml-1 p-0.5 rounded-full hover:bg-muted-foreground/20">
-                            <X className="h-3 w-3" />
-                        </button>
-                    </Badge>
-                    ))}
-                </div>
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs">Clear All</Button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium">Active Filters:</span>
+              {activeFilters.map((filter) => (
+                <Badge key={filter.field} variant="secondary" className="flex items-center gap-1">
+                  <span className="font-normal">{filter.field}:</span>
+                  <span>{filter.value}</span>
+                  <button type="button" onClick={() => removeFilter(filter)} className="ml-1 p-0.5 rounded-full hover:bg-muted-foreground/20">
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
             </div>
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs">Clear All</Button>
+          </div>
         </div>
       )}
 
@@ -716,7 +744,7 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
         <>
           {/* Summary Stats & Chart */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+
             {/* Left Column: Error Trends Chart */}
             <div className="lg:col-span-2">
               {errorChartData.length > 0 ? (
@@ -785,11 +813,11 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
                 </div>
               ) : (
                 <div className="rounded-lg border shadow-sm h-full flex items-center justify-center p-6 bg-muted/20">
-                    <div className="text-center">
-                        <Bug className="mx-auto h-8 w-8 text-muted-foreground" />
-                        <h3 className="mt-2 text-sm font-medium text-muted-foreground">No error trend data</h3>
-                        <p className="mt-1 text-xs text-muted-foreground">Not enough data to display a trend chart.</p>
-                    </div>
+                  <div className="text-center">
+                    <Bug className="mx-auto h-8 w-8 text-muted-foreground" />
+                    <h3 className="mt-2 text-sm font-medium text-muted-foreground">No error trend data</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">Not enough data to display a trend chart.</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -842,14 +870,14 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
                   <CardContent>
                     <p className="text-sm font-medium line-clamp-2" title={topError.name}>{topError.name}</p>
                     <div className="flex items-center justify-between text-xs text-muted-foreground mt-3">
-                        <span className="flex items-center gap-1 font-semibold">
-                            <AlertCircle className="h-3 w-3" />
-                            {topError.total_occurrences.toLocaleString()} times
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {topError.affected_users.toLocaleString()} users
-                        </span>
+                      <span className="flex items-center gap-1 font-semibold">
+                        <AlertCircle className="h-3 w-3" />
+                        {topError.total_occurrences.toLocaleString()} times
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {topError.affected_users.toLocaleString()} users
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -869,121 +897,121 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
                   {processedRecentErrors.slice(0, 15).map((error, index) => (
                     <AccordionItem value={`item-${index}`} key={`${error.error_message}-${index}`}>
                       <AccordionTrigger className="p-3 text-left hover:bg-muted/50 transition-colors rounded-md">
-                           <div className="flex items-start gap-3 w-full">
-                              <div className="mt-1">
-                                  {getErrorTypeIcon(error.error_type)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                      <Badge className={getSeverityColor(error.severity)}>
-                                          {error.error_type}
-                                      </Badge>
-                                      <Badge variant="outline" className="text-xs">
-                                          {error.category}
-                                      </Badge>
-                                  </div>
-                                  <p className="text-sm text-muted-foreground line-clamp-1">
-                                      {error.error_message}
-                                  </p>
-                                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                                      <span className="flex items-center gap-1">
-                                          <AlertTriangle className="h-3 w-3" />
-                                          {error.count}
-                                      </span>
-                                      <span className="flex items-center gap-1">
-                                          <User className="h-3 w-3" />
-                                          {error.unique_sessions}
-                                      </span>
-                                      <span className="flex items-center gap-1">
-                                          <Calendar className="h-3 w-3" />
-                                          {safeFormatDate(error.last_occurrence, 'MMM d, HH:mm')}
-                                      </span>
-                                  </div>
-                              </div>
-                              <div className="text-right ml-4">
-                                  <div className="text-sm font-semibold">{error.count}</div>
-                                  <div className="text-xs text-muted-foreground">errors</div>
-                              </div>
+                        <div className="flex items-start gap-3 w-full">
+                          <div className="mt-1">
+                            {getErrorTypeIcon(error.error_type)}
                           </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge className={getSeverityColor(error.severity)}>
+                                {error.error_type}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {error.category}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground line-clamp-1">
+                              {error.error_message}
+                            </p>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                              <span className="flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                {error.count}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                {error.unique_sessions}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {safeFormatDate(error.last_occurrence, 'MMM d, HH:mm')}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right ml-4">
+                            <div className="text-sm font-semibold">{error.count}</div>
+                            <div className="text-xs text-muted-foreground">errors</div>
+                          </div>
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                         <div className="space-y-4 p-4 border-t">
-                              {/* Error Message */}
-                              <Card className="p-3">
-                                  <h4 className="font-medium mb-2 flex items-center gap-2 text-sm">
-                                  <Code className="h-4 w-4" />
-                                  Full Error Message
-                                  </h4>
-                                  <div className="bg-muted/50 p-3 rounded-md">
-                                  <p className="text-sm font-mono break-words">{error.sample_error.error_message}</p>
-                                  </div>
-                              </Card>
-                              
-                              {/* Stack Trace */}
-                              {error.sample_error.error_stack && (
-                                  <Card className="p-3">
-                                  <h4 className="font-medium mb-2 flex items-center gap-2 text-sm">
-                                      <Terminal className="h-4 w-4" />
-                                      Stack Trace
-                                  </h4>
-                                  <div className="bg-muted/50 p-3 rounded-md max-h-60 overflow-y-auto">
-                                      <pre className="text-xs font-mono whitespace-pre-wrap break-words">
-                                      {error.sample_error.error_stack}
-                                      </pre>
-                                  </div>
-                                  </Card>
-                              )}
+                        <div className="space-y-4 p-4 border-t">
+                          {/* Error Message */}
+                          <Card className="p-3">
+                            <h4 className="font-medium mb-2 flex items-center gap-2 text-sm">
+                              <Code className="h-4 w-4" />
+                              Full Error Message
+                            </h4>
+                            <div className="bg-muted/50 p-3 rounded-md">
+                              <p className="text-sm font-mono break-words">{error.sample_error?.error_message || 'No error message available'}</p>
+                            </div>
+                          </Card>
 
-                               {/* Error Overview */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  <Card className="p-3">
-                                  <h4 className="font-medium mb-2 flex items-center gap-2 text-sm">
-                                      <AlertTriangle className="h-4 w-4" />
-                                      Context
-                                  </h4>
-                                  <div className="space-y-2">
-                                      <div>
-                                      <div className="text-xs font-medium text-muted-foreground mb-0.5">Last Seen</div>
-                                      <p className="text-sm">{safeFormatDate(error.sample_error.time, 'MMM d, yyyy HH:mm:ss')}</p>
-                                      </div>
-                                      <div>
-                                      <div className="text-xs font-medium text-muted-foreground mb-0.5">Page URL</div>
-                                      <p className="text-sm break-all">{error.sample_error.page_url}</p>
-                                      </div>
-                                  </div>
-                                  </Card>
-
-                                  <Card className="p-3">
-                                  <h4 className="font-medium mb-2 flex items-center gap-2 text-sm">
-                                      <User className="h-4 w-4" />
-                                      User & Device
-                                  </h4>
-                                  <div className="space-y-2">
-                                      <div>
-                                      <div className="text-xs font-medium text-muted-foreground mb-0.5">User ID</div>
-                                      <p className="text-sm font-mono">{error.sample_error.anonymous_id}</p>
-                                      </div>
-                                      <div>
-                                      <div className="text-xs font-medium text-muted-foreground mb-0.5">Device</div>
-                                      <p className="text-sm flex items-center gap-1">
-                                          {getDeviceIcon(error.sample_error.device_type)}
-                                          {error.sample_error.device_type} • {error.sample_error.browser_name} • {error.sample_error.os_name}
-                                      </p>
-                                      </div>
-                                       <div>
-                                          <div className="text-xs font-medium text-muted-foreground mb-0.5">Location</div>
-                                          <p className="text-sm flex items-center gap-1">
-                                              <MapPin className="h-3 w-3" />
-                                              {error.sample_error.city && error.sample_error.country 
-                                              ? `${error.sample_error.city}, ${error.sample_error.country}`
-                                              : error.sample_error.country || 'Unknown'
-                                              }
-                                          </p>
-                                          </div>
-                                  </div>
-                                  </Card>
+                          {/* Stack Trace */}
+                          {error.sample_error?.error_stack && (
+                            <Card className="p-3">
+                              <h4 className="font-medium mb-2 flex items-center gap-2 text-sm">
+                                <Terminal className="h-4 w-4" />
+                                Stack Trace
+                              </h4>
+                              <div className="bg-muted/50 p-3 rounded-md max-h-60 overflow-y-auto">
+                                <pre className="text-xs font-mono whitespace-pre-wrap break-words">
+                                  {error.sample_error.error_stack}
+                                </pre>
                               </div>
+                            </Card>
+                          )}
+
+                          {/* Error Overview */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <Card className="p-3">
+                              <h4 className="font-medium mb-2 flex items-center gap-2 text-sm">
+                                <AlertTriangle className="h-4 w-4" />
+                                Context
+                              </h4>
+                              <div className="space-y-2">
+                                <div>
+                                  <div className="text-xs font-medium text-muted-foreground mb-0.5">Last Seen</div>
+                                  <p className="text-sm">{safeFormatDate(error.sample_error.time, 'MMM d, yyyy HH:mm:ss')}</p>
+                                </div>
+                                <div>
+                                  <div className="text-xs font-medium text-muted-foreground mb-0.5">Page URL</div>
+                                  <p className="text-sm break-all">{error.sample_error.page_url}</p>
+                                </div>
+                              </div>
+                            </Card>
+
+                            <Card className="p-3">
+                              <h4 className="font-medium mb-2 flex items-center gap-2 text-sm">
+                                <User className="h-4 w-4" />
+                                User & Device
+                              </h4>
+                              <div className="space-y-2">
+                                <div>
+                                  <div className="text-xs font-medium text-muted-foreground mb-0.5">User ID</div>
+                                  <p className="text-sm font-mono">{error.sample_error.anonymous_id}</p>
+                                </div>
+                                <div>
+                                  <div className="text-xs font-medium text-muted-foreground mb-0.5">Device</div>
+                                  <p className="text-sm flex items-center gap-1">
+                                    {getDeviceIcon(error.sample_error?.device_type)}
+                                    {error.sample_error?.device_type || 'Unknown'} • {error.sample_error?.browser_name || 'Unknown'} • {error.sample_error?.os_name || 'Unknown'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <div className="text-xs font-medium text-muted-foreground mb-0.5">Location</div>
+                                  <p className="text-sm flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {error.sample_error.city && error.sample_error.country
+                                      ? `${error.sample_error.city}, ${error.sample_error.country}`
+                                      : error.sample_error.country || 'Unknown'
+                                    }
+                                  </p>
+                                </div>
+                              </div>
+                            </Card>
                           </div>
+                        </div>
                       </AccordionContent>
                     </AccordionItem>
                   ))}
@@ -993,7 +1021,7 @@ export default function ErrorsPage({ params }: { params: Promise<{ id: string }>
           )}
 
           {/* Error Analysis Tables */}
-          <DataTable 
+          <DataTable
             tabs={errorTabs}
             title="Error Analysis"
             description="Comprehensive error breakdown across different dimensions"
