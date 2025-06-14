@@ -161,4 +161,33 @@
         executable: pip3
         name: docker
       when: inventory_hostname in groups['swarm-masters'] or inventory_hostname in groups['swarm-managers']
+    
+    - name: Add or modify nofile soft limit
+      become: true 
+      community.general.pam_limits:
+        domain: '*'
+        limit_type: soft
+        limit_item: nofile
+        value: 50000
+        use_max: true
+      register: resultSoft
+
+    - name: Add or modify nofile hard limit. Keep or set the maximal value
+      become: true
+      community.general.pam_limits:
+        domain: '*'
+        limit_type: hard
+        limit_item: nofile
+        value: 50000
+        use_max: true
+      register: resultHard
+
+    - name: Reboot nodes that have a changed ulimit
+      become: true
+      ansible.builtin.reboot:
+        reboot_timeout: 3600
+        post_reboot_delay: 30
+        test_command: systemctl is-active docker
+      when: (resultHard.changed or resultSoft.changed)
+      throttle: 1
    

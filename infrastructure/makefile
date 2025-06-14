@@ -29,5 +29,8 @@ deploy-ssl-cert: install-dependencies
 deploy-monitoring: install-dependencies
 	cd monitoring && ansible-playbook --timeout 60 --ssh-common-args="-i $(SSH_PRIVATE_KEY) -o ServerAliveInterval=15" -i ../inventory.ini deploy-monitoring.yaml
 
+deploy-aqua: install-dependencies
+	cd aqua && ansible-playbook --timeout 60 --ssh-common-args="-i $(SSH_PRIVATE_KEY) -o ServerAliveInterval=15" -i ../inventory.ini deploy-aqua.yaml
 
-.PHONY: setup-nodes init-swarm update-swarm install-dependencies deploy-ingress deploy-ssl-cert
+
+.PHONY: setup-nodes init-swarm update-swarm install-dependencies deploy-ingress deploy-ssl-cert deploy-monitoring deploy-aqua
