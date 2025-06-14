@@ -43,16 +43,6 @@ export default function ForgotPasswordPage() {
   return (
     <div className="w-full max-w-md mx-auto mt-12 bg-card rounded-xl shadow p-6 border border-border relative overflow-hidden">
       <div className="text-center mb-8">
-        <div className="inline-flex justify-center items-center p-3 bg-primary/10 rounded-full mb-5 relative w-16 h-16">
-          <div className="absolute inset-0 bg-primary/5 rounded-full animate-pulse" />
-          <div className="absolute -inset-1 bg-gradient-to-tr from-primary/30 to-primary/10 rounded-full blur-md opacity-70" />
-          <div className="relative bg-gradient-to-tr from-primary to-primary/80 rounded-full p-2.5">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-labelledby="logoTitle">
-              <title id="logoTitle">Databuddy Logo</title>
-              <path d="M12 15V17M12 7V13M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-        </div>
         <h1 className="text-2xl font-bold text-foreground">Reset your password</h1>
         <p className="text-muted-foreground mt-2">We'll send you a link to reset your password</p>
       </div>

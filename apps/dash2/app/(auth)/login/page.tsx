@@ -93,20 +93,7 @@ function LoginPage() {
 
   return (
     <>
-      <div className="flex justify-center mb-6 md:hidden">
-        <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Databuddy</div>
-      </div>
       <div className="text-center mb-8">
-        <div className="inline-flex justify-center items-center p-3 bg-primary/10 rounded-full mb-5 relative w-16 h-16">
-          <div className="absolute inset-0 bg-primary/5 rounded-full animate-pulse" />
-          <div className="absolute -inset-1 bg-gradient-to-tr from-primary/30 to-primary/10 rounded-full blur-md opacity-70" />
-          <div className="relative bg-gradient-to-tr from-primary to-primary/80 rounded-full p-2.5">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-labelledby="logoTitle">
-              <title id="logoTitle">Databuddy Logo</title>
-              <path d="M8 12H16M12 8V16" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-        </div>
         <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
         <p className="text-muted-foreground mt-2">
           Sign in to your account to continue your journey with Databuddy
@@ -223,8 +210,8 @@ function LoginPage() {
       <div className="mt-6 text-center">
         <p className="text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
-          <Link 
-            href="/register" 
+          <Link
+            href="/register"
             className="text-primary hover:text-primary/80 font-medium"
           >
             Sign up

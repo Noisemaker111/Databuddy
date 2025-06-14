@@ -3,8 +3,8 @@ import Image from "next/image";
 
 export function Logo() {
   return (
-    <Link href="/websites" className="flex items-center gap-3 group">
-      <div className="relative flex-shrink-0 transition-transform duration-200 group-hover:scale-105">
+    <Link href="/" className="flex items-center gap-3 group">
+      <div className="relative flex-shrink-0 transition-transform duration-200">
         <Image
           src="/logo.svg"
           alt="DataBuddy Logo"
@@ -19,12 +19,13 @@ export function Logo() {
           font-mono
           text-lg 
           tracking-wider
-          text-black dark:text-white
+          text-foreground
           font-semibold
           leading-none
           select-none
           transition-colors 
           duration-200
+          group-hover:text-primary
         ">
           DATABUDDY
         </h1>

@@ -36,12 +36,12 @@ function RegisterPageContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match");
       return;
     }
-    
+
     if (!acceptTerms) {
       toast.error("You must accept the terms and conditions");
       return;
@@ -51,7 +51,7 @@ function RegisterPageContent() {
       toast.error("Server error, please try again later");
       return;
     }
-    
+
     setIsLoading(true);
 
     try {
@@ -107,8 +107,8 @@ function RegisterPageContent() {
   const handleSocialLogin = async (provider: "github" | "google") => {
     setIsLoading(true);
     try {
-      await authClient.signIn.social({ 
-        provider: provider, 
+      await authClient.signIn.social({
+        provider: provider,
         fetchOptions: {
           onSuccess: (ctx) => {
             const authToken = ctx.response.headers.get("set-auth-token")
@@ -121,7 +121,7 @@ function RegisterPageContent() {
           onError: () => {
             toast.error("Login failed. Please try again.");
           }
-        } 
+        }
       });
     } catch (error) {
       toast.error("Something went wrong");
@@ -168,16 +168,6 @@ function RegisterPageContent() {
       default:
         return (
           <>
-            <div className="inline-flex justify-center items-center p-3 bg-primary/10 rounded-full mb-5 relative w-16 h-16">
-              <div className="absolute inset-0 bg-primary/5 rounded-full animate-pulse" />
-              <div className="absolute -inset-1 bg-gradient-to-tr from-primary/30 to-primary/10 rounded-full blur-md opacity-70" />
-              <div className="relative bg-gradient-to-tr from-primary to-primary/80 rounded-full p-2.5">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-labelledby="logoTitle">
-                  <title id="logoTitle">Databuddy Logo</title>
-                  <path d="M8 12H16M12 8V16" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-            </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Create your account</h1>
             <p className="text-muted-foreground mt-2">
               Sign up to start building better products with Databuddy
@@ -198,7 +188,7 @@ function RegisterPageContent() {
                 Please check your email inbox and click the verification link to activate your account. If you don't see the email, check your spam folder.
               </p>
             </div>
-            
+
             <div className="flex flex-col space-y-3">
               <Button
                 className="w-full bg-amber-500 hover:bg-amber-600 text-white"
@@ -214,7 +204,7 @@ function RegisterPageContent() {
                   "Resend verification email"
                 )}
               </Button>
-              
+
               <Button
                 variant="outline"
                 className="w-full border-amber-200 text-amber-700 hover:bg-amber-50"
@@ -234,8 +224,8 @@ function RegisterPageContent() {
                 Your account has been created successfully. You can now sign in to access your dashboard.
               </p>
             </div>
-            
-            <Button 
+
+            <Button
               className="w-full bg-green-500 hover:bg-green-600 text-white"
               onClick={() => router.push("/login")}
             >
@@ -257,7 +247,7 @@ function RegisterPageContent() {
                 <Github className="mr-2 h-5 w-5" />
                 Sign up with GitHub
               </Button>
-              
+
               <Button
                 type="button"
                 variant="outline"
@@ -269,7 +259,7 @@ function RegisterPageContent() {
                 Sign up with Google
               </Button>
             </div>
-            
+
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <Separator className="w-full" />
@@ -280,7 +270,7 @@ function RegisterPageContent() {
                 </span>
               </div>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-foreground font-medium">Full name</Label>
@@ -297,7 +287,7 @@ function RegisterPageContent() {
                   autoComplete="name"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-foreground font-medium">Email address</Label>
                 <Input
@@ -313,7 +303,7 @@ function RegisterPageContent() {
                   autoComplete="email"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
@@ -352,7 +342,7 @@ function RegisterPageContent() {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword" className="text-foreground font-medium">Confirm password</Label>
                 <div className="relative">
@@ -379,21 +369,21 @@ function RegisterPageContent() {
                   </Button>
                 </div>
               </div>
-              
+
               <VisuallyHidden>
                 <div className="flex items-center space-x-2" id="honeypot">
-                  <Checkbox 
-                    id="honeypot" 
+                  <Checkbox
+                    id="honeypot"
                     checked={isHoneypot}
                     onCheckedChange={(checked) => setIsHoneypot(checked as boolean)}
                     disabled={isLoading}
                   />
                 </div>
               </VisuallyHidden>
-              
+
               <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="terms" 
+                <Checkbox
+                  id="terms"
                   checked={acceptTerms}
                   onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
                   disabled={isLoading}
@@ -404,16 +394,16 @@ function RegisterPageContent() {
                   className="text-sm text-muted-foreground leading-tight"
                 >
                   I agree to the{" "}
-                  <Link 
-                    href="/terms" 
+                  <Link
+                    href="/terms"
                     className="text-primary hover:text-primary/80 font-medium"
                     target="_blank"
                   >
                     Terms of Service
                   </Link>{" "}
                   and{" "}
-                  <Link 
-                    href="/privacy" 
+                  <Link
+                    href="/privacy"
                     className="text-primary hover:text-primary/80 font-medium"
                     target="_blank"
                   >
@@ -421,7 +411,7 @@ function RegisterPageContent() {
                   </Link>
                 </Label>
               </div>
-              
+
               <Button
                 type="submit"
                 className="w-full h-11 shadow relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/20"
@@ -444,9 +434,6 @@ function RegisterPageContent() {
 
   return (
     <>
-      <div className="flex justify-center mb-6 md:hidden">
-        <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Databuddy</div>
-      </div>
       <div className="text-center mb-8">
         {renderHeaderContent()}
       </div>
@@ -461,8 +448,8 @@ function RegisterPageContent() {
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link 
-              href="/login" 
+            <Link
+              href="/login"
               className="text-primary hover:text-primary/80 font-medium"
             >
               Sign in

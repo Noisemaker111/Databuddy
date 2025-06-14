@@ -7,7 +7,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { redirect } from "next/navigation";
-import { authClient } from "@databuddy/auth/client"
+import { authClient } from "@databuddy/auth/client";
+import { Logo } from "@/components/layout/logo";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
 
@@ -43,12 +44,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </p>
         </div>
       </div>
-      {/* Auth form side - Right column */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-12 bg-background overflow-auto">
-        <div className="w-full max-w-md pt-12">
-          <Suspense fallback={<div className="flex h-40 items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}>
-            {children}
-          </Suspense>
+      <div className="w-full md:w-1/2 flex flex-col bg-background overflow-auto">
+        <div className="flex justify-center md:justify-start p-6 md:p-8 pt-8 md:pt-12">
+          <Logo />
+        </div>
+
+        {/* Auth form content - centered */}
+        <div className="flex-1 flex items-center justify-center p-6 md:p-8 pt-0">
+          <div className="w-full max-w-md">
+            <Suspense fallback={<div className="flex h-40 items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>}>
+              {children}
+            </Suspense>
+          </div>
         </div>
       </div>
     </div>
