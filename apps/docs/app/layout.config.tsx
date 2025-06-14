@@ -1,11 +1,11 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import { Github, Home, Twitter } from 'lucide-react';
-import { Logo } from '@/components/logo';
+import { LogoContent } from '@/components/logo';
 
 export const baseOptions: BaseLayoutProps = {
   nav: {
     enabled: false,
-    title: <Logo />,
+    title: <LogoContent />,
     transparentMode: 'top',
   },
   links: [
