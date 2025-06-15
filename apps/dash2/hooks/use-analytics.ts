@@ -770,6 +770,37 @@ export function useAnalyticsProfiles(
 }
 
 /**
+ * Hook to fetch visitor profiles with infinite scrolling
+ */
+export function useInfiniteAnalyticsProfiles(
+  websiteId: string,
+  dateRange?: DateRange,
+  limit = 50
+) {
+  return useInfiniteQuery({
+    queryKey: ['analytics', 'profiles-infinite', websiteId, dateRange, limit],
+    queryFn: ({ pageParam = 1, signal }) => 
+      fetchAnalyticsData<ProfilesResponse>(
+        '/analytics/profiles', 
+        websiteId, 
+        dateRange, 
+        { limit, page: pageParam }, 
+        signal
+      ),
+    enabled: !!websiteId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      return lastPage.pagination.hasNext ? lastPage.pagination.page + 1 : undefined;
+    },
+    getPreviousPageParam: (firstPage) => {
+      return firstPage.pagination.hasPrev ? firstPage.pagination.page - 1 : undefined;
+    },
+  });
+}
+
+/**
  * Hook to fetch website error analytics
  */
 export function useWebsiteErrors(
