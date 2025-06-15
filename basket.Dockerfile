@@ -5,8 +5,8 @@ WORKDIR /app
 # Cache packages installation
 COPY package.json package.json
 COPY apps/basket/package.json ./apps/basket/package.json
+COPY packages/*/package.json ./packages/
 
-# Copy workspace packages that basket depends on
 COPY packages/ ./packages/
 
 RUN bun install
