@@ -961,7 +961,6 @@ export interface RecentTransactionData {
   status: string;
   currency: string;
   amount: number;
-  customer_id?: string;
   card_brand?: string;
   session_id?: string;
 }

@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Context, Hono } from 'hono';
 import { db, userStripeConfig, eq, websites } from '@databuddy/db';
 import { authMiddleware } from '../../middleware/auth';
 import { logger } from '../../lib/logger';
@@ -73,7 +73,7 @@ async function getUserWebsiteIds(userId: string): Promise<string[]> {
 }
 
 // GET /revenue/config - Get user's revenue configuration (auto-create if doesn't exist)
-revenueRouter.get('/config', async (c) => {
+revenueRouter.get('/config', async (c: Context) => {
   const user = c.get('user');
 
   if (!user) {
@@ -137,7 +137,7 @@ revenueRouter.get('/config', async (c) => {
 });
 
 // GET /revenue/analytics/batch - Get all global revenue analytics in one request
-revenueRouter.get('/analytics/batch', async (c) => {
+revenueRouter.get('/analytics/batch', async (c: Context) => {
   const user = c.get('user');
   const startDate = c.req.query('start_date');
   const endDate = c.req.query('end_date');
@@ -255,7 +255,6 @@ revenueRouter.get('/analytics/batch', async (c) => {
             status,
             currency,
             amount / 100 as amount,
-            customer_id,
             session_id
           FROM analytics.stripe_payment_intents 
           WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
@@ -315,7 +314,7 @@ revenueRouter.get('/analytics/batch', async (c) => {
 });
 
 // GET /revenue/analytics/summary - Get global revenue summary
-revenueRouter.get('/analytics/summary', async (c) => {
+revenueRouter.get('/analytics/summary', async (c: Context) => {
   const user = c.get('user');
   const startDate = c.req.query('start_date');
   const endDate = c.req.query('end_date');
@@ -398,7 +397,7 @@ revenueRouter.get('/analytics/summary', async (c) => {
 });
 
 // GET /revenue/analytics/trends - Get global revenue trends
-revenueRouter.get('/analytics/trends', async (c) => {
+revenueRouter.get('/analytics/trends', async (c: Context) => {
   const user = c.get('user');
   const startDate = c.req.query('start_date');
   const endDate = c.req.query('end_date');
@@ -468,7 +467,7 @@ revenueRouter.get('/analytics/trends', async (c) => {
 });
 
 // GET /revenue/analytics/transactions - Get recent transactions
-revenueRouter.get('/analytics/transactions', async (c) => {
+revenueRouter.get('/analytics/transactions', async (c: Context) => {
   const user = c.get('user');
   const startDate = c.req.query('start_date');
   const endDate = c.req.query('end_date');
@@ -507,7 +506,6 @@ revenueRouter.get('/analytics/transactions', async (c) => {
         status,
         currency,
         amount / 100 as amount,
-        customer_id,
         session_id
       FROM analytics.stripe_payment_intents 
       WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
@@ -535,7 +533,7 @@ revenueRouter.get('/analytics/transactions', async (c) => {
 });
 
 // GET /revenue/analytics/breakdown/country - Get revenue by country
-revenueRouter.get('/analytics/breakdown/country', async (c) => {
+revenueRouter.get('/analytics/breakdown/country', async (c: Context) => {
   const user = c.get('user');
   const startDate = c.req.query('start_date');
   const endDate = c.req.query('end_date');
@@ -603,7 +601,7 @@ revenueRouter.get('/analytics/breakdown/country', async (c) => {
 });
 
 // POST /revenue/config - Create or update revenue configuration
-revenueRouter.post('/config', async (c) => {
+revenueRouter.post('/config', async (c: Context) => {
   const user = c.get('user');
   const data = await c.req.json();
 
@@ -692,7 +690,7 @@ revenueRouter.post('/config', async (c) => {
 });
 
 // POST /revenue/config/regenerate-webhook-token - Regenerate webhook token
-revenueRouter.post('/config/regenerate-webhook-token', async (c) => {
+revenueRouter.post('/config/regenerate-webhook-token', async (c: Context) => {
   const user = c.get('user');
 
   if (!user) {
@@ -740,7 +738,7 @@ revenueRouter.post('/config/regenerate-webhook-token', async (c) => {
 });
 
 // DELETE /revenue/config - Delete revenue configuration
-revenueRouter.delete('/config', async (c) => {
+revenueRouter.delete('/config', async (c: Context) => {
   const user = c.get('user');
 
   if (!user) {

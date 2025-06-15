@@ -76,7 +76,6 @@ export const revenueBuilders: Record<string, ParameterBuilder> = {
         status,
         currency,
         amount / 100 as amount,
-        customer_id,
         session_id
       FROM analytics.stripe_payment_intents 
       WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})

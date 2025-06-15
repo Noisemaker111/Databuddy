@@ -108,12 +108,12 @@ const logger = console;
       }),
     };
   
-    // logger.info('query info', {
-    //   query: cleanQuery(query),
-    //   rows: json.rows,
-    //   stats: response.statistics,
-    //   elapsed: Date.now() - start,
-    // });
+    logger.info('query info', {
+      // query: cleanQuery(query),
+      rows: json.rows,
+      stats: response.statistics,
+      elapsed: Date.now() - start,
+    });
   
     return response;
   }

@@ -1,12 +1,14 @@
 import './global.css';
 import { RootProvider } from 'fumadocs-ui/provider';
 import { Databuddy } from '@databuddy/sdk';
-import { Inter } from 'next/font/google';
 import type { ReactNode } from 'react';
 import type { Metadata, Viewport } from "next";
+import { Geist } from 'next/font/google';
 
-const inter = Inter({
+const geist = Geist({
   subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-geist'
 });
 
 export const metadata: Metadata = {
@@ -67,7 +69,7 @@ export const viewport: Viewport = {
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={inter.className} suppressHydrationWarning>
+    <html lang="en" className={geist.className} suppressHydrationWarning>
       <Databuddy
         clientId="OXmNQsViBT-FOS_wZCTHc"
         trackAttributes={true}

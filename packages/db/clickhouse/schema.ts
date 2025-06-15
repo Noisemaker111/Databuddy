@@ -195,7 +195,6 @@ CREATE TABLE IF NOT EXISTS ${ANALYTICS_DATABASE}.stripe_payment_intents (
   amount UInt64,
   amount_received UInt64,
   amount_capturable UInt64,
-  customer_id Nullable(String),
   livemode UInt8,
   metadata JSON,
   payment_method_types Array(String),
@@ -234,7 +233,6 @@ CREATE TABLE IF NOT EXISTS ${ANALYTICS_DATABASE}.stripe_charges (
   risk_level LowCardinality(String),
   card_brand LowCardinality(String),
   payment_intent_id Nullable(String),
-  customer_id Nullable(String),
   session_id Nullable(String),
   created_at DateTime64(3, 'UTC') DEFAULT now()
 ) ENGINE = MergeTree()
@@ -328,7 +326,6 @@ export interface StripePaymentIntent {
   amount: number;
   amount_received: number;
   amount_capturable: number;
-  customer_id?: string;
   livemode: number;
   metadata: Record<string, any>;
   payment_method_types: string[];
@@ -360,7 +357,6 @@ export interface StripeCharge {
   risk_level?: string;
   card_brand?: string;
   payment_intent_id?: string;
-  customer_id?: string;
   session_id?: string;
 }
 

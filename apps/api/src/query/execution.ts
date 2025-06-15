@@ -135,44 +135,104 @@ function processParameterData(parameter: string, rawData: any[], websiteDomain?:
   }
 }
 
-// Build unified query for multiple parameters
-function buildUnifiedQuery(
+// Extract column structure from a SQL query - simplified to focus on meaningful columns
+function extractColumnStructure(sql: string): string[] {
+  // This is a simplified column extraction focused on the final column names/aliases
+  const selectMatch = sql.match(/SELECT\s+(.*?)\s+FROM/is)
+  if (!selectMatch) return []
+  
+  const selectClause = selectMatch[1]
+  
+  // Split by comma and extract meaningful column identifiers
+  const columns = selectClause
+    .split(',')
+    .map(col => {
+      const trimmed = col.trim()
+      
+      // Look for AS alias (this is the most reliable)
+      const asMatch = trimmed.match(/\s+as\s+(\w+)$/i)
+      if (asMatch) {
+        return asMatch[1].toLowerCase()
+      }
+      
+      // If it's a simple column name without functions
+      if (/^\w+$/.test(trimmed)) {
+        return trimmed.toLowerCase()
+      }
+      
+      // For complex expressions, try to extract the meaningful part
+      // Handle common patterns like CONCAT(...) as name, COALESCE(...) as name, etc.
+      const parts = trimmed.split(/\s+/)
+      const lastPart = parts[parts.length - 1].replace(/['"]/g, '').toLowerCase()
+      
+      // If the last part looks like a column name, use it
+      if (/^\w+$/.test(lastPart)) {
+        return lastPart
+      }
+      
+      // Default fallback - use a normalized version of the expression
+      return 'expr'
+    })
+    .filter(col => col && col !== '*')
+  
+  return columns
+}
+
+// Check if two column structures are compatible for UNION ALL - simplified logic
+function areColumnStructuresCompatible(columns1: string[], columns2: string[]): boolean {
+  if (columns1.length !== columns2.length) return false
+  
+  // Check if they have the same basic structure
+  // We're more lenient here - if they have the same number of columns and similar patterns, allow it
+  
+  // Common analytics patterns that should be compatible:
+  // - name, visitors, pageviews, sessions
+  // - Any expression + name, visitors, pageviews, sessions
+  
+  const pattern1 = getColumnPattern(columns1)
+  const pattern2 = getColumnPattern(columns2)
+  
+  return pattern1 === pattern2
+}
+
+// Get a simplified pattern for column compatibility
+function getColumnPattern(columns: string[]): string {
+  // Normalize common analytics column patterns
+  const normalized = columns.map(col => {
+    if (col === 'name' || col === 'expr') return 'name'
+    if (col === 'visitors') return 'visitors'
+    if (col === 'pageviews') return 'pageviews'
+    if (col === 'sessions') return 'sessions'
+    // Add other common patterns as needed
+    return col
+  })
+  
+  return normalized.join(',')
+}
+
+// Group queries by compatible column structures
+function groupQueriesByColumnStructure(
   queries: QueryRequest[],
   websiteId: string,
   websiteDomain?: string
-): string {
-  // Group queries by metric type to avoid UNION ALL column mismatch
-  const metricGroups: Record<string, Array<{
-    query: QueryRequest,
-    parameter: string
-  }>> = {}
+): Array<{
+  queries: Array<{ query: QueryRequest, parameter: string }>,
+  columnStructure: string[]
+}> {
+  const groups: Array<{
+    queries: Array<{ query: QueryRequest, parameter: string }>,
+    columnStructure: string[]
+  }> = []
   
   for (const query of queries) {
     const { parameters } = query
     
     for (const parameter of parameters) {
-      const metricType = getMetricType(parameter)
-      
-      if (!metricGroups[metricType]) {
-        metricGroups[metricType] = []
-      }
-      
-      metricGroups[metricType].push({ query, parameter })
-    }
-  }
-  
-  // Build separate UNION queries for each metric type
-  const metricQueries: string[] = []
-  
-  for (const [metricType, items] of Object.entries(metricGroups)) {
-    const subQueries: string[] = []
-    
-    for (const { query, parameter } of items) {
-      const { startDate, endDate, limit, page, filters, timeZone, granularity } = query
-      const offset = (page - 1) * limit
-      
       const builder = PARAMETER_BUILDERS[parameter as keyof typeof PARAMETER_BUILDERS]
       if (!builder) continue
+      
+      const { startDate, endDate, limit, page, filters, timeZone, granularity } = query
+      const offset = (page - 1) * limit
       
       let sql = builder(websiteId, startDate, `${endDate} 23:59:59`, limit, offset, granularity, timeZone, filters)
       
@@ -182,12 +242,75 @@ function buildUnifiedQuery(
         sql = applyFilters(sql, filters)
       }
       
-      // Add query and parameter identifiers to the result
+      const columnStructure = extractColumnStructure(sql)
+      
+      // Find a compatible group
+      let compatibleGroup = groups.find(group => 
+        areColumnStructuresCompatible(group.columnStructure, columnStructure)
+      )
+      
+      if (compatibleGroup) {
+        compatibleGroup.queries.push({ query, parameter })
+      } else {
+        // Create a new group
+        groups.push({
+          queries: [{ query, parameter }],
+          columnStructure
+        })
+      }
+    }
+  }
+  
+  return groups
+}
+
+// Build unified queries for multiple parameters with column structure validation
+function buildUnifiedQueries(
+  queries: QueryRequest[],
+  websiteId: string,
+  websiteDomain?: string
+): string[] {
+  // Group queries by compatible column structures
+  const columnGroups = groupQueriesByColumnStructure(queries, websiteId, websiteDomain)
+  
+  if (columnGroups.length === 0) {
+    throw new Error('No valid queries found')
+  }
+  
+  logger.info('Creating unified queries for compatible column groups', {
+    groups_count: columnGroups.length,
+    group_details: columnGroups.map(group => ({
+      query_count: group.queries.length,
+      parameters: group.queries.map(q => q.parameter),
+      columns: group.columnStructure
+    }))
+  })
+  
+  // Build a separate UNION_ALL query for each compatible group
+  const unifiedQueries: string[] = []
+  
+  for (const group of columnGroups) {
+    const subQueries: string[] = []
+    
+    for (const { query, parameter } of group.queries) {
+      const { startDate, endDate, limit, page, filters, timeZone, granularity } = query
+      const offset = (page - 1) * limit
+      
+      const builder = PARAMETER_BUILDERS[parameter as keyof typeof PARAMETER_BUILDERS]
+      if (!builder) continue
+      
+      let sql = builder(websiteId, startDate, `${endDate} 23:59:59`, limit, offset, granularity, timeZone, filters)
+      
+      const isRevenueQuery = parameter.startsWith('revenue_') || parameter.startsWith('recent_') || parameter === 'all_revenue_by_client'
+      if (!isRevenueQuery) {
+        sql = applyFilters(sql, filters)
+      }
+      
       const wrappedQuery = `
         SELECT 
           '${query.id}' as query_id,
           '${parameter}' as parameter,
-          '${metricType}' as metric_type,
+          '${getMetricType(parameter)}' as metric_type,
           *
         FROM (
           ${sql}
@@ -198,16 +321,11 @@ function buildUnifiedQuery(
     }
     
     if (subQueries.length > 0) {
-      metricQueries.push(subQueries.join('\nUNION ALL\n'))
+      unifiedQueries.push(subQueries.join('\nUNION ALL\n'))
     }
   }
   
-  // If we have multiple metric types, we can't union them - fall back to individual queries
-  if (metricQueries.length > 1) {
-    throw new Error('Cannot unify queries with different metric types')
-  }
-  
-  return metricQueries[0] || ''
+  return unifiedQueries
 }
 
 // Process unified query results
@@ -332,21 +450,33 @@ export async function executeBatchQueries(
   websiteDomain?: string
 ) {
   try {
-    // Try unified query first
-    const unifiedQuery = buildUnifiedQuery(queries, websiteId, websiteDomain)
+    // Try unified queries first - create multiple UNION_ALL queries for compatible column groups
+    const unifiedQueries = buildUnifiedQueries(queries, websiteId, websiteDomain)
     
-    if (!unifiedQuery) {
+    if (!unifiedQueries || unifiedQueries.length === 0) {
       throw new Error('No unifiable queries found')
     }
     
-    const rawResults = await chQuery<Record<string, any>>(unifiedQuery)
-    return processUnifiedResults(rawResults, queries, websiteDomain)
+    // Execute all unified queries in parallel
+    const allRawResults = await Promise.all(
+      unifiedQueries.map(query => chQuery<Record<string, any>>(query))
+    )
+    
+    // Flatten all results into a single array
+    const flattenedResults = allRawResults.flat()
+    
+    return processUnifiedResults(flattenedResults, queries, websiteDomain)
     
   } catch (error: any) {
     // Fall back to individual queries
     if (error.message?.includes('Cannot unify queries with different metric types')) {
       logger.info('Using individual queries due to mixed metric types', {
         queries_count: queries.length
+      })
+    } else if (error.message?.includes('Cannot unify queries with incompatible column structures')) {
+      logger.info('Using individual queries due to incompatible column structures', {
+        queries_count: queries.length,
+        error: error.message
       })
     } else {
       logger.error('Unified query failed, falling back to individual queries', {

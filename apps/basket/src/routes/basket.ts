@@ -1,7 +1,7 @@
 import { Elysia } from 'elysia'
 import { AnalyticsEvent, ErrorEvent, WebVitalsEvent, clickHouse } from '@databuddy/db'
-import { randomUUID } from 'node:crypto'
-import { getGeo } from '../utils/ip-geo'
+import { createHash, randomUUID } from 'node:crypto'
+import { getGeo, extractIpFromRequest } from '../utils/ip-geo'
 import { parseUserAgent } from '../utils/user-agent'
 import { getWebsiteById, isValidOrigin } from '../hooks/auth'
 import { 
@@ -12,6 +12,7 @@ import {
   VALIDATION_LIMITS 
 } from '../utils/validation'
 import { getRedisCache } from '@databuddy/redis'
+import crypto from 'node:crypto'
 
 const redis = getRedisCache()
 
@@ -82,8 +83,9 @@ async function insertWebVitals(vitalsData: any, clientId: string): Promise<void>
 
 async function insertTrackEvent(trackData: any, clientId: string, userAgent: string, ip: string): Promise<void> {
   const eventId = sanitizeString(trackData.eventId, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH)
+  const eventName = sanitizeString(trackData.name, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH)
   
-  // Check for duplicate
+  // Simple deduplication using event ID (now consistent for page_exit events)
   if (await checkDuplicate(eventId, 'track')) {
     return // Skip duplicate
   }
@@ -94,7 +96,7 @@ async function insertTrackEvent(trackData: any, clientId: string, userAgent: str
   const trackEvent: AnalyticsEvent = {
     id: randomUUID(),
     client_id: clientId,
-    event_name: sanitizeString(trackData.name, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
+    event_name: eventName,
     anonymous_id: sanitizeString(trackData.anonymousId, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
     time: trackData.timestamp && typeof trackData.timestamp === 'number' ? trackData.timestamp : new Date().getTime(),
     session_id: validateSessionId(trackData.sessionId),
@@ -206,7 +208,9 @@ async function checkDuplicate(eventId: string, eventType: string): Promise<boole
     return true
   }
   
-  await redis.setex(key, 86400, '1')
+  // Use longer TTL for exit events to prevent duplicates across browser sessions
+  const ttl = eventId.startsWith('exit_') ? 172800 : 86400 // 48h for exit events, 24h for others
+  await redis.setex(key, ttl, '1')
   return false
 }
 
@@ -235,8 +239,19 @@ const app = new Elysia()
     }
     
     const userAgent = sanitizeString(request.headers.get('user-agent'), VALIDATION_LIMITS.STRING_MAX_LENGTH) || ''
-    const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || ''
+    const ip = extractIpFromRequest(request)
     
+    const saltKey = `salt:${Math.floor(Date.now() / (24 * 60 * 60 * 1000))}`
+    
+    const salt = await redis.get(saltKey)
+    if (!salt) {
+      const newSalt = crypto.randomBytes(32).toString('hex')
+      await redis.setex(saltKey, 60 * 60 * 24, newSalt)
+      return { status: 'success', type: 'salt', salt: newSalt }
+    }
+    
+    body.anonymous_id = createHash('sha256').update(body.anonymous_id + salt).digest('hex')
+
     if (eventType === 'track') {
       await insertTrackEvent(body, clientId, userAgent, ip)
       return { status: 'success', type: 'track' }
@@ -251,6 +266,7 @@ const app = new Elysia()
       await insertWebVitals(body, clientId)
       return { status: 'success', type: 'web_vitals' }
     }
+
     
     return { status: 'error', message: 'Unknown event type' }
   })
@@ -287,7 +303,7 @@ const app = new Elysia()
     }
     
     const userAgent = sanitizeString(request.headers.get('user-agent'), VALIDATION_LIMITS.STRING_MAX_LENGTH) || ''
-    const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || ''
+    const ip = extractIpFromRequest(request)
     
     // Process each event in the batch
     const results = []

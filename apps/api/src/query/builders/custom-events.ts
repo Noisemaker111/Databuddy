@@ -16,7 +16,7 @@ export const customEventBuilders: Record<string, ParameterBuilder> = {
     WHERE client_id = ${escapeSqlString(websiteId)}
       AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
       AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-      AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
+      AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals', 'link_out')
       AND event_name != ''
     GROUP BY event_name
     ORDER BY total_events DESC
@@ -41,7 +41,7 @@ export const customEventBuilders: Record<string, ParameterBuilder> = {
     WHERE client_id = ${escapeSqlString(websiteId)}
       AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
       AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-      AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
+      AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals', 'link_out')
       AND event_name != ''
     ORDER BY time DESC
     LIMIT ${limit} OFFSET ${offset}
@@ -59,7 +59,7 @@ export const customEventBuilders: Record<string, ParameterBuilder> = {
     WHERE client_id = ${escapeSqlString(websiteId)}
       AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
       AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-      AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
+      AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals', 'link_out')
       AND event_name != ''
       AND path != ''
     GROUP BY path
@@ -81,7 +81,7 @@ export const customEventBuilders: Record<string, ParameterBuilder> = {
     WHERE client_id = ${escapeSqlString(websiteId)}
       AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
       AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-      AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
+      AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals', 'link_out')
       AND event_name != ''
     GROUP BY anonymous_id
     ORDER BY total_events DESC
@@ -97,7 +97,7 @@ export const customEventBuilders: Record<string, ParameterBuilder> = {
       WHERE client_id = ${escapeSqlString(websiteId)}
         AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
         AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-        AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals')
+        AND event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals', 'link_out')
         AND event_name != ''
         AND properties IS NOT NULL
         AND properties != '{}'

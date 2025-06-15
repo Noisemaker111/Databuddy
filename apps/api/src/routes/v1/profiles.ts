@@ -1,14 +1,13 @@
 import { chQuery } from "@databuddy/db";
 import { createSqlBuilder } from "../../builders/analytics";
-import { parseReferrers } from "../../builders";
 import { logger } from "../../lib/logger";
 import { formatDuration } from "../../utils/dates";
 import { generateSessionName } from "../../utils/sessions";
 import { parseUserAgentDetails } from "../../utils/ua";
 import { timezoneMiddleware, useTimezone, timezoneQuerySchema } from "../../middleware/timezone";
-import { Hono } from "hono";
+import { Context, Hono } from "hono";
 import type { AppVariables } from "../../types";
-import { z } from "zod";
+import { parseReferrer } from "../../utils/referrer";
 
 const profilesRouter = new Hono<{ Variables: AppVariables }>();
 
@@ -16,11 +15,9 @@ const mapCountryCode = (country: string): string => {
   return country === 'IL' ? 'PS' : country;
 };
 
-// Apply timezone middleware
 profilesRouter.use('*', timezoneMiddleware);
 
-// GET /analytics/profiles - retrieves visitor profiles with their sessions
-profilesRouter.get('/', async (c) => {
+profilesRouter.get('/', async (c: Context) => {
     const params = await c.req.query();
     const timezoneInfo = useTimezone(c);
     if (!params.page) {
@@ -51,7 +48,7 @@ profilesRouter.get('/', async (c) => {
         date_filter: `time >= parseDateTimeBestEffort('${startDate}') AND time <= parseDateTimeBestEffort('${endDate} 23:59:59' )`
       };
       visitorIdsBuilder.sb.groupBy = { visitor_id: 'anonymous_id' };
-      visitorIdsBuilder.sb.orderBy = { session_count: 'session_count DESC', last_visit: 'last_visit DESC' };
+      visitorIdsBuilder.sb.orderBy = { last_visit: 'last_visit DESC', session_count: 'session_count DESC' };
       visitorIdsBuilder.sb.limit = Number(profilesLimit);
       visitorIdsBuilder.sb.offset = offset;
       
@@ -71,30 +68,73 @@ profilesRouter.get('/', async (c) => {
       
       const visitorIdList = visitorIdsResult.map(v => v.visitor_id);
 
-      // 2. Get all sessions for these specific visitor IDs
-      const sessionsBuilder = createSqlBuilder();
-      sessionsBuilder.sb.select = {
-        session_id: 'session_id',
-        visitor_id: 'anonymous_id as visitor_id',
-        first_visit: 'MIN(time) as first_visit',
-        last_visit: 'MAX(time) as last_visit',
-        duration: 'dateDiff(\'second\', MIN(time), MAX(time)) as duration',
-        page_views: 'countIf(event_name = \'screen_view\') as page_views',
-        user_agent: 'any(user_agent) as user_agent',
-        country: 'any(country) as country',
-        region: 'any(region) as region',
-        referrer: 'any(referrer) as referrer'
-      };
-      sessionsBuilder.sb.from = 'analytics.events';
-      sessionsBuilder.sb.where = {
-        client_filter: `client_id = '${params.website_id}'`,
-        date_filter: `time >= parseDateTimeBestEffort('${startDate}') AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')`,
-        visitor_filter: `anonymous_id IN (${visitorIdList.map(id => `'${id}'`).join(',')})`
-      };
-      sessionsBuilder.sb.groupBy = { session_id: 'session_id', visitor_id: 'anonymous_id' };
-      sessionsBuilder.sb.orderBy = { visitor_id: 'visitor_id', first_visit: 'first_visit DESC' };
+      // 2. Get all sessions with their events for these specific visitor IDs
+      const sessionsWithEventsBuilder = createSqlBuilder();
+      const sessionsWithEventsSql = `
+        WITH session_list AS (
+          SELECT
+            session_id,
+            anonymous_id as visitor_id,
+            MIN(time) as first_visit,
+            MAX(time) as last_visit,
+            LEAST(dateDiff('second', MIN(time), MAX(time)), 28800) as duration,
+            countIf(event_name = 'screen_view') as page_views,
+            any(user_agent) as user_agent,
+            any(country) as country,
+            any(region) as region,
+            any(referrer) as referrer
+          FROM analytics.events
+          WHERE 
+            client_id = '${params.website_id}'
+            AND time >= parseDateTimeBestEffort('${startDate}')
+            AND time <= parseDateTimeBestEffort('${endDate} 23:59:59')
+            AND anonymous_id IN (${visitorIdList.map(id => `'${id}'`).join(',')})
+          GROUP BY session_id, anonymous_id
+          ORDER BY visitor_id, first_visit DESC
+        ),
+        session_events AS (
+          SELECT
+            e.session_id,
+            groupArray(
+              tuple(
+                e.id,
+                e.time,
+                e.event_name,
+                e.path,
+                e.error_message,
+                e.error_type,
+                CASE 
+                  WHEN e.event_name NOT IN ('screen_view', 'page_exit', 'error', 'web_vitals', 'link_out') 
+                    AND e.properties IS NOT NULL 
+                    AND e.properties != '{}' 
+                  THEN CAST(e.properties AS String)
+                  ELSE NULL
+                END
+              )
+            ) as events
+          FROM analytics.events e
+          INNER JOIN session_list sl ON e.session_id = sl.session_id
+          WHERE e.client_id = '${params.website_id}'
+          GROUP BY e.session_id
+        )
+        SELECT
+          sl.session_id,
+          sl.visitor_id,
+          sl.first_visit,
+          sl.last_visit,
+          sl.duration,
+          sl.page_views,
+          sl.user_agent,
+          sl.country,
+          sl.region,
+          sl.referrer,
+          COALESCE(se.events, []) as events
+        FROM session_list sl
+        LEFT JOIN session_events se ON sl.session_id = se.session_id
+        ORDER BY sl.visitor_id, sl.first_visit DESC
+      `;
 
-      const allSessionsResult = await chQuery(sessionsBuilder.getSql());
+      const allSessionsResult = await chQuery(sessionsWithEventsSql);
 
       const sessionsByVisitor: Record<string, any[]> = {};
       for (const session of allSessionsResult) {
@@ -126,7 +166,7 @@ profilesRouter.get('/', async (c) => {
       const totalVisitors = visitorStatsResult[0]?.total_visitors || 0;
       const returningVisitors = visitorStatsResult[0]?.returning_visitors || 0;
       
-      // 4. Construct profiles with their sessions
+      // 4. Construct profiles with their sessions and events
       const profiles = [];
       for (const visitor of visitorIdsResult) {
         const visitorSessions = sessionsByVisitor[visitor.visitor_id] || [];
@@ -135,23 +175,67 @@ profilesRouter.get('/', async (c) => {
           const durationInSeconds = session.duration || 0;
           const durationFormatted = formatDuration(durationInSeconds);
           const userAgentInfo = parseUserAgentDetails(session.user_agent || '');
-          const referrerParsed = session.referrer ? parseReferrers(
-            [{ referrer: session.referrer, visitors: 0, pageviews: 0 }]
-          )[0] : null;
+          const referrerInfo = parseReferrer(session.referrer, undefined);
           const sessionName = generateSessionName(session.session_id);
           
+          // Process events similar to sessions API
+          let processedEvents: any[] = [];
+          if (session.events && Array.isArray(session.events)) {
+            processedEvents = session.events.map((eventTuple: any) => {
+              const [
+                event_id,
+                time,
+                event_name,
+                path,
+                error_message,
+                error_type,
+                properties_json
+              ] = eventTuple;
+              
+              let properties: Record<string, any> = {};
+              if (properties_json) {
+                try {
+                  properties = JSON.parse(properties_json);
+                } catch {
+                  // If parsing fails, keep empty object
+                }
+              }
+              
+              return {
+                event_id,
+                time,
+                event_name,
+                path,
+                error_message,
+                error_type,
+                properties
+              };
+            }).filter((event: any) => event.event_id);
+          }
+          
           return {
-            ...session,
+            session_id: session.session_id,
             session_name: sessionName,
+            first_visit: session.first_visit,
+            last_visit: session.last_visit,
+            duration: session.duration,
+            duration_formatted: durationFormatted,
+            page_views: session.page_views,
             device: userAgentInfo.device_type,
             browser: userAgentInfo.browser_name,
             os: userAgentInfo.os_name,
-            duration_formatted: durationFormatted,
             country: mapCountryCode(session.country || ''),
-            referrer_parsed: referrerParsed,
+            region: session.region,
+            referrer: session.referrer,
+            referrer_parsed: session.referrer ? {
+              type: referrerInfo.type,
+              name: referrerInfo.name,
+              domain: referrerInfo.domain,
+            } : null,
             visitor_id: visitor.visitor_id,
             is_returning_visitor: visitor.session_count > 1,
-            visitor_session_count: visitor.session_count
+            visitor_session_count: visitor.session_count,
+            events: processedEvents
           };
         }) as Array<any>; 
         

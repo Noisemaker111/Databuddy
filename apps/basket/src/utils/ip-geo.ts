@@ -5,11 +5,20 @@ import { createHash } from 'node:crypto';
 
 
 const GeoLocationSchema = z.object({
-  ip: z.string(),
+  ip: z.string().optional(),
   region: z.string().optional(),
   country: z.string().optional(),
   timezone: z.string().optional(),
-});
+  city: z.string().optional(),
+  org: z.string().optional(),
+  postal: z.string().optional(),
+  loc: z.string().optional(),
+}).transform((data) => ({
+  ip: data.ip || '',
+  region: data.region,
+  country: data.country,
+  timezone: data.timezone,
+}));
 
 type GeoLocation = z.infer<typeof GeoLocationSchema>;
 
@@ -30,11 +39,20 @@ function urlConstructor(ip: string) {
 
 async function fetchIpGeo(ip: string): Promise<GeoLocation> {
   if (!ip || ignore.includes(ip)) {
+    logger.debug(`Skipping geo lookup for empty or localhost IP: ${ip}`);
+    return DEFAULT_GEO;
+  }
+
+  // Check if IPINFO_TOKEN is configured
+  if (!IPINFO_TOKEN) {
+    logger.warn(new Error('IPINFO_TOKEN not configured - geo location will be unknown'));
     return DEFAULT_GEO;
   }
 
   try {
     const url = urlConstructor(ip);
+    logger.debug(`Fetching geo location for IP: ${ip.substring(0, 8)}...`);
+    
     const response = await fetch(url, {
       signal: AbortSignal.timeout(4000),
     });
@@ -42,24 +60,37 @@ async function fetchIpGeo(ip: string): Promise<GeoLocation> {
     if (!response.ok) {
       // 404 is expected for unknown IPs, don't warn
       if (response.status === 404) {
-        logger.debug(`IP not found in geo database: ${ip}`);
+        logger.debug(`IP not found in geo database: ${ip.substring(0, 8)}...`);
+      } else if (response.status === 429) {
+        logger.warn(new Error(`Rate limited by IPInfo API: ${response.status}`));
+      } else if (response.status === 401) {
+        logger.error(new Error(`Invalid IPINFO_TOKEN: ${response.status}`));
       } else {
-        logger.warn(new Error(`Failed to fetch geo location: ${response.status}`));
+        logger.warn(new Error(`Failed to fetch geo location: ${response.status} for IP ${ip.substring(0, 8)}...`));
       }
       return DEFAULT_GEO;
     }
 
     const data = await response.json();
+    logger.debug(`Received geo data for IP ${ip.substring(0, 8)}...:`, { 
+      country: (data as any)?.country, 
+      region: (data as any)?.region 
+    });
+    
     const parsed = GeoLocationSchema.safeParse(data);
 
     if (!parsed.success) {
-        logger.warn(new Error(`Invalid geo location data: ${parsed.error}`));
+        logger.warn(new Error(`Invalid geo location data: ${parsed.error.message}`));
         return DEFAULT_GEO;
     }
 
     return parsed.data;
   } catch (error) {
-    logger.error(new Error(`Error fetching geo location: ${error}`));
+    if (error instanceof Error && error.name === 'TimeoutError') {
+      logger.warn(new Error(`Geo location API timeout for IP ${ip.substring(0, 8)}...`));
+    } else {
+      logger.error(new Error(`Error fetching geo location for IP ${ip.substring(0, 8)}...: ${error}`));
+    }
     return DEFAULT_GEO;
   }
 }
@@ -82,12 +113,22 @@ export const getGeoLocation = async (ip: string): Promise<GeoLocation> => {
   }
 };
 
-// Helper to get client IP from request
 export function getClientIp(req: Request): string | undefined {
-  return req.headers.get('cf-connecting-ip') || undefined;
+  const cfIp = req.headers.get('cf-connecting-ip');
+  if (cfIp) return cfIp;
+  
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    const firstIp = forwardedFor.split(',')[0]?.trim(); 
+    if (firstIp) return firstIp;
+  }
+  
+  const realIp = req.headers.get('x-real-ip');
+  if (realIp) return realIp;
+  
+  return undefined;
 }
 
-// Main function to get geo location from request
 export async function parseIp(req: Request): Promise<GeoLocation> {
   const ip = getClientIp(req);
   return getGeoLocation(ip || '');
@@ -126,6 +167,25 @@ export async function getGeoData(ip: string): Promise<GeoLocation> {
     country: geo.country,
     timezone: geo.timezone,
   };
+}
+
+/**
+ * Extract IP address from request headers with proper fallback chain
+ */
+export function extractIpFromRequest(request: Request): string {
+  const cfIp = request.headers.get('cf-connecting-ip');
+  if (cfIp && cfIp.trim()) return cfIp.trim();
+  
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    const firstIp = forwardedFor.split(',')[0]?.trim();
+    if (firstIp) return firstIp;
+  }
+  
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp && realIp.trim()) return realIp.trim();
+  
+  return '';
 }
 
 /**

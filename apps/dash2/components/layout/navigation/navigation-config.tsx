@@ -25,7 +25,7 @@ export const mainNavigation: NavigationSection[] = [
       { name: "Websites", icon: Globe, href: "/websites", rootLevel: true, highlight: true },
       { name: "Domains", icon: LinkIcon, href: "/domains", rootLevel: true, highlight: true },
       { name: "Settings", icon: Settings, href: "/settings", rootLevel: true, highlight: true },
-      { name: "Billing", icon: CreditCard, href: "/billing", rootLevel: true, highlight: true },
+      // { name: "Billing", icon: CreditCard, href: "/billing", rootLevel: true, highlight: true },
     ],
   },
   {

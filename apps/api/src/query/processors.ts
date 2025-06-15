@@ -292,7 +292,6 @@ export const processRecentTransactions = (data: any[]) => {
     status: item.status,
     currency: item.currency,
     amount: Number(item.amount) || 0,
-    customer_id: item.customer_id,
     card_brand: item.card_brand,
     session_id: item.session_id,
   }));
