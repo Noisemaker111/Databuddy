@@ -622,17 +622,16 @@
             const exitHandler = () => {
                 if (this.options.enableBatching) this.flushBatch();
                 
-                if (!this.isInternalNavigation && !(window.databuddy?.isTemporarilyHidden)) {
-                    this.trackExitData();
-                }
+                // Always track exit data, let the server handle deduplication
+                this.trackExitData();
                 
                 this.isInternalNavigation = false;
             };
 
-            window.addEventListener('pagehide', exitHandler, { once: true });
+            window.addEventListener('pagehide', exitHandler);
             
             if (!('onpagehide' in window)) {
-                window.addEventListener('beforeunload', exitHandler, { once: true });
+                window.addEventListener('beforeunload', exitHandler);
             }
         }
 
@@ -1054,6 +1053,8 @@
                 }
                 this.lastPath = i;
                 this.pageCount++;
+                
+                this.isInternalNavigation = false;
                 
                 const pageData = {
                     page_count: this.pageCount,
