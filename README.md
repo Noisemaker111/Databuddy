@@ -16,7 +16,7 @@
 [![Security Scan](https://img.shields.io/badge/security-A%2B-green.svg)](https://github.com/databuddy/databuddy/actions/workflows/security.yml)
 [![Dependency Status](https://img.shields.io/badge/dependencies-up%20to%20date-green.svg)](https://github.com/databuddy/databuddy/actions/workflows/dependencies.yml)
 
-[![Discord](https://img.shields.io/discord/123456789?label=Discord&logo=discord)](https://discord.gg/databuddy)
+[![Discord](https://img.shields.io/discord/123456789?label=Discord&logo=discord)](https://discord.gg/JTk7a38tCZ)
 [![Twitter](https://img.shields.io/twitter/follow/databuddy?style=social)](https://twitter.com/databuddy)
 [![GitHub Stars](https://img.shields.io/github/stars/databuddy/databuddy?style=social)](https://github.com/databuddy/databuddy/stargazers)
 
@@ -730,8 +730,8 @@ Please report security vulnerabilities to security@databuddy.cc
 
 ### General
 
-1. **What is DataBuddy?**
-   DataBuddy is a comprehensive analytics and data management platform.
+1. **What is Databuddy?**
+   Databuddy is a comprehensive analytics and data management platform.
 
 2. **How do I get started?**
    Follow the [Getting Started](#getting-started) guide.
@@ -753,8 +753,8 @@ Please report security vulnerabilities to security@databuddy.cc
 ## 💬 Support
 
 - [Documentation](https://docs.databuddy.cc)
-- [Discord](https://discord.gg/databuddy)
-- [Twitter](https://twitter.com/databuddy)
+- [Discord](https://discord.gg/JTk7a38tCZ)
+- [Twitter](https://twitter.com/databuddyps)
 - [GitHub Issues](https://github.com/databuddy/databuddy/issues)
 - [Email Support](mailto:support@databuddy.cc)
 
@@ -774,7 +774,5 @@ Copyright (c) 2024 DataBuddy
 - [Cloudflare](https://www.cloudflare.com/)
 - [Vercel](https://vercel.com/)
 - [Stripe](https://stripe.com/)
-- [Sentry](https://sentry.io/)
 - [Turborepo](https://turbo.build/repo)
-- [pnpm](https://pnpm.io/)
 - [Bun](https://bun.sh/)
