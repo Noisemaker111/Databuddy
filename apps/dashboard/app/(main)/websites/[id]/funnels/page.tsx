@@ -15,11 +15,9 @@ import {
     useFunnels,
     useFunnelAnalytics,
     type Funnel,
-    type FunnelStep,
     type CreateFunnelData,
 } from "@/hooks/use-funnels";
 
-// Lazy load components for better performance
 const PageHeader = lazy(() => import("./_components/page-header").then(m => ({ default: m.PageHeader })));
 const FunnelsList = lazy(() => import("./_components/funnels-list").then(m => ({ default: m.FunnelsList })));
 const FunnelAnalytics = lazy(() => import("./_components/funnel-analytics").then(m => ({ default: m.FunnelAnalytics })));
@@ -27,7 +25,6 @@ const CreateFunnelDialog = lazy(() => import("./_components/create-funnel-dialog
 const EditFunnelDialog = lazy(() => import("./_components/edit-funnel-dialog").then(m => ({ default: m.EditFunnelDialog })));
 const DeleteFunnelDialog = lazy(() => import("./_components/delete-funnel-dialog").then(m => ({ default: m.DeleteFunnelDialog })));
 
-// Loading fallback components
 const PageHeaderSkeleton = () => (
     <div className="space-y-6">
         <div className="border-b bg-gradient-to-r from-background via-background to-muted/20 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 pb-6">
