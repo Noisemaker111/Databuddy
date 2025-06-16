@@ -69,7 +69,7 @@ This is a monorepo using Turborepo, containing multiple applications and shared 
 
 ### Applications (`/apps`)
 
-#### `dash2` - Main Dashboard Application
+#### `dashboard` - Main Dashboard Application
 - Next.js 15.3 application with App Router
 - Features:
   - Real-time analytics dashboard
@@ -337,7 +337,7 @@ pnpm install
 
 3. Set up environment variables:
 ```bash
-cp apps/dash2/.env.example apps/dash2/.env
+cp apps/dashboard/.env.example apps/dashboard/.env
 cp apps/landing/.env.example apps/landing/.env
 cp apps/admin/.env.example apps/admin/.env
 cp apps/api/.env.example apps/api/.env
@@ -350,7 +350,7 @@ pnpm dev
 
 ### Environment Variables
 
-#### Dashboard (`dash2`)
+#### Dashboard (`dashboard`)
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8787
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_key
@@ -441,7 +441,7 @@ git push origin feature/your-feature
 
 ### Frontend Architecture
 
-#### Dashboard (`dash2`)
+#### Dashboard (`dashboard`)
 - Next.js App Router
 - Server Components
 - Client Components
@@ -575,7 +575,7 @@ query GetAnalytics {
 
 ## 🚀 Deployment
 
-### Dashboard (`dash2`)
+### Dashboard (`dashboard`)
 - Deployed on Vercel
 - Environment: Production/Staging
 - CI/CD: GitHub Actions
