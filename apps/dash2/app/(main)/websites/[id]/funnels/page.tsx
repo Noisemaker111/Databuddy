@@ -769,41 +769,47 @@ export default function FunnelsPage() {
                                                             </div>
                                                         )}
 
-                                                        {/* Visual Funnel Flow */}
+                                                        {/* Funnel Flow Visualization */}
                                                         {analyticsData?.data?.steps_analytics && (
-                                                            <div className="space-y-4">
+                                                            <div className="space-y-6">
                                                                 <div className="flex items-center gap-2">
                                                                     <Target className="h-5 w-5 text-primary" />
-                                                                    <h3 className="text-lg font-semibold text-foreground">Step-by-Step Analysis</h3>
+                                                                    <h3 className="text-lg font-semibold text-foreground">Funnel Flow Analysis</h3>
                                                                 </div>
-                                                                <Card className="rounded-xl border-muted/50 bg-gradient-to-br from-background to-muted/10">
-                                                                    <CardContent className="p-6">
-                                                                        <div className="space-y-4">
-                                                                            {analyticsData.data.steps_analytics.map((step, index) => {
-                                                                                const isFirstStep = index === 0;
-                                                                                const conversionRate = step.conversion_rate || 0;
-                                                                                const dropoffRate = step.dropoff_rate || 0;
-                                                                                const displayStepNumber = index + 1; // Use index + 1 for sequential numbering
 
-                                                                                return (
-                                                                                    <div key={step.step_number} className="relative">
-                                                                                        <div className="flex items-center gap-4 p-4 rounded-lg border bg-gradient-to-r from-background to-muted/20 hover:shadow-sm transition-all duration-200">
-                                                                                            {/* Step Number */}
-                                                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-2 border-primary/20 flex items-center justify-center text-sm font-semibold shadow-sm">
+                                                                {/* Funnel Steps */}
+                                                                <div className="space-y-3">
+                                                                    {analyticsData.data.steps_analytics.map((step, index) => {
+                                                                        const isFirstStep = index === 0;
+                                                                        const isLastStep = index === analyticsData.data.steps_analytics.length - 1;
+                                                                        const conversionRate = step.conversion_rate || 0;
+                                                                        const dropoffRate = step.dropoff_rate || 0;
+                                                                        const displayStepNumber = index + 1;
+                                                                        const progressPercentage = (step.users / summaryStats.totalUsers) * 100;
+
+                                                                        return (
+                                                                            <div key={step.step_number} className="relative">
+                                                                                {/* Step Card */}
+                                                                                <Card className="rounded-xl border-muted/30 bg-gradient-to-r from-background via-background to-muted/5 hover:shadow-md transition-all duration-300">
+                                                                                    <CardContent className="p-6">
+                                                                                        <div className="flex items-start gap-4">
+                                                                                            {/* Step Number Circle */}
+                                                                                            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-2 border-primary/20 flex items-center justify-center font-bold text-sm shadow-lg">
                                                                                                 {displayStepNumber}
                                                                                             </div>
 
-                                                                                            {/* Step Info */}
-                                                                                            <div className="flex-1 min-w-0">
-                                                                                                <div className="flex items-center justify-between mb-3">
+                                                                                            {/* Step Content */}
+                                                                                            <div className="flex-1 min-w-0 space-y-4">
+                                                                                                {/* Header */}
+                                                                                                <div className="flex items-start justify-between">
                                                                                                     <div className="min-w-0 flex-1">
-                                                                                                        <h5 className="font-semibold text-base text-foreground truncate">{step.step_name}</h5>
-                                                                                                        <div className="flex items-center gap-3 mt-1">
-                                                                                                            <p className="text-sm text-muted-foreground">
-                                                                                                                Step {displayStepNumber}
-                                                                                                            </p>
+                                                                                                        <h4 className="font-semibold text-lg text-foreground truncate mb-1">
+                                                                                                            {step.step_name}
+                                                                                                        </h4>
+                                                                                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                                                                                            <span>Step {displayStepNumber}</span>
                                                                                                             {step.avg_time_to_complete && step.avg_time_to_complete > 0 && (
-                                                                                                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                                                                                                <div className="flex items-center gap-1">
                                                                                                                     <Clock className="h-3 w-3" />
                                                                                                                     <span>{formatCompletionTime(step.avg_time_to_complete)}</span>
                                                                                                                 </div>
@@ -811,69 +817,81 @@ export default function FunnelsPage() {
                                                                                                         </div>
                                                                                                     </div>
                                                                                                     <div className="text-right flex-shrink-0">
-                                                                                                        <div className="font-bold text-lg text-foreground">
+                                                                                                        <div className="font-bold text-2xl text-foreground">
                                                                                                             {step.users?.toLocaleString()}
                                                                                                         </div>
                                                                                                         <div className="text-sm text-muted-foreground">
-                                                                                                            {((step.users / summaryStats.totalUsers) * 100).toFixed(1)}% of total
+                                                                                                            users ({progressPercentage.toFixed(1)}%)
                                                                                                         </div>
                                                                                                     </div>
                                                                                                 </div>
 
-                                                                                                {/* Progress bar and metrics */}
-                                                                                                <div className="space-y-3">
-                                                                                                    <div className="space-y-2">
-                                                                                                        <div className="flex items-center justify-between">
-                                                                                                            <span className="text-sm font-medium text-muted-foreground">Progress</span>
-                                                                                                            <span className="text-sm font-semibold text-foreground">
-                                                                                                                {((step.users / summaryStats.totalUsers) * 100).toFixed(1)}%
-                                                                                                            </span>
-                                                                                                        </div>
-                                                                                                        <Progress
-                                                                                                            value={(step.users / summaryStats.totalUsers) * 100}
-                                                                                                            className="h-2 bg-muted/50"
-                                                                                                        />
+                                                                                                {/* Progress Bar */}
+                                                                                                <div className="space-y-2">
+                                                                                                    <div className="flex items-center justify-between text-sm">
+                                                                                                        <span className="font-medium text-muted-foreground">Funnel Progress</span>
+                                                                                                        <span className="font-semibold text-foreground">
+                                                                                                            {progressPercentage.toFixed(1)}%
+                                                                                                        </span>
                                                                                                     </div>
+                                                                                                    <Progress
+                                                                                                        value={progressPercentage}
+                                                                                                        className="h-3 bg-muted/30"
+                                                                                                    />
+                                                                                                </div>
 
-                                                                                                    <div className="flex items-center justify-between">
-                                                                                                        <div className="flex items-center gap-2">
-                                                                                                            {!isFirstStep && (
-                                                                                                                <Badge
-                                                                                                                    variant={conversionRate > 70 ? "default" : conversionRate > 40 ? "secondary" : "destructive"}
-                                                                                                                    className="text-xs font-medium"
-                                                                                                                >
-                                                                                                                    {conversionRate.toFixed(1)}% conversion
-                                                                                                                </Badge>
-                                                                                                            )}
-                                                                                                            {isFirstStep && (
-                                                                                                                <Badge variant="outline" className="text-xs font-medium">
-                                                                                                                    Entry point
-                                                                                                                </Badge>
-                                                                                                            )}
-                                                                                                        </div>
-                                                                                                        {dropoffRate > 0 && (
-                                                                                                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                                                                                                <TrendingDown className="h-3 w-3" />
-                                                                                                                <span>{step.dropoffs?.toLocaleString()} dropped ({dropoffRate.toFixed(1)}%)</span>
-                                                                                                            </div>
+                                                                                                {/* Metrics */}
+                                                                                                <div className="flex items-center justify-between">
+                                                                                                    <div className="flex items-center gap-3">
+                                                                                                        {isFirstStep ? (
+                                                                                                            <Badge variant="outline" className="text-xs font-medium">
+                                                                                                                <Users className="h-3 w-3 mr-1" />
+                                                                                                                Entry Point
+                                                                                                            </Badge>
+                                                                                                        ) : (
+                                                                                                            <Badge
+                                                                                                                variant={conversionRate > 70 ? "default" : conversionRate > 40 ? "secondary" : "destructive"}
+                                                                                                                className="text-xs font-medium"
+                                                                                                            >
+                                                                                                                {conversionRate.toFixed(1)}% conversion rate
+                                                                                                            </Badge>
+                                                                                                        )}
+                                                                                                        {isLastStep && (
+                                                                                                            <Badge variant="outline" className="text-xs font-medium bg-green-50 text-green-700 border-green-200">
+                                                                                                                <Target className="h-3 w-3 mr-1" />
+                                                                                                                Goal
+                                                                                                            </Badge>
                                                                                                         )}
                                                                                                     </div>
+                                                                                                    {dropoffRate > 0 && (
+                                                                                                        <div className="flex items-center gap-1 text-sm text-red-600">
+                                                                                                            <TrendingDown className="h-3 w-3" />
+                                                                                                            <span className="font-medium">
+                                                                                                                {step.dropoffs?.toLocaleString()} dropped ({dropoffRate.toFixed(1)}%)
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                    )}
                                                                                                 </div>
                                                                                             </div>
                                                                                         </div>
+                                                                                    </CardContent>
+                                                                                </Card>
 
-                                                                                        {/* Arrow to next step */}
-                                                                                        {index < analyticsData.data.steps_analytics.length - 1 && (
-                                                                                            <div className="flex justify-center py-2">
-                                                                                                <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                                                                                            </div>
-                                                                                        )}
+                                                                                {/* Flow Arrow */}
+                                                                                {!isLastStep && (
+                                                                                    <div className="flex justify-center py-3">
+                                                                                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-muted">
+                                                                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                                                                            <span className="text-xs text-muted-foreground font-medium">
+                                                                                                {((analyticsData.data.steps_analytics[index + 1]?.users / step.users) * 100).toFixed(1)}% continue
+                                                                                            </span>
+                                                                                        </div>
                                                                                     </div>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                    </CardContent>
-                                                                </Card>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </div>
