@@ -47,7 +47,6 @@ steps:
       diff: false
       inventory: infrastructure/inventory.ini
       syntax_check: false
-      user: root
       private_key:
         from_secret: ansible_private_key
       galaxy: infrastructure/requirements.yaml
