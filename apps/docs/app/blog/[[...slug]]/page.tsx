@@ -10,6 +10,7 @@ import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { getMDXComponents } from '@/mdx-components';
 import { formatDistanceToNow } from 'date-fns';
 import { StructuredData } from '@/components/structured-data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default async function BlogPage(props: {
   params: Promise<{ slug?: string[] }>;
@@ -30,7 +31,7 @@ export default async function BlogPage(props: {
   // Safely extract string values with fallbacks
   const title = String(page.data.title || 'Databuddy Blog');
   const description = String(page.data.description || 'Privacy-first analytics insights');
-  const author = String(page.data.author || 'Databuddy Team');
+  const author = String(page.data.author || 'izadoesdev');
   const category = String(page.data.category || 'General');
   const url = `https://www.databuddy.cc/blog/${params.slug?.join('/') || ''}`;
 
@@ -59,9 +60,10 @@ export default async function BlogPage(props: {
             <div className="flex flex-wrap items-center gap-6 text-sm">
               {/* Author info with avatar placeholder */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
-                  {author.charAt(0)}
-                </div>
+                <Avatar className="flex items-center gap-3">
+                  <AvatarImage src="/blog-photo.png" />
+                  <AvatarFallback>IZ</AvatarFallback>
+                </Avatar>
                 <div>
                   <div className="font-semibold text-foreground">{author}</div>
                   <div className="text-xs text-muted-foreground">Author</div>
@@ -240,10 +242,9 @@ export async function generateMetadata(props: {
   const page = blogSource.getPage(params.slug);
   if (!page) notFound();
 
-  // Safely extract metadata with fallbacks
   const title = `${String(page.data.title || 'Databuddy Blog')} | Databuddy Blog`;
   const description = String(page.data.description || 'Privacy-first analytics insights and industry expertise from the Databuddy team.');
-  const author = String(page.data.author || 'Databuddy Team');
+  const author = String(page.data.author || 'izadoesdev');
   const url = `https://www.databuddy.cc/blog/${params.slug?.join('/') || ''}`;
   const category = String(page.data.category || 'Analytics');
 
@@ -264,8 +265,6 @@ export async function generateMetadata(props: {
     authors: [{ name: author }],
     creator: 'Databuddy',
     publisher: 'Databuddy',
-    publishedTime: page.data.publishedAt,
-    modifiedTime: page.data.lastModified,
     category,
     openGraph: {
       title,
