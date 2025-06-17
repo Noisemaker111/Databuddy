@@ -5,7 +5,7 @@ x-databuddy-env:
     REDIS_URL: "redis://redis:6379"
     QUEUE_REDIS_URL: "redis://redis:6379"
     AI_API_KEY: "{{ai_api_key}}" # secret
-    BETTER_AUTH_SECRET: "{{better_auth_secret | regex_replace('\\$', '\\$\\$')}}" # secret
+    BETTER_AUTH_SECRET: "{{better_auth_secret | regex_replace('\\$', '\$\$')}}" # secret
     BETTER_AUTH_URL: "{{better_auth_url}}" 
     GITHUB_CLIENT_ID: "{{github_client_id}}"
     GITHUB_CLIENT_SECRET: "{{github_client_secret}}"  # secret
