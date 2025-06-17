@@ -4,6 +4,12 @@ when:
 
 steps:
 
+  - name : Deploy With Ansible
+    image: woodpeckerci/plugin-ansible
+    commands:
+      - apk add make
+      - echo "hi"
+      
   - name: Build dashboard
     image: woodpeckerci/plugin-docker-buildx:6.0.0
     settings:
@@ -39,6 +45,9 @@ steps:
         from_secret: docker_username
       password:
         from_secret: docker_password
+  
+  
+
   
   
 
