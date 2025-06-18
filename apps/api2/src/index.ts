@@ -1,12 +1,12 @@
 import { Elysia } from "elysia";
-import domainsRouter from "./routes/v1/domains";
+import v1Router from "./routes/v1";
 
 const app = new Elysia();
 
 app.get('/', () => {
   return 'Hello World';
 })
-.use(domainsRouter)
+.use(v1Router)
 
 app.listen(3500)
 .onStart(() => {

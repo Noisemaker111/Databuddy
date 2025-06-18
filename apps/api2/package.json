@@ -13,6 +13,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "dayjs": "^1.11.13",
     "elysia": "^1.3.5"
   }
 }

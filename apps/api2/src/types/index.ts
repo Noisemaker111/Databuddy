@@ -1,4 +1,4 @@
-import { websites, user, domains, projects, organization } from "@databuddy/db";
+import type { websites, user, domains, projects, organization } from "@databuddy/db";
 
 export type WebsiteType = typeof websites.$inferSelect;
 export type CreateWebsiteType = typeof websites.$inferInsert;

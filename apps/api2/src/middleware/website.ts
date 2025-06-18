@@ -2,13 +2,14 @@ import { Elysia } from "elysia";
 import { db, eq, and, websites, projects } from "@databuddy/db";
 import { cacheable } from "@databuddy/redis";
 import type { User } from "../lib/auth";
-import { WebsiteType } from "../types";
+import type { WebsiteType } from "../types";
 
 export const getWebsiteById = cacheable(
-    async (id: string): Promise<WebsiteType> => {
-        return db.query.websites.findFirst({
+    async (id: string): Promise<WebsiteType | null> => {
+        const website = await db.query.websites.findFirst({
             where: eq(websites.id, id)
         });
+        return website ?? null;
     },
     {
         expireInSec: 300,
@@ -65,6 +66,9 @@ export const websiteMiddleware = (options: WebsiteAuthOptions = { required: fals
             const websiteId = request.headers.get('X-Website-Id') || new URL(request.url).searchParams.get('website_id') || new URL(request.url).searchParams.get('websiteId');
             
             if (!websiteId) {
+                if (options.required) {
+                    throw new Error("Website ID is required");
+                }
                 return { website: null };
             }
 
@@ -75,6 +79,13 @@ export const websiteMiddleware = (options: WebsiteAuthOptions = { required: fals
             }
 
             const website = await getWebsiteById(websiteId);
+
+            if (!website) {
+                if (options.required) {
+                    throw new Error("Website not found");
+                }
+                return { website: null };
+            }
 
             return { website };
         })

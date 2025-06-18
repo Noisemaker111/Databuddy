@@ -1,6 +1,6 @@
-import { cacheable } from "@/packages/redis";
-import { CreateDomainType } from "../types";
-import { db, eq, domains, SQL } from "@/packages/db";
+import { cacheable } from "@databuddy/redis";
+import type { CreateDomainType } from "../types";
+import { db, eq, domains, type SQL } from "@databuddy/db";
 
 const getCachedDomain = async (whereClause: SQL<unknown>) => {
 	return cacheable(
@@ -19,7 +19,7 @@ export async function createDomain(domain: CreateDomainType) {
   return newDomain;
 }
 
-export async function getDomain(id: string, cache: boolean = true) {
+export async function getDomain(id: string, cache = true) {
   const where = eq(domains.id, id);
   if (cache) {
     return getCachedDomain(where);
@@ -27,7 +27,7 @@ export async function getDomain(id: string, cache: boolean = true) {
   return await db.query.domains.findFirst({ where });
 }
 
-export async function getDomainByDomain(domain: string, cache: boolean = true) {
+export async function getDomainByDomain(domain: string, cache = true) {
     const where = eq(domains.name, domain);
     if (cache) {
         return getCachedDomain(where);
@@ -43,4 +43,10 @@ export async function deleteDomain(id: string) {
 export async function updateDomain(id: string, domain: Partial<CreateDomainType>) {
   const updatedDomain = await db.update(domains).set(domain).where(eq(domains.id, id)).returning();
   return updatedDomain;
+}
+
+export async function getDomains(userId: string) {
+    return await db.query.domains.findMany({
+        where: eq(domains.userId, userId)
+    });
 } 

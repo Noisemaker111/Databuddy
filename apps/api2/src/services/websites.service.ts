@@ -1,6 +1,6 @@
-import { cacheable } from "@/packages/redis";
-import { CreateWebsiteType } from "../types";
-import { db, eq, websites, SQL } from "@/packages/db";
+import { cacheable } from "@databuddy/redis";
+import type { CreateWebsiteType } from "../types";
+import { db, eq, websites, type SQL } from "@databuddy/db";
 
 const getCachedWebsite = async (whereClause: SQL<unknown>) => {
   return cacheable(
@@ -19,7 +19,7 @@ export async function createWebsite(website: CreateWebsiteType) {
   return newWebsite;
 }
 
-export async function getWebsite(id: string, cache: boolean = true) {
+export async function getWebsite(id: string, cache = true) {
   const where = eq(websites.id, id);
   if (cache) {
     return getCachedWebsite(where);
@@ -27,7 +27,7 @@ export async function getWebsite(id: string, cache: boolean = true) {
   return await db.query.websites.findFirst({ where });
 }
 
-export async function getWebsiteByDomain(domain: string, cache: boolean = true) {
+export async function getWebsiteByDomain(domain: string, cache = true) {
   const where = eq(websites.domain, domain);
   if (cache) {
     return getCachedWebsite(where);
