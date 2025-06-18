@@ -17,5 +17,6 @@ export {
   type TableName,
   type ColumnKeys,
   type ColumnValue,
+  type Operator,
   Query as ClickHouseQuery
 } from './clickhouse/query_builder'
