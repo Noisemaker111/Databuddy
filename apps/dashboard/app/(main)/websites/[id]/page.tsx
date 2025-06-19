@@ -7,9 +7,6 @@ import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { useQueryState } from "nuqs";
 import { ArrowClockwiseIcon, CalendarIcon, WarningIcon } from '@phosphor-icons/react';
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,9 +27,6 @@ import {
 import { EmptyState } from "./_components/utils/ui-components";
 
 import type { FullTabProps, WebsiteDataTabProps } from "./_components/utils/types";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 type TabId = 'overview' | 'audience' | 'content' | 'performance' | 'settings' | 'errors' | 'tracking-setup';
 
@@ -85,29 +79,23 @@ function WebsiteDetailsPage() {
   ], []);
 
   const handleQuickRangeSelect = useCallback((range: typeof quickRanges[0]) => {
-    const now = dayjs();
-    const start = range.hours ? now.subtract(range.hours, 'hour') : now.subtract(range.days || 7, 'day');
-    setDateRangeAction({ startDate: start.toDate(), endDate: now.toDate() });
+    const now = new Date();
+    const start = range.hours ? subHours(now, range.hours) : subDays(now, range.days || 7);
+    setDateRangeAction({ startDate: start, endDate: now });
   }, [setDateRangeAction]);
 
-  const memoizedDateRangeForTabs = useMemo(() => {
-    const tz = timezone || dayjs.tz.guess();
-    return {
-      start_date: dayjs(currentDateRange.startDate).tz(tz).startOf('day').format('YYYY-MM-DD HH:mm:ss'),
-      end_date: dayjs(currentDateRange.endDate).tz(tz).endOf('day').format('YYYY-MM-DD HH:mm:ss'),
-      granularity: currentGranularity,
-      timezone: tz,
-    }
-  }, [currentDateRange, currentGranularity, timezone]);
+  const memoizedDateRangeForTabs = useMemo(() => ({
+    start_date: formattedDateRangeState.startDate,
+    end_date: formattedDateRangeState.endDate,
+    granularity: currentGranularity,
+    timezone,
+  }), [formattedDateRangeState, currentGranularity, timezone]);
 
   const handleDateRangeChange = useCallback((range: DayPickerRange | undefined) => {
     if (range?.from && range?.to) {
-      const tz = timezone || dayjs.tz.guess();
-      const startDate = dayjs(range.from).tz(tz, true).toDate();
-      const endDate = dayjs(range.to).tz(tz, true).toDate();
-      setDateRangeAction({ startDate, endDate });
+      setDateRangeAction({ startDate: range.from, endDate: range.to });
     }
-  }, [setDateRangeAction, timezone]);
+  }, [setDateRangeAction]);
 
   const { data, isLoading, isError, error, refetch: refetchWebsiteData } = useWebsite(id as string);
 
@@ -244,12 +232,12 @@ function WebsiteDetailsPage() {
 
             <div className="flex items-center gap-2 bg-background rounded-md p-1 border shadow-sm overflow-x-auto">
               {quickRanges.map((range) => {
-                const now = dayjs();
-                const start = range.hours ? now.subtract(range.hours, 'hour') : now.subtract(range.days || 7, 'day');
+                const now = new Date();
+                const start = range.hours ? subHours(now, range.hours) : subDays(now, range.days || 7);
                 const dayPickerCurrentRange = dayPickerSelectedRange;
                 const isActive = dayPickerCurrentRange?.from && dayPickerCurrentRange?.to &&
-                  dayjs(dayPickerCurrentRange.from).isSame(start, 'day') &&
-                  dayjs(dayPickerCurrentRange.to).isSame(now, 'day');
+                  format(dayPickerCurrentRange.from, 'yyyy-MM-dd') === format(start, 'yyyy-MM-dd') &&
+                  format(dayPickerCurrentRange.to, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd');
 
                 return (
                   <Button
