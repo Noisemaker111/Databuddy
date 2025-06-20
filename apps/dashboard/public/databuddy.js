@@ -1218,7 +1218,7 @@
         }
         
         function getClientId(config) {
-            if (config.clientId) {
+            if (config.clientId) {  
                 return config.clientId;
             }
             

@@ -249,7 +249,7 @@ domainsRouter.post('/', async (c) => {
       id: domainId,
       name: data.name,
       verificationToken,
-      verificationStatus: "PENDING",
+      verificationStatus: "VERIFIED",
       ...ownerData
     }).returning();
 
