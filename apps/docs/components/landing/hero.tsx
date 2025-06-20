@@ -1,117 +1,149 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Zap, Shield, Users, Play } from "lucide-react";
+import { ArrowRight, Maximize2 } from "lucide-react";
+import { useState, useRef } from "react";
 
 export default function Hero() {
-	return (
-		<section className="relative overflow-hidden">
-			<div className="relative z-10 md:w-10/12 mx-auto font-geist md:border-l-0 md:border-b-0 md:border-[1.2px] border-border rounded-none bg-background/95 backdrop-blur-sm">
-				<div className="w-full md:mx-0">
-					{/* Main hero content */}
-					<div className="border-l-[1.2px] border-t-[1.2px] border-border md:border-t-0 p-8 sm:p-12 md:p-16 lg:p-20 text-center">
-						<div className="max-w-4xl mx-auto">
-							{/* Badge */}
-							<div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 backdrop-blur-sm px-3 sm:px-4 py-2 mb-6 sm:mb-8">
-								<div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-								<span className="text-xs sm:text-sm text-muted-foreground">
-									Web analytics that don&apos;t suck
-								</span>
-							</div>
+	const [isHovered, setIsHovered] = useState(false);
+	const iframeRef = useRef<HTMLIFrameElement>(null);
 
-							{/* Main headline */}
-							<h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight mb-4 sm:mb-6">
-								<span className="text-foreground">Databuddy, analytics</span>
+	const handleFullscreen = () => {
+		if (iframeRef.current) {
+			if (iframeRef.current.requestFullscreen) {
+				iframeRef.current.requestFullscreen();
+			}
+		}
+	};
+	return (
+		<section className="relative overflow-hidden min-h-screen">
+			{/* Cool Grid Background */}
+			<div className="absolute inset-0 bg-background" />
+			<div className="absolute inset-0 bg-[linear-gradient(rgba(var(--primary),0.03)_2px,transparent_2px),linear-gradient(90deg,rgba(var(--primary),0.03)_2px,transparent_2px)] bg-[size:60px_60px]" />
+			<div className="absolute inset-0 bg-[linear-gradient(rgba(var(--border),0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(var(--border),0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
+
+			{/* Gradient Overlays */}
+			<div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
+			<div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(var(--primary),0.08)_0%,transparent_60%)]" />
+			<div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(var(--primary),0.06)_0%,transparent_60%)]" />
+
+			<div className="relative z-10 container mx-auto px-4 py-16">
+				<div className="flex flex-col items-center justify-center space-y-12">
+					{/* Text Content */}
+					<div className="text-center space-y-6 max-w-4xl mx-auto">
+						{/* Badge */}
+						<div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 backdrop-blur-sm px-4 py-2">
+							<div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+							<span className="text-sm text-muted-foreground font-medium">
+								GDPR Compliant • Cookie-Free • Real-time
+							</span>
+						</div>
+
+						{/* Main headline */}
+						<div className="space-y-4">
+							<h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight">
+								<span className="text-foreground">Privacy-first</span>
 								<br />
-								<span className="text-foreground">that <strong>don&apos;t suck</strong></span>
+								<span className="bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+									analytics for devs
+								</span>
 							</h1>
 
 							{/* Subheadline */}
-							<p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground mb-8 sm:mb-10 md:mb-12 max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
-								No cookies, no banners, no slow dashboards. Just the data you care about, tracked in a way that actually makes sense.
+							<p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+								Track users, not identities. Get fast, accurate insights with zero cookies and 100% GDPR compliance.
 							</p>
+						</div>
+					</div>
 
-							{/* Clean CTA buttons */}
-							<div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-12 sm:mb-16 px-4 sm:px-0">
-								<Link
-									href="https://app.databuddy.cc/register"
-									className="group relative inline-flex items-center justify-center w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold text-primary-foreground transition-all duration-300 bg-primary rounded-2xl hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background shadow-2xl hover:shadow-primary/10 transform hover:scale-105 hover:-translate-y-1"
-								>
-									<span className="flex items-center gap-2">
-										Get started
-										<ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-									</span>
-								</Link>
+					{/* Demo Section */}
+					<div className="w-full max-w-[90vw] mx-auto">
+						<div className="relative">
+							<div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-xl blur-xl opacity-30"></div>
+							<div
+								className="relative bg-background/80 backdrop-blur-sm border border-border rounded-lg p-2 shadow-2xl group cursor-pointer"
+								onMouseEnter={() => setIsHovered(true)}
+								onMouseLeave={() => setIsHovered(false)}
+								onClick={handleFullscreen}
+							>
+								<iframe
+									ref={iframeRef}
+									src="https://app.databuddy.cc/demo/OXmNQsViBT-FOS_wZCTHc"
+									className="w-full h-[500px] sm:h-[600px] lg:h-[700px] rounded border-0"
+									title="Databuddy Demo Dashboard"
+									loading="lazy"
+									allowFullScreen
+								/>
 
-								<Link
-									href="/demo"
-									className="group inline-flex items-center justify-center w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-medium text-muted-foreground transition-all duration-300 bg-muted/50 backdrop-blur-sm border border-border rounded-2xl hover:bg-muted hover:border-border/80 hover:text-foreground transform hover:scale-105"
-								>
-									<Play className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
-									View live demo
-								</Link>
-							</div>
-
-							{/* Key stats - theme aware */}
-							<div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-2xl mx-auto px-4 sm:px-0">
-								<div className="text-center group">
-									<div className="flex items-center justify-center gap-3 mb-2">
-										<div className="p-2 rounded-xl bg-primary/10 border border-primary/20 group-hover:bg-primary/20 transition-colors">
-											<Zap className="w-5 h-5 text-primary" />
-										</div>
-										<span className="text-2xl sm:text-3xl font-bold text-foreground">65x</span>
+								{/* Fullscreen Button & Overlay */}
+								<div className={`absolute inset-2 bg-black/20 dark:bg-black/40 rounded transition-opacity duration-300 flex items-center justify-center ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+									<div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg px-4 py-2 flex items-center gap-2 text-sm font-medium shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 transition-colors">
+										<Maximize2 className="h-4 w-4" />
+										Click to view fullscreen
 									</div>
-									<p className="text-xs sm:text-sm text-muted-foreground">Faster than GA4</p>
-								</div>
-								<div className="text-center group">
-									<div className="flex items-center justify-center gap-3 mb-2">
-										<div className="p-2 rounded-xl bg-primary/10 border border-primary/20 group-hover:bg-primary/20 transition-colors">
-											<Shield className="w-5 h-5 text-primary" />
-										</div>
-										<span className="text-2xl sm:text-3xl font-bold text-foreground">100%</span>
-									</div>
-									<p className="text-xs sm:text-sm text-muted-foreground">GDPR Compliant</p>
-								</div>
-								<div className="text-center group">
-									<div className="flex items-center justify-center gap-3 mb-2">
-										<div className="p-2 rounded-xl bg-primary/10 border border-primary/20 group-hover:bg-primary/20 transition-colors">
-											<Users className="w-5 h-5 text-primary" />
-										</div>
-										<span className="text-2xl sm:text-3xl font-bold text-foreground">500+</span>
-									</div>
-									<p className="text-xs sm:text-sm text-muted-foreground">Companies trust us</p>
 								</div>
 							</div>
 						</div>
 					</div>
 
-					{/* Trust indicators */}
-					<div className="border-l-[1.2px] border-t-[1.2px] border-border p-6 sm:p-8 md:p-10 bg-muted/20 backdrop-blur-sm">
-						<div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6">
-							<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 w-full md:w-auto">
-								<span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Trusted by developers at</span>
-								<div className="flex flex-wrap items-center gap-2 sm:gap-4 text-muted-foreground">
-									<a href="https://rivo.gg" className="text-xs sm:text-sm hover:text-foreground transition-colors" target="_blank" rel="noopener noreferrer">Rivo.gg</a>
-									<a href="https://better-auth.com" className="text-xs sm:text-sm hover:text-foreground transition-colors" target="_blank" rel="noopener noreferrer">Better-auth</a>
-									<a href="https://www.confinity.com" className="text-xs sm:text-sm hover:text-foreground transition-colors" target="_blank" rel="noopener noreferrer">Confinity</a>
-									<a href="https://useautumn.com" className="cursor-pointer text-xs sm:text-sm hover:text-foreground transition-colors" target="_blank" rel="noopener noreferrer">Autumn</a>
-									<span className="text-xs sm:text-sm text-muted-foreground">+496 more</span>
-								</div>
+					{/* CTA Button */}
+					<div className="flex justify-center">
+						<Link
+							href="https://app.databuddy.cc/register"
+							className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-primary-foreground transition-all duration-300 bg-primary rounded-xl hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background shadow-lg hover:shadow-primary/20 transform hover:scale-105"
+						>
+							<span className="flex items-center gap-2">
+								Start for Free
+								<ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+							</span>
+						</Link>
+					</div>
+
+					{/* Stats */}
+					<div className="flex flex-wrap gap-12 justify-center">
+						<div className="text-center">
+							<div className="text-3xl sm:text-4xl font-bold text-foreground">65x</div>
+							<div className="text-sm text-muted-foreground">Faster than GA4</div>
+						</div>
+						<div className="text-center">
+							<div className="text-3xl sm:text-4xl font-bold text-foreground">500+</div>
+							<div className="text-sm text-muted-foreground">Companies</div>
+						</div>
+						<div className="text-center">
+							<div className="text-3xl sm:text-4xl font-bold text-foreground">0</div>
+							<div className="text-sm text-muted-foreground">Cookies</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{/* Trust indicators */}
+			<div className="relative z-10 border-t border-border bg-muted/20 backdrop-blur-sm">
+				<div className="container mx-auto px-4 py-8">
+					<div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6">
+						<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 w-full md:w-auto">
+							<span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Trusted by developers at</span>
+							<div className="flex flex-wrap items-center gap-2 sm:gap-4 text-muted-foreground">
+								<a href="https://rivo.gg" className="text-xs sm:text-sm hover:text-foreground transition-colors" target="_blank" rel="noopener noreferrer">Rivo.gg</a>
+								<a href="https://better-auth.com" className="text-xs sm:text-sm hover:text-foreground transition-colors" target="_blank" rel="noopener noreferrer">Better-auth</a>
+								<a href="https://www.confinity.com" className="text-xs sm:text-sm hover:text-foreground transition-colors" target="_blank" rel="noopener noreferrer">Confinity</a>
+								<a href="https://useautumn.com" className="cursor-pointer text-xs sm:text-sm hover:text-foreground transition-colors" target="_blank" rel="noopener noreferrer">Autumn</a>
+								<span className="text-xs sm:text-sm text-muted-foreground">+496 more</span>
 							</div>
-							<div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs text-muted-foreground">
-								<span className="flex items-center gap-2 whitespace-nowrap">
-									<div className="w-1.5 h-1.5 bg-primary rounded-full" />
-									Free 30-day trial
-								</span>
-								<span className="flex items-center gap-2 whitespace-nowrap">
-									<div className="w-1.5 h-1.5 bg-primary rounded-full" />
-									No credit card required
-								</span>
-								<span className="flex items-center gap-2 whitespace-nowrap">
-									<div className="w-1.5 h-1.5 bg-primary rounded-full" />
-									Setup in 5 minutes
-								</span>
-							</div>
+						</div>
+						<div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs text-muted-foreground">
+							<span className="flex items-center gap-2 whitespace-nowrap">
+								<div className="w-1.5 h-1.5 bg-primary rounded-full" />
+								Free 30-day trial
+							</span>
+							<span className="flex items-center gap-2 whitespace-nowrap">
+								<div className="w-1.5 h-1.5 bg-primary rounded-full" />
+								No credit card required
+							</span>
+							<span className="flex items-center gap-2 whitespace-nowrap">
+								<div className="w-1.5 h-1.5 bg-primary rounded-full" />
+								Setup in 5 minutes
+							</span>
 						</div>
 					</div>
 				</div>
