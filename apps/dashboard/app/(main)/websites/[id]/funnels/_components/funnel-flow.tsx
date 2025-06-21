@@ -71,7 +71,7 @@ export function FunnelFlow({ steps, totalUsers, formatCompletionTime }: FunnelFl
                                     style={{ width: `${barWidth}%` }}
                                 />
                                 <div className="absolute inset-0 flex items-center justify-between px-3">
-                                    <span className="text-sm font-medium text-foreground">
+                                    <span className="text-sm font-medium text-white">
                                         {step.users.toLocaleString()} users
                                     </span>
                                     {!isFirstStep && (
