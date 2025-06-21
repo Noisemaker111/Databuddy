@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@databuddy/sdk": "workspace:*",
+    "@hello-pangea/dnd": "^18.0.1",
     "@mantine/dates": "^8.1.1",
     "@nivo/sankey": "^0.99.0",
     "@phosphor-icons/react": "^2.1.10",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,8 +11,10 @@ import {
     ChartBarIcon,
     PlusIcon,
     TrashIcon,
-    FunnelIcon
+    FunnelIcon,
+    DotsNineIcon
 } from "@phosphor-icons/react";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import type { Funnel, FunnelStep, FunnelFilter, AutocompleteData, CreateFunnelData } from "@/hooks/use-funnels";
 
 // Simple Autocomplete Component
@@ -95,6 +97,85 @@ const AutocompleteInput = ({ value, onValueChange, suggestions, placeholder, cla
                         </div>
                     ))}
                 </div>
+            )}
+        </div>
+    );
+};
+
+// Draggable Step Component
+const DraggableStep = ({
+    step,
+    index,
+    updateStep,
+    removeStep,
+    canRemove,
+    getStepSuggestions,
+    isDragging
+}: {
+    step: FunnelStep;
+    index: number;
+    updateStep: (index: number, field: keyof FunnelStep, value: string) => void;
+    removeStep: (index: number) => void;
+    canRemove: boolean;
+    getStepSuggestions: (stepType: string) => string[];
+    isDragging?: boolean;
+}) => {
+    return (
+        <div
+            className={`flex items-center gap-4 p-4 border rounded-xl transition-all duration-150 ${isDragging
+                ? 'opacity-60 scale-[0.98] shadow-xl bg-background/95 border-primary/30'
+                : 'hover:shadow-sm hover:border-border'
+                }`}
+        >
+            {/* Drag Handle */}
+            <div className="cursor-grab active:cursor-grabbing flex-shrink-0">
+                <DotsNineIcon size={16} className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
+            </div>
+
+            {/* Step Number */}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-2 border-primary/20 flex items-center justify-center text-sm font-semibold shadow-sm flex-shrink-0">
+                {index + 1}
+            </div>
+
+            {/* Step Fields */}
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Select
+                    value={step.type}
+                    onValueChange={(value) => updateStep(index, 'type', value)}
+                >
+                    <SelectTrigger className="rounded-lg border-border/50 focus:border-primary/50">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-lg">
+                        <SelectItem value="PAGE_VIEW">Page View</SelectItem>
+                        <SelectItem value="EVENT">Event</SelectItem>
+                    </SelectContent>
+                </Select>
+                <AutocompleteInput
+                    value={step.target || ''}
+                    onValueChange={(value) => updateStep(index, 'target', value)}
+                    suggestions={getStepSuggestions(step.type)}
+                    placeholder={step.type === 'PAGE_VIEW' ? '/path' : 'event_name'}
+                    className="rounded-lg border-border/50 focus:border-primary/50 focus:ring-primary/20"
+                />
+                <Input
+                    value={step.name}
+                    onChange={(e) => updateStep(index, 'name', e.target.value)}
+                    placeholder="Step name"
+                    className="rounded-lg border-border/50 focus:border-primary/50 focus:ring-primary/20"
+                />
+            </div>
+
+            {/* Remove Button */}
+            {canRemove && (
+                <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => removeStep(index)}
+                    className="rounded-lg h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0"
+                >
+                    <TrashIcon size={16} weight="duotone" className="h-4 w-4" />
+                </Button>
             )}
         </div>
     );
@@ -199,6 +280,25 @@ export function EditFunnelDialog({ isOpen, onClose, onSubmit, onCreate, funnel, 
             )
         }) : prev);
     };
+
+    const reorderSteps = useCallback((result: DropResult) => {
+        if (!result.destination || !formData) return;
+
+        const sourceIndex = result.source.index;
+        const destinationIndex = result.destination.index;
+
+        // No change needed
+        if (sourceIndex === destinationIndex) return;
+
+        const items = [...formData.steps];
+        const [reorderedItem] = items.splice(sourceIndex, 1);
+        items.splice(destinationIndex, 0, reorderedItem);
+
+        setFormData(prev => prev ? ({
+            ...prev,
+            steps: items
+        }) : prev);
+    }, [formData]);
 
     const addFilter = () => {
         if (!formData) return;
@@ -342,53 +442,47 @@ export function EditFunnelDialog({ isOpen, onClose, onSubmit, onCreate, funnel, 
                         <div className="flex items-center gap-2">
                             <ChartBarIcon size={16} weight="duotone" className="h-5 w-5 text-primary" />
                             <Label className="text-base font-semibold text-foreground">Funnel Steps</Label>
+                            <span className="text-xs text-muted-foreground">(drag to reorder)</span>
                         </div>
-                        <div className="space-y-4">
-                            {formData.steps.map((step, index) => (
-                                <div key={index} className="flex items-center gap-4 p-4 border rounded hover:shadow-sm transition-all duration-200">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-2 border-primary/20 flex items-center justify-center text-sm font-semibold shadow-sm">
-                                        {index + 1}
+                        <DragDropContext onDragEnd={reorderSteps}>
+                            <Droppable droppableId="funnel-steps">
+                                {(provided: any, snapshot: any) => (
+                                    <div
+                                        {...provided.droppableProps}
+                                        ref={provided.innerRef}
+                                        className={`space-y-4 transition-colors duration-150 ${snapshot.isDraggingOver ? 'bg-accent/10 rounded-lg p-1' : ''
+                                            }`}
+                                    >
+                                        {formData.steps.map((step, index) => (
+                                            <Draggable
+                                                key={`step-${index}`}
+                                                draggableId={`step-${index}`}
+                                                index={index}
+                                            >
+                                                {(provided: any, snapshot: any) => (
+                                                    <div
+                                                        ref={provided.innerRef}
+                                                        {...provided.draggableProps}
+                                                        {...provided.dragHandleProps}
+                                                    >
+                                                        <DraggableStep
+                                                            step={step}
+                                                            index={index}
+                                                            updateStep={updateStep}
+                                                            removeStep={removeStep}
+                                                            canRemove={formData.steps.length > 2}
+                                                            getStepSuggestions={getStepSuggestions}
+                                                            isDragging={snapshot.isDragging}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </Draggable>
+                                        ))}
+                                        {provided.placeholder}
                                     </div>
-                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <Select
-                                            value={step.type}
-                                            onValueChange={(value) => updateStep(index, 'type', value)}
-                                        >
-                                            <SelectTrigger className="rounded border-border/50 focus:border-primary/50">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded">
-                                                <SelectItem value="PAGE_VIEW">Page View</SelectItem>
-                                                <SelectItem value="EVENT">Event</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <AutocompleteInput
-                                            value={step.target || ''}
-                                            onValueChange={(value) => updateStep(index, 'target', value)}
-                                            suggestions={getStepSuggestions(step.type)}
-                                            placeholder={step.type === 'PAGE_VIEW' ? '/path' : 'event_name'}
-                                            className="rounded-lg border-border/50 focus:border-primary/50 focus:ring-primary/20"
-                                        />
-                                        <Input
-                                            value={step.name}
-                                            onChange={(e) => updateStep(index, 'name', e.target.value)}
-                                            placeholder="Step name"
-                                            className="rounded border-border/50 focus:border-primary/50 focus:ring-primary/20"
-                                        />
-                                    </div>
-                                    {formData.steps.length > 2 && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => removeStep(index)}
-                                            className="rounded h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
-                                        >
-                                            <TrashIcon size={16} weight="duotone" className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                                )}
+                            </Droppable>
+                        </DragDropContext>
                         <Button
                             type="button"
                             variant="outline"
