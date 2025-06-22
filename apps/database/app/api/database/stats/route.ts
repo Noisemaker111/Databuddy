@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { chQuery } from '@databuddy/db/clickhouse'
+import { chQuery } from '@databuddy/db'
 
 export async function GET() {
   try {

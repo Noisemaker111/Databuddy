@@ -57,6 +57,7 @@ export const websiteNavigation: NavigationSection[] = [
     title: "Early Access",
     items: [
       { name: "Assistant", icon: RobotIcon, href: "/assistant", highlight: true, alpha: true },
+      { name: "Revenue", icon: CurrencyDollarIcon, href: "/revenue", highlight: true, alpha: true },
     ],
   }
 ];

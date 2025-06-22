@@ -18,4 +18,21 @@ export const formatMetricNumber = (num: number | undefined | null): string => {
   return num.toString(); 
 };
 
+// Format currency values
+export const formatCurrency = (amount: number | undefined | null, currency: string = 'USD'): string => {
+  if (amount === undefined || amount === null || Number.isNaN(amount)) return "$0.00";
+  
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  }).format(amount);
+};
+
+// Format regular numbers with commas
+export const formatNumber = (num: number | undefined | null): string => {
+  if (num === undefined || num === null || Number.isNaN(num)) return "0";
+  
+  return new Intl.NumberFormat('en-US').format(num);
+};
+
 // You can add other shared formatting functions here in the future 

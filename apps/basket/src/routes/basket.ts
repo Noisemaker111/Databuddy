@@ -72,7 +72,6 @@ function detectBot(userAgent: string, request: Request): { isBot: boolean } {
   if (detectedBot) return { isBot: true };
 
   if (!userAgent) return { isBot: true };
-  if (!request.headers.get('accept-language')) return { isBot: true };
   if (!request.headers.get('accept')) return { isBot: true };
   if (ua.length < 10) return { isBot: true };
 

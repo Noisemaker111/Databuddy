@@ -778,4 +778,134 @@ revenueRouter.delete('/config', async (c: Context) => {
   }
 });
 
+// GET /revenue/analytics/website/:websiteId - Get website-specific revenue analytics
+revenueRouter.get('/analytics/website/:websiteId', async (c: Context) => {
+  const user = c.get('user');
+  const websiteId = c.req.param('websiteId');
+  const startDate = c.req.query('start_date');
+  const endDate = c.req.query('end_date');
+  const granularity = c.req.query('granularity') || 'daily';
+  const isLiveMode = c.req.query('live_mode') === 'true';
+
+  if (!user) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
+  if (!startDate || !endDate) {
+    return c.json({ success: false, error: "start_date and end_date are required" }, 400);
+  }
+
+  try {
+    // Verify user owns this website
+    const website = await db.query.websites.findFirst({
+      where: eq(websites.id, websiteId)
+    });
+
+    if (!website || website.userId !== user.id) {
+      return c.json({ success: false, error: "Website not found or unauthorized" }, 404);
+    }
+
+    const config = await getUserRevenueConfig(user.id);
+    if (!config) {
+      return c.json({ success: false, error: "Revenue configuration not found" }, 404);
+    }
+
+    const liveModeCondition = `AND livemode = ${isLiveMode ? 1 : 0}`;
+    const timeFormat = granularity === 'hourly' 
+      ? 'toDateTime(toStartOfHour(toDateTime(created)))' 
+      : 'toDate(toDateTime(created))';
+
+    // Execute all queries in parallel
+    const [summaryResult, trendsResult, transactionsResult] = await Promise.all([
+      // Summary query
+      (async () => {
+        const refundsQuery = `(SELECT COUNT(*) FROM analytics.stripe_refunds r
+           JOIN analytics.stripe_payment_intents pi ON r.payment_intent_id = pi.id
+           WHERE r.created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+           AND r.created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+           AND r.client_id = ${escapeSqlString(websiteId)}
+           AND pi.livemode = ${isLiveMode ? 1 : 0})`;
+
+        const sql = `
+          SELECT 
+            SUM(CASE WHEN status = 'succeeded' THEN amount ELSE 0 END) / 100 as total_revenue,
+            COUNT(DISTINCT CASE WHEN status = 'succeeded' THEN id END) as total_transactions,
+            AVG(CASE WHEN status = 'succeeded' THEN amount ELSE NULL END) / 100 as avg_order_value,
+                         ${refundsQuery} as total_refunds
+          FROM analytics.stripe_payment_intents 
+          WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+            AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+            AND client_id = ${escapeSqlString(websiteId)}
+            AND status = 'succeeded'
+            ${liveModeCondition}
+        `;
+
+        const result = await chQuery<any>(sql);
+        return result[0] || {
+          total_revenue: 0,
+          total_transactions: 0,
+          avg_order_value: 0,
+          total_refunds: 0,
+        };
+      })(),
+
+      // Trends query
+      (async () => {
+        const sql = `
+          SELECT 
+            ${timeFormat} as date,
+            SUM(amount) / 100 as revenue,
+            COUNT(DISTINCT id) as transactions
+          FROM analytics.stripe_payment_intents 
+          WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+            AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+            AND client_id = ${escapeSqlString(websiteId)}
+            AND status = 'succeeded'
+            ${liveModeCondition}
+          GROUP BY date 
+          ORDER BY date DESC 
+          LIMIT 100
+        `;
+
+        return await chQuery<any>(sql);
+      })(),
+
+      // Recent transactions query
+      (async () => {
+        const sql = `
+          SELECT 
+            id,
+            toDateTime(created) as created,
+            status,
+            currency,
+            amount / 100 as amount
+          FROM analytics.stripe_payment_intents 
+          WHERE created >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
+            AND created <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
+            AND client_id = ${escapeSqlString(websiteId)}
+            AND status = 'succeeded'
+            ${liveModeCondition}
+          ORDER BY created DESC 
+          LIMIT 50
+        `;
+
+        return await chQuery<any>(sql);
+      })(),
+    ]);
+
+    return c.json({
+      success: true,
+      summary: summaryResult,
+      trends: trendsResult,
+      recent_transactions: transactionsResult,
+    });
+  } catch (error) {
+    logger.error('[Revenue API] Error fetching website revenue analytics:', { error, websiteId });
+    return c.json({ 
+      success: false, 
+      error: "Failed to fetch website revenue analytics" 
+    }, 500);
+  }
+});
+
 export default revenueRouter; 
