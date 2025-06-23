@@ -15,10 +15,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
+import { useRouter } from "next/navigation";
 
 export function UserMenu() {
   const { data: session, isPending: isSessionPending } = useSession();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const router = useRouter();
 
   const getUserInitials = () => {
     if (!session?.user?.name) return "U";
@@ -36,9 +38,10 @@ export function UserMenu() {
       fetchOptions: {
         onSuccess: () => {
           toast.success("Logged out successfully");
-          redirect("/login");
+          router.push("/login");
         },
         onError: (error) => {
+          router.push("/login");
           toast.error(error.error.message || "Failed to log out");
         },
       },
