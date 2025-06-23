@@ -11,6 +11,7 @@ import funnelRouter from './routes/v1/funnels';
 import revenueRouter from './routes/v1/revenue';
 import redditRouter from './routes/v1/reddit';
 import { logger } from './lib/logger';
+import { logger as discordLogger } from './lib/discord-webhook';
 import { logger as HonoLogger } from "hono/logger"
 import { sentry } from '@hono/sentry'
 
@@ -63,6 +64,18 @@ app.on(['POST', 'GET', 'OPTIONS'], '/api/auth/*', async (c) => {
     return response;
   } catch (error: any) {
     logger.error('[Auth Handler Error]:', error);
+    
+    // Discord notification for critical auth errors
+    await discordLogger.error(
+      'Authentication Service Error',
+      `Critical error in authentication handler: ${error?.message || 'Unknown error'}`,
+      {
+        errorName: error?.name || 'Unknown',
+        errorMessage: error?.message || 'Unknown error',
+        endpoint: 'auth'
+      }
+    );
+    
     return new Response(JSON.stringify({ 
       error: 'Authentication error', 
       message: error?.message || 'An error occurred in the authentication service' 
@@ -88,12 +101,24 @@ app.get('/health', (c) => c.json({ status: 'ok', version: '1.0.0' }));
 app.get('/', (c) => c.json({ status: 'ok', version: '1.0.0' }));
 
 // Error handling
-app.onError((err) => {
+app.onError(async (err) => {
   logger.error({
     message: `[API Error]: ${err.message}`,
     stack: err.stack,
     name: err.name
   });
+
+  // Discord notification for critical API errors
+  await discordLogger.error(
+    'API Error',
+    `Unhandled error in API: ${err.message}`,
+    {
+      errorName: err.name,
+      errorMessage: err.message,
+      stackTrace: err.stack?.slice(0, 500) || 'No stack trace'
+    }
+  );
+  
   return new Response(JSON.stringify({ 
     error: err.message || 'Internal Server Error',
     status: 500
