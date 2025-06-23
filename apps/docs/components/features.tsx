@@ -81,10 +81,10 @@ const whatYouGet = [
 	},
 	{
 		id: 8,
-		label: "Open Source",
-		title: "Open source, <strong>free forever</strong>.",
+		label: "100% Transparency",
+		title: "Fully transparent, <strong>no hidden fees or data games</strong>.",
 		description:
-			"Databuddy is open source, free forever to self-host. No hidden fees, no paywall, no BS, cloud version is only pay for what you use",
+			"Clear pricing, open about what data we collect, and honest about our limitations. No vendor lock-in, export your data anytime, and only pay for what you actually use.",
 		icon: Code,
 	},
 	{
