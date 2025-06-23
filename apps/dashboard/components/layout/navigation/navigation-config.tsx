@@ -12,7 +12,8 @@ import {
   GitBranchIcon,
   FunnelIcon,
   CurrencyDollarIcon,
-  LinkIcon
+  LinkIcon,
+  TargetIcon
 } from "@phosphor-icons/react";
 import type { NavigationSection } from "./types";
 
@@ -48,6 +49,7 @@ export const websiteNavigation: NavigationSection[] = [
       { name: "Sessions", icon: ClockIcon, href: "/sessions", highlight: true },
       { name: "Profiles", icon: UsersIcon, href: "/profiles", highlight: true },
       { name: "Funnels", icon: FunnelIcon, href: "/funnels", highlight: true },
+      { name: "Goals", icon: TargetIcon, href: "/goals", highlight: true },
       { name: "Journeys", icon: GitBranchIcon, href: "/journeys", highlight: true },
       { name: "Errors", icon: BugIcon, href: "/errors", highlight: true },
       { name: "Map", icon: MapPinIcon, href: "/map", highlight: true },
