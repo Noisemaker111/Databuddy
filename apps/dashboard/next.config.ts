@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://basket.databuddy.cc https://api.databuddy.cc https://app.databuddy.cc http://localhost:4000",
+              "connect-src 'self' https://basket.databuddy.cc https://api.databuddy.cc https://app.databuddy.cc http://localhost:4000 http://localhost:4001 http://localhost:3002 http://localhost:3003 http://localhost:3002",
               "frame-src 'self' https:",
               "frame-ancestors *",
               "base-uri 'self'",

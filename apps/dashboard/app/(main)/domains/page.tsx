@@ -83,7 +83,7 @@ export default function DomainsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:px-4 sm:py-4 gap-3 sm:gap-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 animate-pulse">
+              <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
                 <ShieldIcon size={20} weight="duotone" className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -145,7 +145,8 @@ export default function DomainsPage() {
                       <SparkleIcon size={12} weight="fill" className="h-3 w-3 text-primary" />
                     </div>
                     <div className="text-left">
-                      <p className="font-semibold text-xs mb-1">💡 Next steps</p>
+                      {/* Removed lightbulb icon */}
+                      <p className="font-semibold text-xs mb-1">Next steps</p>
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         After adding, you'll need to verify ownership by adding a DNS TXT record.
                       </p>

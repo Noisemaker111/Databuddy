@@ -1,0 +1,4 @@
+Removed background gradients
+Changed loading screen
+Removed pulsating icon next to page header
+Removed cards animating moving up on hover

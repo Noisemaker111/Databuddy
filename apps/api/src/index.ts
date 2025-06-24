@@ -14,6 +14,7 @@ import { logger } from './lib/logger';
 import { logger as discordLogger } from './lib/discord-webhook';
 import { logger as HonoLogger } from "hono/logger"
 import { sentry } from '@hono/sentry'
+import './polyfills/compression'
 
 type AppVariables = {
   Variables: {
@@ -35,7 +36,6 @@ app.use('*', cors({
     const allowedOrigins = [
       'https://dashboard.databuddy.cc',
       'https://app.databuddy.cc',
-      'http://localhost:3000',
       'http://localhost:4000',
       'https://api.databuddy.cc',
       'https://databuddy.cc',

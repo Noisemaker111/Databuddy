@@ -129,11 +129,11 @@ export default function WebsitesPage() {
   return (
     <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Enhanced header */}
-      <div className="border-b bg-gradient-to-r from-background via-background to-muted/20">
+      <div className="border-b">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:px-4 sm:py-4 gap-3 sm:gap-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 animate-pulse">
+              <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
                 <TrendUpIcon size={24} weight="fill" className="h-5 w-5 text-primary" />
               </div>
               <div>

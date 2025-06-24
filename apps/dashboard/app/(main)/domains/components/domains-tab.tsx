@@ -72,8 +72,9 @@ export function DomainsTab() {
     const isRetrying = actions.retryingDomains[domain.id];
 
     return (
-      <Card className="group hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 border hover:border-primary/60 hover:-translate-y-1 bg-gradient-to-br from-background to-muted/20 h-full flex flex-col">
-        <CardContent className="p-4 flex-grow flex flex-col">
+      <Card className="group hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 border hover:border-primary/60 hover:-translate-y-1 h-full bg-card flex flex-col">
+        {/* Removed pt-4 */}
+        <CardContent className="pb-4 px-4 flex-grow flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-3 min-w-0 flex-1">
               {canExpand && (

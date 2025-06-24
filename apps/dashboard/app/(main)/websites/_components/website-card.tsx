@@ -96,7 +96,7 @@ export const WebsiteCard = memo(({ website }: WebsiteCardProps) => {
             data-website-name={website.name}
             data-section="website-grid"
         >
-            <Card className="h-full flex flex-col transition-all duration-300 ease-in-out group-hover:border-primary/60 group-hover:shadow-xl group-hover:shadow-primary/5 group-hover:-translate-y-1 bg-gradient-to-br from-background to-muted/20">
+            <Card className="h-full flex flex-col transition-all duration-300 ease-in-out group-hover:border-primary/60 group-hover:shadow-xl group-hover:shadow-primary/5 bg-background">
                 <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
