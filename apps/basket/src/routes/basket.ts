@@ -4,15 +4,15 @@ import { createHash, randomUUID } from 'node:crypto'
 import { getGeo, extractIpFromRequest } from '../utils/ip-geo'
 import { parseUserAgent } from '../utils/user-agent'
 import { getWebsiteById, isValidOrigin } from '../hooks/auth'
-import { 
-  validatePayloadSize, 
-  sanitizeString, 
+import {
+  validatePayloadSize,
+  sanitizeString,
   validateSessionId,
   validatePerformanceMetric,
-  VALIDATION_LIMITS 
+  VALIDATION_LIMITS
 } from '../utils/validation'
 import { getRedisCache } from '@databuddy/redis'
-import { bots } from '@/packages/shared'
+import { bots } from '@databuddy/shared'
 import crypto from 'node:crypto'
 
 const redis = getRedisCache()
@@ -37,97 +37,97 @@ async function validateRequest(body: any, query: any, request: Request) {
     await logBlockedTraffic(request, body, query, 'payload_too_large', 'Validation Error')
     return { error: { status: 'error', message: 'Payload too large' } }
   }
-  
+
   // Check client ID
   const clientId = sanitizeString(query.client_id, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH)
   if (!clientId) {
     await logBlockedTraffic(request, body, query, 'missing_client_id', 'Validation Error')
     return { error: { status: 'error', message: 'Missing client ID' } }
   }
-  
+
   // Check website validity
   const website = await getWebsiteById(clientId)
   if (!website || website.status !== 'ACTIVE') {
     await logBlockedTraffic(request, body, query, 'invalid_client_id', 'Validation Error', undefined, clientId)
     return { error: { status: 'error', message: 'Invalid or inactive client ID' } }
   }
-  
+
   // Check origin authorization
   const origin = request.headers.get('origin')
   if (origin && !isValidOrigin(origin, website.domain)) {
     await logBlockedTraffic(request, body, query, 'origin_not_authorized', 'Security Check', undefined, clientId)
     return { error: { status: 'error', message: 'Origin not authorized' } }
   }
-  
+
   // Check for bots
   const userAgent = sanitizeString(request.headers.get('user-agent'), VALIDATION_LIMITS.STRING_MAX_LENGTH) || ''
   const botCheck = detectBot(userAgent, request)
   if (botCheck.isBot) {
     await logBlockedTraffic(
-      request, 
-      body, 
-      query, 
-      botCheck.reason || 'unknown_bot', 
+      request,
+      body,
+      query,
+      botCheck.reason || 'unknown_bot',
       botCheck.category || 'Bot Detection',
       botCheck.botName,
       clientId
     )
     return { error: { status: 'ignored' } }
   }
-  
+
   const ip = extractIpFromRequest(request)
-  
-  return { 
-    success: true, 
-    clientId, 
-    userAgent, 
-    ip 
+
+  return {
+    success: true,
+    clientId,
+    userAgent,
+    ip
   }
 }
 
-function detectBot(userAgent: string, request: Request): { 
-  isBot: boolean; 
-  reason?: string; 
-  category?: string; 
-  botName?: string 
+function detectBot(userAgent: string, request: Request): {
+  isBot: boolean;
+  reason?: string;
+  category?: string;
+  botName?: string
 } {
   const ua = userAgent?.toLowerCase() || '';
-  
+
   // Check for known bots
   const detectedBot = bots.find(bot => ua.includes(bot.regex.toLowerCase()));
   if (detectedBot) {
-    return { 
-      isBot: true, 
-      reason: 'known_bot_user_agent', 
+    return {
+      isBot: true,
+      reason: 'known_bot_user_agent',
       category: 'Known Bot',
-      botName: detectedBot.name 
+      botName: detectedBot.name
     };
   }
 
   // Missing user agent
   if (!userAgent) {
-    return { 
-      isBot: true, 
-      reason: 'missing_user_agent', 
-      category: 'Missing Headers' 
+    return {
+      isBot: true,
+      reason: 'missing_user_agent',
+      category: 'Missing Headers'
     };
   }
 
   // Missing accept header
   if (!request.headers.get('accept')) {
-    return { 
-      isBot: true, 
-      reason: 'missing_accept_header', 
-      category: 'Missing Headers' 
+    return {
+      isBot: true,
+      reason: 'missing_accept_header',
+      category: 'Missing Headers'
     };
   }
 
   // User agent too short
   if (ua.length < 10) {
-    return { 
-      isBot: true, 
-      reason: 'user_agent_too_short', 
-      category: 'Suspicious Pattern' 
+    return {
+      isBot: true,
+      reason: 'user_agent_too_short',
+      category: 'Suspicious Pattern'
     };
   }
 
@@ -203,7 +203,7 @@ async function insertTrackEvent(trackData: any, clientId: string, userAgent: str
   const { anonymizedIP, country, region } = await getGeo(ip)
   const { browserName, browserVersion, osName, osVersion, deviceType, deviceBrand, deviceModel } = parseUserAgent(userAgent)
   const now = new Date().getTime()
-  
+
   const trackEvent: AnalyticsEvent = {
     id: randomUUID(),
     client_id: clientId,
@@ -215,12 +215,12 @@ async function insertTrackEvent(trackData: any, clientId: string, userAgent: str
     event_id: eventId,
     session_start_time: typeof trackData.sessionStartTime === 'number' ? trackData.sessionStartTime : now,
     timestamp: typeof trackData.timestamp === 'number' ? trackData.timestamp : now,
-    
+
     referrer: sanitizeString(trackData.referrer, VALIDATION_LIMITS.STRING_MAX_LENGTH),
     url: sanitizeString(trackData.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
     path: sanitizeString(trackData.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
     title: sanitizeString(trackData.title, VALIDATION_LIMITS.STRING_MAX_LENGTH),
-    
+
     ip: anonymizedIP || null,
     user_agent: sanitizeString(userAgent, VALIDATION_LIMITS.STRING_MAX_LENGTH) || null,
     browser_name: browserName || null,
@@ -233,16 +233,16 @@ async function insertTrackEvent(trackData: any, clientId: string, userAgent: str
     country: country || null,
     region: region || null,
     city: null,
-    
+
     screen_resolution: trackData.screen_resolution,
     viewport_size: trackData.viewport_size,
     language: trackData.language,
     timezone: trackData.timezone,
-    
+
     connection_type: trackData.connection_type,
     rtt: trackData.rtt,
     downlink: trackData.downlink,
-    
+
     time_on_page: trackData.time_on_page,
     scroll_depth: trackData.scroll_depth,
     interaction_count: trackData.interaction_count,
@@ -251,13 +251,13 @@ async function insertTrackEvent(trackData: any, clientId: string, userAgent: str
     is_bounce: trackData.is_bounce || 0,
     has_exit_intent: trackData.has_exit_intent,
     page_size: trackData.page_size,
-    
+
     utm_source: trackData.utm_source,
     utm_medium: trackData.utm_medium,
     utm_campaign: trackData.utm_campaign,
     utm_term: trackData.utm_term,
     utm_content: trackData.utm_content,
-    
+
     load_time: validatePerformanceMetric(trackData.load_time),
     dom_ready_time: validatePerformanceMetric(trackData.dom_ready_time),
     dom_interactive: validatePerformanceMetric(trackData.dom_interactive),
@@ -267,24 +267,24 @@ async function insertTrackEvent(trackData: any, clientId: string, userAgent: str
     render_time: validatePerformanceMetric(trackData.render_time),
     redirect_time: validatePerformanceMetric(trackData.redirect_time),
     domain_lookup_time: validatePerformanceMetric(trackData.domain_lookup_time),
-    
+
     fcp: validatePerformanceMetric(trackData.fcp),
     lcp: validatePerformanceMetric(trackData.lcp),
     cls: validatePerformanceMetric(trackData.cls),
     fid: validatePerformanceMetric(trackData.fid),
     inp: validatePerformanceMetric(trackData.inp),
-    
+
     href: trackData.href,
     text: trackData.text,
     value: trackData.value,
-    
+
     error_message: undefined,
     error_filename: undefined,
     error_lineno: undefined,
     error_colno: undefined,
     error_stack: undefined,
     error_type: undefined,
-    
+
     properties: '{}',
     created_at: now
   }
@@ -300,7 +300,7 @@ async function insertTrackEvent(trackData: any, clientId: string, userAgent: str
 async function checkDuplicate(eventId: string, eventType: string): Promise<boolean> {
   const key = `dedup:${eventType}:${eventId}`
   if (await redis.exists(key)) return true
-  
+
   const ttl = eventId.startsWith('exit_') ? 172800 : 86400
   await redis.setex(key, ttl, '1')
   return false
@@ -310,36 +310,36 @@ async function logBlockedTraffic(request: Request, body: any, query: any, blockR
   try {
     const ip = extractIpFromRequest(request)
     const userAgent = sanitizeString(request.headers.get('user-agent'), VALIDATION_LIMITS.STRING_MAX_LENGTH) || ''
-    
+
     // Try to get basic geo and user agent info even for blocked requests
     const { anonymizedIP, country, region } = await getGeo(ip)
     const { browserName, browserVersion, osName, osVersion, deviceType } = parseUserAgent(userAgent)
-    
+
     const now = new Date().getTime()
-    
+
     const blockedEvent: BlockedTraffic = {
       id: randomUUID(),
       client_id: clientId || null,
       timestamp: now,
-      
+
       // Request details
       path: sanitizeString(body?.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
       url: sanitizeString(body?.url || body?.href, VALIDATION_LIMITS.STRING_MAX_LENGTH),
       referrer: sanitizeString(body?.referrer || request.headers.get('referer'), VALIDATION_LIMITS.STRING_MAX_LENGTH),
       method: 'POST',
       origin: sanitizeString(request.headers.get('origin'), VALIDATION_LIMITS.STRING_MAX_LENGTH),
-      
+
       // Client information
       ip: anonymizedIP || ip,
       user_agent: userAgent || null,
       accept_header: sanitizeString(request.headers.get('accept'), VALIDATION_LIMITS.STRING_MAX_LENGTH),
       language: sanitizeString(request.headers.get('accept-language'), VALIDATION_LIMITS.STRING_MAX_LENGTH),
-      
+
       // Blocking details
       block_reason: blockReason,
       block_category: blockCategory,
       bot_name: botName || null,
-      
+
       // Enriched data (when possible)
       country: country || null,
       region: region || null,
@@ -348,10 +348,10 @@ async function logBlockedTraffic(request: Request, body: any, query: any, blockR
       os_name: osName || null,
       os_version: osVersion || null,
       device_type: deviceType || null,
-      
+
       // Payload size for size-related blocks
       payload_size: blockReason === 'payload_too_large' ? JSON.stringify(body || {}).length : null,
-      
+
       created_at: now
     }
 
@@ -370,26 +370,26 @@ const app = new Elysia()
   .post('/', async ({ body, query, request }: { body: any, query: any, request: Request }) => {
     const validation = await validateRequest(body, query, request)
     if (!validation.success) return validation.error
-    
+
     const { clientId, userAgent, ip } = validation
-    
+
     const salt = await getDailySalt()
     if (body.anonymous_id) {
       body.anonymous_id = saltAnonymousId(body.anonymous_id, salt)
     }
 
     const eventType = body.type || 'track'
-    
+
     if (eventType === 'track') {
       await insertTrackEvent(body, clientId, userAgent, ip)
       return { status: 'success', type: 'track' }
     }
-    
+
     if (eventType === 'error') {
       await insertError(body, clientId)
       return { status: 'success', type: 'error' }
     }
-    
+
     if (eventType === 'web_vitals') {
       await insertWebVitals(body, clientId)
       return { status: 'success', type: 'web_vitals' }
@@ -401,27 +401,27 @@ const app = new Elysia()
     if (!Array.isArray(body)) {
       return { status: 'error', message: 'Batch endpoint expects array of events' }
     }
-    
+
     if (body.length > VALIDATION_LIMITS.BATCH_MAX_SIZE) {
       return { status: 'error', message: 'Batch too large' }
     }
-    
+
     const validation = await validateRequest(body, query, request)
     if (!validation.success) return { ...validation.error, batch: true }
-    
+
     const { clientId, userAgent, ip } = validation
-    
+
     const salt = await getDailySalt()
     for (const event of body) {
       if (event.anonymous_id) {
         event.anonymous_id = saltAnonymousId(event.anonymous_id, salt)
       }
     }
-    
+
     const results = []
     for (const event of body) {
       const eventType = event.type || 'track'
-      
+
       try {
         if (eventType === 'track') {
           await insertTrackEvent(event, clientId, userAgent, ip)
@@ -439,7 +439,7 @@ const app = new Elysia()
         results.push({ status: 'error', message: 'Processing failed', eventType, error: String(error) })
       }
     }
-    
+
     return { status: 'success', batch: true, processed: results.length, results }
   })
 
