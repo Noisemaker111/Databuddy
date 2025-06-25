@@ -157,7 +157,7 @@ export const auth = betterAuth({
                 member,
             },
             sendInvitationEmail: async ({ email, inviter, organization, invitation }) => {
-                const invitationLink = `${process.env.NEXT_PUBLIC_APP_URL}/invitations/${invitation.id}`;
+                const invitationLink = `${process.env.BETTER_AUTH_URL}/invitations/${invitation.id}`;
                 const resend = new Resend(process.env.RESEND_API_KEY as string);
                 await resend.emails.send({
                     from: 'noreply@databuddy.cc',
