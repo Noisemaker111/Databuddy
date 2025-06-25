@@ -229,6 +229,7 @@ domainsRouter.get('/project/:projectId', async (c) => {
 domainsRouter.post('/', async (c) => {
   const user = c.get('user');
   const rawData = await c.req.json();
+  const organizationId = c.req.query('organizationId');
 
   if (!user || !user.id) {
     return c.json({ success: false, error: 'Unauthorized' }, 401);
@@ -243,7 +244,7 @@ domainsRouter.post('/', async (c) => {
     }
 
     const data = validationResult.data;
-    logger.info(`[Domain API] Creating domain: ${data.name}`);
+    logger.info(`[Domain API] Creating domain: ${data.name}`, { organizationId });
 
     // Check if domain already exists
     const existingDomain = await db.query.domains.findFirst({
@@ -265,6 +266,7 @@ domainsRouter.post('/', async (c) => {
       name: data.name,
       verificationToken,
       verificationStatus: "VERIFIED",
+      organizationId: organizationId || null,
       ...ownerData
     }).returning();
 

@@ -2,78 +2,39 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@databuddy/auth/client";
 import { toast } from "sonner";
 
-// Types
-export interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  logo?: string;
-  metadata?: Record<string, any>;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface OrganizationMember {
-  id: string;
-  userId: string;
-  organizationId: string;
-  role: string;
-  invitedBy?: string;
-  createdAt: Date;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    image?: string;
-  };
-}
-
-export interface OrganizationInvitation {
-  id: string;
-  organizationId: string;
-  email: string;
-  role: string;
-  inviterId: string;
-  status: "pending" | "accepted" | "rejected";
-  expiresAt: Date;
-  createdAt: Date;
-}
-
-export interface CreateOrganizationData {
+interface CreateOrganizationData {
   name: string;
   slug?: string;
   logo?: string;
   metadata?: Record<string, any>;
 }
 
-export interface UpdateOrganizationData {
+interface UpdateOrganizationData {
   name?: string;
   slug?: string;
   logo?: string;
   metadata?: Record<string, any>;
 }
 
-export interface InviteMemberData {
+interface InviteMemberData {
   email: string;
-  role: "owner" | "admin" | "member" | ("owner" | "admin" | "member")[];
+  role: "owner" | "admin" | "member";
   organizationId?: string;
   resend?: boolean;
 }
 
-export interface UpdateMemberData {
+interface UpdateMemberData {
   memberId: string;
-  role: "owner" | "admin" | "member" | ("owner" | "admin" | "member")[];
+  role: "owner" | "admin" | "member";
   organizationId?: string;
 }
 
-// Query keys
 const QUERY_KEYS = {
   organizationMembers: (orgId: string) => ["organizations", orgId, "members"] as const,
   organizationInvitations: (orgId: string) => ["organizations", orgId, "invitations"] as const,
   userInvitations: ["organizations", "invitations", "user"] as const,
 } as const;
 
-// Helper function for consistent mutation handling
 const createMutation = <TData, TVariables>(
   mutationFn: (variables: TVariables) => Promise<TData>,
   successMessage: string,

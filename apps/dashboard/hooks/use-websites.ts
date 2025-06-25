@@ -35,15 +35,6 @@ async function apiRequest<T>(
 }
 
 const websiteApi = {
-  getAll: async (organizationId?: string): Promise<Website[]> => {
-    const endpoint = organizationId
-      ? `/websites?organizationId=${organizationId}`
-      : '/websites';
-    const result = await apiRequest<Website[]>(endpoint);
-    if (result.error) throw new Error(result.error);
-    return result.data || [];
-  },
-
   getById: async (id: string): Promise<Website | null> => {
     const result = await apiRequest<Website>(`/websites/${id}`);
     if (result.error) throw new Error(result.error);
@@ -54,16 +45,6 @@ const websiteApi = {
     const result = await apiRequest<Website[]>(`/websites/project/${projectId}`);
     if (result.error) throw new Error(result.error);
     return result.data || [];
-  },
-
-  create: async (data: CreateWebsiteData): Promise<Website> => {
-    const result = await apiRequest<Website>('/websites', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    if (result.error) throw new Error(result.error);
-    if (!result.data) throw new Error('No data returned from create website');
-    return result.data;
   },
 
   update: async (id: string, name: string): Promise<Website> => {
@@ -98,10 +79,8 @@ export const websiteKeys = {
 // Helper hook for getting a single website
 export function useWebsite(id: string) {
   return useQuery({
-    queryKey: websiteKeys.detail(id),
-    queryFn: async () => {
-      return await websiteApi.getById(id);
-    },
+    queryKey: ['websites', id],
+    queryFn: () => websiteApi.getById(id),
     enabled: !!id,
     staleTime: 30000,
     refetchOnWindowFocus: false,
@@ -111,10 +90,8 @@ export function useWebsite(id: string) {
 // Helper hook for getting project websites
 export function useProjectWebsites(projectId: string) {
   return useQuery({
-    queryKey: [...websiteKeys.lists(), 'project', projectId],
-    queryFn: async () => {
-      return await websiteApi.getByProject(projectId);
-    },
+    queryKey: ['websites', 'project', projectId],
+    queryFn: () => websiteApi.getByProject(projectId),
     enabled: !!projectId,
     staleTime: 30000,
     refetchOnWindowFocus: false,
@@ -126,23 +103,17 @@ export function useWebsites() {
   const { data: activeOrganization } = authClient.useActiveOrganization();
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: [...websiteKeys.lists(), activeOrganization?.id || 'personal'],
+    queryKey: ['websites', activeOrganization?.id || 'personal'],
     queryFn: async () => {
-      try {
-        // Direct API call with organization context
-        const endpoint = activeOrganization?.id
-          ? `/websites?organizationId=${activeOrganization.id}`
-          : '/websites';
+      const endpoint = activeOrganization?.id
+        ? `/websites?organizationId=${activeOrganization.id}`
+        : '/websites';
 
-        const result = await apiRequest<Website[]>(endpoint);
-        if (result.error) throw new Error(result.error);
-        return result.data || [];
-      } catch (error) {
-        console.error('Error fetching websites:', error);
-        throw error;
-      }
+      const result = await apiRequest<Website[]>(endpoint);
+      if (result.error) throw new Error(result.error);
+      return result.data || [];
     },
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
     refetchOnWindowFocus: false,
   });
 
@@ -152,60 +123,49 @@ export function useWebsites() {
     }
   }, [isError]);
 
-  const createMutation = useMutation<
-    Website,
-    Error,
-    CreateWebsiteData
-  >({
+  const createMutation = useMutation<Website, Error, CreateWebsiteData>({
     mutationFn: async (data: CreateWebsiteData) => {
-      return await websiteApi.create(data);
-    },
-    onMutate: () => {
+      const endpoint = activeOrganization?.id
+        ? `/websites?organizationId=${activeOrganization.id}`
+        : '/websites';
+
+      const result = await apiRequest<Website>(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      if (result.error) throw new Error(result.error);
+      if (!result.data) throw new Error('No data returned from create website');
+      return result.data;
     },
     onSuccess: () => {
       toast.success("Website created successfully");
-      queryClient.invalidateQueries({ queryKey: websiteKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['websites'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create website');
     },
-    onSettled: () => {
-    }
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      return await websiteApi.update(id, name);
-    },
-    onMutate: () => {
-    },
+    mutationFn: ({ id, name }: { id: string; name: string }) => websiteApi.update(id, name),
     onSuccess: () => {
       toast.success("Website updated successfully");
-      queryClient.invalidateQueries({ queryKey: websiteKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['websites'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update website');
     },
-    onSettled: () => {
-    }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const result = await websiteApi.delete(id);
-      return { data: result, id };
-    },
-    onMutate: () => {
-    },
-    onSuccess: ({ id }) => { // Destructure id from the mutation result
+    mutationFn: websiteApi.delete,
+    onSuccess: () => {
       toast.success("Website deleted successfully");
-      queryClient.invalidateQueries({ queryKey: websiteKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['websites'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete website');
     },
-    onSettled: () => {
-    }
   });
 
   return {

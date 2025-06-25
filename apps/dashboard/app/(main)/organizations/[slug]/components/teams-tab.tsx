@@ -47,11 +47,35 @@ interface TeamsTabProps {
     organization: any;
 }
 
+interface MemberToRemove {
+    id: string;
+    name: string;
+}
+
+interface InvitationToCancel {
+    id: string;
+    email: string;
+}
+
+const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; value: number }) => (
+    <div className="p-4 rounded border border-border/50 bg-muted/30">
+        <div className="flex items-center gap-3">
+            <div className="p-2 rounded bg-primary/10 border border-primary/20">
+                <Icon size={16} weight="duotone" className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+                <p className="text-sm text-muted-foreground">{label}</p>
+                <p className="text-xl font-semibold">{value}</p>
+            </div>
+        </div>
+    </div>
+);
+
 export function TeamsTab({ organization }: TeamsTabProps) {
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState<"admin" | "member">("member");
-    const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
-    const [invitationToCancel, setInvitationToCancel] = useState<{ id: string; email: string } | null>(null);
+    const [memberToRemove, setMemberToRemove] = useState<MemberToRemove | null>(null);
+    const [invitationToCancel, setInvitationToCancel] = useState<InvitationToCancel | null>(null);
     const [showInviteDialog, setShowInviteDialog] = useState(false);
 
     const {
@@ -68,6 +92,9 @@ export function TeamsTab({ organization }: TeamsTabProps) {
         isLoading: isLoadingInvitations,
         cancelInvitation
     } = useOrganizationInvitations(organization.id);
+
+    const activeInvitations = invitations?.filter(inv => inv.status === "pending") || [];
+    const totalMembers = (members?.length || 0) + activeInvitations.length;
 
     const handleInviteMember = async () => {
         if (!inviteEmail.trim()) return;
@@ -119,61 +146,21 @@ export function TeamsTab({ organization }: TeamsTabProps) {
         );
     }
 
-    // Only show pending invitations
-    const activeInvitations = invitations?.filter(inv => inv.status === "pending") || [];
-    const totalMembers = (members?.length || 0) + activeInvitations.length;
-
     return (
         <div className="space-y-8">
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded border border-border/50 bg-muted/30">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded bg-primary/10 border border-primary/20">
-                            <UsersIcon size={16} weight="duotone" className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">Active Members</p>
-                            <p className="text-xl font-semibold">{members?.length || 0}</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="p-4 rounded border border-border/50 bg-muted/30">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded bg-primary/10 border border-primary/20">
-                            <EnvelopeIcon size={16} weight="duotone" className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">Pending Invites</p>
-                            <p className="text-xl font-semibold">{activeInvitations.length}</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="p-4 rounded border border-border/50 bg-muted/30">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded bg-primary/10 border border-primary/20">
-                            <CrownIcon size={16} weight="duotone" className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">Total Team Size</p>
-                            <p className="text-xl font-semibold">{totalMembers}</p>
-                        </div>
-                    </div>
-                </div>
+                <StatCard icon={UsersIcon} label="Active Members" value={members?.length || 0} />
+                <StatCard icon={EnvelopeIcon} label="Pending Invites" value={activeInvitations.length} />
+                <StatCard icon={CrownIcon} label="Total Team Size" value={totalMembers} />
             </div>
 
-            {/* Invite Button */}
             <div className="flex justify-end">
-                <Button
-                    onClick={() => setShowInviteDialog(true)}
-                    className="rounded"
-                >
+                <Button onClick={() => setShowInviteDialog(true)} className="rounded">
                     <PlusIcon size={16} className="h-4 w-4 mr-2" />
                     Invite Team Member
                 </Button>
             </div>
 
-            {/* Members Section */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -246,7 +233,6 @@ export function TeamsTab({ organization }: TeamsTabProps) {
                 )}
             </div>
 
-            {/* Pending Invitations */}
             {activeInvitations.length > 0 && (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -288,7 +274,6 @@ export function TeamsTab({ organization }: TeamsTabProps) {
                                         size="sm"
                                         className="rounded hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
                                         onClick={() => setInvitationToCancel({ id: invitation.id, email: invitation.email })}
-                                        disabled={false}
                                     >
                                         Cancel
                                     </Button>
@@ -299,7 +284,6 @@ export function TeamsTab({ organization }: TeamsTabProps) {
                 </div>
             )}
 
-            {/* Invite Team Member Dialog */}
             <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
                 <DialogContent>
                     <DialogHeader>
@@ -367,7 +351,6 @@ export function TeamsTab({ organization }: TeamsTabProps) {
                 </DialogContent>
             </Dialog>
 
-            {/* Remove Member Dialog */}
             <AlertDialog open={!!memberToRemove} onOpenChange={() => setMemberToRemove(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -389,7 +372,6 @@ export function TeamsTab({ organization }: TeamsTabProps) {
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* Cancel Invitation Dialog */}
             <AlertDialog open={!!invitationToCancel} onOpenChange={() => setInvitationToCancel(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>

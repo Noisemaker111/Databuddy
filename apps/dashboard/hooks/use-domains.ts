@@ -1,13 +1,18 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { domains } from '@databuddy/db';
 import { authClient } from '@databuddy/auth/client';
 
 type Domain = typeof domains.$inferSelect;
 
-// API client functions
+interface CreateDomainData {
+  name: string;
+  projectId?: string;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
 
 async function apiRequest<T>(
@@ -33,41 +38,16 @@ async function apiRequest<T>(
 }
 
 const domainApi = {
-  getAll: async (organizationId?: string): Promise<Domain[]> => {
-    const endpoint = organizationId
-      ? `/domains?organizationId=${organizationId}`
-      : '/domains';
-    const result = await apiRequest<Domain[]>(endpoint);
-    if (result.error) throw new Error(result.error);
-    return result.data || [];
-  },
-
   getById: async (id: string): Promise<Domain | null> => {
     const result = await apiRequest<Domain>(`/domains/${id}`);
     if (result.error) throw new Error(result.error);
     return result.data || null;
   },
 
-  getByProject: async (projectId: string): Promise<Domain[]> => {
-    const result = await apiRequest<Domain[]>(`/domains/project/${projectId}`);
-    if (result.error) throw new Error(result.error);
-    return result.data || [];
-  },
-
-  create: async (data: CreateDomainData): Promise<Domain> => {
-    const result = await apiRequest<Domain>('/domains', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    if (result.error) throw new Error(result.error);
-    if (!result.data) throw new Error('No data returned from create domain');
-    return result.data;
-  },
-
-  update: async (id: string, data: UpdateDomainData): Promise<Domain> => {
+  update: async (id: string, name: string): Promise<Domain> => {
     const result = await apiRequest<Domain>(`/domains/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ name }),
     });
     if (result.error) throw new Error(result.error);
     if (!result.data) throw new Error('No data returned from update domain');
@@ -82,206 +62,100 @@ const domainApi = {
     if (!result.data) throw new Error('No data returned from delete domain');
     return result.data;
   },
-
-  verify: async (id: string): Promise<VerificationResult> => {
-    const result = await apiRequest<VerificationResult>(`/domains/${id}/verify`, {
-      method: 'POST',
-    });
-    if (result.error) throw new Error(result.error);
-    if (!result.data) throw new Error('No data returned from verify domain');
-    return result.data;
-  },
-
-  regenerateToken: async (id: string): Promise<Domain> => {
-    const result = await apiRequest<Domain>(`/domains/${id}/regenerate-token`, {
-      method: 'POST',
-    });
-    if (result.error) throw new Error(result.error);
-    if (!result.data) throw new Error('No data returned from regenerate token');
-    return result.data;
-  },
 };
 
-// Query keys
-export const domainKeys = {
-  all: ['domains'] as const,
-  lists: () => [...domainKeys.all, 'list'] as const,
-  list: (filters: string) => [...domainKeys.lists(), { filters }] as const,
-  details: () => [...domainKeys.all, 'detail'] as const,
-  detail: (id: string) => [...domainKeys.details(), id] as const,
-};
-
-interface CreateDomainData {
-  name: string;
-  userId?: string;
-  projectId?: string;
-}
-
-interface UpdateDomainData {
-  name?: string;
-  verificationStatus?: string;
-}
-
-interface VerificationResult {
-  verified: boolean;
-  message: string;
-}
-
-export function useDomains() {
-  const queryClient = useQueryClient();
-  const { data: activeOrganization } = authClient.useActiveOrganization();
-
-  // Fetch domains with React Query
-  const { data: domains = [], isLoading, isError, refetch } = useQuery({
-    queryKey: [...domainKeys.lists(), activeOrganization?.id || 'personal'],
-    queryFn: async () => {
-      try {
-        // Direct API call with organization context
-        const endpoint = activeOrganization?.id
-          ? `/domains?organizationId=${activeOrganization.id}`
-          : '/domains';
-
-        const result = await apiRequest<Domain[]>(endpoint);
-        if (result.error) throw new Error(result.error);
-        return result.data || [];
-      } catch (error) {
-        console.error('Error fetching domains:', error);
-        throw error;
-      }
-    },
-    staleTime: 30000, // 30 seconds
-    refetchOnWindowFocus: false,
-  });
-
-  // Create domain mutation
-  const createMutation = useMutation({
-    mutationFn: async (data: CreateDomainData) => {
-      return await domainApi.create(data);
-    },
-    onSuccess: () => {
-      toast.success("Domain created successfully");
-      queryClient.invalidateQueries({ queryKey: domainKeys.all });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create domain');
-    }
-  });
-
-  // Update domain mutation
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateDomainData }) => {
-      return await domainApi.update(id, data);
-    },
-    onSuccess: () => {
-      toast.success("Domain updated successfully");
-      queryClient.invalidateQueries({ queryKey: domainKeys.all });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update domain');
-    }
-  });
-
-  // Delete domain mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const result = await domainApi.delete(id);
-      return { data: result, id };
-    },
-    onSuccess: () => {
-      toast.success("Domain deleted successfully");
-      queryClient.invalidateQueries({ queryKey: domainKeys.all });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete domain');
-    }
-  });
-
-  // Verify domain mutation
-  const verifyMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return await domainApi.verify(id);
-    },
-    onSuccess: (data: VerificationResult) => {
-      if (data?.verified) {
-        toast.success(data.message || "Domain verified successfully");
-      } else if (data) {
-        toast.error(data.message || "Domain verification failed");
-      }
-      queryClient.invalidateQueries({ queryKey: domainKeys.lists() });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to verify domain');
-    }
-  });
-
-  // Regenerate token mutation
-  const regenerateMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return await domainApi.regenerateToken(id);
-    },
-    onSuccess: () => {
-      toast.success("Verification token regenerated successfully");
-      queryClient.invalidateQueries({ queryKey: domainKeys.lists() });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to regenerate verification token');
-    }
-  });
-
-  // Extract verified domains
-  const verifiedDomains = domains.filter(
-    domain => domain.verificationStatus === "VERIFIED"
-  );
-
-  return {
-    // Data
-    domains,
-    verifiedDomains,
-
-    // UI States
-    isLoading,
-    isError,
-    isCreating: createMutation.isPending,
-    isUpdating: updateMutation.isPending,
-    isDeleting: deleteMutation.isPending,
-    isVerifying: verifyMutation.isPending,
-    isRegenerating: regenerateMutation.isPending,
-
-    // Actions
-    createDomain: createMutation.mutate,
-    updateDomain: updateMutation.mutate,
-    deleteDomain: deleteMutation.mutate,
-    verifyDomain: verifyMutation.mutate,
-    regenerateToken: regenerateMutation.mutate,
-    refetch
-  };
-}
-
-// Hook to get a single domain by ID
 export function useDomain(id: string) {
   return useQuery({
-    queryKey: domainKeys.detail(id),
-    queryFn: async () => {
-      return await domainApi.getById(id);
-    },
+    queryKey: ['domains', id],
+    queryFn: () => domainApi.getById(id),
     enabled: !!id,
     staleTime: 30000,
     refetchOnWindowFocus: false,
   });
 }
 
-// Helper hook for getting project domains
-export function useProjectDomains(projectId: string) {
-  return useQuery({
-    queryKey: [...domainKeys.lists(), 'project', projectId],
+export function useDomains() {
+  const queryClient = useQueryClient();
+  const { data: activeOrganization } = authClient.useActiveOrganization();
+
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['domains', activeOrganization?.id || 'personal'],
     queryFn: async () => {
-      return await domainApi.getByProject(projectId);
+      const endpoint = activeOrganization?.id
+        ? `/domains?organizationId=${activeOrganization.id}`
+        : '/domains';
+
+      const result = await apiRequest<Domain[]>(endpoint);
+      if (result.error) throw new Error(result.error);
+      return result.data || [];
     },
-    enabled: !!projectId,
     staleTime: 30000,
     refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    if (isError) {
+      toast.error('Failed to fetch domains');
+    }
+  }, [isError]);
+
+  const createMutation = useMutation<Domain, Error, CreateDomainData>({
+    mutationFn: async (data: CreateDomainData) => {
+      const endpoint = activeOrganization?.id
+        ? `/domains?organizationId=${activeOrganization.id}`
+        : '/domains';
+
+      const result = await apiRequest<Domain>(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      if (result.error) throw new Error(result.error);
+      if (!result.data) throw new Error('No data returned from create domain');
+      return result.data;
+    },
+    onSuccess: () => {
+      toast.success("Domain created successfully");
+      queryClient.invalidateQueries({ queryKey: ['domains'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to create domain');
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => domainApi.update(id, name),
+    onSuccess: () => {
+      toast.success("Domain updated successfully");
+      queryClient.invalidateQueries({ queryKey: ['domains'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update domain');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: domainApi.delete,
+    onSuccess: () => {
+      toast.success("Domain deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ['domains'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to delete domain');
+    },
+  });
+
+  return {
+    domains: data || [],
+    isLoading,
+    isError,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isDeleting: deleteMutation.isPending,
+    createDomain: createMutation.mutate,
+    updateDomain: updateMutation.mutate,
+    deleteDomain: deleteMutation.mutate,
+    refetch,
+  };
 }
 
-// Export API functions for direct use if needed
 export { domainApi }; 
