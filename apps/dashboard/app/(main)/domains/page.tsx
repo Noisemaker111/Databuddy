@@ -85,7 +85,7 @@ export default function DomainsPage() {
     useDomainManagement();
 
   return (
-    <div className="fade-in slide-in-from-bottom-4 flex h-full animate-in flex-col duration-500">
+    <div className="h-full flex flex-col">
       {/* Enhanced header */}
       <div className="border-b bg-gradient-to-r from-background via-background to-muted/20">
         <div className="flex flex-col justify-between gap-3 p-3 sm:flex-row sm:items-center sm:gap-0 sm:px-4 sm:py-4">

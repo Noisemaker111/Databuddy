@@ -229,7 +229,7 @@ export function DomainsTab() {
   if (domains.length === 0) return <EmptyState />;
 
   return (
-    <div className="fade-in slide-in-from-bottom-2 animate-in space-y-8 duration-700">
+    <div className="space-y-8">
       {/* Domain count */}
       <div className="flex items-center gap-2 rounded-lg border border-muted bg-muted/30 px-3 py-2 text-muted-foreground text-sm">
         <GlobeIcon className="h-4 w-4 flex-shrink-0" size={16} weight="duotone" />
@@ -257,13 +257,7 @@ export function DomainsTab() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {verifiedDomains.map((domain, index) => (
-              <div
-                className="fade-in slide-in-from-bottom-4 animate-in"
-                key={domain.id}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <DomainCard domain={domain} />
-              </div>
+              <DomainCard domain={domain} key={domain.id} />
             ))}
           </div>
         </div>
@@ -279,13 +273,7 @@ export function DomainsTab() {
           </div>
           <div className="space-y-4">
             {unverifiedDomains.map((domain, index) => (
-              <div
-                className="fade-in slide-in-from-bottom-4 animate-in"
-                key={domain.id}
-                style={{ animationDelay: `${(verifiedDomains.length + index) * 100}ms` }}
-              >
-                <DomainCard domain={domain} />
-              </div>
+              <DomainCard domain={domain} key={domain.id} />
             ))}
           </div>
         </div>

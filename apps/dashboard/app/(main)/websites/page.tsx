@@ -144,7 +144,7 @@ export default function WebsitesPage() {
   };
 
   return (
-    <div className="fade-in slide-in-from-bottom-4 flex h-full animate-in flex-col duration-500">
+    <div className="h-full flex flex-col">
       {/* Enhanced header */}
       <div className="border-b">
         <div className="flex flex-col justify-between gap-3 p-3 sm:flex-row sm:items-center sm:gap-0 sm:px-4 sm:py-4">
@@ -212,16 +212,10 @@ export default function WebsitesPage() {
         )}
 
         {/* Show website grid */}
-        {!(isLoading || isError) && websites && websites.length > 0 && (
-          <div className="fade-in slide-in-from-bottom-2 grid animate-in gap-6 duration-700 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {!isLoading && !isError && websites && websites.length > 0 && (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {websites.map((website, index) => (
-              <div
-                className="fade-in slide-in-from-bottom-4 animate-in"
-                key={website.id}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <WebsiteCard website={website} />
-              </div>
+              <WebsiteCard website={website} key={website.id} />
             ))}
           </div>
         )}

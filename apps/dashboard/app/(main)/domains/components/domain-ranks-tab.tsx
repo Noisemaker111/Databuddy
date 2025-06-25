@@ -205,7 +205,7 @@ export function DomainRanksTab() {
   if (rankedDomains.length === 0) return <EmptyState />;
 
   return (
-    <div className="fade-in slide-in-from-bottom-2 animate-in space-y-8 duration-700">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -241,19 +241,14 @@ export function DomainRanksTab() {
       {/* Domain rankings grid */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {rankedDomains.map((domain, index) => (
-          <div
-            className="fade-in slide-in-from-bottom-4 animate-in"
-            key={domain.id}
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
             <DomainRankCard
               domain={domain}
               onViewDetails={() =>
                 setSelectedRankDetails({ domainName: domain.name, domainId: domain.id })
               }
               rankData={ranks[domain.id]}
+              key={domain.id}
             />
-          </div>
         ))}
       </div>
 

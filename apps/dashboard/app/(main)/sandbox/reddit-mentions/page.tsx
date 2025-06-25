@@ -222,26 +222,26 @@ export default function RedditMentionsPage() {
   const isApiHealthy = healthData?.status === "healthy" && healthData?.reddit_connected;
   const isRefreshing = refreshMutation.isPending || isFetching;
 
-  return (
-    <div className="fade-in slide-in-from-bottom-4 flex h-full animate-in flex-col duration-500">
-      {/* Enhanced header */}
-      <div className="border-b bg-gradient-to-r from-background via-background to-muted/20">
-        <div className="flex flex-col justify-between gap-3 p-3 sm:flex-row sm:items-center sm:gap-0 sm:px-4 sm:py-4">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg border border-primary/20 bg-primary/10 p-2">
-                <ChatCircleIcon className="h-5 w-5 text-primary" size={20} weight="fill" />
-              </div>
-              <div>
-                <h1 className="truncate font-bold text-foreground text-xl tracking-tight sm:text-2xl">
-                  Reddit Mentions
-                </h1>
-                <p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
-                  Track mentions of your keywords across Reddit
-                </p>
-              </div>
-            </div>
-          </div>
+    return (
+        <div className="h-full flex flex-col">
+            {/* Enhanced header */}
+            <div className="border-b bg-gradient-to-r from-background via-background to-muted/20">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:px-4 sm:py-4 gap-3 sm:gap-0">
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
+                                <ChatCircleIcon size={20} weight="fill" className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate">
+                                    Reddit Mentions
+                                </h1>
+                                <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+                                    Track mentions of your keywords across Reddit
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
           <div className="flex items-center gap-2">
             {/* API Status Indicator */}
