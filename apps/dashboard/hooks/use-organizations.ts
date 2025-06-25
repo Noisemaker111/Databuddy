@@ -94,6 +94,7 @@ const createMutation = <TData, TVariables>(
  * Main organizations hook using Better Auth reactive data
  */
 export function useOrganizations() {
+  const queryClient = useQueryClient();
   const { data: organizations = [], error: organizationsError } = authClient.useListOrganizations();
   const { data: activeOrganization, error: activeOrganizationError } = authClient.useActiveOrganization();
 
@@ -143,8 +144,8 @@ export function useOrganizations() {
     "Failed to delete organization"
   ));
 
-  const setActiveOrganizationMutation = useMutation(createMutation(
-    async (organizationId: string | null) => {
+  const setActiveOrganizationMutation = useMutation({
+    mutationFn: async (organizationId: string | null) => {
       if (organizationId === null) {
         // Unset active organization by calling setActive with empty object
         const { data: result, error } = await authClient.organization.setActive({ organizationId: null });
@@ -156,9 +157,13 @@ export function useOrganizations() {
         return result;
       }
     },
-    "Workspace updated",
-    "Failed to update workspace"
-  ));
+    onSuccess: () => {
+      toast.success("Workspace updated");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update workspace");
+    },
+  });
 
   return {
     // Data

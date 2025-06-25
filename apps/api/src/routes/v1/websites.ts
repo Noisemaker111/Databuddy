@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { db, websites, domains, projects, eq, and, or, inArray, sql } from '@databuddy/db';
+import { db, websites, domains, projects, eq, and, or, inArray, sql, isNull } from '@databuddy/db';
 import { authMiddleware } from '../../middleware/auth';
 import { logger } from '../../lib/logger';
 import { logger as discordLogger } from '../../lib/discord-webhook';
@@ -40,7 +40,7 @@ async function _getUserProjectIds(userId: string): Promise<string[]> {
         id: true
       }
     });
-    
+
     return userProjects.map(project => project.id);
   } catch (error) {
     logger.error('[Website API] Error fetching project IDs:', { error });
@@ -59,7 +59,7 @@ const getUserProjectIds = cacheable(_getUserProjectIds, {
 async function checkWebsiteAccess(id: string, userId: string) {
   try {
     const projectIds = await getUserProjectIds(userId);
-    
+
     return await db.query.websites.findFirst({
       where: or(
         and(
@@ -80,7 +80,7 @@ async function checkWebsiteAccess(id: string, userId: string) {
 
 async function _verifyDomainAccess(domainId: string, userId: string): Promise<boolean> {
   if (!domainId || !userId) return false;
-  
+
   try {
     const domain = await db.query.domains.findFirst({
       where: and(
@@ -112,6 +112,7 @@ const verifyDomainAccess = cacheable(_verifyDomainAccess, {
 websitesRouter.post('/', async (c) => {
   const user = c.get('user');
   const rawData = await c.req.json();
+  const organizationId = c.req.query('organizationId');
 
   if (!user) {
     return c.json({ success: false, error: "Unauthorized" }, 401);
@@ -121,27 +122,27 @@ websitesRouter.post('/', async (c) => {
     // Validate input data
     const validationResult = createWebsiteSchema.safeParse(rawData);
     if (!validationResult.success) {
-      return c.json({ 
-        success: false, 
+      return c.json({
+        success: false,
         error: "Invalid input data",
         details: validationResult.error.issues
       }, 400);
     }
-    
+
     const data = validationResult.data;
-    logger.info('[Website API] Creating website with data:', { ...data, userId: user.id });
-    
+    logger.info('[Website API] Creating website with data:', { ...data, userId: user.id, organizationId });
+
     // Verify domain access
     const hasAccess = await verifyDomainAccess(data.domainId, user.id);
     if (!hasAccess) {
-      return c.json({ 
-        success: false, 
-        error: "Domain not found or not verified" 
+      return c.json({
+        success: false,
+        error: "Domain not found or not verified"
       }, 400);
     }
 
     // Check for existing websites with the same domain
-    const fullDomain = data.subdomain 
+    const fullDomain = data.subdomain
       ? `${data.subdomain}.${data.domain}`
       : data.domain;
 
@@ -150,9 +151,9 @@ websitesRouter.post('/', async (c) => {
     });
 
     if (existingWebsite) {
-      return c.json({ 
-        success: false, 
-        error: `A website with the domain "${fullDomain}" already exists` 
+      return c.json({
+        success: false,
+        error: `A website with the domain "${fullDomain}" already exists`
       }, 400);
     }
 
@@ -164,6 +165,7 @@ websitesRouter.post('/', async (c) => {
         domain: fullDomain,
         domainId: data.domainId,
         userId: user.id,
+        organizationId: organizationId || null,
       })
       .returning();
 
@@ -187,16 +189,16 @@ websitesRouter.post('/', async (c) => {
     });
   } catch (error) {
     logger.error('[Website API] Error creating website:', { error });
-    
+
     if (error instanceof Error) {
-      return c.json({ 
-        success: false, 
-        error: `Failed to create website: ${error.message}` 
+      return c.json({
+        success: false,
+        error: `Failed to create website: ${error.message}`
       }, 500);
     }
-    return c.json({ 
-      success: false, 
-      error: "Failed to create website" 
+    return c.json({
+      success: false,
+      error: "Failed to create website"
     }, 500);
   }
 });
@@ -215,22 +217,22 @@ websitesRouter.patch('/:id', async (c) => {
     // Validate input data
     const validationResult = updateWebsiteSchema.safeParse(rawData);
     if (!validationResult.success) {
-      return c.json({ 
-        success: false, 
+      return c.json({
+        success: false,
         error: "Invalid input data",
         details: validationResult.error.issues
       }, 400);
     }
-    
+
     const { name } = validationResult.data;
     logger.info('[Website API] Updating website name:', { id, name, userId: user.id });
 
     const website = await checkWebsiteAccess(id, user.id);
     if (!website) {
       logger.info('[Website API] Website not found or no access:', { id });
-      return c.json({ 
-        success: false, 
-        error: "Website not found" 
+      return c.json({
+        success: false,
+        error: "Website not found"
       }, 404);
     }
 
@@ -262,14 +264,14 @@ websitesRouter.patch('/:id', async (c) => {
   } catch (error) {
     logger.error('[Website API] Error updating website:', { error });
     if (error instanceof Error) {
-      return c.json({ 
-        success: false, 
-        error: `Failed to update website: ${error.message}` 
+      return c.json({
+        success: false,
+        error: `Failed to update website: ${error.message}`
       }, 500);
     }
-    return c.json({ 
-      success: false, 
-      error: "Failed to update website" 
+    return c.json({
+      success: false,
+      error: "Failed to update website"
     }, 500);
   }
 });
@@ -277,26 +279,40 @@ websitesRouter.patch('/:id', async (c) => {
 // GET ALL - GET /websites
 websitesRouter.get('/', async (c) => {
   const user = c.get('user');
+  const organizationId = c.req.query('organizationId');
 
   if (!user) {
     return c.json({ success: false, error: "Unauthorized" }, 401);
   }
 
   try {
+    let whereCondition;
+
+    if (organizationId) {
+      // Filter by organization
+      whereCondition = eq(websites.organizationId, organizationId);
+    } else {
+      // Personal websites (no organization)
+      whereCondition = and(
+        eq(websites.userId, user.id),
+        isNull(websites.organizationId)
+      );
+    }
+
     const userWebsites = await db.query.websites.findMany({
-      where: eq(websites.userId, user.id),
+      where: whereCondition,
       orderBy: (websites, { desc }) => [desc(websites.createdAt)]
     });
-    
+
     return c.json({
       success: true,
       data: userWebsites
     });
   } catch (error) {
-    logger.error('[Website API] Error fetching user websites:', { error });
-    return c.json({ 
-      success: false, 
-      error: "Failed to fetch websites" 
+    logger.error('[Website API] Error fetching user websites:', { error, organizationId });
+    return c.json({
+      success: false,
+      error: "Failed to fetch websites"
     }, 500);
   }
 });
@@ -320,9 +336,9 @@ websitesRouter.get('/project/:projectId', async (c) => {
     });
 
     if (!projectAccessRecord) {
-      return c.json({ 
-        success: false, 
-        error: "You don't have access to this project" 
+      return c.json({
+        success: false,
+        error: "You don't have access to this project"
       }, 403);
     }
 
@@ -330,16 +346,16 @@ websitesRouter.get('/project/:projectId', async (c) => {
       where: eq(websites.projectId, projectId),
       orderBy: (websites, { desc }) => [desc(websites.createdAt)]
     });
-    
+
     return c.json({
       success: true,
       data: projectWebsites
     });
   } catch (error) {
     logger.error('[Website API] Error fetching project websites:', { error });
-    return c.json({ 
-      success: false, 
-      error: "Failed to fetch project websites" 
+    return c.json({
+      success: false,
+      error: "Failed to fetch project websites"
     }, 500);
   }
 });
@@ -355,23 +371,23 @@ websitesRouter.get('/:id', async (c) => {
       const website = await db.query.websites.findFirst({
         where: eq(websites.id, id)
       });
-      
+
       if (!website) {
-        return c.json({ 
-          success: false, 
-          error: "Website not found" 
+        return c.json({
+          success: false,
+          error: "Website not found"
         }, 404);
       }
-      
+
       return c.json({
         success: true,
         data: website
       });
     } catch (error) {
       logger.error('[Website API] Error fetching demo website:', { error });
-      return c.json({ 
-        success: false, 
-        error: "Failed to fetch website" 
+      return c.json({
+        success: false,
+        error: "Failed to fetch website"
       }, 500);
     }
   }
@@ -392,7 +408,7 @@ websitesRouter.get('/:id', async (c) => {
     }
 
     const projectIds = await getUserProjectIds(user.id);
-    
+
     const website = await db.query.websites.findFirst({
       where: or(
         and(
@@ -405,23 +421,23 @@ websitesRouter.get('/:id', async (c) => {
         )
       )
     });
-    
+
     if (!website) {
-      return c.json({ 
-        success: false, 
-        error: "Website not found" 
+      return c.json({
+        success: false,
+        error: "Website not found"
       }, 404);
     }
-    
+
     return c.json({
       success: true,
       data: website
     });
   } catch (error) {
     logger.error('[Website API] Error fetching website:', { error });
-    return c.json({ 
-      success: false, 
-      error: "Failed to fetch website" 
+    return c.json({
+      success: false,
+      error: "Failed to fetch website"
     }, 500);
   }
 });
@@ -438,9 +454,9 @@ websitesRouter.delete('/:id', async (c) => {
   try {
     const website = await checkWebsiteAccess(id, user.id);
     if (!website) {
-      return c.json({ 
-        success: false, 
-        error: "Website not found" 
+      return c.json({
+        success: false,
+        error: "Website not found"
       }, 404);
     }
 
@@ -465,9 +481,9 @@ websitesRouter.delete('/:id', async (c) => {
     });
   } catch (error) {
     logger.error('[Website API] Error deleting website:', { error });
-    return c.json({ 
-      success: false, 
-      error: "Failed to delete website" 
+    return c.json({
+      success: false,
+      error: "Failed to delete website"
     }, 500);
   }
 });

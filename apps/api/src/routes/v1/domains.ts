@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { db, domains, eq, projects, and, or, inArray } from '@databuddy/db';
+import { db, domains, eq, projects, and, or, inArray, isNull } from '@databuddy/db';
 import type { AppVariables } from '../../types';
 import { authMiddleware } from '../../middleware/auth';
 import { logger } from '../../lib/logger';
@@ -27,10 +27,10 @@ async function _getUserProjectIds(userId: string): Promise<string[]> {
         id: true
       }
     });
-    
+
     return userProjects.map(project => project.id);
   } catch (error) {
-    logger.error('[Domain API] Error fetching project IDs:', {error, userId});
+    logger.error('[Domain API] Error fetching project IDs:', { error, userId });
     return [];
   }
 }
@@ -67,7 +67,7 @@ function createResponse<T = unknown>(success: boolean, data?: T, error?: string,
 // Error handler
 function handleError(operation: string, error: unknown, context?: any) {
   logger.error(`[Domain API] ${operation} failed:`, { error, context });
-  
+
   if (error instanceof Error) {
     return createResponse(false, undefined, `${operation} failed: ${error.message}`, 500);
   }
@@ -81,7 +81,7 @@ function generateVerificationToken(): string {
 
 // Owner data extractor
 function getOwnerData(user: any, data: any) {
-  return data.projectId 
+  return data.projectId
     ? { projectId: data.projectId }
     : { userId: user.id };
 }
@@ -108,14 +108,28 @@ domainsRouter.use('*', authMiddleware);
  */
 domainsRouter.get('/', async (c) => {
   const user = c.get('user');
+  const organizationId = c.req.query('organizationId');
 
   if (!user || !user.id) {
     return c.json({ success: false, error: 'Unauthorized' }, 401);
   }
 
   try {
+    let whereCondition;
+
+    if (organizationId) {
+      // Filter by organization
+      whereCondition = eq(domains.organizationId, organizationId);
+    } else {
+      // Personal domains (no organization)
+      whereCondition = and(
+        eq(domains.userId, user.id),
+        isNull(domains.organizationId)
+      );
+    }
+
     const userDomains = await db.query.domains.findMany({
-      where: eq(domains.userId, user.id),
+      where: whereCondition,
       orderBy: (domains, { desc }) => [desc(domains.createdAt)],
       columns: {
         id: true,
@@ -131,7 +145,7 @@ domainsRouter.get('/', async (c) => {
     const { response, status } = createResponse(true, userDomains);
     return c.json(response, status as any);
   } catch (error) {
-    const { response, status } = handleError('Fetching domains', error, { userId: user.id });
+    const { response, status } = handleError('Fetching domains', error, { userId: user.id, organizationId });
     return c.json(response, status as any);
   }
 });
@@ -180,7 +194,7 @@ domainsRouter.get('/project/:projectId', async (c) => {
       where: and(eq(projects.id, projectId), eq(projects.organizationId, user.id)),
       columns: { id: true }
     });
-    
+
     if (!access) {
       const { response, status } = createResponse(false, undefined, "You don't have access to this project", 403);
       return c.json(response, status as any);
@@ -227,16 +241,16 @@ domainsRouter.post('/', async (c) => {
       const { response, status } = createResponse(false, undefined, 'Invalid input data', 400);
       return c.json({ ...response, details: validationResult.error.issues }, status as any);
     }
-    
+
     const data = validationResult.data;
     logger.info(`[Domain API] Creating domain: ${data.name}`);
-    
+
     // Check if domain already exists
-    const existingDomain = await db.query.domains.findFirst({ 
+    const existingDomain = await db.query.domains.findFirst({
       where: eq(domains.name, data.name),
       columns: { id: true }
     });
-    
+
     if (existingDomain) {
       const { response, status } = createResponse(false, undefined, 'Domain already exists', 400);
       return c.json(response, status as any);
@@ -291,7 +305,7 @@ domainsRouter.patch('/:id', async (c) => {
 
   try {
     logger.info(`[Domain API] Updating domain: ${id}`);
-    
+
     const domain = await findAccessibleDomain(user, id);
     if (!domain) {
       const { response, status } = createResponse(false, undefined, 'Domain not found', 404);
@@ -327,7 +341,7 @@ domainsRouter.delete('/:id', async (c) => {
 
   try {
     logger.info(`[Domain API] Deleting domain: ${id}`);
-    
+
     const domain = await findAccessibleDomain(user, id);
     if (!domain) {
       const { response, status } = createResponse(false, undefined, 'Domain not found', 404);
@@ -377,7 +391,7 @@ domainsRouter.post('/:id/verify', async (c) => {
 
   try {
     logger.info(`[Domain API] Starting verification for domain: ${id}`);
-    
+
     const domain = await findAccessibleDomain(user, id);
     if (!domain) {
       logger.warn(`[Domain API] Domain not found during verification: ${id}`, { userId: user.id });
@@ -401,7 +415,7 @@ domainsRouter.post('/:id/verify', async (c) => {
     }
 
     const isLocalhost = domain.name.includes("localhost") || domain.name.includes("127.0.0.1");
-    
+
     // Auto-verify localhost domains
     if (isLocalhost) {
       await db.update(domains).set({
@@ -409,29 +423,29 @@ domainsRouter.post('/:id/verify', async (c) => {
         verificationStatus: "VERIFIED"
       }).where(eq(domains.id, id));
 
-      const { response, status } = createResponse(true, { 
-        verified: true, 
-        message: "Localhost domain automatically verified" 
+      const { response, status } = createResponse(true, {
+        verified: true,
+        message: "Localhost domain automatically verified"
       });
       return c.json(response, status as any);
     }
-    
+
     // Check if already verified
     if (domain.verificationStatus === "VERIFIED" && domain.verifiedAt) {
       logger.info(`[Domain API] Domain already verified: ${id}`, {
         verifiedAt: domain.verifiedAt,
         domainName: domain.name
       });
-      const { response, status } = createResponse(true, { 
-        verified: true, 
-        message: "Domain already verified" 
+      const { response, status } = createResponse(true, {
+        verified: true,
+        message: "Domain already verified"
       });
       return c.json(response, status as any);
     }
-    
+
     const rootDomain = domain.name.replace(/^www\./, "");
     const expectedToken = domain.verificationToken;
-    
+
     logger.info(`[Domain API] Preparing DNS verification:`, {
       domainId: id,
       originalDomain: domain.name,
@@ -439,25 +453,25 @@ domainsRouter.post('/:id/verify', async (c) => {
       expectedToken: expectedToken ? `${expectedToken.substring(0, 8)}...` : 'MISSING',
       fullTokenLength: expectedToken?.length || 0
     });
-    
+
     if (!expectedToken) {
       logger.warn(`[Domain API] Missing verification token for domain: ${id}`);
-      const { response, status } = createResponse(true, { 
-        verified: false, 
-        message: "Missing verification token. Please regenerate the token and try again." 
+      const { response, status } = createResponse(true, {
+        verified: false,
+        message: "Missing verification token. Please regenerate the token and try again."
       });
       return c.json(response, status as any);
     }
-    
+
     const dnsRecord = `_databuddy.${rootDomain}`;
     let txtRecords: string[][] | undefined;
-    
+
     logger.info(`[Domain API] Starting DNS lookup:`, {
       domainId: id,
       dnsRecord: dnsRecord,
       dnsServers: ['8.8.8.8', '1.1.1.1']
     });
-    
+
     try {
       // DNS lookup with timeout and better error handling
       txtRecords = await Promise.race([
@@ -489,47 +503,47 @@ domainsRouter.post('/:id/verify', async (c) => {
       const errorMessage = dnsError instanceof Error && dnsError.message.includes('timeout')
         ? "DNS lookup timed out. The DNS servers may be slow or the record doesn't exist yet."
         : "DNS lookup failed. Please make sure the TXT record is correctly configured and try again.";
-      
+
       logger.error(`[Domain API] DNS lookup failed, setting status to FAILED:`, {
         domainId: id,
         dnsRecord: dnsRecord,
         error: dnsError instanceof Error ? dnsError.message : 'Unknown error',
         errorMessage: errorMessage
       });
-      
+
       await db.update(domains).set({ verificationStatus: "FAILED" }).where(eq(domains.id, id));
-      
-      const { response, status } = createResponse(true, { 
-        verified: false, 
-        message: errorMessage 
+
+      const { response, status } = createResponse(true, {
+        verified: false,
+        message: errorMessage
       });
       return c.json(response, status as any);
     }
-    
+
     if (!txtRecords || txtRecords.length === 0) {
       logger.warn(`[Domain API] No DNS records found:`, {
         domainId: id,
         dnsRecord: dnsRecord,
         txtRecords: txtRecords
       });
-      
+
       await db.update(domains).set({ verificationStatus: "FAILED" }).where(eq(domains.id, id));
-      
-      const { response, status } = createResponse(true, { 
-        verified: false, 
-        message: "No DNS records found. Please add the TXT record and wait for DNS propagation (which can take up to 24-48 hours)." 
+
+      const { response, status } = createResponse(true, {
+        verified: false,
+        message: "No DNS records found. Please add the TXT record and wait for DNS propagation (which can take up to 24-48 hours)."
       });
       return c.json(response, status as any);
     }
-    
+
     logger.info(`[Domain API] Processing TXT records for verification:`, {
       domainId: id,
       recordCount: txtRecords.length,
       expectedTokenPreview: `${expectedToken.substring(0, 8)}...`,
       fullExpectedToken: expectedToken
     });
-    
-    const isVerified = txtRecords.some(record => 
+
+    const isVerified = txtRecords.some(record =>
       Array.isArray(record) && record.some(txt => {
         if (typeof txt !== "string") {
           logger.debug(`[Domain API] Skipping non-string TXT record:`, {
@@ -539,11 +553,11 @@ domainsRouter.post('/:id/verify', async (c) => {
           });
           return false;
         }
-        
+
         // Trim quotes from both the DNS record and expected token for comparison
         const cleanTxt = txt.replace(/^["']|["']$/g, '').trim();
         const cleanToken = expectedToken.replace(/^["']|["']$/g, '').trim();
-        
+
         logger.info(`[Domain API] Comparing tokens:`, {
           domainId: id,
           originalTxt: txt,
@@ -552,19 +566,19 @@ domainsRouter.post('/:id/verify', async (c) => {
           matches: cleanTxt.includes(cleanToken),
           exactMatch: cleanTxt === cleanToken
         });
-        
+
         return cleanTxt === cleanToken;
       })
     );
-    
-    const updateData = isVerified 
+
+    const updateData = isVerified
       ? {
-          verifiedAt: new Date().toISOString(),
-          verificationStatus: "VERIFIED" as const
-        }
+        verifiedAt: new Date().toISOString(),
+        verificationStatus: "VERIFIED" as const
+      }
       : {
-          verificationStatus: "FAILED" as const
-        };
+        verificationStatus: "FAILED" as const
+      };
 
     logger.info(`[Domain API] Updating domain verification status:`, {
       domainId: id,
@@ -579,8 +593,8 @@ domainsRouter.post('/:id/verify', async (c) => {
       ? "Domain verified successfully. You can now use this domain for websites."
       : "Verification token not found in DNS records. Please check your DNS configuration and try again.";
 
-    logger.info('[Domain API] Verification completed:', { 
-      domainId: id, 
+    logger.info('[Domain API] Verification completed:', {
+      domainId: id,
       domainName: domain.name,
       verified: isVerified,
       finalStatus: updateData.verificationStatus,
@@ -601,9 +615,9 @@ domainsRouter.post('/:id/verify', async (c) => {
       );
     }
 
-    const { response, status } = createResponse(true, { 
-      verified: isVerified, 
-      message 
+    const { response, status } = createResponse(true, {
+      verified: isVerified,
+      message
     });
     return c.json(response, status as any);
   } catch (error) {
@@ -626,7 +640,7 @@ domainsRouter.post('/:id/regenerate-token', async (c) => {
 
   try {
     logger.info(`[Domain API] Starting token regeneration for domain: ${id}`);
-    
+
     const domain = await findAccessibleDomain(user, id);
     if (!domain) {
       logger.warn(`[Domain API] Domain not found for token regeneration: ${id}`, { userId: user.id });
@@ -643,13 +657,13 @@ domainsRouter.post('/:id/regenerate-token', async (c) => {
     });
 
     const verificationToken = generateVerificationToken();
-    
+
     logger.info(`[Domain API] Generated new verification token:`, {
       domainId: id,
       newTokenLength: verificationToken.length,
       newTokenPreview: `${verificationToken.substring(0, 8)}...`
     });
-    
+
     const [updatedDomain] = await db.update(domains).set({
       verificationToken,
       verificationStatus: "PENDING",
@@ -657,7 +671,7 @@ domainsRouter.post('/:id/regenerate-token', async (c) => {
       updatedAt: new Date().toISOString()
     }).where(eq(domains.id, id)).returning();
 
-    logger.info('[Domain API] Token regenerated successfully:', { 
+    logger.info('[Domain API] Token regenerated successfully:', {
       domainId: id,
       domainName: domain.name,
       newStatus: 'PENDING',

@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { domains } from '@databuddy/db';
+import { authClient } from '@databuddy/auth/client';
 
 type Domain = typeof domains.$inferSelect;
 
@@ -10,7 +11,7 @@ type Domain = typeof domains.$inferSelect;
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
 
 async function apiRequest<T>(
-  endpoint: string, 
+  endpoint: string,
   options: RequestInit = {}
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   const response = await fetch(`${API_BASE_URL}/v1${endpoint}`, {
@@ -23,18 +24,20 @@ async function apiRequest<T>(
   });
 
   const data = await response.json();
-  
+
   if (!response.ok) {
     throw new Error(data.error || `HTTP error! status: ${response.status}`);
   }
-  
+
   return data;
 }
 
-// API functions
 const domainApi = {
-  getAll: async (): Promise<Domain[]> => {
-    const result = await apiRequest<Domain[]>('/domains');
+  getAll: async (organizationId?: string): Promise<Domain[]> => {
+    const endpoint = organizationId
+      ? `/domains?organizationId=${organizationId}`
+      : '/domains';
+    const result = await apiRequest<Domain[]>(endpoint);
     if (result.error) throw new Error(result.error);
     return result.data || [];
   },
@@ -126,13 +129,21 @@ interface VerificationResult {
 
 export function useDomains() {
   const queryClient = useQueryClient();
-  
+  const { data: activeOrganization } = authClient.useActiveOrganization();
+
   // Fetch domains with React Query
   const { data: domains = [], isLoading, isError, refetch } = useQuery({
-    queryKey: domainKeys.lists(),
+    queryKey: [...domainKeys.lists(), activeOrganization?.id || 'personal'],
     queryFn: async () => {
       try {
-        return await domainApi.getAll();
+        // Direct API call with organization context
+        const endpoint = activeOrganization?.id
+          ? `/domains?organizationId=${activeOrganization.id}`
+          : '/domains';
+
+        const result = await apiRequest<Domain[]>(endpoint);
+        if (result.error) throw new Error(result.error);
+        return result.data || [];
       } catch (error) {
         console.error('Error fetching domains:', error);
         throw error;
@@ -149,7 +160,7 @@ export function useDomains() {
     },
     onSuccess: () => {
       toast.success("Domain created successfully");
-      queryClient.invalidateQueries({ queryKey: domainKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: domainKeys.all });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create domain');
@@ -163,7 +174,7 @@ export function useDomains() {
     },
     onSuccess: () => {
       toast.success("Domain updated successfully");
-      queryClient.invalidateQueries({ queryKey: domainKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: domainKeys.all });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update domain');
@@ -178,7 +189,7 @@ export function useDomains() {
     },
     onSuccess: () => {
       toast.success("Domain deleted successfully");
-      queryClient.invalidateQueries({ queryKey: domainKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: domainKeys.all });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete domain');
@@ -226,7 +237,7 @@ export function useDomains() {
     // Data
     domains,
     verifiedDomains,
-    
+
     // UI States
     isLoading,
     isError,
@@ -235,7 +246,7 @@ export function useDomains() {
     isDeleting: deleteMutation.isPending,
     isVerifying: verifyMutation.isPending,
     isRegenerating: regenerateMutation.isPending,
-    
+
     // Actions
     createDomain: createMutation.mutate,
     updateDomain: updateMutation.mutate,

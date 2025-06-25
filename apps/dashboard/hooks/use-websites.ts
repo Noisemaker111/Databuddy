@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Website, CreateWebsiteData } from '@databuddy/shared';
+import { authClient } from '@databuddy/auth/client';
 
 // Re-export types for backward compatibility
 export type { Website, CreateWebsiteData };
@@ -12,7 +13,7 @@ export type { Website, CreateWebsiteData };
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
 
 async function apiRequest<T>(
-  endpoint: string, 
+  endpoint: string,
   options: RequestInit = {}
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   const response = await fetch(`${API_BASE_URL}/v1${endpoint}`, {
@@ -25,18 +26,20 @@ async function apiRequest<T>(
   });
 
   const data = await response.json();
-  
+
   if (!response.ok) {
     throw new Error(data.error || `HTTP error! status: ${response.status}`);
   }
-  
+
   return data;
 }
 
-// API functions
 const websiteApi = {
-  getAll: async (): Promise<Website[]> => {
-    const result = await apiRequest<Website[]>('/websites');
+  getAll: async (organizationId?: string): Promise<Website[]> => {
+    const endpoint = organizationId
+      ? `/websites?organizationId=${organizationId}`
+      : '/websites';
+    const result = await apiRequest<Website[]>(endpoint);
     if (result.error) throw new Error(result.error);
     return result.data || [];
   },
@@ -120,12 +123,20 @@ export function useProjectWebsites(projectId: string) {
 
 export function useWebsites() {
   const queryClient = useQueryClient();
-  
+  const { data: activeOrganization } = authClient.useActiveOrganization();
+
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: websiteKeys.lists(),
+    queryKey: [...websiteKeys.lists(), activeOrganization?.id || 'personal'],
     queryFn: async () => {
       try {
-        return await websiteApi.getAll();
+        // Direct API call with organization context
+        const endpoint = activeOrganization?.id
+          ? `/websites?organizationId=${activeOrganization.id}`
+          : '/websites';
+
+        const result = await apiRequest<Website[]>(endpoint);
+        if (result.error) throw new Error(result.error);
+        return result.data || [];
       } catch (error) {
         console.error('Error fetching websites:', error);
         throw error;
@@ -134,7 +145,7 @@ export function useWebsites() {
     staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: false,
   });
-  
+
   useEffect(() => {
     if (isError) {
       toast.error('Failed to fetch websites');
@@ -153,7 +164,7 @@ export function useWebsites() {
     },
     onSuccess: () => {
       toast.success("Website created successfully");
-      queryClient.invalidateQueries({ queryKey: websiteKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: websiteKeys.all });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create website');
@@ -170,7 +181,7 @@ export function useWebsites() {
     },
     onSuccess: () => {
       toast.success("Website updated successfully");
-      queryClient.invalidateQueries({ queryKey: websiteKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: websiteKeys.all });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update website');
@@ -182,7 +193,7 @@ export function useWebsites() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const result = await websiteApi.delete(id);
-      return { data: result, id }; 
+      return { data: result, id };
     },
     onMutate: () => {
     },
