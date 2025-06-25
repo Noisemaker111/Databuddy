@@ -36,7 +36,7 @@ const createFunnelSchema = z.object({
 export const funnelRouter = new Hono<FunnelContext>()
 
 funnelRouter.use('*', authMiddleware)
-funnelRouter.use('*', websiteAuthHook)
+funnelRouter.use('*', websiteAuthHook({ website: ["read"] }))
 
 // Get autocomplete data for funnel creation
 async function getAutocompleteData(websiteId: string, startDate: string, endDate: string) {

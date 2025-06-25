@@ -14,7 +14,7 @@ import {
 export const queryRouter = new Hono<AnalyticsContext>()
 
 queryRouter.use('*', authMiddleware)
-queryRouter.use('*', websiteAuthHook)
+queryRouter.use('*', websiteAuthHook({ website: ["read"] }))
 queryRouter.use('*', timezoneMiddleware)
 
 queryRouter.post(

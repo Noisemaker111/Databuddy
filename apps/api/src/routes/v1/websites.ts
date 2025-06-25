@@ -204,77 +204,81 @@ websitesRouter.post('/', async (c) => {
 });
 
 // UPDATE - PATCH /websites/:id
-websitesRouter.patch('/:id', async (c) => {
-  const user = c.get('user');
-  const id = c.req.param('id');
-  const rawData = await c.req.json();
+websitesRouter.patch(
+  '/:id',
+  websiteAuthHook({ website: ["update"] }),
+  async (c) => {
+    const user = c.get('user');
+    const id = c.req.param('id');
+    const rawData = await c.req.json();
+    const website = c.get('website');
 
-  if (!user) {
-    return c.json({ success: false, error: "Unauthorized" }, 401);
-  }
-
-  try {
-    // Validate input data
-    const validationResult = updateWebsiteSchema.safeParse(rawData);
-    if (!validationResult.success) {
-      return c.json({
-        success: false,
-        error: "Invalid input data",
-        details: validationResult.error.issues
-      }, 400);
+    if (!user) {
+      return c.json({ success: false, error: "Unauthorized" }, 401);
     }
 
-    const { name } = validationResult.data;
-    logger.info('[Website API] Updating website name:', { id, name, userId: user.id });
-
-    const website = await checkWebsiteAccess(id, user.id);
-    if (!website) {
-      logger.info('[Website API] Website not found or no access:', { id });
-      return c.json({
-        success: false,
-        error: "Website not found"
-      }, 404);
-    }
-
-    const [updatedWebsite] = await db
-      .update(websites)
-      .set({ name })
-      .where(eq(websites.id, id))
-      .returning();
-
-    logger.info('[Website API] Successfully updated website:', updatedWebsite);
-
-    // Discord notification for website update
-    await discordLogger.info(
-      'Website Updated',
-      `Website "${website.name}" was renamed to "${name}"`,
-      {
-        websiteId: id,
-        oldName: website.name,
-        newName: name,
-        domain: website.domain,
-        userId: user.id
+    try {
+      // Validate input data
+      const validationResult = updateWebsiteSchema.safeParse(rawData);
+      if (!validationResult.success) {
+        return c.json({
+          success: false,
+          error: "Invalid input data",
+          details: validationResult.error.issues
+        }, 400);
       }
-    );
 
-    return c.json({
-      success: true,
-      data: updatedWebsite
-    });
-  } catch (error) {
-    logger.error('[Website API] Error updating website:', { error });
-    if (error instanceof Error) {
+      const { name } = validationResult.data;
+      logger.info('[Website API] Updating website name:', { id, name, userId: user.id });
+
+      if (!website) {
+        logger.info('[Website API] Website not found or no access:', { id });
+        return c.json({
+          success: false,
+          error: "Website not found or you do not have permission."
+        }, 404);
+      }
+
+      const [updatedWebsite] = await db
+        .update(websites)
+        .set({ name })
+        .where(eq(websites.id, id))
+        .returning();
+
+      logger.info('[Website API] Successfully updated website:', updatedWebsite);
+
+      // Discord notification for website update
+      await discordLogger.info(
+        'Website Updated',
+        `Website "${website.name}" was renamed to "${name}"`,
+        {
+          websiteId: id,
+          oldName: website.name,
+          newName: name,
+          domain: website.domain,
+          userId: user.id
+        }
+      );
+
+      return c.json({
+        success: true,
+        data: updatedWebsite
+      });
+    } catch (error) {
+      logger.error('[Website API] Error updating website:', { error });
+      if (error instanceof Error) {
+        return c.json({
+          success: false,
+          error: `Failed to update website: ${error.message}`
+        }, 500);
+      }
       return c.json({
         success: false,
-        error: `Failed to update website: ${error.message}`
+        error: "Failed to update website"
       }, 500);
     }
-    return c.json({
-      success: false,
-      error: "Failed to update website"
-    }, 500);
   }
-});
+);
 
 // GET ALL - GET /websites
 websitesRouter.get('/', async (c) => {
@@ -363,7 +367,7 @@ websitesRouter.get('/project/:projectId', async (c) => {
 // GET BY ID - GET /websites/:id
 websitesRouter.get(
   '/:id',
-  websiteAuthHook,
+  websiteAuthHook(),
   async (c) => {
     const website = c.get('website');
 
@@ -383,49 +387,53 @@ websitesRouter.get(
 );
 
 // DELETE - DELETE /websites/:id
-websitesRouter.delete('/:id', async (c) => {
-  const user = c.get('user');
-  const id = c.req.param('id');
+websitesRouter.delete(
+  '/:id',
+  websiteAuthHook({ website: ["delete"] }),
+  async (c) => {
+    const user = c.get('user');
+    const id = c.req.param('id');
+    const website = c.get('website');
 
-  if (!user) {
-    return c.json({ success: false, error: "Unauthorized" }, 401);
-  }
-
-  try {
-    const website = await checkWebsiteAccess(id, user.id);
-    if (!website) {
-      return c.json({
-        success: false,
-        error: "Website not found"
-      }, 404);
+    if (!user) {
+      return c.json({ success: false, error: "Unauthorized" }, 401);
     }
 
-    await db.delete(websites)
-      .where(eq(websites.id, id));
-
-    // Discord notification for website deletion
-    await discordLogger.warning(
-      'Website Deleted',
-      `Website "${website.name}" with domain "${website.domain}" was deleted`,
-      {
-        websiteId: id,
-        websiteName: website.name,
-        domain: website.domain,
-        userId: user.id
+    try {
+      if (!website) {
+        return c.json({
+          success: false,
+          error: "Website not found or you do not have permission."
+        }, 404);
       }
-    );
 
-    return c.json({
-      success: true,
-      data: { success: true }
-    });
-  } catch (error) {
-    logger.error('[Website API] Error deleting website:', { error });
-    return c.json({
-      success: false,
-      error: "Failed to delete website"
-    }, 500);
+      await db.delete(websites)
+        .where(eq(websites.id, id));
+
+      // Discord notification for website deletion
+      await discordLogger.warning(
+        'Website Deleted',
+        `Website "${website.name}" with domain "${website.domain}" was deleted`,
+        {
+          websiteId: id,
+          websiteName: website.name,
+          domain: website.domain,
+          userId: user.id
+        }
+      );
+
+      return c.json({
+        success: true,
+        data: { success: true }
+      });
+    } catch (error) {
+      logger.error('[Website API] Error deleting website:', { error });
+      return c.json({
+        success: false,
+        error: "Failed to delete website"
+      }, 500);
+    }
   }
-});
+);
 
 export default websitesRouter; 

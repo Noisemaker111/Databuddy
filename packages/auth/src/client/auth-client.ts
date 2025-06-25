@@ -1,6 +1,7 @@
 import { createAuthClient } from "better-auth/react"
 import { customSessionClient, twoFactorClient, emailOTPClient, magicLinkClient, multiSessionClient, organizationClient } from "better-auth/client/plugins";
 import type { auth } from "../auth";
+import { ac, owner, admin, member } from "../permissions";
 
 // Define a type for the auth client configuration
 export type AuthClientConfig = {
@@ -23,7 +24,14 @@ export const authClient = createAuthClient({
     multiSessionClient(),
     emailOTPClient(),
     magicLinkClient(),
-    organizationClient(),
+    organizationClient({
+      ac,
+      roles: {
+        owner,
+        admin,
+        member,
+      }
+    }),
   ],
 });
 

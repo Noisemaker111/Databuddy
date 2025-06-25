@@ -24,9 +24,9 @@ const formatSessionObject = (session: any, visitorSessionCount: number) => {
   const userAgentInfo = parseUserAgentDetails(session.user_agent || '');
   const referrerInfo = parseReferrer(session.referrer, undefined);
   const sessionName = generateSessionName(session.session_id);
-  
+
   const { user_agent, events, region, ...sessionWithoutUserAgent } = session;
-  
+
   let processedEvents: any[] = [];
   if (events && Array.isArray(events)) {
     processedEvents = events.map((eventTuple: any) => {
@@ -39,7 +39,7 @@ const formatSessionObject = (session: any, visitorSessionCount: number) => {
         error_type,
         properties_json
       ] = eventTuple;
-      
+
       let properties: Record<string, any> = {};
       if (properties_json) {
         try {
@@ -48,7 +48,7 @@ const formatSessionObject = (session: any, visitorSessionCount: number) => {
           // If parsing fails, keep empty object
         }
       }
-      
+
       return {
         event_id,
         time,
@@ -60,7 +60,7 @@ const formatSessionObject = (session: any, visitorSessionCount: number) => {
       };
     }).filter(event => event.event_id);
   }
-  
+
   return {
     ...sessionWithoutUserAgent,
     session_name: sessionName,
@@ -89,19 +89,19 @@ sessionsRouter.get('/', async (c: Context) => {
   try {
     const endDate = params.end_date || new Date().toISOString().split('T')[0];
     const startDate = params.start_date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    
+
     // Calculate pagination
     const offset = (page - 1) * limit;
-    
+
     // Get paginated sessions with events
     const sessionsBuilder = createSessionsWithEventsBuilder(params.website_id, startDate, endDate, limit, offset);
-    
+
     const sessionsResult = await chQuery(sessionsBuilder.getSql());
-    
-    const formattedSessions = sessionsResult.map(session => 
+
+    const formattedSessions = sessionsResult.map(session =>
       formatSessionObject(session, 1)
     );
-    
+
     return c.json({
       success: true,
       sessions: formattedSessions,
@@ -137,7 +137,7 @@ sessionsRouter.get('/:session_id', async (c: Context) => {
   if (!user) {
     return c.json({ success: false, error: 'Authentication required' }, 401);
   }
-  
+
   try {
     const sessionDetailBuilder = createSqlBuilder();
     sessionDetailBuilder.sb.select = {
@@ -154,27 +154,27 @@ sessionsRouter.get('/:session_id', async (c: Context) => {
       session_filter: `session_id = '${session_id}'`,
     };
     sessionDetailBuilder.sb.groupBy = {
-        session_id: 'session_id',
-        visitor_id: 'anonymous_id',
-        client_id: 'client_id'
+      session_id: 'session_id',
+      visitor_id: 'anonymous_id',
+      client_id: 'client_id'
     };
 
     const sessionResult = await chQuery(sessionDetailBuilder.getSql());
-    
+
     if (!sessionResult.length) {
       return c.json({ success: false, error: 'Session not found' }, 404);
     }
-    
+
     const session = sessionResult[0];
     const visitorSessionCount = session.visitor_total_sessions || 1;
-    
+
     const eventsBuilder = createSessionEventsBuilder(website.id, session_id);
     const eventsResult = await chQuery(eventsBuilder.getSql());
-    
+
     const processedEvents = eventsResult.map(event => {
       const eventUserAgentInfo = parseUserAgentDetails(event.user_agent || '');
       const { user_agent, ...eventWithoutUserAgent } = event;
-      
+
       return {
         ...eventWithoutUserAgent,
         device_type: eventUserAgentInfo.device_type,
@@ -183,14 +183,14 @@ sessionsRouter.get('/:session_id', async (c: Context) => {
         country: mapCountryCode(event.country || '')
       };
     });
-    
+
     const formattedSession = {
       ...formatSessionObject(session, visitorSessionCount),
       events: processedEvents
     };
-    
-    return c.json({ 
-      success: true, 
+
+    return c.json({
+      success: true,
       session: formattedSession,
       timezone: {
         timezone: timezoneInfo.timezone,

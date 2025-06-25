@@ -7,7 +7,7 @@ import { Resend } from "resend";
 import { getRedisCache } from "@databuddy/redis";
 import { nextCookies } from "better-auth/next-js";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { ac, owner, admin, member, viewer } from "./permissions";
+import { ac, owner, admin, member } from "./permissions";
 
 // Helper to check NODE_ENV
 function isProduction() {
@@ -70,13 +70,12 @@ export const auth = betterAuth({
         autoSignInAfterVerification: true,
         sendVerificationEmail: async ({ user, url }: { user: any, url: string }) => {
             const resend = new Resend(process.env.RESEND_API_KEY as string);
-            const email = await resend.emails.send({
+            await resend.emails.send({
                 from: 'noreply@databuddy.cc',
                 to: user.email,
                 subject: 'Verify your email',
                 html: `<p>Click <a href="${url}">here</a> to verify your email</p>`
             });
-            console.log(email);
         }
     },
     session: {
@@ -92,9 +91,8 @@ export const auth = betterAuth({
             const value = await getRedisCache()?.get(key);
             return value ? value : null;
         },
-        set: async (key, value, ttl) => {
-            if (ttl) await getRedisCache()?.setex(key, ttl, value);
-            else await getRedisCache()?.set(key, value);
+        set: async (key, value, ttl = 60 * 60 * 24) => {
+            await getRedisCache()?.setex(key, ttl, value);
         },
         delete: async (key) => {
             await getRedisCache()?.del(key);
@@ -157,22 +155,22 @@ export const auth = betterAuth({
                 owner,
                 admin,
                 member,
-                viewer,
             },
             sendInvitationEmail: async ({ email, inviter, organization, invitation }) => {
-                const resend = new Resend(process.env.RESEND_API_KEY as string);
                 const invitationLink = `${process.env.NEXT_PUBLIC_APP_URL}/invitations/${invitation.id}`;
-                await resend.emails.send({
-                    from: 'noreply@databuddy.cc',
-                    to: email,
-                    subject: `You're invited to join ${organization.name}`,
-                    html: `
-                        <p>Hi there!</p>
-                        <p>${inviter.user.name} has invited you to join <strong>${organization.name}</strong>.</p>
-                        <p><a href="${invitationLink}">Click here to accept the invitation</a></p>
-                        <p>This invitation will expire in 48 hours.</p>
-                    `
-                });
+                console.log(invitationLink);
+                // const resend = new Resend(process.env.RESEND_API_KEY as string);
+                // await resend.emails.send({
+                //     from: 'noreply@databuddy.cc',
+                //     to: email,
+                //     subject: `You're invited to join ${organization.name}`,
+                //     html: `
+                //         <p>Hi there!</p>
+                //         <p>${inviter.user.name} has invited you to join <strong>${organization.name}</strong>.</p>
+                //         <p><a href="${invitationLink}">Click here to accept the invitation</a></p>
+                //         <p>This invitation will expire in 48 hours.</p>
+                //     `
+                // });
             }
         }),
     ]

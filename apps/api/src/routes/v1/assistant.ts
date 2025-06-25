@@ -5,7 +5,7 @@
  */
 
 import { Hono } from 'hono';
-import { z } from 'zod';  
+import { z } from 'zod';
 import { chQuery } from '@databuddy/db';
 import type { AppVariables } from '../../types';
 import { authMiddleware } from '../../middleware/auth';
@@ -75,22 +75,22 @@ export interface StreamingUpdate {
 function validateSQL(sql: string): boolean {
   // Only block truly dangerous operations - don't block safe keywords like CASE, WHEN, etc.
   const forbiddenKeywords = [
-    'INSERT INTO', 'UPDATE SET', 'DELETE FROM', 'DROP TABLE', 'DROP DATABASE', 
+    'INSERT INTO', 'UPDATE SET', 'DELETE FROM', 'DROP TABLE', 'DROP DATABASE',
     'CREATE TABLE', 'CREATE DATABASE', 'ALTER TABLE', 'EXEC ', 'EXECUTE ',
     'TRUNCATE', 'MERGE', 'BULK', 'RESTORE', 'BACKUP'
   ];
   const upperSQL = sql.toUpperCase();
-  
+
   // Check for dangerous keyword patterns
   for (const keyword of forbiddenKeywords) {
     if (upperSQL.includes(keyword)) return false;
   }
-  
+
   // Block standalone UNION that could be used for injection (but allow UNION in subqueries/CTEs)
   if (upperSQL.match(/\bUNION\s+(ALL\s+)?SELECT/)) {
     return false;
   }
-  
+
   // Must start with SELECT or WITH (for CTEs)
   const trimmed = upperSQL.trim();
   return trimmed.startsWith('SELECT') || trimmed.startsWith('WITH');
@@ -133,7 +133,7 @@ Use this context to provide more relevant responses and avoid repeating informat
 ` : ''}
 
 DATABASE SCHEMA:
-${JSON.stringify(AnalyticsSchema.columns.map(col => ({name: col.name, type: col.type, description: col.description})), null, 2)};
+${JSON.stringify(AnalyticsSchema.columns.map(col => ({ name: col.name, type: col.type, description: col.description })), null, 2)};
 
 RESPONSE FORMAT (JSON - ONLY THIS, NO EXTRA TEXT OR MARKDOWN):
 {
@@ -334,7 +334,7 @@ Return only valid JSON, no markdown or extra text. Ensure SQL is a single line s
 export const assistantRouter = new Hono<{ Variables: AppVariables }>();
 
 assistantRouter.use('*', authMiddleware);
-assistantRouter.use('*', websiteAuthHook);
+assistantRouter.use('*', websiteAuthHook({ website: ["read"] }));
 
 /**
  * Process AI request with streaming updates
@@ -353,7 +353,7 @@ assistantRouter.post('/stream', async (c) => {
   if (!user) {
     return c.json({ error: 'User not found' }, 401);
   }
-  
+
   // const rateLimitPassed = await checkRateLimit(user.id);
   // if (!rateLimitPassed) {
   //   return c.json({ 
@@ -374,9 +374,9 @@ assistantRouter.post('/stream', async (c) => {
       };
 
       try {
-        sendUpdate({ 
-          type: 'thinking', 
-          content: createThinkingStep("Analyzing your analytics request...") 
+        sendUpdate({
+          type: 'thinking',
+          content: createThinkingStep("Analyzing your analytics request...")
         });
 
         debugLog("✅ Input validated", { message, website_id, websiteHostname });
@@ -384,16 +384,16 @@ assistantRouter.post('/stream', async (c) => {
           debugInfo.validatedInput = { message, website_id, websiteHostname };
         }
 
-        sendUpdate({ 
-          type: 'thinking', 
-          content: createThinkingStep("Generating optimized query and visualization...") 
+        sendUpdate({
+          type: 'thinking',
+          content: createThinkingStep("Generating optimized query and visualization...")
         });
 
         const aiStart = Date.now();
         const { context } = await c.req.json();
-        
+
         const fullPrompt = enhancedAnalysisPrompt(message, website_id, websiteHostname, context?.previousMessages);
-        
+
         const completion = await openai.chat.completions.create({
           model: 'google/gemini-2.0-flash-001',
           messages: [
@@ -415,23 +415,23 @@ assistantRouter.post('/stream', async (c) => {
         try {
           const cleanedResponse = aiResponseText.trim().replace(/```json\n?/g, '').replace(/```\n?/g, '');
           debugLog("🧹 Cleaned AI response", { cleanedResponse });
-          
+
           const jsonParsed = JSON.parse(cleanedResponse);
           debugLog("📋 JSON parsed successfully", { jsonParsed });
-          
+
           parsedAiJson = AIResponseJsonSchema.parse(jsonParsed);
           debugLog("✅ AI JSON response parsed", parsedAiJson);
         } catch (parseError) {
-          debugLog("❌ AI JSON parsing failed", { 
-            error: parseError, 
+          debugLog("❌ AI JSON parsing failed", {
+            error: parseError,
             rawText: aiResponseText,
             errorMessage: parseError instanceof Error ? parseError.message : 'Unknown error'
           });
-          sendUpdate({ 
-            type: 'error', 
-            content: "AI response parsing failed. Please try rephrasing.", 
-            debugInfo: (user as any).role === 'ADMIN' ? { 
-              ...debugInfo, 
+          sendUpdate({
+            type: 'error',
+            content: "AI response parsing failed. Please try rephrasing.",
+            debugInfo: (user as any).role === 'ADMIN' ? {
+              ...debugInfo,
               parseError: parseError instanceof Error ? parseError.message : 'Unknown error',
               rawResponse: aiResponseText
             } : undefined
@@ -440,9 +440,9 @@ assistantRouter.post('/stream', async (c) => {
           return;
         }
 
-        sendUpdate({ 
-          type: 'thinking', 
-          content: createThinkingStep("Executing database query...") 
+        sendUpdate({
+          type: 'thinking',
+          content: createThinkingStep("Executing database query...")
         });
 
         if (parsedAiJson.response_type === 'text') {
@@ -464,9 +464,9 @@ assistantRouter.post('/stream', async (c) => {
             const sql = parsedAiJson.sql;
             console.log('Metric SQL:', sql);
             if (!validateSQL(sql)) {
-              sendUpdate({ 
-                type: 'error', 
-                content: "Generated query failed security validation.", 
+              sendUpdate({
+                type: 'error',
+                content: "Generated query failed security validation.",
                 debugInfo: (user as any).role === 'ADMIN' ? debugInfo : undefined
               });
               controller.close();
@@ -482,7 +482,7 @@ assistantRouter.post('/stream', async (c) => {
               if (queryData.length > 0 && queryData[0]) {
                 const firstRow = queryData[0];
                 const valueKey = Object.keys(firstRow).find(key => typeof firstRow[key] === 'number') ||
-                                Object.keys(firstRow)[0];
+                  Object.keys(firstRow)[0];
                 if (valueKey) {
                   metricValue = firstRow[valueKey];
                 }
@@ -502,8 +502,8 @@ assistantRouter.post('/stream', async (c) => {
 
             } catch (queryError: any) {
               debugLog("❌ Metric SQL execution error", { error: queryError.message, sql });
-              
-              sendUpdate({ 
+
+              sendUpdate({
                 type: 'complete',
                 content: parsedAiJson.text_response || `${parsedAiJson.metric_label || 'Result'}: ${typeof parsedAiJson.metric_value === 'number' ? parsedAiJson.metric_value.toLocaleString() : parsedAiJson.metric_value}`,
                 data: {
@@ -536,9 +536,9 @@ assistantRouter.post('/stream', async (c) => {
           const sql = parsedAiJson.sql;
           console.log(sql);
           if (!validateSQL(sql)) {
-            sendUpdate({ 
-              type: 'error', 
-              content: "Generated query failed security validation.", 
+            sendUpdate({
+              type: 'error',
+              content: "Generated query failed security validation.",
               debugInfo: (user as any).role === 'ADMIN' ? debugInfo : undefined
             });
             controller.close();
@@ -562,7 +562,7 @@ assistantRouter.post('/stream', async (c) => {
               debugInfo.processing = { aiTime, queryTime, totalTime };
             }
 
-            const finalContent = queryData.length > 0 
+            const finalContent = queryData.length > 0
               ? `Found ${queryData.length} data points. Displaying as a ${parsedAiJson.chart_type?.replace(/_/g, ' ') || 'chart'}.`
               : "No data found for your query.";
 
@@ -580,16 +580,16 @@ assistantRouter.post('/stream', async (c) => {
 
           } catch (queryError: any) {
             debugLog("❌ SQL execution error", { error: queryError.message, sql });
-            sendUpdate({ 
-              type: 'error', 
-              content: "Database query failed. The data might not be available.", 
+            sendUpdate({
+              type: 'error',
+              content: "Database query failed. The data might not be available.",
               debugInfo: (user as any).role === 'ADMIN' ? debugInfo : undefined
             });
           }
         } else {
-          sendUpdate({ 
-            type: 'error', 
-            content: "Invalid response format from AI.", 
+          sendUpdate({
+            type: 'error',
+            content: "Invalid response format from AI.",
             debugInfo: (user as any).role === 'ADMIN' ? debugInfo : undefined
           });
         }
@@ -599,15 +599,15 @@ assistantRouter.post('/stream', async (c) => {
       } catch (error: any) {
         debugLog("💥 Processing error", { error: error.message });
         if (error.name === 'ZodError') {
-          sendUpdate({ 
-            type: 'error', 
-            content: `Invalid input: ${error.errors?.map((e: any) => e.message).join(', ')}`, 
+          sendUpdate({
+            type: 'error',
+            content: `Invalid input: ${error.errors?.map((e: any) => e.message).join(', ')}`,
             debugInfo: (user as any).role === 'ADMIN' ? debugInfo : undefined
           });
         } else {
-          sendUpdate({ 
-            type: 'error', 
-            content: "An unexpected error occurred.", 
+          sendUpdate({
+            type: 'error',
+            content: "An unexpected error occurred.",
             debugInfo: (user as any).role === 'ADMIN' ? { error: error.message } : undefined
           });
         }

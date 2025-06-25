@@ -41,7 +41,7 @@ const viewer = ac.newRole({
 
 const member = ac.newRole({
     project: ["create", "read", "update", "change_status"],
-    website: ["create", "read", "update", "configure", "view_analytics", "manage_tracking"],
+    website: ["read", "configure", "view_analytics", "manage_tracking"],
     domain: ["create", "read", "update", "verify", "configure_dns"],
     analytics: ["read", "export", "configure_events", "view_funnels"],
     funnel: ["create", "read", "update", "configure_goals"],
@@ -96,8 +96,4 @@ export const canInviteMembers = (role: string) => {
 
 export const canViewAnalytics = (role: string) => {
     return ["owner", "admin", "member", "viewer", "developer"].includes(role);
-};
-
-export const canManageWebsites = (role: string) => {
-    return ["owner", "admin", "member"].includes(role);
 }; 

@@ -2,13 +2,20 @@ import { createMiddleware } from 'hono/factory'
 import { auth } from "./betterauth"
 import { logger } from '../lib/logger';
 import { db } from "@databuddy/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { websites, projects, member } from "@databuddy/db";
 import { cacheable } from "@databuddy/redis";
 
+type RequiredRole = 'owner' | 'admin' | 'member';
+
 // Helper function to verify website access with caching
 export const verifyWebsiteAccess = cacheable(
-  async (userId: string, websiteId: string, role: string): Promise<boolean> => {
+  async (
+    userId: string,
+    websiteId: string,
+    role: string,
+    requiredRole?: RequiredRole | RequiredRole[]
+  ): Promise<boolean> => {
     try {
       const website = await db.query.websites.findFirst({
         where: eq(websites.id, websiteId),
@@ -25,7 +32,16 @@ export const verifyWebsiteAccess = cacheable(
             eq(member.organizationId, website.organizationId)
           ),
         });
-        return !!membership;
+
+        if (!membership) return false;
+
+        // If a specific role is required, check it
+        if (requiredRole) {
+          const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+          return roles.includes(membership.role as RequiredRole);
+        }
+
+        return true; // Membership is enough
       } else {
         // Personal website. Check for direct ownership.
         return website.userId === userId;

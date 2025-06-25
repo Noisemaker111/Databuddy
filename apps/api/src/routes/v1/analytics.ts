@@ -21,7 +21,7 @@ type AnalyticsContext = {
 export const analyticsRouter = new Hono<AnalyticsContext>();
 
 analyticsRouter.use('*', authMiddleware);
-analyticsRouter.use('*', websiteAuthHook);
+analyticsRouter.use('*', websiteAuthHook({ website: ["read"] }));
 analyticsRouter.use('*', timezoneMiddleware);
 
 analyticsRouter.get('/summary', async (c: any) => {
@@ -33,7 +33,7 @@ analyticsRouter.get('/summary', async (c: any) => {
 
   try {
     const { chQuery } = await import('@databuddy/db');
-    
+
     const hasData = await chQuery<{ count: number }>(`
       SELECT COUNT(*) as count
       FROM analytics.events

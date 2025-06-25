@@ -20,8 +20,6 @@
   "dependencies": {
     "@clickhouse/client": "^1.11.1",
     "@clickhouse/client-web": "^1.11.1",
-    "@databuddy/auth": "../../packages/auth",
-    "@databuddy/redis": "../../packages/redis",
     "@highlight-run/hono": "^1.0.4",
     "@hono/node-server": "^1.14.1",
     "@hono/sentry": "^1.2.1",
