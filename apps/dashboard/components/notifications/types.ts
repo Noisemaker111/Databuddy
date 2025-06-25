@@ -49,7 +49,14 @@ export type BillingNotification = BaseNotification & {
   environment: 'production' | 'staging' | 'development';
 };
 
-export type Notification = AuditNotification | AnalyticsNotification | BillingNotification;
+export type InvitationNotification = BaseNotification & {
+  type: 'invitation';
+  organizationName: string;
+  inviterName: string;
+  invitationId: string;
+};
+
+export type Notification = AuditNotification | AnalyticsNotification | BillingNotification | InvitationNotification;
 
 // Type guard functions
 export function isAuditNotification(notification: Notification): notification is AuditNotification {
@@ -62,4 +69,8 @@ export function isAnalyticsNotification(notification: Notification): notificatio
 
 export function isBillingNotification(notification: Notification): notification is BillingNotification {
   return notification.type === 'billing';
+}
+
+export function isInvitationNotification(notification: Notification): notification is InvitationNotification {
+  return notification.type === 'invitation';
 } 

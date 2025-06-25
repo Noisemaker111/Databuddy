@@ -29,10 +29,10 @@ export const auditLogs = pgTable("audit_logs", {
 	index("audit_logs_resourceType_resourceId_idx").using("btree", table.resourceType.asc().nullsLast().op("text_ops"), table.resourceId.asc().nullsLast().op("text_ops")),
 	index("audit_logs_userId_idx").using("btree", table.userId.asc().nullsLast().op("text_ops")),
 	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "audit_logs_userId_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
+		columns: [table.userId],
+		foreignColumns: [user.id],
+		name: "audit_logs_userId_fkey"
+	}).onUpdate("cascade").onDelete("set null"),
 ]);
 
 export const domains = pgTable("domains", {
@@ -54,25 +54,25 @@ export const domains = pgTable("domains", {
 	index("domains_userId_idx").using("btree", table.userId.asc().nullsLast().op("text_ops")),
 	uniqueIndex("domains_verificationToken_key").using("btree", table.verificationToken.asc().nullsLast().op("text_ops")),
 	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "domains_userId_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
+		columns: [table.userId],
+		foreignColumns: [user.id],
+		name: "domains_userId_fkey"
+	}).onUpdate("cascade").onDelete("set null"),
 	foreignKey({
-			columns: [table.projectId],
-			foreignColumns: [projects.id],
-			name: "domains_projectId_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
+		columns: [table.projectId],
+		foreignColumns: [projects.id],
+		name: "domains_projectId_fkey"
+	}).onUpdate("cascade").onDelete("set null"),
 	foreignKey({
-			columns: [table.organizationId],
-			foreignColumns: [organization.id],
-			name: "domains_organization_id_organization_id_fk"
-		}).onDelete("cascade"),
+		columns: [table.organizationId],
+		foreignColumns: [organization.id],
+		name: "domains_organization_id_organization_id_fk"
+	}).onDelete("cascade"),
 	foreignKey({
-			columns: [table.organizationId],
-			foreignColumns: [organization.id],
-			name: "domains_organizationId_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
+		columns: [table.organizationId],
+		foreignColumns: [organization.id],
+		name: "domains_organizationId_fkey"
+	}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
 export const eventMeta = pgTable("event_meta", {
@@ -86,10 +86,10 @@ export const eventMeta = pgTable("event_meta", {
 }, (table) => [
 	index("event_meta_projectId_idx").using("btree", table.projectId.asc().nullsLast().op("text_ops")),
 	foreignKey({
-			columns: [table.projectId],
-			foreignColumns: [projects.id],
-			name: "event_meta_projectId_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
+		columns: [table.projectId],
+		foreignColumns: [projects.id],
+		name: "event_meta_projectId_fkey"
+	}).onUpdate("cascade").onDelete("restrict"),
 ]);
 
 export const categories = pgTable("categories", {
@@ -120,10 +120,10 @@ export const account = pgTable("account", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }).notNull(),
 }, (table) => [
 	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "account_user_id_user_id_fk"
-		}).onDelete("cascade"),
+		columns: [table.userId],
+		foreignColumns: [user.id],
+		name: "account_user_id_user_id_fk"
+	}).onDelete("cascade"),
 ]);
 
 export const subscriptions = pgTable("subscriptions", {
@@ -146,10 +146,10 @@ export const subscriptions = pgTable("subscriptions", {
 }, (table) => [
 	uniqueIndex("subscriptions_organizationId_key").using("btree", table.organizationId.asc().nullsLast().op("text_ops")),
 	foreignKey({
-			columns: [table.createdByUserId],
-			foreignColumns: [user.id],
-			name: "subscriptions_createdByUserId_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
+		columns: [table.createdByUserId],
+		foreignColumns: [user.id],
+		name: "subscriptions_createdByUserId_fkey"
+	}).onUpdate("cascade").onDelete("set null"),
 ]);
 
 export const session = pgTable("session", {
@@ -166,10 +166,10 @@ export const session = pgTable("session", {
 	uniqueIndex("session_token_key").using("btree", table.token.asc().nullsLast().op("text_ops")),
 	index("session_userId_idx").using("btree", table.userId.asc().nullsLast().op("text_ops")),
 	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "session_userId_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
+		columns: [table.userId],
+		foreignColumns: [user.id],
+		name: "session_userId_fkey"
+	}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
 export const projects = pgTable("projects", {
@@ -187,15 +187,15 @@ export const projects = pgTable("projects", {
 	deletedAt: timestamp({ precision: 3, mode: 'string' }),
 }, (table) => [
 	foreignKey({
-			columns: [table.organizationId],
-			foreignColumns: [organization.id],
-			name: "projects_organization_id_organization_id_fk"
-		}).onDelete("cascade"),
+		columns: [table.organizationId],
+		foreignColumns: [organization.id],
+		name: "projects_organization_id_organization_id_fk"
+	}).onDelete("cascade"),
 	foreignKey({
-			columns: [table.organizationId],
-			foreignColumns: [organization.id],
-			name: "projects_organizationId_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
+		columns: [table.organizationId],
+		foreignColumns: [organization.id],
+		name: "projects_organizationId_fkey"
+	}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
 export const invitation = pgTable("invitation", {
@@ -209,15 +209,15 @@ export const invitation = pgTable("invitation", {
 	inviterId: text("inviter_id").notNull(),
 }, (table) => [
 	foreignKey({
-			columns: [table.organizationId],
-			foreignColumns: [organization.id],
-			name: "invitation_organization_id_organization_id_fk"
-		}).onDelete("cascade"),
+		columns: [table.organizationId],
+		foreignColumns: [organization.id],
+		name: "invitation_organization_id_organization_id_fk"
+	}).onDelete("cascade"),
 	foreignKey({
-			columns: [table.inviterId],
-			foreignColumns: [user.id],
-			name: "invitation_inviter_id_user_id_fk"
-		}).onDelete("cascade"),
+		columns: [table.inviterId],
+		foreignColumns: [user.id],
+		name: "invitation_inviter_id_user_id_fk"
+	}).onDelete("cascade"),
 ]);
 
 export const member = pgTable("member", {
@@ -229,15 +229,15 @@ export const member = pgTable("member", {
 	createdAt: timestamp("created_at", { mode: 'string' }).notNull(),
 }, (table) => [
 	foreignKey({
-			columns: [table.organizationId],
-			foreignColumns: [organization.id],
-			name: "member_organization_id_organization_id_fk"
-		}).onDelete("cascade"),
+		columns: [table.organizationId],
+		foreignColumns: [organization.id],
+		name: "member_organization_id_organization_id_fk"
+	}).onDelete("cascade"),
 	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "member_user_id_user_id_fk"
-		}).onDelete("cascade"),
+		columns: [table.userId],
+		foreignColumns: [user.id],
+		name: "member_user_id_user_id_fk"
+	}).onDelete("cascade"),
 ]);
 
 export const verification = pgTable("verification", {
@@ -256,10 +256,10 @@ export const twoFactor = pgTable("two_factor", {
 	userId: text("user_id").notNull(),
 }, (table) => [
 	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "two_factor_user_id_user_id_fk"
-		}).onDelete("cascade"),
+		columns: [table.userId],
+		foreignColumns: [user.id],
+		name: "two_factor_user_id_user_id_fk"
+	}).onDelete("cascade"),
 ]);
 
 export const userPreferences = pgTable("user_preferences", {
@@ -273,10 +273,10 @@ export const userPreferences = pgTable("user_preferences", {
 }, (table) => [
 	uniqueIndex("user_preferences_userId_key").using("btree", table.userId.asc().nullsLast().op("text_ops")),
 	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "user_preferences_userId_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
+		columns: [table.userId],
+		foreignColumns: [user.id],
+		name: "user_preferences_userId_fkey"
+	}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
 export const websites = pgTable("websites", {
@@ -298,30 +298,30 @@ export const websites = pgTable("websites", {
 	uniqueIndex("websites_projectId_key").using("btree", table.projectId.asc().nullsLast().op("text_ops")),
 	index("websites_userId_idx").using("btree", table.userId.asc().nullsLast().op("text_ops")),
 	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "websites_userId_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
+		columns: [table.userId],
+		foreignColumns: [user.id],
+		name: "websites_userId_fkey"
+	}).onUpdate("cascade").onDelete("set null"),
 	foreignKey({
-			columns: [table.projectId],
-			foreignColumns: [projects.id],
-			name: "websites_projectId_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
+		columns: [table.projectId],
+		foreignColumns: [projects.id],
+		name: "websites_projectId_fkey"
+	}).onUpdate("cascade").onDelete("set null"),
 	foreignKey({
-			columns: [table.domainId],
-			foreignColumns: [domains.id],
-			name: "websites_domainId_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
+		columns: [table.domainId],
+		foreignColumns: [domains.id],
+		name: "websites_domainId_fkey"
+	}).onUpdate("cascade").onDelete("set null"),
 	foreignKey({
-			columns: [table.organizationId],
-			foreignColumns: [organization.id],
-			name: "websites_organization_id_organization_id_fk"
-		}).onDelete("cascade"),
+		columns: [table.organizationId],
+		foreignColumns: [organization.id],
+		name: "websites_organization_id_organization_id_fk"
+	}).onDelete("cascade"),
 	foreignKey({
-			columns: [table.organizationId],
-			foreignColumns: [organization.id],
-			name: "websites_organizationId_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
+		columns: [table.organizationId],
+		foreignColumns: [organization.id],
+		name: "websites_organizationId_fkey"
+	}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
 export const user = pgTable("user", {
@@ -377,10 +377,10 @@ export const funnelGoals = pgTable("funnel_goals", {
 }, (table) => [
 	index("funnel_goals_funnelId_idx").using("btree", table.funnelId.asc().nullsLast().op("text_ops")),
 	foreignKey({
-			columns: [table.funnelId],
-			foreignColumns: [funnelDefinitions.id],
-			name: "funnel_goals_funnelId_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
+		columns: [table.funnelId],
+		foreignColumns: [funnelDefinitions.id],
+		name: "funnel_goals_funnelId_fkey"
+	}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
 export const funnelDefinitions = pgTable("funnel_definitions", {
@@ -399,15 +399,15 @@ export const funnelDefinitions = pgTable("funnel_definitions", {
 	index("funnel_definitions_createdBy_idx").using("btree", table.createdBy.asc().nullsLast().op("text_ops")),
 	index("funnel_definitions_websiteId_idx").using("btree", table.websiteId.asc().nullsLast().op("text_ops")),
 	foreignKey({
-			columns: [table.websiteId],
-			foreignColumns: [websites.id],
-			name: "funnel_definitions_websiteId_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
+		columns: [table.websiteId],
+		foreignColumns: [websites.id],
+		name: "funnel_definitions_websiteId_fkey"
+	}).onUpdate("cascade").onDelete("cascade"),
 	foreignKey({
-			columns: [table.createdBy],
-			foreignColumns: [user.id],
-			name: "funnel_definitions_createdBy_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
+		columns: [table.createdBy],
+		foreignColumns: [user.id],
+		name: "funnel_definitions_createdBy_fkey"
+	}).onUpdate("cascade").onDelete("restrict"),
 ]);
 
 export const team = pgTable("team", {
@@ -418,10 +418,10 @@ export const team = pgTable("team", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }),
 }, (table) => [
 	foreignKey({
-			columns: [table.organizationId],
-			foreignColumns: [organization.id],
-			name: "team_organization_id_organization_id_fk"
-		}).onDelete("cascade"),
+		columns: [table.organizationId],
+		foreignColumns: [organization.id],
+		name: "team_organization_id_organization_id_fk"
+	}).onDelete("cascade"),
 ]);
 
 export const apikey = pgTable("apikey", {
@@ -448,10 +448,10 @@ export const apikey = pgTable("apikey", {
 	metadata: text(),
 }, (table) => [
 	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "apikey_user_id_user_id_fk"
-		}).onDelete("cascade"),
+		columns: [table.userId],
+		foreignColumns: [user.id],
+		name: "apikey_user_id_user_id_fk"
+	}).onDelete("cascade"),
 ]);
 
 export const organization = pgTable("organization", {

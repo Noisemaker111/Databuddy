@@ -1,15 +1,13 @@
 import { betterAuth } from "better-auth";
 import { customSession, multiSession, twoFactor, emailOTP, magicLink, organization } from "better-auth/plugins";
 import { getSessionCookie } from "better-auth/cookies";
-import { db, eq } from "@databuddy/db";
-import { user } from "@databuddy/db";
+import { db, eq, user } from "@databuddy/db";
 import { Resend } from "resend";
 import { getRedisCache } from "@databuddy/redis";
 import { nextCookies } from "better-auth/next-js";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { ac, owner, admin, member } from "./permissions";
+import { ac, owner, admin, member, viewer } from "./permissions";
 
-// Helper to check NODE_ENV
 function isProduction() {
     return process.env.NODE_ENV === 'production';
 }
@@ -155,9 +153,10 @@ export const auth = betterAuth({
                 owner,
                 admin,
                 member,
+                viewer,
             },
             sendInvitationEmail: async ({ email, inviter, organization, invitation }) => {
-                const invitationLink = `${process.env.BETTER_AUTH_URL}/invitations/${invitation.id}`;
+                const invitationLink = `https://app.databuddy.cc/invitations/${invitation.id}`;
                 const resend = new Resend(process.env.RESEND_API_KEY as string);
                 await resend.emails.send({
                     from: 'noreply@databuddy.cc',
