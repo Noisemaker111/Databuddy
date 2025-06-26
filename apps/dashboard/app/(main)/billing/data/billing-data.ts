@@ -1,204 +1,244 @@
-export interface SubscriptionPlan {
+import { useCustomer } from 'autumn-js/react';
+import { useQuery } from '@tanstack/react-query';
+import { Customer, CustomerProduct, CustomerFeature } from '@/hooks/use-billing';
+
+export interface Price {
+  primary_text: string;
+  secondary_text: string;
+  primaryText?: string;
+  secondaryText?: string;
+  type?: string;
+  feature_id?: string | null;
+  interval?: string;
+  price?: number;
+}
+
+export interface PlanItem {
+  type: 'feature' | 'priced_feature';
+  feature_id: string;
+  primary_text: string;
+  secondary_text?: string;
+  included_usage: number | 'inf' | string;
+  feature_type?: string;
+  interval?: string;
+  reset_usage_when_enabled?: boolean;
+  primaryText?: string;
+  secondaryText?: string;
+  price?: number | null;
+  tiers?: any[];
+  usage_model?: string;
+  billing_units?: number;
+}
+
+export interface Plan {
   id: string;
   name: string;
-  price: number | null;
-  originalPrice?: number;
-  description: string;
-  features: string[];
-  limits: {
-    websites: number | null;
-    pageviews: number | null;
-    dataRetention: string;
-    teamMembers: number | null;
-  };
-  current: boolean;
-  popular: boolean;
-  recommended?: boolean;
-  badge?: string;
-}
-
-export interface UsageData {
-  websites: { current: number; limit: number | null };
-  pageviews: { current: number; limit: number | null };
-  teamMembers: { current: number; limit: number | null };
-  dataRetention: string;
-  billingCycle: string;
-  nextBillingDate: string;
-  renewalAmount: number;
-}
-
-export interface BillingAlert {
-  id: string;
-  type: 'warning' | 'error' | 'info';
-  title: string;
-  message: string;
-  action?: { label: string; onClick: () => void };
-}
-
-export interface BillingHistoryItem {
-  id: string;
-  date: string;
-  amount: number;
-  status: "paid" | "failed";
-  description: string;
-  period: string;
-  pdfUrl: string;
-  paymentMethod: string;
+  is_add_on: boolean;
+  price: Price;
+  items: PlanItem[];
+  scenario: 'active' | 'upgrade' | 'downgrade' | 'canceled' | 'scheduled';
+  button_text: string;
+  free_trial?: any | null;
+  interval_group?: any | null;
+  buttonText?: string;
+  status?: string;
+  statusDetails?: string;
+  current_period_end?: number;
+  canceled_at?: number | null;
 }
 
 export interface PaymentMethod {
   id: string;
-  type: "card";
-  last4: string;
   brand: string;
-  expiry: string;
-  default: boolean;
-  name: string;
-  country: string;
+  last4: string;
+  exp_month: number;
+  exp_year: number;
+  isDefault: boolean;
 }
 
-export const subscriptionPlans: SubscriptionPlan[] = [
-  {
-    id: "free",
-    name: "Starter",
-    price: 0,
-    description: "Perfect for personal projects and getting started",
-    features: [
-      "Real-time analytics dashboard",
-      "Basic visitor tracking",
-      "Page view analytics",
-      "Referrer tracking",
-      "Mobile-responsive reports",
-      "Email support"
-    ],
-    limits: {
-      websites: 3,
-      pageviews: 10000,
-      dataRetention: "7 days",
-      teamMembers: 1
-    },
-    current: true,
-    popular: false
-  },
-  {
-    id: "pro",
-    name: "Professional",
-    price: 29,
-    originalPrice: 39,
-    description: "For growing businesses and teams",
-    features: [
-      "Everything in Starter",
-      "Advanced analytics & insights",
-      "Custom event tracking",
-      "Goal conversion tracking",
-      "A/B testing analytics",
-      "Team collaboration",
-      "API access",
-      "Priority support",
-      "Custom domains",
-      "White-label reports"
-    ],
-    limits: {
-      websites: null,
-      pageviews: 100000,
-      dataRetention: "90 days",
-      teamMembers: 5
-    },
-    current: false,
-    popular: true,
-    badge: "Save $10/mo"
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: null,
-    description: "For large organizations with custom needs",
-    features: [
-      "Everything in Professional",
-      "Unlimited pageviews",
-      "Custom data retention",
-      "Dedicated account manager",
-      "Custom integrations",
-      "SSO & advanced security",
-      "SLA guarantee (99.9%)",
-      "On-premise deployment",
-      "Custom reporting",
-      "24/7 phone support"
-    ],
-    limits: {
-      websites: null,
-      pageviews: null,
-      dataRetention: "Custom",
-      teamMembers: null
-    },
-    current: false,
-    popular: false,
-    recommended: true
-  }
-];
+export interface SubscriptionResponse {
+  list: Plan[];
+  paymentMethods?: PaymentMethod[];
+}
 
-export const usageData: UsageData = {
-  websites: { current: 2, limit: 3 },
-  pageviews: { current: 7500, limit: 10000 },
-  teamMembers: { current: 1, limit: 1 },
-  dataRetention: "7 days",
-  billingCycle: "monthly",
-  nextBillingDate: "2024-04-15",
-  renewalAmount: 0
+const PLANS_DATA: SubscriptionResponse = {
+  "list": [
+    {
+      "id": "free-example",
+      "name": "Free (Example)",
+      "is_add_on": false,
+      "price": {
+        "primary_text": "Free",
+        "secondary_text": " ",
+        "primaryText": "Free",
+        "secondaryText": " "
+      },
+      "items": [
+        {
+          "type": "feature",
+          "feature_id": "chat-messages",
+          "feature_type": "single_use",
+          "included_usage": 10,
+          "interval": "month",
+          "reset_usage_when_enabled": true,
+          "primary_text": "10 chat messages",
+          "primaryText": "10 chat messages"
+        },
+        {
+          "type": "feature",
+          "feature_id": "events",
+          "feature_type": "single_use",
+          "included_usage": 10,
+          "interval": "month",
+          "reset_usage_when_enabled": true,
+          "primary_text": "10 events",
+          "primaryText": "10 events"
+        }
+      ],
+      "scenario": "downgrade",
+      "button_text": "Get Started",
+      "free_trial": null,
+      "interval_group": null,
+      "buttonText": "Get Started"
+    },
+    {
+      "id": "pro-example",
+      "name": "Pro (Example)",
+      "is_add_on": false,
+      "price": {
+        "primary_text": "$20.5",
+        "secondary_text": "per month",
+        "type": "price",
+        "feature_id": null,
+        "interval": "month",
+        "price": 20.5,
+        "primaryText": "$20.5",
+        "secondaryText": "per month"
+      },
+      "items": [
+        {
+          "type": "priced_feature",
+          "feature_id": "events",
+          "feature_type": "single_use",
+          "included_usage": 50,
+          "interval": "month",
+          "price": null,
+          "tiers": [
+            {
+              "to": "inf",
+              "amount": 1
+            }
+          ],
+          "usage_model": "pay_per_use",
+          "billing_units": 1,
+          "reset_usage_when_enabled": true,
+          "primary_text": "50 included",
+          "secondary_text": "then $1 per event",
+          "primaryText": "50 included",
+          "secondaryText": "then $1 per event"
+        },
+        {
+          "type": "feature",
+          "feature_id": "chat-messages",
+          "feature_type": "single_use",
+          "included_usage": "inf",
+          "interval": undefined,
+          "reset_usage_when_enabled": true,
+          "primary_text": "Unlimited chat message",
+          "primaryText": "Unlimited chat message"
+        },
+        {
+          "type": "feature",
+          "feature_id": "pro-analytics",
+          "feature_type": "static",
+          "included_usage": "inf",
+          "interval": undefined,
+          "reset_usage_when_enabled": true,
+          "primary_text": "Pro Analytics",
+          "primaryText": "Pro Analytics"
+        }
+      ],
+      "scenario": "active",
+      "button_text": "Current Plan",
+      "free_trial": null,
+      "interval_group": null,
+      "buttonText": "Current Plan"
+    }
+  ],
+  "paymentMethods": []
+}
+
+export type FeatureUsage = {
+  id: string;
+  name: string;
+  used: number;
+  limit: number;
+  unlimited?: boolean;
+  nextReset?: string | null;
+  interval?: string | null;
 };
 
-export const billingHistory: BillingHistoryItem[] = [
-  {
-    id: "INV-2024-003",
-    date: "2024-03-15",
-    amount: 29.00,
-    status: "paid",
-    description: "Professional Plan - Monthly",
-    period: "Mar 15 - Apr 15, 2024",
-    pdfUrl: "#",
-    paymentMethod: "•••• 4242"
-  },
-  {
-    id: "INV-2024-002",
-    date: "2024-02-15",
-    amount: 29.00,
-    status: "paid",
-    description: "Professional Plan - Monthly",
-    period: "Feb 15 - Mar 15, 2024",
-    pdfUrl: "#",
-    paymentMethod: "•••• 4242"
-  },
-  {
-    id: "INV-2024-001",
-    date: "2024-01-15",
-    amount: 29.00,
-    status: "failed",
-    description: "Professional Plan - Monthly",
-    period: "Jan 15 - Feb 15, 2024",
-    pdfUrl: "#",
-    paymentMethod: "•••• 8888"
-  }
-];
+export type Usage = {
+  features: FeatureUsage[];
+}
 
-export const paymentMethods: PaymentMethod[] = [
-  {
-    id: "pm_1",
-    type: "card",
-    last4: "4242",
-    brand: "visa",
-    expiry: "12/25",
-    default: true,
-    name: "John Doe",
-    country: "US"
-  },
-  {
-    id: "pm_2",
-    type: "card",
-    last4: "8888",
-    brand: "mastercard",
-    expiry: "06/24",
-    default: false,
-    name: "John Doe",
-    country: "US"
-  }
-]; 
+export const useBillingData = () => {
+  // Use the useCustomer hook instead of check
+  const { customer, isLoading: isCustomerLoading, refetch } = useCustomer();
+
+  // Transform customer data to match the expected format
+  const subscriptionData: SubscriptionResponse = {
+    list: PLANS_DATA.list.map(plan => {
+      const customerProduct = customer?.products?.find(p => p.id === plan.id);
+
+      if (customerProduct) {
+        // Update plan status based on customer data
+        let scenario: Plan['scenario'] = 'upgrade';
+
+        if (customerProduct.status === 'active') {
+          scenario = customerProduct.canceled_at ? 'canceled' : 'active';
+        } else if (customerProduct.status === 'scheduled') {
+          scenario = 'scheduled';
+        } else {
+          // Handle any other status as downgrade
+          scenario = 'downgrade';
+        }
+
+        const updatedPlan: Plan = {
+          ...plan,
+          scenario,
+          status: customerProduct.status,
+          statusDetails: customerProduct.status,
+          current_period_end: customerProduct.current_period_end || undefined,
+          canceled_at: customerProduct.canceled_at,
+        };
+
+        return updatedPlan;
+      }
+
+      return plan;
+    }),
+    paymentMethods: PLANS_DATA.paymentMethods,
+  };
+
+  // Transform feature usage data
+  const usage: Usage = {
+    features: !customer ? [] : Object.values(customer.features).map(feature => ({
+      id: feature.id,
+      name: feature.name,
+      used: feature.usage || 0,
+      limit: feature.unlimited ? Infinity : (feature.included_usage || 0),
+      unlimited: feature.unlimited || false,
+      nextReset: feature.next_reset_at ? new Date(feature.next_reset_at).toLocaleDateString() : null,
+      interval: feature.interval || null
+    })),
+  };
+
+  return {
+    subscriptionData,
+    usage,
+    customerData: customer,
+    isLoading: isCustomerLoading,
+    refetch,
+  };
+};

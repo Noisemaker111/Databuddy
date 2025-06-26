@@ -52,7 +52,7 @@ app.post('/stripe/webhook/:webhookToken', async ({ params, request, set }) => {
         set.status = 404
         return { error: 'Webhook endpoint not found' }
     }
-    
+
     return handleWebhook(request, set, config)
 })
 
@@ -60,10 +60,10 @@ app.post('/stripe/webhook/:webhookToken', async ({ params, request, set }) => {
  * Get client IP address from request
  */
 function getClientIp(request: Request): string {
-    return request.headers.get('cf-connecting-ip') || 
-           request.headers.get('x-forwarded-for')?.split(',')[0] || 
-           request.headers.get('x-real-ip') || 
-           'unknown'
+    return request.headers.get('cf-connecting-ip') ||
+        request.headers.get('x-forwarded-for')?.split(',')[0] ||
+        request.headers.get('x-real-ip') ||
+        'unknown'
 }
 /**
  * Get Stripe configuration by webhook token
@@ -95,24 +95,6 @@ async function getStripeConfigByToken(webhookToken: string): Promise<StripeConfi
     } catch (error) {
         console.error(`Error fetching Stripe config for token ${webhookToken}:`, error)
         return null
-    }
-}
-
-/**
- * Get global Stripe configuration from environment
- */
-function getGlobalStripeConfig(): StripeConfig | null {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
-
-    if (!webhookSecret) {
-        return null
-    }
-
-    return {
-        webhookSecret,
-        userId: 'global',
-        webhookToken: 'global',
-        isLiveMode: false
     }
 }
 
@@ -162,7 +144,7 @@ async function handleWebhook(request: Request, set: any, config: StripeConfig) {
         console.error(`⚠️ Webhook signature verification failed:`, err)
         logSecurityEvent('signature_verification_failed', config.webhookToken, getClientIp(request))
         // updateWebhookFailure(config.webhookToken) // Commented out - no DB fields yet
-        
+
         set.status = 400
         return { error: 'Invalid signature' }
     }
@@ -220,9 +202,9 @@ async function insertStripeData(table: string, data: any): Promise<void> {
 async function insertPaymentIntent(pi: Stripe.PaymentIntent, config: StripeConfig) {
     const clientId = extractClientId(pi)
     const sessionId = extractSessionId(pi)
-    
+
     validateClientId(clientId, pi.id, 'PaymentIntent')
-    
+
     await insertStripeData('analytics.stripe_payment_intents', {
         id: pi.id,
         client_id: clientId,
@@ -244,7 +226,7 @@ async function insertPaymentIntent(pi: Stripe.PaymentIntent, config: StripeConfi
         setup_future_usage: pi.setup_future_usage,
         session_id: sessionId
     })
-    
+
     console.log(`✅ PaymentIntent ${pi.id} processed for client ${clientId}`)
 }
 
@@ -276,14 +258,14 @@ async function insertCharge(charge: Stripe.Charge, config: StripeConfig) {
         payment_intent_id: charge.payment_intent as string || null,
         session_id: sessionId
     })
-    
+
     console.log(`✅ Charge ${charge.id} processed for client ${clientId}`)
 }
 
 async function insertRefund(refund: Stripe.Refund, config: StripeConfig) {
     const clientId = extractClientId(refund)
     const sessionId = extractSessionId(refund)
-    
+
     validateClientId(clientId, refund.id, 'Refund')
 
     await insertStripeData('analytics.stripe_refunds', {
@@ -300,13 +282,13 @@ async function insertRefund(refund: Stripe.Refund, config: StripeConfig) {
         metadata: refund.metadata,
         session_id: sessionId
     })
-    
+
     console.log(`✅ Refund ${refund.id} processed for client ${clientId}`)
 }
 
 function logSecurityEvent(eventType: string, webhookToken: string, ip: string, metadata?: any) {
     const logData = { webhookToken, ip, timestamp: new Date().toISOString(), metadata }
-    
+
     if (IS_PRODUCTION) {
         console.warn(`🚨 Security Event: ${eventType}`, logData)
     } else {

@@ -1,154 +1,180 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Crown, DollarSign, BarChart3, TrendingUp } from "lucide-react";
+import { useBillingData, type Plan, type FeatureUsage } from "../data/billing-data";
+import { useBilling } from "@/hooks/use-billing";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import { AlertCircle, CheckIcon, ExternalLink } from "lucide-react";
+import { NoPaymentMethodDialog } from "./no-payment-method-dialog";
+import { Badge } from "@/components/ui/badge";
+import dayjs from "dayjs";
 
-interface OverviewTabProps {
-  currentPlan: string;
-  usageData: {
-    websites: { current: number; limit: number | null };
-    pageviews: { current: number; limit: number | null };
-    teamMembers: { current: number; limit: number | null };
-    billingCycle: string;
-    nextBillingDate: string;
-    renewalAmount: number;
-  };
-  onUpgrade: () => void;
-  onCancel: () => void;
-  formatCurrency: (amount: number) => string;
-  formatDate: (date: string) => string;
+function UsageMeter({ title, usage, limit, onUpgrade, nextReset, interval }: {
+  title: string,
+  usage: number,
+  limit: number,
+  onUpgrade: () => void,
+  nextReset?: string | null,
+  interval?: string | null
+}) {
+  const percentage = limit > 0 ? Math.min((usage / limit) * 100, 100) : 0;
+  const isUnlimited = !isFinite(limit);
+
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-1">
+        <span className="font-medium">{title}</span>
+        <span>{usage.toLocaleString()} / {isUnlimited ? '∞' : limit.toLocaleString()}</span>
+      </div>
+      <Progress value={percentage} className="h-2" />
+      <div className="flex justify-between items-center mt-1">
+        {nextReset && interval && (
+          <span className="text-xs text-muted-foreground">Resets {nextReset}</span>
+        )}
+        {!isUnlimited && percentage > 80 && (
+          <div className="text-xs text-amber-600 flex items-center ml-auto">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            <span>Approaching limit</span>
+            <Button variant="link" className="h-auto p-0 pl-1" onClick={onUpgrade}>Upgrade</Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
-const getUsagePercentage = (current: number, limit: number | null) => {
-  if (!limit) return 0;
-  return Math.min((current / limit) * 100, 100);
-};
+function SubscriptionStatus({ status, details }: { status: string, details?: string }) {
+  let color = "bg-green-500";
+  let label = "Active";
 
-const getUsageColor = (percentage: number) => {
-  if (percentage >= 90) return "text-destructive";
-  if (percentage >= 75) return "text-warning";
-  return "text-success";
-};
+  if (status === "canceled" || status.includes("cancel")) {
+    color = "bg-red-500";
+    label = "Cancelled";
+  } else if (status === "scheduled") {
+    color = "bg-blue-500";
+    label = "Scheduled";
+  }
 
-export function OverviewTab({ 
-  currentPlan, 
-  usageData, 
-  onUpgrade, 
-  onCancel, 
-  formatCurrency, 
-  formatDate 
-}: OverviewTabProps) {
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="md:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Crown className="h-4 w-4 text-yellow-500" />
-              Current Plan
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold">{currentPlan}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {formatCurrency(usageData.renewalAmount)}/{usageData.billingCycle}
-                </p>
-              </div>
-              <Badge variant="secondary" className="bg-green-100 text-green-700">
-                Active
-              </Badge>
-            </div>
-            <Separator />
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-muted-foreground">Next billing</p>
-                <p className="font-medium">{formatDate(usageData.nextBillingDate)}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Amount</p>
-                <p className="font-medium">{formatCurrency(usageData.renewalAmount)}</p>
-              </div>
-            </div>
-            <div className="flex gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={onUpgrade}>
-                <TrendingUp className="h-3 w-3 mr-1" />
-                Upgrade
-              </Button>
-              <Button variant="ghost" size="sm" onClick={onCancel}>
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <DollarSign className="h-4 w-4 text-green-500" />
-              This Month
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <p className="text-xl font-bold">{formatCurrency(29.00)}</p>
-              <p className="text-xs text-muted-foreground">Total spent</p>
-            </div>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span>Subscription</span>
-                <span>{formatCurrency(29.00)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Add-ons</span>
-                <span>{formatCurrency(0)}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <div className={`w-2 h-2 rounded-full ${color}`} />
+        <span className="font-medium">{label}</span>
       </div>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <BarChart3 className="h-4 w-4 text-blue-500" />
-            Usage Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            {[
-              { label: "Websites", ...usageData.websites },
-              { label: "Monthly Pageviews", ...usageData.pageviews },
-              { label: "Team Members", ...usageData.teamMembers }
-            ].map((item) => {
-              const percentage = getUsagePercentage(item.current, item.limit);
-              return (
-                <div key={item.label} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{item.label}</span>
-                    <span className={getUsageColor(percentage)}>
-                      {item.current.toLocaleString()} / {item.limit?.toLocaleString() || "∞"}
-                    </span>
-                  </div>
-                  <Progress value={percentage} className="h-1.5" />
-                  <p className="text-xs text-muted-foreground">
-                    {item.limit ? 
-                      `${(item.limit - item.current).toLocaleString()} remaining` : 
-                      "Unlimited"
-                    }
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {details && <p className="text-xs text-muted-foreground">{details}</p>}
     </div>
+  );
+}
+
+export function OverviewTab() {
+  const { subscriptionData, usage, customerData, isLoading, refetch } = useBillingData();
+  const { onUpgrade, onCancel, onManageBilling, showNoPaymentDialog, setShowNoPaymentDialog, getSubscriptionStatusDetails } = useBilling(refetch);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  const currentPlan = subscriptionData?.list?.find((p: Plan) => p.scenario === 'active');
+  const usageStats = usage?.features || [];
+
+  const nextPlan = subscriptionData?.list?.find((p: Plan) => p.scenario === 'upgrade');
+  const nextPlanId = nextPlan?.id;
+
+  // Get subscription details
+  const statusDetails = currentPlan && customerData?.products?.find(p => p.id === currentPlan.id)
+    ? getSubscriptionStatusDetails(customerData.products.find(p => p.id === currentPlan.id) as any)
+    : '';
+
+  return (
+    <>
+      <NoPaymentMethodDialog
+        open={showNoPaymentDialog}
+        onOpenChange={setShowNoPaymentDialog}
+        onConfirm={onManageBilling}
+      />
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Usage</CardTitle>
+              <CardDescription>Your current usage for this billing period.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {usageStats.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No usage data available.</p>
+              ) : (
+                usageStats.map((feature: FeatureUsage) => (
+                  <UsageMeter
+                    key={feature.id}
+                    title={feature.name}
+                    usage={feature.used}
+                    limit={feature.limit}
+                    nextReset={feature.nextReset}
+                    interval={feature.interval}
+                    onUpgrade={() => nextPlanId && onUpgrade(nextPlanId)}
+                  />
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        <div className="lg:col-span-1 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Current Plan</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-start">
+                <h3 className="text-2xl font-bold">{currentPlan?.name || 'Free'}</h3>
+                {currentPlan && currentPlan.status && (
+                  <SubscriptionStatus status={currentPlan.status} details={statusDetails} />
+                )}
+              </div>
+
+              <div className="space-y-2 text-sm">
+                {currentPlan?.items.map(item => (
+                  <div key={item.feature_id} className="flex items-center gap-2">
+                    <CheckIcon className="h-4 w-4 text-green-500" />
+                    <span>{item.primary_text}</span>
+                  </div>
+                ))}
+              </div>
+              <Separator />
+              <div className="space-y-2">
+                {currentPlan?.status === 'canceled' || currentPlan?.canceled_at ? (
+                  <Button onClick={() => nextPlanId && onUpgrade(nextPlanId)} className="w-full">
+                    Reactivate Subscription
+                  </Button>
+                ) : (
+                  <>
+                    {nextPlanId && (
+                      <Button onClick={() => nextPlanId && onUpgrade(nextPlanId)} className="w-full" disabled={!nextPlanId}>
+                        Upgrade
+                      </Button>
+                    )}
+                    {currentPlan && currentPlan.id !== 'free-example' && (
+                      <Button onClick={() => onCancel(currentPlan.id)} variant="outline" className="w-full">
+                        Cancel Subscription
+                      </Button>
+                    )}
+                  </>
+                )}
+                <Button onClick={onManageBilling} className="w-full" variant="outline">
+                  Manage Billing <ExternalLink className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </>
   );
 } 

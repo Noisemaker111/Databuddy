@@ -11,11 +11,12 @@ import {
   validatePerformanceMetric,
   VALIDATION_LIMITS
 } from '../utils/validation'
-import { getRedisCache } from '@databuddy/redis'
+import { redis } from '@databuddy/redis'
 import { bots } from '@databuddy/shared'
 import crypto from 'node:crypto'
+import { logger } from '../lib/logger'
 
-const redis = getRedisCache()
+import { Autumn as autumn } from "autumn-js";
 
 async function getDailySalt(): Promise<string> {
   const saltKey = `salt:${Math.floor(Date.now() / (24 * 60 * 60 * 1000))}`
@@ -32,34 +33,49 @@ function saltAnonymousId(anonymousId: string, salt: string): string {
 }
 
 async function validateRequest(body: any, query: any, request: Request) {
-  // Check payload size first
   if (!validatePayloadSize(body, VALIDATION_LIMITS.PAYLOAD_MAX_SIZE)) {
     await logBlockedTraffic(request, body, query, 'payload_too_large', 'Validation Error')
     return { error: { status: 'error', message: 'Payload too large' } }
   }
 
-  // Check client ID
   const clientId = sanitizeString(query.client_id, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH)
   if (!clientId) {
     await logBlockedTraffic(request, body, query, 'missing_client_id', 'Validation Error')
     return { error: { status: 'error', message: 'Missing client ID' } }
   }
 
-  // Check website validity
   const website = await getWebsiteById(clientId)
   if (!website || website.status !== 'ACTIVE') {
     await logBlockedTraffic(request, body, query, 'invalid_client_id', 'Validation Error', undefined, clientId)
     return { error: { status: 'error', message: 'Invalid or inactive client ID' } }
   }
 
-  // Check origin authorization
+  if (website.ownerId) {
+    const { data } = await autumn.check({
+      customer_id: website.ownerId,
+      feature_id: 'events',
+    })
+
+
+    if (data && data.allowed) {
+      await autumn.track({
+        customer_id: website.ownerId,
+        feature_id: 'events',
+        value: 1,
+      })
+    }
+    else {
+      await logBlockedTraffic(request, body, query, 'exceeded_event_limit', 'Validation Error', undefined, clientId)
+      return { error: { status: 'error', message: 'Exceeded event limit' } }
+    }
+  }
+
   const origin = request.headers.get('origin')
   if (origin && !isValidOrigin(origin, website.domain)) {
     await logBlockedTraffic(request, body, query, 'origin_not_authorized', 'Security Check', undefined, clientId)
     return { error: { status: 'error', message: 'Origin not authorized' } }
   }
 
-  // Check for bots
   const userAgent = sanitizeString(request.headers.get('user-agent'), VALIDATION_LIMITS.STRING_MAX_LENGTH) || ''
   const botCheck = detectBot(userAgent, request)
   if (botCheck.isBot) {
@@ -81,7 +97,8 @@ async function validateRequest(body: any, query: any, request: Request) {
     success: true,
     clientId,
     userAgent,
-    ip
+    ip,
+    ownerId: website.ownerId,
   }
 }
 
@@ -93,7 +110,6 @@ function detectBot(userAgent: string, request: Request): {
 } {
   const ua = userAgent?.toLowerCase() || '';
 
-  // Check for known bots
   const detectedBot = bots.find(bot => ua.includes(bot.regex.toLowerCase()));
   if (detectedBot) {
     return {
@@ -104,7 +120,6 @@ function detectBot(userAgent: string, request: Request): {
     };
   }
 
-  // Missing user agent
   if (!userAgent) {
     return {
       isBot: true,
@@ -113,7 +128,6 @@ function detectBot(userAgent: string, request: Request): {
     };
   }
 
-  // Missing accept header
   if (!request.headers.get('accept')) {
     return {
       isBot: true,
@@ -122,7 +136,6 @@ function detectBot(userAgent: string, request: Request): {
     };
   }
 
-  // User agent too short
   if (ua.length < 10) {
     return {
       isBot: true,
@@ -196,7 +209,12 @@ async function insertWebVitals(vitalsData: any, clientId: string): Promise<void>
   })
 }
 
-async function insertTrackEvent(trackData: any, clientId: string, userAgent: string, ip: string): Promise<void> {
+async function insertTrackEvent(
+  trackData: any,
+  clientId: string,
+  userAgent: string,
+  ip: string,
+): Promise<void> {
   const eventId = sanitizeString(trackData.eventId, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH)
   if (await checkDuplicate(eventId, 'track')) return
 
@@ -221,18 +239,18 @@ async function insertTrackEvent(trackData: any, clientId: string, userAgent: str
     path: sanitizeString(trackData.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
     title: sanitizeString(trackData.title, VALIDATION_LIMITS.STRING_MAX_LENGTH),
 
-    ip: anonymizedIP || null,
-    user_agent: sanitizeString(userAgent, VALIDATION_LIMITS.STRING_MAX_LENGTH) || null,
-    browser_name: browserName || null,
-    browser_version: browserVersion || null,
-    os_name: osName || null,
-    os_version: osVersion || null,
-    device_type: deviceType || null,
-    device_brand: deviceBrand || null,
-    device_model: deviceModel || null,
-    country: country || null,
-    region: region || null,
-    city: null,
+    ip: anonymizedIP || '',
+    user_agent: sanitizeString(userAgent, VALIDATION_LIMITS.STRING_MAX_LENGTH) || '',
+    browser_name: browserName || '',
+    browser_version: browserVersion || '',
+    os_name: osName || '',
+    os_version: osVersion || '',
+    device_type: deviceType || '',
+    device_brand: deviceBrand || '',
+    device_model: deviceModel || '',
+    country: country || '',
+    region: region || '',
+    city: '',
 
     screen_resolution: trackData.screen_resolution,
     viewport_size: trackData.viewport_size,
@@ -311,7 +329,6 @@ async function logBlockedTraffic(request: Request, body: any, query: any, blockR
     const ip = extractIpFromRequest(request)
     const userAgent = sanitizeString(request.headers.get('user-agent'), VALIDATION_LIMITS.STRING_MAX_LENGTH) || ''
 
-    // Try to get basic geo and user agent info even for blocked requests
     const { anonymizedIP, country, region } = await getGeo(ip)
     const { browserName, browserVersion, osName, osVersion, deviceType } = parseUserAgent(userAgent)
 
@@ -319,38 +336,33 @@ async function logBlockedTraffic(request: Request, body: any, query: any, blockR
 
     const blockedEvent: BlockedTraffic = {
       id: randomUUID(),
-      client_id: clientId || null,
+      client_id: clientId || '',
       timestamp: now,
 
-      // Request details
       path: sanitizeString(body?.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
       url: sanitizeString(body?.url || body?.href, VALIDATION_LIMITS.STRING_MAX_LENGTH),
       referrer: sanitizeString(body?.referrer || request.headers.get('referer'), VALIDATION_LIMITS.STRING_MAX_LENGTH),
       method: 'POST',
       origin: sanitizeString(request.headers.get('origin'), VALIDATION_LIMITS.STRING_MAX_LENGTH),
 
-      // Client information
       ip: anonymizedIP || ip,
-      user_agent: userAgent || null,
+      user_agent: userAgent || '',
       accept_header: sanitizeString(request.headers.get('accept'), VALIDATION_LIMITS.STRING_MAX_LENGTH),
       language: sanitizeString(request.headers.get('accept-language'), VALIDATION_LIMITS.STRING_MAX_LENGTH),
 
-      // Blocking details
       block_reason: blockReason,
       block_category: blockCategory,
-      bot_name: botName || null,
+      bot_name: botName || '',
 
-      // Enriched data (when possible)
-      country: country || null,
-      region: region || null,
-      browser_name: browserName || null,
-      browser_version: browserVersion || null,
-      os_name: osName || null,
-      os_version: osVersion || null,
-      device_type: deviceType || null,
+      country: country || '',
+      region: region || '',
+      browser_name: browserName || '',
+      browser_version: browserVersion || '',
+      os_name: osName || '',
+      os_version: osVersion || '',
+      device_type: deviceType || '',
 
-      // Payload size for size-related blocks
-      payload_size: blockReason === 'payload_too_large' ? JSON.stringify(body || {}).length : null,
+      payload_size: blockReason === 'payload_too_large' ? JSON.stringify(body || {}).length : undefined,
 
       created_at: now
     }
@@ -361,8 +373,7 @@ async function logBlockedTraffic(request: Request, body: any, query: any, blockR
       format: 'JSONEachRow'
     })
   } catch (error) {
-    // Don't let logging errors break the main flow
-    console.error('Failed to log blocked traffic:', error)
+    logger.error('Failed to log blocked traffic', { error: (error as Error) })
   }
 }
 

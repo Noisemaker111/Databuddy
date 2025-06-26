@@ -1,6 +1,7 @@
-import { Hono } from 'hono';
+import { Context, Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { auth, type User, type Session } from '@databuddy/auth';
+import { type User, type Session } from '@databuddy/auth';
+import { auth } from './middleware/betterauth'
 import analyticsRouter from './routes/v1/analytics';
 import assistantRouter from './routes/v1/assistant';
 import queryRouter from './routes/v1/query';
@@ -16,6 +17,11 @@ import { logger as discordLogger } from './lib/discord-webhook';
 import { logger as HonoLogger } from "hono/logger"
 import { sentry } from '@hono/sentry'
 import './polyfills/compression'
+
+import { autumnHandler } from "autumn-js/hono";
+
+
+
 
 type AppVariables = {
   Variables: {
@@ -44,6 +50,24 @@ app.use('*', cors({
   maxAge: 600,
 }));
 
+app.use(
+  "/api/autumn/*",
+  autumnHandler({
+    identify: async (c: Context) => {
+      const session = await auth.api.getSession({
+        headers: c.req.raw.headers,
+      });
+
+      return {
+        customerId: session?.user.id,
+        customerData: {
+          name: session?.user.name,
+          email: session?.user.email,
+        },
+      };
+    },
+  })
+);
 // Mount auth routes first
 app.on(['POST', 'GET', 'OPTIONS'], '/api/auth/*', async (c) => {
   try {
@@ -125,6 +149,6 @@ app.notFound((c) => {
 
 Bun.serve({
   fetch: app.fetch,
-  port: process.env.PORT || 4001,
+  port: process.env.PORT || 4000,
   idleTimeout: 30,
 });

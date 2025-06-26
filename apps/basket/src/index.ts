@@ -1,5 +1,5 @@
 
-import './polyfills/compression'
+// import './polyfills/compression'
 
 import { Elysia } from 'elysia'
 import basketRouter from './routes/basket';

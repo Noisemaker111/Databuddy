@@ -7,6 +7,7 @@ import { useState, createContext, useContext, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { session } from "@databuddy/db";
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
+import { AutumnProvider } from "autumn-js/react";
 
 type Session = typeof session.$inferSelect;
 // Default query client configuration
@@ -85,7 +86,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <QueryClientProvider client={clientQueryClient}>
         <SessionProvider>
-          <NuqsAdapter>{children}</NuqsAdapter>
+          <AutumnProvider backendUrl={process.env.NEXT_PUBLIC_API_URL}>
+            <NuqsAdapter>{children}</NuqsAdapter>
+          </AutumnProvider>
         </SessionProvider>
       </QueryClientProvider>
     </ThemeProvider>

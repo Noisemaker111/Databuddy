@@ -5,24 +5,71 @@
  * client IDs and origins against registered websites.
  */
 
-import { db, eq, websites } from '@databuddy/db';
+import { db, eq, websites, and, member } from '@databuddy/db';
 import { cacheable } from '@databuddy/redis';
 import { logger } from '../lib/logger';
 
-// Cache the website lookup
+type Website = typeof websites.$inferSelect;
+
+type WebsiteWithOwner = Website & {
+  ownerId: string | null;
+}
+
+// Cache the website lookup and owner lookup
 export const getWebsiteById = cacheable(
-  async (id: string): Promise<any> => {
-    logger.debug('Fetching website from database', { id });
-    return db.query.websites.findFirst({
-      where: eq(websites.id, id)
+  async (id: string): Promise<WebsiteWithOwner | null> => {
+    const website = await db.query.websites.findFirst({
+      where: eq(websites.id, id),
     });
+
+    if (!website) {
+      return null;
+    }
+
+    let ownerId: string | null = null;
+    if (website.userId) {
+      ownerId = website.userId;
+    } else if (website.organizationId) {
+      try {
+        const orgMember = await db.query.member.findFirst({
+          where: and(
+            eq(member.organizationId, website.organizationId),
+            eq(member.role, 'owner'),
+          ),
+          columns: {
+            userId: true,
+          },
+        });
+
+        if (orgMember) {
+          ownerId = orgMember.userId;
+        } else {
+          logger.warn('Organization owner not found for website', {
+            websiteId: website.id,
+            organizationId: website.organizationId,
+          });
+        }
+      } catch (error) {
+        logger.error('Failed to fetch organization owner', {
+          websiteId: website.id,
+          organizationId: website.organizationId,
+          error,
+        });
+      }
+    }
+
+    if (!ownerId) {
+      logger.warn('No owner could be determined for website', { websiteId: website.id });
+    }
+
+    return { ...website, ownerId };
   },
   {
-    expireInSec: 300, 
-    prefix: 'website_by_id',
+    expireInSec: 300,
+    prefix: 'website_with_owner_by_id',
     staleWhileRevalidate: true,
-    staleTime: 60
-  }
+    staleTime: 60,
+  },
 );
 
 /**
@@ -91,8 +138,8 @@ function normalizeDomain(domain: string): string {
  * @returns true if originDomain is a subdomain of allowedDomain
  */
 function isSubdomain(originDomain: string, allowedDomain: string): boolean {
-  return originDomain.endsWith(`.${allowedDomain}`) && 
-         originDomain.length > allowedDomain.length + 1;
+  return originDomain.endsWith(`.${allowedDomain}`) &&
+    originDomain.length > allowedDomain.length + 1;
 }
 
 /**
@@ -102,17 +149,17 @@ function isSubdomain(originDomain: string, allowedDomain: string): boolean {
  * @returns true if domain appears to be valid format
  */
 function isValidDomainFormat(domain: string): boolean {
-  return domain.length > 0 && 
-         domain.length <= 253 &&
-         !domain.startsWith('.') && 
-         !domain.endsWith('.') &&
-         !domain.includes('..') &&
-         /^[a-zA-Z0-9.-]+$/.test(domain);
+  return domain.length > 0 &&
+    domain.length <= 253 &&
+    !domain.startsWith('.') &&
+    !domain.endsWith('.') &&
+    !domain.includes('..') &&
+    /^[a-zA-Z0-9.-]+$/.test(domain);
 }
 
 // Enhanced version with additional security features
 export function isValidOriginSecure(
-  originHeader: string, 
+  originHeader: string,
   allowedDomain: string,
   options: {
     allowLocalhost?: boolean;
@@ -138,7 +185,7 @@ export function isValidOriginSecure(
 
   try {
     const originUrl = new URL(originHeader.trim());
-    
+
     // HTTPS requirement check
     if (requireHttps && originUrl.protocol !== 'https:') {
       return false;
@@ -160,24 +207,24 @@ export function isValidOriginSecure(
     // Subdomain checks
     if (isSubdomain(normalizedOriginDomain, normalizedAllowedDomain)) {
       const subdomain = normalizedOriginDomain.replace(`.${normalizedAllowedDomain}`, '');
-      
+
       // Check blocked subdomains
       if (blockedSubdomains.includes(subdomain)) {
         return false;
       }
-      
+
       // Check allowed subdomains (if specified, only these are allowed)
       if (allowedSubdomains.length > 0) {
         return allowedSubdomains.includes(subdomain);
       }
-      
+
       return true;
     }
 
     return false;
   } catch (error) {
     logger.error(new Error(`[isValidOriginSecure] Validation failed: ${error instanceof Error ? error.message : String(error)}`));
-    
+
     return false;
   }
 }
@@ -192,10 +239,10 @@ function isLocalhost(hostname: string): boolean {
     '::1',
     '0.0.0.0'
   ];
-  
+
   return localhostPatterns.includes(hostname.toLowerCase()) ||
-         hostname.match(/^127\.\d+\.\d+\.\d+$/) !== null ||
-         hostname.match(/^192\.168\.\d+\.\d+$/) !== null ||
-         hostname.match(/^10\.\d+\.\d+\.\d+$/) !== null ||
-         hostname.match(/^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/) !== null;
+    hostname.match(/^127\.\d+\.\d+\.\d+$/) !== null ||
+    hostname.match(/^192\.168\.\d+\.\d+$/) !== null ||
+    hostname.match(/^10\.\d+\.\d+\.\d+$/) !== null ||
+    hostname.match(/^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/) !== null;
 }

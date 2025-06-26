@@ -1,157 +1,61 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { CreditCard, Plus, Edit3, Trash2, Loader2 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { useBilling } from "@/hooks/use-billing"
+import { useBillingData } from "../data/billing-data"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
+import { CreditCard, CircleOff, ExternalLink } from "lucide-react"
 
-interface PaymentMethod {
-  id: string;
-  type: "card";
-  last4: string;
-  brand: string;
-  expiry: string;
-  default: boolean;
-  name: string;
-  country: string;
-}
+export function PaymentTab() {
+  const { onManageBilling } = useBilling()
+  const { subscriptionData, isLoading } = useBillingData()
 
-interface PaymentTabProps {
-  paymentMethods: PaymentMethod[];
-  onAddPayment: () => void;
-  onDeletePayment: (methodId: string) => void;
-  loadingStates: Record<string, boolean>;
-}
+  if (isLoading) {
+    return <Skeleton className="h-64 w-full" />
+  }
 
-export function PaymentTab({ 
-  paymentMethods, 
-  onAddPayment, 
-  onDeletePayment, 
-  loadingStates 
-}: PaymentTabProps) {
+  const paymentMethods: any[] = (subscriptionData as any)?.paymentMethods || []
+
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <CreditCard className="h-4 w-4" />
-            Payment Methods
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Manage your payment methods and billing information
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {paymentMethods.map((method) => (
-              <div
-                key={method.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 bg-muted rounded-lg">
-                    <CreditCard className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="font-medium text-sm capitalize">
-                      {method.brand} •••• {method.last4}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Expires {method.expiry} • {method.name}
-                    </div>
-                  </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Payment Methods</CardTitle>
+        <CardDescription>
+          Manage your payment methods and billing information.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {paymentMethods.length > 0 ? (
+          <div className="space-y-4">
+            {paymentMethods.map((method: any) => (
+              <div key={method.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <span className="font-semibold">{method.brand} **** {method.last4}</span>
+                  <span className="text-sm text-muted-foreground ml-2">Expires {method.exp_month}/{method.exp_year}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {method.default && (
-                    <Badge variant="secondary" className="text-xs">Default</Badge>
-                  )}
-                  <Button variant="ghost" size="sm">
-                    <Edit3 className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
-                  {!method.default && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => onDeletePayment(method.id)}
-                      disabled={loadingStates[`delete-${method.id}`]}
-                    >
-                      {loadingStates[`delete-${method.id}`] ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-3 w-3" />
-                      )}
-                    </Button>
-                  )}
-                </div>
+                {method.isDefault && <Badge>Default</Badge>}
               </div>
             ))}
-            
-            <Separator className="my-4" />
-            
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={onAddPayment}
-              disabled={loadingStates["add-payment"]}
-              size="sm"
-            >
-              {loadingStates["add-payment"] ? (
-                <>
-                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                <>
-                  <Plus className="mr-2 h-3 w-3" />
-                  Add Payment Method
-                </>
-              )}
-            </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Billing Settings</CardTitle>
-          <p className="text-sm text-muted-foreground">Configure your billing preferences</p>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="auto-pay" className="text-sm font-medium">Automatic payments</Label>
-              <p className="text-xs text-muted-foreground">
-                Automatically charge your default payment method
-              </p>
-            </div>
-            <Switch id="auto-pay" defaultChecked />
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center py-12 border-dashed border-2 rounded-lg">
+            <CircleOff className="h-10 w-10 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold">No Payment Methods</h3>
+            <p className="text-muted-foreground text-sm mt-1">Add a payment method to get started.</p>
           </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="email-receipts" className="text-sm font-medium">Email receipts</Label>
-              <p className="text-xs text-muted-foreground">
-                Send payment receipts to your email
-              </p>
-            </div>
-            <Switch id="email-receipts" defaultChecked />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="usage-alerts" className="text-sm font-medium">Usage alerts</Label>
-              <p className="text-xs text-muted-foreground">
-                Get notified when approaching plan limits
-              </p>
-            </div>
-            <Switch id="usage-alerts" defaultChecked />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+        )}
+        <Button onClick={onManageBilling} className="mt-6 w-full">
+          Manage Payment Methods <ExternalLink className="h-4 w-4 ml-2" />
+        </Button>
+      </CardContent>
+    </Card>
+  )
 } 

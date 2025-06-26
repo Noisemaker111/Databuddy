@@ -1,102 +1,80 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Download, Loader2, History } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { DownloadIcon, CircleOff } from "lucide-react"
+import { useBillingData } from "../data/billing-data"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-interface BillingHistoryItem {
-  id: string;
-  date: string;
-  amount: number;
-  status: "paid" | "failed";
-  description: string;
-  period: string;
-  pdfUrl: string;
-  paymentMethod: string;
-}
+export function HistoryTab() {
+  const { subscriptionData, isLoading } = useBillingData()
 
-interface HistoryTabProps {
-  billingHistory: BillingHistoryItem[];
-  onDownload: (invoiceId: string) => void;
-  formatCurrency: (amount: number) => string;
-  formatDate: (date: string) => string;
-  loadingStates: Record<string, boolean>;
-}
+  if (isLoading) {
+    return <Skeleton className="h-64 w-full" />
+  }
 
-export function HistoryTab({ 
-  billingHistory, 
-  onDownload, 
-  formatCurrency, 
-  formatDate, 
-  loadingStates 
-}: HistoryTabProps) {
+  const history: any[] = (subscriptionData as any)?.history || []
+
+  if (history.length === 0) {
+    return (
+      <Card className="flex flex-col items-center justify-center h-64 text-center">
+        <CardHeader>
+          <div className="mx-auto bg-muted rounded-full p-3">
+            <CircleOff className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <CardTitle className="mt-4">No Billing History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            Your payment history will appear here.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <History className="h-4 w-4" />
-          Billing History
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          View and download your invoices and payment history
-        </p>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {billingHistory.map((invoice) => (
-            <div
-              key={invoice.id}
-              className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className={`p-1.5 rounded-full ${
-                  invoice.status === 'paid' ? 'bg-green-100' : 'bg-red-100'
-                }`}>
-                  {invoice.status === 'paid' ? (
-                    <CheckCircle2 className="h-3 w-3 text-green-600" />
-                  ) : (
-                    <XCircle className="h-3 w-3 text-red-600" />
-                  )}
-                </div>
-                <div>
-                  <div className="font-medium text-sm">{invoice.description}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {invoice.id} • {formatDate(invoice.date)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {invoice.period} • {invoice.paymentMethod}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="font-medium text-sm">{formatCurrency(invoice.amount)}</div>
-                  <Badge 
-                    variant={invoice.status === 'paid' ? 'secondary' : 'destructive'}
-                    className="text-xs"
-                  >
-                    {invoice.status}
-                  </Badge>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onDownload(invoice.id)}
-                  disabled={loadingStates[`download-${invoice.id}`]}
-                  className="h-8 w-8"
-                >
-                  {loadingStates[`download-${invoice.id}`] ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Download className="h-3 w-3" />
-                  )}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {history.map((item: any) => (
+            <TableRow key={item.id}>
+              <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
+              <TableCell>{item.description}</TableCell>
+              <TableCell>{typeof item.amount === 'number' ? `$${item.amount.toFixed(2)}` : '-'}</TableCell>
+              <TableCell>
+                <Badge variant={item.status === "Paid" ? "default" : "destructive"}>
+                  {item.status}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <Button variant="outline" size="sm">
+                  <DownloadIcon className="h-4 w-4 mr-2" />
+                  Download
                 </Button>
-              </div>
-            </div>
+              </TableCell>
+            </TableRow>
           ))}
-        </div>
-      </CardContent>
+        </TableBody>
+      </Table>
     </Card>
-  );
+  )
 } 

@@ -25,6 +25,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "@uidotdev/usehooks": "^2.4.1",
     "@xyflow/react": "^12.7.0",
+    "autumn-js": "^0.0.67",
     "better-auth": "^1.2.7",
     "class-variance-authority": "^0.7.1",
     "classnames": "^2.5.1",

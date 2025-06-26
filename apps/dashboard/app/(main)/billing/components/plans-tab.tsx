@@ -1,175 +1,133 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, Star, ArrowRight, ExternalLink, Crown } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckIcon, Star } from "lucide-react";
+import { useBillingData, type Plan } from "../data/billing-data";
+import { useBilling } from "@/hooks/use-billing";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { NoPaymentMethodDialog } from "./no-payment-method-dialog";
 
-interface SubscriptionPlan {
-  id: string;
-  name: string;
-  price: number | null;
-  originalPrice?: number;
-  description: string;
-  features: string[];
-  limits: {
-    websites: number | null;
-    pageviews: number | null;
-    dataRetention: string;
-    teamMembers: number | null;
-  };
-  current: boolean;
-  popular: boolean;
-  recommended?: boolean;
-  badge?: string;
-}
+function PlanCard({ plan, onUpgrade, isLoading }: { plan: Plan, onUpgrade: (id: string) => void, isLoading: boolean }) {
+  const isCurrent = plan.scenario === 'active';
+  const isCanceled = plan.scenario === 'canceled';
+  const isScheduled = plan.scenario === 'scheduled';
+  const isPopular = plan.name === "Pro Plan";
 
-interface PlansTabProps {
-  plans: SubscriptionPlan[];
-  onUpgrade: (plan: SubscriptionPlan) => void;
-  formatCurrency: (amount: number) => string;
-  isLoading: boolean;
-}
+  // Determine button text based on plan status
+  let buttonText = plan.button_text;
+  let buttonVariant: 'default' | 'outline' | 'secondary' = isPopular ? 'default' : 'outline';
 
-export function PlansTab({ plans, onUpgrade, formatCurrency, isLoading }: PlansTabProps) {
+  if (isCurrent) {
+    buttonText = "Current Plan";
+    buttonVariant = 'outline';
+  } else if (isCanceled) {
+    buttonText = "Reactivate";
+  } else if (isScheduled) {
+    buttonText = "Scheduled";
+    buttonVariant = 'secondary';
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <h2 className="text-xl font-bold">Choose Your Plan</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Upgrade or downgrade anytime. All plans include a 14-day free trial.
-        </p>
+    <Card className={cn(
+      "flex flex-col border",
+      (isCurrent || isCanceled) ? "ring-2 ring-primary" : "hover:shadow-lg",
+      isPopular && !isCurrent ? "border-purple-500" : "border-border"
+    )}>
+      {isPopular && (
+        <Badge className="w-fit self-center -mt-3 bg-purple-500 text-white hover:bg-purple-600">
+          <Star className="h-3 w-3 mr-1" />
+          Most Popular
+        </Badge>
+      )}
+      {isCanceled && (
+        <Badge className="w-fit self-center -mt-3 bg-amber-500 text-white">
+          Cancelled
+        </Badge>
+      )}
+      {isScheduled && (
+        <Badge className="w-fit self-center -mt-3 bg-blue-500 text-white">
+          Starts Soon
+        </Badge>
+      )}
+      <CardHeader className={cn("text-center", !(isPopular || isCanceled || isScheduled) && "pt-6")}>
+        <CardTitle>{plan.name}</CardTitle>
+        <CardDescription>
+          <span className="text-3xl font-bold">{plan.price.primary_text}</span>
+          <span className="text-muted-foreground">{plan.price.secondary_text}</span>
+        </CardDescription>
+        {plan.status && (plan.current_period_end || plan.canceled_at) && (
+          <div className="text-xs text-muted-foreground mt-1">
+            {plan.canceled_at ? (
+              <span>Access until {new Date(plan.current_period_end || 0).toLocaleDateString()}</span>
+            ) : plan.status === 'scheduled' ? (
+              <span>Starts on {new Date(plan.current_period_end || 0).toLocaleDateString()}</span>
+            ) : (
+              <span>Renews on {new Date(plan.current_period_end || 0).toLocaleDateString()}</span>
+            )}
+          </div>
+        )}
+      </CardHeader>
+      <CardContent className="flex flex-col flex-grow p-6">
+        <div className="flex-grow space-y-3">
+          {plan.items.map(item => (
+            <li key={item.feature_id} className="flex items-start gap-3 list-none">
+              <CheckIcon className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <span>{item.primary_text}</span>
+                {item.secondary_text && <p className="text-muted-foreground text-xs">{item.secondary_text}</p>}
+              </div>
+            </li>
+          ))}
+        </div>
+        <Button
+          onClick={() => onUpgrade(plan.id)}
+          disabled={(isScheduled || (isCurrent && !isCanceled)) || isLoading}
+          variant={buttonVariant}
+          className="w-full mt-6"
+        >
+          {buttonText}
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+export function PlansTab() {
+  const { subscriptionData, isLoading: isDataLoading, refetch } = useBillingData()
+  const { onUpgrade, onManageBilling, isLoading: isActionLoading, showNoPaymentDialog, setShowNoPaymentDialog } = useBilling(refetch)
+
+  if (isDataLoading) {
+    return (
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Skeleton className="h-[28rem] w-full" />
+        <Skeleton className="h-[28rem] w-full" />
+        <Skeleton className="h-[28rem] w-full" />
       </div>
+    )
+  }
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {plans.map((plan) => (
-          <Card 
-            key={plan.id} 
-            className={`relative transition-all hover:shadow-md ${
-              plan.current ? "ring-2 ring-primary" : ""
-            } ${plan.popular ? "ring-2 ring-purple-500 scale-[1.02]" : ""}`}
-          >
-            {plan.popular && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge className="bg-purple-500 text-white px-3 py-1">
-                  <Star className="h-3 w-3 mr-1" />
-                  Most Popular
-                </Badge>
-              </div>
-            )}
-            {plan.recommended && (
-              <div className="absolute -top-3 right-3">
-                <Badge variant="secondary">Recommended</Badge>
-              </div>
-            )}
-            {plan.badge && (
-              <div className="absolute -top-3 left-3">
-                <Badge variant="outline" className="bg-orange-100 text-orange-700">
-                  {plan.badge}
-                </Badge>
-              </div>
-            )}
+  const plans = subscriptionData?.list || []
 
-            <CardHeader className="text-center pb-3">
-              <CardTitle className="flex items-center justify-center gap-2">
-                {plan.name}
-                {plan.current && (
-                  <Badge variant="secondary">Current</Badge>
-                )}
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">{plan.description}</p>
-              <div className="mt-3">
-                {plan.price === null ? (
-                  <div>
-                    <span className="text-2xl font-bold">Custom</span>
-                    <p className="text-xs text-muted-foreground mt-1">Contact sales</p>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-2xl font-bold">{formatCurrency(plan.price)}</span>
-                      {plan.originalPrice && (
-                        <span className="text-sm text-muted-foreground line-through">
-                          {formatCurrency(plan.originalPrice)}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">per month</p>
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm">Limits</h4>
-                <div className="grid grid-cols-2 gap-1 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Websites</span>
-                    <p className="font-medium">{plan.limits.websites || "Unlimited"}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Pageviews</span>
-                    <p className="font-medium">
-                      {plan.limits.pageviews ? plan.limits.pageviews.toLocaleString() : "Unlimited"}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Retention</span>
-                    <p className="font-medium">{plan.limits.dataRetention}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Team</span>
-                    <p className="font-medium">{plan.limits.teamMembers || "Unlimited"}</p>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-1">
-                <h4 className="font-medium text-sm">Features</h4>
-                <ul className="space-y-0.5">
-                  {plan.features.slice(0, 5).map((feature) => (
-                    <li key={feature} className="flex items-center text-xs">
-                      <CheckCircle2 className="h-3 w-3 text-green-500 mr-2 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                  {plan.features.length > 5 && (
-                    <li className="text-xs text-muted-foreground ml-5">
-                      +{plan.features.length - 5} more
-                    </li>
-                  )}
-                </ul>
-              </div>
-
-              <Button 
-                className="w-full mt-4" 
-                variant={plan.current ? "outline" : plan.popular ? "default" : "outline"}
-                onClick={() => onUpgrade(plan)}
-                disabled={plan.current || isLoading}
-                size="sm"
-              >
-                {plan.current ? (
-                  "Current Plan"
-                ) : plan.price === null ? (
-                  <>
-                    Contact Sales
-                    <ExternalLink className="ml-2 h-3 w-3" />
-                  </>
-                ) : (
-                  <>
-                    Upgrade to {plan.name}
-                    <ArrowRight className="ml-2 h-3 w-3" />
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+  return (
+    <>
+      <NoPaymentMethodDialog
+        open={showNoPaymentDialog}
+        onOpenChange={setShowNoPaymentDialog}
+        onConfirm={onManageBilling}
+      />
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
+        {plans.map((plan: Plan) => (
+          <PlanCard
+            key={plan.id}
+            plan={plan}
+            onUpgrade={onUpgrade}
+            isLoading={isActionLoading}
+          />
         ))}
       </div>
-    </div>
-  );
+    </>
+  )
 } 

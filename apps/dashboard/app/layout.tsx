@@ -109,6 +109,7 @@ export default function RootLayout({
       <head />
       <Databuddy
         clientId={isLocalhost ? "5ced32e5-0219-4e75-a18a-ad9826f85698" : "3ed1fce1-5a56-4cb6-a977-66864f6d18e3"}
+        apiUrl="http://localhost:4001"
         trackWebVitals={true}
         trackAttributes={true}
         trackErrors={true}
