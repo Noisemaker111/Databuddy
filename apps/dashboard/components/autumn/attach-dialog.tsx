@@ -170,7 +170,7 @@ export const OptionsInput = ({
         value={quantity ? quantity / billing_units : ""}
         onChange={(e) => {
           const newOptions = [...optionsInput];
-          newOptions[index].quantity = parseInt(e.target.value) * billing_units;
+          newOptions[index].quantity = parseInt((e.target as HTMLInputElement).value) * billing_units;
           setOptionsInput(newOptions);
         }}
       >

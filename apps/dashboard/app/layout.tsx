@@ -122,7 +122,6 @@ export default function RootLayout({
         trackErrors={true}
         trackPerformance={true}
         trackScreenViews={true}
-        trackWebVitals={true}
       />
       <body className="flex h-full min-h-screen flex-col bg-background text-foreground antialiased">
         <Providers>

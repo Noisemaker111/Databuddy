@@ -33,7 +33,7 @@ export function useBilling(refetch?: () => void) {
 
     const handleCancel = async (planId: string, immediate = false) => {
         setIsLoading(true);
-        try {
+        try { 
             await cancel({
                 productId: planId,
                 ...(immediate && { cancelImmediately: true })

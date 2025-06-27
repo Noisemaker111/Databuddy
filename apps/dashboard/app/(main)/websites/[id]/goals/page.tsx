@@ -262,7 +262,7 @@ export default function GoalsPage() {
       {isDialogOpen && (
         <Suspense>
           <EditGoalDialog
-            autocompleteData={autocompleteQuery.data?.data}
+            autocompleteData={autocompleteQuery.data}
             goal={editingGoal}
             isOpen={isDialogOpen}
             isSaving={isCreating || isUpdating}

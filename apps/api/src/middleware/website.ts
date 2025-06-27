@@ -38,9 +38,7 @@ export const websiteAuthHook = (permission: Permission = { website: ["read"] }) 
     const user = c.get('user');
     const session = c.get('session');
 
-    if (!user || !session) {
-      return c.json({ success: false, error: 'Unauthorized: User context missing' }, 401);
-    }
+
 
     const websiteId = c.req.header('X-Website-Id') || c.req.query('website_id') || c.req.param('id');
 
@@ -53,6 +51,10 @@ export const websiteAuthHook = (permission: Permission = { website: ["read"] }) 
       const demoWebsite = await getWebsiteById(websiteId);
       c.set('website', demoWebsite);
       return next();
+    }
+
+    if (!user || !session) {
+      return c.json({ success: false, error: 'Unauthorized: User context missing' }, 401);
     }
 
     if (user.role === 'ADMIN' || user.role === 'owner') {
