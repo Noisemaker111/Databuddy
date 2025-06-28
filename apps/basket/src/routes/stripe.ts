@@ -6,7 +6,7 @@ import { clickHouse } from '@databuddy/db'
 /**
  * STRIPE CHECKOUT SETUP GUIDE
  * 
- * To properly track revenue analytics, you MUST include client_id and session_id 
+ * To properly track revenue analytics, you MUST include metadata in payment_intent_data
  * when creating Stripe Checkout sessions server-side:
  * 
  * Example:
@@ -17,16 +17,21 @@ import { clickHouse } from '@databuddy/db'
  *   line_items: [{ price: 'price_abc123', quantity: 1 }],
  *   success_url: 'https://yourapp.com/success',
  *   cancel_url: 'https://yourapp.com/cancel',
- *   client_reference_id: 'session_id',  // REQUIRED: Pass your analytics session_id here
- *   metadata: {
- *     client_id: 'your_website_id',          // REQUIRED: Website/client identifier
+ *   payment_intent_data: {
+ *     metadata: {
+ *       client_id: 'your_website_id',    // REQUIRED: Website/client identifier
+ *       session_id: 'session_id',        // REQUIRED: Your analytics session_id
+ *       user_id: 'user_123',             // Optional: Your internal user ID
+ *       campaign: 'summer_sale',         // Optional: Marketing campaign
+ *     }
  *   }
  * });
  * ```
  * 
  * IMPORTANT:
- * - client_reference_id should contain your analytics session_id (anonymous user ID)
- * - metadata.client_id should contain your website/client identifier
+ * - payment_intent_data.metadata is the ONLY metadata that propagates to webhooks
+ * - client_id is required for linking payments to your analytics
+ * - session_id is required for attribution to user sessions
  * - This links Stripe payments to your analytics events automatically
  */
 
@@ -178,11 +183,11 @@ async function processWebhookEvent(event: Stripe.Event, config: StripeConfig) {
 }
 
 function extractClientId(stripeObject: any): string | null {
-    return stripeObject.metadata?.client_id || stripeObject.metadata?.website_id || null
+    return stripeObject.metadata?.client_id || null
 }
 
 function extractSessionId(stripeObject: any): string | null {
-    return stripeObject.client_reference_id || stripeObject.metadata?.session_id || null
+    return stripeObject.metadata?.session_id || null
 }
 
 function validateClientId(clientId: string | null, objectId: string, objectType: string): void {

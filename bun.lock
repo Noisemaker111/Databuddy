@@ -500,17 +500,6 @@
         "typescript": "^5.8.2",
       },
     },
-    "apps/processor": {
-      "name": "@databuddy/processor",
-      "version": "1.0.0",
-      "dependencies": {
-        "@elysiajs/cron": "^1.3.0",
-        "elysia": "latest",
-      },
-      "devDependencies": {
-        "bun-types": "latest",
-      },
-    },
     "packages/auth": {
       "name": "@databuddy/auth",
       "version": "0.0.1",
@@ -684,8 +673,6 @@
     "@databuddy/db": ["@databuddy/db@workspace:packages/db"],
 
     "@databuddy/email": ["@databuddy/email@workspace:packages/email"],
-
-    "@databuddy/processor": ["@databuddy/processor@workspace:apps/processor"],
 
     "@databuddy/redis": ["@databuddy/redis@workspace:packages/redis"],
 

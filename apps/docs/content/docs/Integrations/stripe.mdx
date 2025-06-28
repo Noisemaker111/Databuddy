@@ -110,7 +110,7 @@ Before setting up webhooks, make sure your Databuddy tracking script is configur
 
 Modify your server-side Stripe checkout session creation to include required metadata:
 
-> **Important**: You must set metadata on both the checkout session AND the payment intent. Metadata set only on the checkout session does not automatically propagate to payment intents and charges, which is what the webhook processes.
+> **Important**: Only metadata in `payment_intent_data.metadata` propagates to webhooks. This is the single source of truth for all payment events.
 
 #### Node.js/JavaScript Example
 
@@ -130,16 +130,7 @@ const session = await stripe.checkout.sessions.create({
   success_url: 'https://yoursite.com/success?session_id={CHECKOUT_SESSION_ID}',
   cancel_url: 'https://yoursite.com/cancel',
   
-  // REQUIRED: Link to your analytics
-  client_reference_id: sessionId, // Your analytics session ID
-  metadata: {
-    client_id: 'your_databuddy_client_id', // Your Databuddy Client ID
-    // Optional: Add any custom metadata
-    user_id: 'user_123',
-    campaign: 'summer_sale',
-  },
-  
-  // CRITICAL: Set metadata on payment intent so it propagates to charges
+  // REQUIRED: Set metadata on payment intent (this propagates to all webhook events)
   payment_intent_data: {
     metadata: {
       client_id: 'your_databuddy_client_id', // Required for webhook processing
@@ -169,16 +160,7 @@ session = stripe.checkout.Session.create(
     success_url='https://yoursite.com/success?session_id={CHECKOUT_SESSION_ID}',
     cancel_url='https://yoursite.com/cancel',
     
-    # REQUIRED: Link to your analytics
-    client_reference_id=session_id,  # Your analytics session ID
-    metadata={
-        'client_id': 'your_databuddy_client_id',  # Your Databuddy Client ID
-        # Optional: Add any custom metadata
-        'user_id': 'user_123',
-        'campaign': 'summer_sale',
-    },
-    
-    # CRITICAL: Set metadata on payment intent so it propagates to charges
+    # REQUIRED: Set metadata on payment intent (this propagates to all webhook events)
     payment_intent_data={
         'metadata': {
             'client_id': 'your_databuddy_client_id',  # Required for webhook processing
@@ -209,16 +191,7 @@ $session = \Stripe\Checkout\Session::create([
     'success_url' => 'https://yoursite.com/success?session_id={CHECKOUT_SESSION_ID}',
     'cancel_url' => 'https://yoursite.com/cancel',
     
-    // REQUIRED: Link to your analytics
-    'client_reference_id' => $sessionId, // Your analytics session ID
-    'metadata' => [
-        'client_id' => 'your_databuddy_client_id', // Your Databuddy Client ID
-        // Optional: Add any custom metadata
-        'user_id' => 'user_123',
-        'campaign' => 'summer_sale',
-    ],
-    
-    // CRITICAL: Set metadata on payment intent so it propagates to charges
+    // REQUIRED: Set metadata on payment intent (this propagates to all webhook events)
     'payment_intent_data' => [
         'metadata' => [
             'client_id' => 'your_databuddy_client_id', // Required for webhook processing
@@ -234,7 +207,7 @@ $session = \Stripe\Checkout\Session::create([
 
 ### Step 5: Get Your Analytics Session ID
 
-The `client_reference_id` should contain your website's analytics session ID. Databuddy automatically generates and manages session IDs, so you can easily access them:
+The `session_id` in your metadata should contain your website's analytics session ID. Databuddy automatically generates and manages session IDs, so you can easily access them:
 
 #### Frontend JavaScript
 
@@ -279,10 +252,11 @@ function createCheckoutSession(sessionId) {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      sessionId: sessionId,
-      // ... other checkout data
-    }),
+            body: JSON.stringify({
+          sessionId: sessionId,
+          clientId: 'your_databuddy_client_id',
+          // ... other checkout data
+        }),
   });
 }
 ```
@@ -512,13 +486,7 @@ export default async function handler(req, res) {
       success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin}/cancel`,
       
-      // REQUIRED: Link to analytics
-      client_reference_id: sessionId,
-      metadata: {
-        client_id: clientId,
-      },
-      
-      // CRITICAL: Set metadata on payment intent so it propagates to charges
+      // REQUIRED: Set metadata on payment intent (this propagates to all webhook events)
       payment_intent_data: {
         metadata: {
           client_id: clientId, // Required for webhook processing
@@ -557,13 +525,7 @@ app.post('/create-checkout-session', async (req, res) => {
       success_url: 'https://yoursite.com/success?session_id={CHECKOUT_SESSION_ID}',
       cancel_url: 'https://yoursite.com/cancel',
       
-      // REQUIRED: Link to analytics
-      client_reference_id: sessionId,
-      metadata: {
-        client_id: clientId,
-      },
-      
-      // CRITICAL: Set metadata on payment intent so it propagates to charges
+      // REQUIRED: Set metadata on payment intent (this propagates to all webhook events)
       payment_intent_data: {
         metadata: {
           client_id: clientId, // Required for webhook processing
@@ -606,22 +568,15 @@ Use these Stripe test cards:
 
 ## Important: Metadata Propagation
 
-### Why payment_intent_data is Required
+### Why payment_intent_data is the Only Source of Truth
 
-Stripe's checkout sessions, payment intents, and charges are **separate objects** with independent metadata. When you set metadata on a checkout session, it does **NOT** automatically copy to the associated payment intent or charges.
+Stripe's checkout sessions, payment intents, and charges are **separate objects** with independent metadata. Only metadata set in `payment_intent_data.metadata` propagates to webhook events.
 
-Since Databuddy's webhook processes individual payment events (charges, payment intents), the metadata must be present on those specific objects. This is why you must use `payment_intent_data.metadata` in addition to the session metadata.
-
-**What happens without payment_intent_data**:
-- ✅ Checkout session has metadata
-- ❌ Payment intent has empty metadata: `{}`
-- ❌ Charge has empty metadata: `{}`
-- ❌ Webhook fails: "Missing required client_id"
-
-**What happens with payment_intent_data**:
-- ✅ Checkout session has metadata
-- ✅ Payment intent has metadata with client_id
-- ✅ Charge inherits metadata from payment intent
+**The simplified approach**:
+- ✅ Set metadata ONLY in `payment_intent_data.metadata`
+- ✅ Payment intent has metadata with client_id and session_id
+- ✅ Charges inherit metadata from payment intent
+- ✅ All webhook events receive the metadata
 - ✅ Webhook processes successfully
 
 ## Troubleshooting
@@ -643,22 +598,18 @@ Since Databuddy's webhook processes individual payment events (charges, payment 
 **Problem**: Webhook receives events but shows "Missing required client_id" error
 
 **Solutions**:
-- Ensure `metadata.client_id` is set in your checkout session
-- **CRITICAL**: Add `payment_intent_data.metadata` with the same client_id - metadata on checkout sessions does NOT automatically propagate to payment intents and charges
+- Ensure `client_id` is set in `payment_intent_data.metadata`
 - Verify the client_id matches your Databuddy Client ID exactly
-- Check that metadata is being passed correctly
+- Don't set metadata on checkout session - only use `payment_intent_data.metadata`
 
-**Example of the fix**:
+**Correct implementation**:
 ```javascript
 const session = await stripe.checkout.sessions.create({
   // ... other config
-  metadata: {
-    client_id: 'your_client_id', // This stays on the session
-  },
   payment_intent_data: {
     metadata: {
-      client_id: 'your_client_id', // This goes to payment intent & charges
-      session_id: sessionId,
+      client_id: 'your_client_id', // Required for webhook processing
+      session_id: sessionId,       // Required for analytics tracking
     },
   },
 });
@@ -669,7 +620,7 @@ const session = await stripe.checkout.sessions.create({
 **Problem**: Payments appear in Databuddy but aren't linked to user sessions
 
 **Solutions**:
-- Verify `client_reference_id` contains the correct session ID from `sessionStorage.getItem('did_session')`
+- Verify `session_id` in `payment_intent_data.metadata` contains the correct session ID from `sessionStorage.getItem('did_session')`
 - Ensure Databuddy has initialized before creating the checkout session
 - Check that the session ID format matches: `sess_{timestamp}_{random_string}`
 - Verify the session ID exists in your analytics events by checking the Databuddy dashboard
@@ -728,12 +679,15 @@ Add custom metadata to track additional information:
 ```javascript
 const session = await stripe.checkout.sessions.create({
   // ... other configuration
-  metadata: {
-    client_id: 'your_databuddy_client_id', // Required
-    user_id: 'user_123',                   // Optional
-    campaign: 'summer_sale',               // Optional
-    source: 'email_campaign',              // Optional
-    affiliate_id: 'aff_456',               // Optional
+  payment_intent_data: {
+    metadata: {
+      client_id: 'your_databuddy_client_id', // Required
+      session_id: sessionId,                 // Required
+      user_id: 'user_123',                   // Optional
+      campaign: 'summer_sale',               // Optional
+      source: 'email_campaign',              // Optional
+      affiliate_id: 'aff_456',               // Optional
+    },
   },
 });
 ```
