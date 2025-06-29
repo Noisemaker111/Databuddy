@@ -1,21 +1,18 @@
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Users, Globe, LayoutDashboard, BarChart3, Activity, Home } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Users, LayoutDashboard, BarChart3, Activity, Home } from 'lucide-react';
 import { getAnalyticsOverviewData } from './(admin)/analytics/actions';
 
 export default async function AdminHomePage() {
-  // Try to get summary stats from analytics
-  let stats = { users: 0, websites: 0, domains: 0, events: 0 };
+  let stats = { users: 0, websites: 0, events: 0 };
   try {
     const { data } = await getAnalyticsOverviewData();
     stats = {
       users: data?.totalUsers || 0,
       websites: data?.totalWebsites || 0,
-      domains: data?.totalDomains || 0,
       events: Array.isArray(data?.eventsOverTime) ? data.eventsOverTime.reduce((sum, d) => sum + (d.value || 0), 0) : 0,
     };
-  } catch {}
+  } catch { }
 
   return (
     <div className="h-screen bg-background dark:bg-gradient-to-br dark:from-background dark:to-muted/60 flex flex-col items-center justify-center py-16 px-4">
@@ -55,17 +52,6 @@ export default async function AdminHomePage() {
               </CardHeader>
             </Card>
           </Link>
-          <Link href="/domains">
-            <Card className="group transition-shadow hover:shadow-lg border-0 bg-card dark:bg-card hover:bg-muted/60 dark:hover:bg-muted/40 cursor-pointer">
-              <CardHeader className="flex flex-row items-center gap-4 p-6">
-                <span className="rounded-full bg-green-500/10 dark:bg-green-400/20 p-3"><Globe className="h-7 w-7 text-green-600 dark:text-green-400" /></span>
-                <div>
-                  <CardTitle className="text-lg font-semibold">Domains</CardTitle>
-                  <CardDescription className="text-muted-foreground">Manage all domains</CardDescription>
-                </div>
-              </CardHeader>
-            </Card>
-          </Link>
           <Link href="/analytics">
             <Card className="group transition-shadow hover:shadow-lg border-0 bg-card dark:bg-card hover:bg-muted/60 dark:hover:bg-muted/40 cursor-pointer">
               <CardHeader className="flex flex-row items-center gap-4 p-6">
@@ -91,12 +77,6 @@ export default async function AdminHomePage() {
             <CardHeader>
               <CardTitle className="flex flex-col items-center text-3xl font-bold"><LayoutDashboard className="h-7 w-7 mb-1 text-blue-600 dark:text-blue-400" />{stats.websites}</CardTitle>
               <CardDescription className="text-muted-foreground">Websites</CardDescription>
-            </CardHeader>
-          </Card>
-          <Card className="text-center bg-card/80 dark:bg-muted/80 border-0 shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex flex-col items-center text-3xl font-bold"><Globe className="h-7 w-7 mb-1 text-green-600 dark:text-green-400" />{stats.domains}</CardTitle>
-              <CardDescription className="text-muted-foreground">Domains</CardDescription>
             </CardHeader>
           </Card>
           <Card className="text-center bg-card/80 dark:bg-muted/80 border-0 shadow-sm">

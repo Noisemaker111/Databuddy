@@ -83,7 +83,7 @@ export default async function AdminUsersPage({
         <CardContent className="p-0">
           {(!filteredUsers || filteredUsers.length === 0) ? (
             <div className="p-8 text-center text-muted-foreground">
-              {search 
+              {search
                 ? `No users found matching "${search}"`
                 : "No users found"}
             </div>
