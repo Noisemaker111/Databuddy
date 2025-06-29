@@ -4,6 +4,7 @@ import { Elysia } from "elysia";
 import basketRouter from "./routes/basket";
 import stripeRouter from "./routes/stripe";
 import { logger } from "./lib/logger";
+import "./polyfills/compression";
 // import { checkBotId } from "botid/server";
 
 const app = new Elysia()
