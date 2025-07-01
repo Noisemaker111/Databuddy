@@ -31,12 +31,25 @@ import { authClient } from "@databuddy/auth/client";
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   domain: z
-    .string()
-    .min(1, "Domain is required")
-    .regex(
-      /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$/,
-      "Invalid domain format",
-    ),
+    .preprocess((val) => {
+      if (typeof val !== "string") {
+        return val;
+      }
+      let domain = val;
+      if (domain.startsWith("http://") || domain.startsWith("https://")) {
+        try {
+          domain = new URL(domain).hostname;
+        } catch {
+          // if parsing fails, we fallback to the original value
+        }
+      }
+      return domain.replace(/^www\./, "");
+    }, z.string()
+      .min(1, "Domain is required")
+      .regex(
+        /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$/,
+        "Invalid domain format"
+      )),
 });
 
 type FormData = z.infer<typeof formSchema>;
