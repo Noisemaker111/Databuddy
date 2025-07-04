@@ -2,7 +2,6 @@ import { Autumn } from 'autumn-js';
 import { db, member, eq, and } from '@databuddy/db';
 import { cacheable } from '@databuddy/redis';
 
-console.log(process.env)
 const autumn = new Autumn();
 
 export async function checkAndTrackWebsiteCreation(customerId: string) {
@@ -21,8 +20,7 @@ export async function checkAndTrackWebsiteCreation(customerId: string) {
         }
         return { allowed: true };
     } catch (error) {
-        console.error(`[Billing Util] Error with autumn checkAndTrack:`, { error });
-        // Fail open on billing errors to not block user.
+        console.error('[Billing Util] Error with autumn checkAndTrack:', { error });
         return { allowed: true };
     }
 }
@@ -39,7 +37,7 @@ export async function trackWebsiteUsage(customerId: string, value: number) {
         });
         return { success: true };
     } catch (error) {
-        console.error(`[Billing Util] Error with autumn track:`, { error });
+        console.error('[Billing Util] Error with autumn track:', { error });
         return { success: false };
     }
 }
@@ -56,7 +54,7 @@ async function _getOrganizationOwnerId(organizationId: string): Promise<string |
         });
         return orgMember?.userId || null;
     } catch (error) {
-        console.error(`[Billing Util] Error with _getOrganizationOwnerId:`, { error });
+        console.error('[Billing Util] Error with _getOrganizationOwnerId:', { error });
         return null;
     }
 }

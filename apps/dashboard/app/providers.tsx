@@ -8,10 +8,9 @@ import type { session } from "@databuddy/db";
 import type { ReactNode } from "react";
 import { AutumnProvider } from "autumn-js/react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-// import { TRPCProvider } from "@/lib/trpc-provider";
 
 type Session = typeof session.$inferSelect;
-// Default query client configuration
+
 const defaultQueryClientOptions = {
   defaultOptions: {
     queries: {
@@ -31,7 +30,6 @@ const defaultQueryClientOptions = {
 
 export const queryClient = new QueryClient(defaultQueryClientOptions);
 
-// Create a SessionContext
 type SessionContextType = {
   session: Session | null;
   isLoading: boolean;
@@ -44,10 +42,8 @@ const SessionContext = createContext<SessionContextType>({
   error: null,
 });
 
-// Custom hook to use the session context
 export const useAuthSession = () => useContext(SessionContext);
 
-// SessionProvider component
 const SessionProvider = ({ children }: { children: ReactNode }) => {
   const { data: session, isPending, error } = useSession();
 
@@ -71,18 +67,30 @@ const SessionProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  const [clientQueryClient] = useState(
+    () =>
+      new QueryClient({
+        ...defaultQueryClientOptions,
+        defaultOptions: {
+          ...defaultQueryClientOptions.defaultOptions,
+          queries: {
+            ...defaultQueryClientOptions.defaultOptions.queries,
+            gcTime: 1000 * 60 * 5, // 5 minutes
+            staleTime: 1000 * 60 * 2, // 2 minutes
+          },
+        },
+      })
+  );
 
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      {/* <TRPCProvider> */}
-      <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={clientQueryClient}>
         <SessionProvider>
           <AutumnProvider backendUrl={process.env.NEXT_PUBLIC_API_URL}>
             <NuqsAdapter>{children}</NuqsAdapter>
           </AutumnProvider>
         </SessionProvider>
       </QueryClientProvider>
-      {/* </TRPCProvider> */}
     </ThemeProvider>
   );
 }

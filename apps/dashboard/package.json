@@ -10,7 +10,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@databuddy/rpc": "workspace:*",
     "@databuddy/sdk": "workspace:*",
     "@hello-pangea/dnd": "^18.0.1",
     "@mantine/dates": "^8.1.1",

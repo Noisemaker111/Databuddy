@@ -1,5 +1,5 @@
 import { logger } from "../../lib/logger";
-import { Context, Hono } from "hono";
+import { type Context, Hono } from "hono";
 import type { AppVariables } from "../../types";
 import { chQuery } from "@databuddy/db";
 import { createSqlBuilder } from "../../builders/analytics";

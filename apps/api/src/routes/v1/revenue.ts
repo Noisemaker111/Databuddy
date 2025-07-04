@@ -1,4 +1,4 @@
-import { Context, Hono } from 'hono';
+import { type Context, Hono } from 'hono';
 import { db, userStripeConfig, eq, websites } from '@databuddy/db';
 import { authMiddleware } from '../../middleware/auth';
 import { logger } from '../../lib/logger';
@@ -6,7 +6,7 @@ import { logger as discordLogger } from '../../lib/discord-webhook';
 import { nanoid } from 'nanoid';
 import { cacheable } from '@databuddy/redis';
 import type { AppVariables } from '../../types';
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import { chQuery } from '../../clickhouse/client';
 import { escapeSqlString } from '../../query/utils';
 
@@ -22,7 +22,7 @@ export const revenueRouter = new Hono<RevenueContext>();
 revenueRouter.use('*', authMiddleware);
 
 // Helper function to generate secure tokens
-function generateSecureToken(length: number = 32): string {
+function generateSecureToken(length = 32): string {
   return randomBytes(length).toString('hex');
 }
 
@@ -31,12 +31,12 @@ function maskWebhookSecret(secret: string): string {
   if (!secret || secret.length <= 8) {
     return secret; // Return as-is if too short to mask
   }
-  
+
   const firstFour = secret.substring(0, 4);
   const lastFour = secret.substring(secret.length - 4);
   const middleLength = secret.length - 8;
   const maskedMiddle = '*'.repeat(middleLength);
-  
+
   return `${firstFour}${maskedMiddle}${lastFour}`;
 }
 
@@ -83,13 +83,13 @@ revenueRouter.get('/config', async (c: Context) => {
 
   try {
     logger.info('[Revenue API] Fetching revenue config for user:', { userId: user.id });
-    
+
     let config = await getUserRevenueConfig(user.id);
-    
+
     // Auto-create config if it doesn't exist
     if (!config) {
       logger.info('[Revenue API] No config found, creating new one for user:', { userId: user.id });
-      
+
       [config] = await db
         .insert(userStripeConfig)
         .values({
@@ -106,13 +106,13 @@ revenueRouter.get('/config', async (c: Context) => {
           updatedAt: new Date().toISOString(),
         })
         .returning();
-        
+
       logger.info('[Revenue API] Successfully created new revenue config:', { configId: config.id });
 
       // Discord notification for revenue configuration setup
       await discordLogger.info(
         'Revenue Tracking Setup',
-        `User has set up revenue tracking and webhooks`,
+        'User has set up revenue tracking and webhooks',
         {
           configId: config.id,
           userId: user.id,
@@ -141,9 +141,9 @@ revenueRouter.get('/config', async (c: Context) => {
     });
   } catch (error) {
     logger.error('[Revenue API] Error fetching/creating revenue config:', { error });
-    return c.json({ 
-      success: false, 
-      error: "Failed to fetch revenue configuration" 
+    return c.json({
+      success: false,
+      error: "Failed to fetch revenue configuration"
     }, 500);
   }
 });
@@ -155,9 +155,9 @@ revenueRouter.get('/analytics/batch', async (c: Context) => {
   const endDate = c.req.query('end_date');
   const granularity = c.req.query('granularity') || 'daily';
   const isLiveMode = c.req.query('live_mode') === 'true';
-  const trendsLimit = parseInt(c.req.query('trends_limit') || '100');
-  const transactionsLimit = parseInt(c.req.query('transactions_limit') || '50');
-  const countryLimit = parseInt(c.req.query('country_limit') || '20');
+  const trendsLimit = Number.parseInt(c.req.query('trends_limit') || '100');
+  const transactionsLimit = Number.parseInt(c.req.query('transactions_limit') || '50');
+  const countryLimit = Number.parseInt(c.req.query('country_limit') || '20');
 
   if (!user) {
     return c.json({ success: false, error: "Unauthorized" }, 401);
@@ -194,8 +194,8 @@ revenueRouter.get('/analytics/batch', async (c: Context) => {
 
     const websiteIdList = websiteIds.map(id => `'${id}'`).join(',');
     const liveModeCondition = `AND livemode = ${isLiveMode ? 1 : 0}`;
-    const timeFormat = granularity === 'hourly' 
-      ? 'toDateTime(toStartOfHour(toDateTime(created)))' 
+    const timeFormat = granularity === 'hourly'
+      ? 'toDateTime(toStartOfHour(toDateTime(created)))'
       : 'toDate(toDateTime(created))';
 
     // Execute all queries in parallel
@@ -318,9 +318,9 @@ revenueRouter.get('/analytics/batch', async (c: Context) => {
     });
   } catch (error) {
     logger.error('[Revenue API] Error fetching batched revenue analytics:', { error });
-    return c.json({ 
-      success: false, 
-      error: "Failed to fetch revenue analytics" 
+    return c.json({
+      success: false,
+      error: "Failed to fetch revenue analytics"
     }, 500);
   }
 });
@@ -401,9 +401,9 @@ revenueRouter.get('/analytics/summary', async (c: Context) => {
     });
   } catch (error) {
     logger.error('[Revenue API] Error fetching revenue summary:', { error });
-    return c.json({ 
-      success: false, 
-      error: "Failed to fetch revenue summary" 
+    return c.json({
+      success: false,
+      error: "Failed to fetch revenue summary"
     }, 500);
   }
 });
@@ -415,7 +415,7 @@ revenueRouter.get('/analytics/trends', async (c: Context) => {
   const endDate = c.req.query('end_date');
   const granularity = c.req.query('granularity') || 'daily';
   const isLiveMode = c.req.query('live_mode') === 'true';
-  const limit = parseInt(c.req.query('limit') || '100');
+  const limit = Number.parseInt(c.req.query('limit') || '100');
 
   if (!user) {
     return c.json({ success: false, error: "Unauthorized" }, 401);
@@ -440,8 +440,8 @@ revenueRouter.get('/analytics/trends', async (c: Context) => {
     }
 
     const websiteIdList = websiteIds.map(id => `'${id}'`).join(',');
-    const timeFormat = granularity === 'hourly' 
-      ? 'toDateTime(toStartOfHour(toDateTime(created)))' 
+    const timeFormat = granularity === 'hourly'
+      ? 'toDateTime(toStartOfHour(toDateTime(created)))'
       : 'toDate(toDateTime(created))';
     const liveModeCondition = `AND livemode = ${isLiveMode ? 1 : 0}`;
 
@@ -471,9 +471,9 @@ revenueRouter.get('/analytics/trends', async (c: Context) => {
     });
   } catch (error) {
     logger.error('[Revenue API] Error fetching revenue trends:', { error });
-    return c.json({ 
-      success: false, 
-      error: "Failed to fetch revenue trends" 
+    return c.json({
+      success: false,
+      error: "Failed to fetch revenue trends"
     }, 500);
   }
 });
@@ -484,7 +484,7 @@ revenueRouter.get('/analytics/transactions', async (c: Context) => {
   const startDate = c.req.query('start_date');
   const endDate = c.req.query('end_date');
   const isLiveMode = c.req.query('live_mode') === 'true';
-  const limit = parseInt(c.req.query('limit') || '50');
+  const limit = Number.parseInt(c.req.query('limit') || '50');
 
   if (!user) {
     return c.json({ success: false, error: "Unauthorized" }, 401);
@@ -537,9 +537,9 @@ revenueRouter.get('/analytics/transactions', async (c: Context) => {
     });
   } catch (error) {
     logger.error('[Revenue API] Error fetching recent transactions:', { error });
-    return c.json({ 
-      success: false, 
-      error: "Failed to fetch recent transactions" 
+    return c.json({
+      success: false,
+      error: "Failed to fetch recent transactions"
     }, 500);
   }
 });
@@ -550,7 +550,7 @@ revenueRouter.get('/analytics/breakdown/country', async (c: Context) => {
   const startDate = c.req.query('start_date');
   const endDate = c.req.query('end_date');
   const isLiveMode = c.req.query('live_mode') === 'true';
-  const limit = parseInt(c.req.query('limit') || '20');
+  const limit = Number.parseInt(c.req.query('limit') || '20');
 
   if (!user) {
     return c.json({ success: false, error: "Unauthorized" }, 401);
@@ -605,9 +605,9 @@ revenueRouter.get('/analytics/breakdown/country', async (c: Context) => {
     });
   } catch (error) {
     logger.error('[Revenue API] Error fetching revenue by country:', { error });
-    return c.json({ 
-      success: false, 
-      error: "Failed to fetch revenue by country" 
+    return c.json({
+      success: false,
+      error: "Failed to fetch revenue by country"
     }, 500);
   }
 });
@@ -623,16 +623,16 @@ revenueRouter.post('/config', async (c: Context) => {
 
   try {
     logger.info('[Revenue API] Creating/updating revenue config:', { userId: user.id });
-    
+
     const existingConfig = await db.query.userStripeConfig.findFirst({
       where: eq(userStripeConfig.userId, user.id)
     });
 
-    let config;
-    
+    let config: typeof userStripeConfig.$inferSelect;
+
     if (existingConfig) {
       // Update existing config
-      const updateData: any = {
+      const updateData: Partial<typeof userStripeConfig.$inferInsert> = {
         updatedAt: new Date().toISOString(),
       };
 
@@ -687,16 +687,16 @@ revenueRouter.post('/config', async (c: Context) => {
     });
   } catch (error) {
     logger.error('[Revenue API] Error creating/updating revenue config:', { error });
-    
+
     if (error instanceof Error) {
-      return c.json({ 
-        success: false, 
-        error: `Failed to save revenue configuration: ${error.message}` 
+      return c.json({
+        success: false,
+        error: `Failed to save revenue configuration: ${error.message}`
       }, 500);
     }
-    return c.json({ 
-      success: false, 
-      error: "Failed to save revenue configuration" 
+    return c.json({
+      success: false,
+      error: "Failed to save revenue configuration"
     }, 500);
   }
 });
@@ -711,15 +711,15 @@ revenueRouter.post('/config/regenerate-webhook-token', async (c: Context) => {
 
   try {
     logger.info('[Revenue API] Regenerating webhook token for user:', { userId: user.id });
-    
+
     const existingConfig = await db.query.userStripeConfig.findFirst({
       where: eq(userStripeConfig.userId, user.id)
     });
 
     if (!existingConfig) {
-      return c.json({ 
-        success: false, 
-        error: "Revenue configuration not found" 
+      return c.json({
+        success: false,
+        error: "Revenue configuration not found"
       }, 404);
     }
 
@@ -742,9 +742,9 @@ revenueRouter.post('/config/regenerate-webhook-token', async (c: Context) => {
     });
   } catch (error) {
     logger.error('[Revenue API] Error regenerating webhook token:', { error });
-    return c.json({ 
-      success: false, 
-      error: "Failed to regenerate webhook token" 
+    return c.json({
+      success: false,
+      error: "Failed to regenerate webhook token"
     }, 500);
   }
 });
@@ -759,15 +759,15 @@ revenueRouter.delete('/config', async (c: Context) => {
 
   try {
     logger.info('[Revenue API] Deleting revenue config for user:', { userId: user.id });
-    
+
     const existingConfig = await db.query.userStripeConfig.findFirst({
       where: eq(userStripeConfig.userId, user.id)
     });
 
     if (!existingConfig) {
-      return c.json({ 
-        success: false, 
-        error: "Revenue configuration not found" 
+      return c.json({
+        success: false,
+        error: "Revenue configuration not found"
       }, 404);
     }
 
@@ -783,9 +783,9 @@ revenueRouter.delete('/config', async (c: Context) => {
     });
   } catch (error) {
     logger.error('[Revenue API] Error deleting revenue config:', { error });
-    return c.json({ 
-      success: false, 
-      error: "Failed to delete revenue configuration" 
+    return c.json({
+      success: false,
+      error: "Failed to delete revenue configuration"
     }, 500);
   }
 });
@@ -823,8 +823,8 @@ revenueRouter.get('/analytics/website/:websiteId', async (c: Context) => {
     }
 
     const liveModeCondition = `AND livemode = ${isLiveMode ? 1 : 0}`;
-    const timeFormat = granularity === 'hourly' 
-      ? 'toDateTime(toStartOfHour(toDateTime(created)))' 
+    const timeFormat = granularity === 'hourly'
+      ? 'toDateTime(toStartOfHour(toDateTime(created)))'
       : 'toDate(toDateTime(created))';
 
     // Execute all queries in parallel
@@ -913,9 +913,9 @@ revenueRouter.get('/analytics/website/:websiteId', async (c: Context) => {
     });
   } catch (error) {
     logger.error('[Revenue API] Error fetching website revenue analytics:', { error, websiteId });
-    return c.json({ 
-      success: false, 
-      error: "Failed to fetch website revenue analytics" 
+    return c.json({
+      success: false,
+      error: "Failed to fetch website revenue analytics"
     }, 500);
   }
 });
