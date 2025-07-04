@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "@databuddy/auth/client";
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { createContext, useContext, useEffect, useState } from "react";
 import type { session } from "@databuddy/db";
@@ -75,11 +75,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       {/* <TRPCProvider> */}
-      <SessionProvider>
-        <AutumnProvider backendUrl={process.env.NEXT_PUBLIC_API_URL}>
-          <NuqsAdapter>{children}</NuqsAdapter>
-        </AutumnProvider>
-      </SessionProvider>
+      <QueryClientProvider client={queryClient}>
+        <SessionProvider>
+          <AutumnProvider backendUrl={process.env.NEXT_PUBLIC_API_URL}>
+            <NuqsAdapter>{children}</NuqsAdapter>
+          </AutumnProvider>
+        </SessionProvider>
+      </QueryClientProvider>
       {/* </TRPCProvider> */}
     </ThemeProvider>
   );
