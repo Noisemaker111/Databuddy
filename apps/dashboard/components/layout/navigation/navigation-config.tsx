@@ -79,10 +79,10 @@ export const websiteNavigation: NavigationSection[] = [
     title: "Engagement",
     items: [{ name: "Assistant", icon: RobotIcon, href: "/assistant", highlight: true, alpha: true }],
   },
-  {
-    title: "Configuration",
-    items: [{ name: "Settings", icon: GearIcon, href: "/settings", highlight: true }],
-  },
+  // {
+  //   title: "Configuration",
+  //   items: [{ name: "Settings", icon: GearIcon, href: "/settings", highlight: true }],
+  // },
 ];
 
 export const demoNavigation: NavigationSection[] = [
