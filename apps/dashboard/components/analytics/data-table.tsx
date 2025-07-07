@@ -22,7 +22,7 @@ import {
   Search,
   X,
 } from "lucide-react";
-import React, { Fragment, useCallback, useMemo, useRef, useState } from "react";
+import React, { Fragment, useCallback, useMemo, useRef, useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -71,50 +71,43 @@ function getRowPercentage(row: any): number {
   return 0;
 }
 
-function getPercentageGradient(percentage: number): {
-  background: string;
-  hoverBackground: string;
-  borderColor: string;
-  accentColor: string;
-  glowColor: string;
-} {
-  if (percentage >= 50) {
-    return {
-      background: `linear-gradient(90deg, rgba(34, 197, 94, 0.08) 0%, rgba(34, 197, 94, 0.15) ${percentage * 0.8}%, rgba(34, 197, 94, 0.12) ${percentage}%, rgba(34, 197, 94, 0.02) ${percentage + 5}%, transparent 100%)`,
-      hoverBackground: `linear-gradient(90deg, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.22) ${percentage * 0.8}%, rgba(34, 197, 94, 0.18) ${percentage}%, rgba(34, 197, 94, 0.04) ${percentage + 5}%, transparent 100%)`,
-      borderColor: "rgba(34, 197, 94, 0.3)",
-      accentColor: "rgba(34, 197, 94, 0.8)",
-      glowColor: "rgba(34, 197, 94, 0.2)",
-    };
-  }
-  if (percentage >= 25) {
-    return {
-      background: `linear-gradient(90deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.15) ${percentage * 0.8}%, rgba(59, 130, 246, 0.12) ${percentage}%, rgba(59, 130, 246, 0.02) ${percentage + 5}%, transparent 100%)`,
-      hoverBackground: `linear-gradient(90deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.22) ${percentage * 0.8}%, rgba(59, 130, 246, 0.18) ${percentage}%, rgba(59, 130, 246, 0.04) ${percentage + 5}%, transparent 100%)`,
-      borderColor: "rgba(59, 130, 246, 0.3)",
-      accentColor: "rgba(59, 130, 246, 0.8)",
-      glowColor: "rgba(59, 130, 246, 0.2)",
-    };
-  }
-  if (percentage >= 10) {
-    return {
-      background: `linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.15) ${percentage * 0.8}%, rgba(245, 158, 11, 0.12) ${percentage}%, rgba(245, 158, 11, 0.02) ${percentage + 5}%, transparent 100%)`,
-      hoverBackground: `linear-gradient(90deg, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0.22) ${percentage * 0.8}%, rgba(245, 158, 11, 0.18) ${percentage}%, rgba(245, 158, 11, 0.04) ${percentage + 5}%, transparent 100%)`,
-      borderColor: "rgba(245, 158, 11, 0.3)",
-      accentColor: "rgba(245, 158, 11, 0.8)",
-      glowColor: "rgba(245, 158, 11, 0.2)",
-    };
-  }
-  return {
-    background: `linear-gradient(90deg, rgba(107, 114, 128, 0.06) 0%, rgba(107, 114, 128, 0.12) ${percentage * 0.8}%, rgba(107, 114, 128, 0.1) ${percentage}%, rgba(107, 114, 128, 0.02) ${percentage + 5}%, transparent 100%)`,
-    hoverBackground: `linear-gradient(90deg, rgba(107, 114, 128, 0.1) 0%, rgba(107, 114, 128, 0.18) ${percentage * 0.8}%, rgba(107, 114, 128, 0.15) ${percentage}%, rgba(107, 114, 128, 0.03) ${percentage + 5}%, transparent 100%)`,
-    borderColor: "rgba(107, 114, 128, 0.2)",
-    accentColor: "rgba(107, 114, 128, 0.7)",
-    glowColor: "rgba(107, 114, 128, 0.15)",
-  };
-}
+// Pre-computed CSS classes for different percentage ranges to avoid inline styles
+const PERCENTAGE_CLASSES = {
+  high: "bg-gradient-to-r from-green-500/8 via-green-500/15 to-transparent border-l-4 border-l-green-500/80",
+  medium: "bg-gradient-to-r from-blue-500/8 via-blue-500/15 to-transparent border-l-4 border-l-blue-500/80",
+  low: "bg-gradient-to-r from-amber-500/8 via-amber-500/15 to-transparent border-l-4 border-l-amber-500/80",
+  minimal: "bg-gradient-to-r from-gray-500/6 via-gray-500/12 to-transparent border-l-4 border-l-gray-500/70",
+} as const;
 
-const EnhancedSkeleton = ({ minHeight }: { minHeight: string | number }) => (
+// Memoized function to get CSS class instead of inline styles
+const getPercentageClass = (percentage: number): string => {
+  if (percentage >= 50) return PERCENTAGE_CLASSES.high;
+  if (percentage >= 25) return PERCENTAGE_CLASSES.medium;
+  if (percentage >= 10) return PERCENTAGE_CLASSES.low;
+  if (percentage > 0) return PERCENTAGE_CLASSES.minimal;
+  return "";
+};
+
+// Pre-computed column width classes to avoid inline styles
+const COLUMN_WIDTH_CLASSES = {
+  xs: "w-20 min-w-20 max-w-20",
+  sm: "w-24 min-w-24 max-w-24",
+  md: "w-32 min-w-32 max-w-32",
+  lg: "w-40 min-w-40 max-w-40",
+  xl: "w-48 min-w-48 max-w-48",
+  auto: "w-auto min-w-20 max-w-80",
+} as const;
+
+const getColumnWidthClass = (size: number): string => {
+  if (size <= 80) return COLUMN_WIDTH_CLASSES.xs;
+  if (size <= 100) return COLUMN_WIDTH_CLASSES.sm;
+  if (size <= 150) return COLUMN_WIDTH_CLASSES.md;
+  if (size <= 200) return COLUMN_WIDTH_CLASSES.lg;
+  if (size <= 250) return COLUMN_WIDTH_CLASSES.xl;
+  return COLUMN_WIDTH_CLASSES.auto;
+};
+
+const EnhancedSkeleton = memo(({ minHeight }: { minHeight: string | number }) => (
   <div className="animate-pulse space-y-3" style={{ minHeight }}>
     <div className="flex items-center justify-between">
       <Skeleton className="h-4 w-24 rounded-md" />
@@ -143,7 +136,9 @@ const EnhancedSkeleton = ({ minHeight }: { minHeight: string | number }) => (
       ))}
     </div>
   </div>
-);
+));
+
+EnhancedSkeleton.displayName = 'EnhancedSkeleton';
 
 export function DataTable<TData extends { name: string | number }, TValue>({
   data,
@@ -199,28 +194,60 @@ export function DataTable<TData extends { name: string | number }, TValue>({
     },
     state: {
       sorting,
-      globalFilter: showSearch ? globalFilter : "",
+      globalFilter,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    globalFilterFn: "includesString",
   });
 
-  const displayData = table.getRowModel().rows;
+  // Memoize pagination calculations
+  const filteredRows = table.getFilteredRowModel().rows;
+  const paginationInfo = useMemo(() => {
+    const pageSize = initialPageSize || 25;
+    const totalRows = filteredRows.length;
+    const totalPages = Math.ceil(totalRows / pageSize);
+    return { pageSize, totalRows, totalPages };
+  }, [filteredRows.length, initialPageSize]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const displayData = useMemo(() => {
+    const startIndex = (currentPage - 1) * paginationInfo.pageSize;
+    const endIndex = startIndex + paginationInfo.pageSize;
+    return filteredRows.slice(startIndex, endIndex);
+  }, [filteredRows, currentPage, paginationInfo.pageSize]);
 
   const getFieldFromTabId = (tabId: string): string => {
-    const mapping: Record<string, string> = {
-      errors_by_page: "path",
-      errors_by_browser: "browser_name",
-      errors_by_os: "os_name",
-      errors_by_country: "country",
-      errors_by_device: "device_type",
-      error_types: "error_message",
+    const fieldMapping: Record<string, string> = {
+      referrers: "referrer",
+      utm_sources: "utm_source",
+      utm_mediums: "utm_medium",
+      utm_campaigns: "utm_campaign",
+      top_pages: "page",
+      entry_pages: "page",
+      exit_pages: "page",
     };
-    return mapping[tabId] || "name";
+    return fieldMapping[tabId] || "name";
   };
+
+  const handleTabChange = useCallback(async (tabId: string) => {
+    if (tabId === activeTab) return;
+
+    setIsTransitioning(true);
+    setCurrentPage(1);
+    setGlobalFilter("");
+    setSorting([]);
+    setExpandedRows(new Set());
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    setActiveTab(tabId);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    setIsTransitioning(false);
+  }, [activeTab]);
 
   const toggleRowExpansion = useCallback((rowId: string) => {
     setExpandedRows((prev) => {
@@ -234,76 +261,49 @@ export function DataTable<TData extends { name: string | number }, TValue>({
     });
   }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (tableContainerRef.current) {
+  const handleRowMouseEnter = useCallback((rowData: TData, rowId: string) => {
+    setHoveredRow(rowId);
+    if (renderTooltipContent && tableContainerRef.current) {
       const rect = tableContainerRef.current.getBoundingClientRect();
-      setTooltipState((prev) => ({ ...prev, x: e.clientX - rect.left, y: e.clientY - rect.top }));
+      setTooltipState({
+        visible: true,
+        content: renderTooltipContent(rowData),
+        x: rect.right + 10,
+        y: rect.top + 20,
+      });
     }
-  }, []);
-
-  const handleRowMouseEnter = useCallback(
-    (row: TData, rowId: string) => {
-      if (!renderTooltipContent) return;
-      const content = renderTooltipContent(row);
-      setTooltipState((prev) => ({ ...prev, visible: true, content }));
-      setHoveredRow(rowId);
-    },
-    [renderTooltipContent]
-  );
-
-  const handleMouseLeave = useCallback(() => {
-    if (!renderTooltipContent) return;
-    setTooltipState((prev) => ({ ...prev, visible: false }));
-    setHoveredRow(null);
   }, [renderTooltipContent]);
 
-  const handleTabChange = React.useCallback(
-    (tabId: string) => {
-      if (tabId === activeTab) return;
+  const handleMouseLeave = useCallback(() => {
+    setHoveredRow(null);
+    setTooltipState((prev) => ({ ...prev, visible: false }));
+  }, []);
 
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setActiveTab(tabId);
-        setGlobalFilter("");
-        setExpandedRows(new Set());
-        setIsTransitioning(false);
-      }, 150);
-    },
-    [activeTab]
-  );
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (renderTooltipContent && tooltipState.visible && tableContainerRef.current) {
+      const rect = tableContainerRef.current.getBoundingClientRect();
+      setTooltipState((prev) => ({
+        ...prev,
+        x: rect.right + 10,
+        y: e.clientY - rect.top + rect.top,
+      }));
+    }
+  }, [renderTooltipContent, tooltipState.visible]);
+
+  const shouldShowPagination = paginationInfo.totalPages > 1;
 
   if (isLoading) {
     return (
-      <Card
-        className={cn(
-          "w-full overflow-hidden border bg-card/50 shadow-sm backdrop-blur-sm",
-          className
-        )}
-      >
-        <CardHeader className="px-2 pb-2 sm:px-3">
-          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
-            <div className="min-w-0 flex-1">
-              <Skeleton className="h-5 w-32 rounded-md" />
-              {description && <Skeleton className="mt-0.5 h-3 w-48 rounded-sm" />}
+      <Card className={cn("overflow-hidden", className)}>
+        <CardHeader className="border-b border-border/50 pb-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="font-semibold text-lg tracking-tight">{title}</h3>
+              {description && <p className="text-muted-foreground text-sm">{description}</p>}
             </div>
-            {showSearch && (
-              <div className="flex-shrink-0">
-                <Skeleton className="h-7 w-36 rounded-md" />
-              </div>
-            )}
           </div>
-
-          {tabs && tabs.length > 1 && (
-            <div className="mt-3">
-              <div className="flex gap-0.5 rounded-lg bg-muted/20 p-0.5">
-                {tabs.map((tab) => (
-                  <Skeleton className="h-8 w-20 rounded-md" key={tab.id} />
-                ))}
-              </div>
-            </div>
-          )}
         </CardHeader>
-        <CardContent className="px-2 pb-2 sm:px-3">
+        <CardContent className="p-4">
           <EnhancedSkeleton minHeight={minHeight} />
         </CardContent>
       </Card>
@@ -311,92 +311,64 @@ export function DataTable<TData extends { name: string | number }, TValue>({
   }
 
   return (
-    <Card
-      className={cn(
-        "w-full overflow-hidden border bg-card/50 shadow-sm backdrop-blur-sm",
-        className
-      )}
-    >
-      <CardHeader className="px-2 pb-2 sm:px-3">
-        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate font-semibold text-foreground text-sm">{title}</h3>
-            {description && (
-              <p className="mt-0.5 line-clamp-2 text-muted-foreground text-xs">{description}</p>
+    <Card className={cn("overflow-hidden", className)}>
+      <CardHeader className="border-b border-border/50 pb-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h3 className="font-semibold text-lg tracking-tight">{title}</h3>
+            {description && <p className="text-muted-foreground text-sm">{description}</p>}
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            {showSearch && (
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="w-full pl-8 sm:w-64"
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  placeholder="Search..."
+                  value={globalFilter}
+                />
+                {globalFilter && (
+                  <Button
+                    className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-sm p-0 hover:bg-muted"
+                    onClick={() => setGlobalFilter("")}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {tabs && tabs.length > 1 && (
+              <div className="flex rounded-lg border border-border/50 bg-muted/20 p-1">
+                {tabs.map((tab) => (
+                  <button
+                    className={cn(
+                      "relative rounded-md px-3 py-1.5 font-medium text-sm transition-all duration-200",
+                      activeTab === tab.id
+                        ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    )}
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id)}
+                    type="button"
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
-
-          {showSearch && (
-            <div className="relative w-full flex-shrink-0 sm:w-auto">
-              <Search className="-translate-y-1/2 absolute top-1/2 left-2 h-3 w-3 transform text-muted-foreground/50" />
-              <Input
-                aria-label={`Search ${title}`}
-                className="h-7 w-full border-0 bg-muted/30 pr-2 pl-7 text-xs focus:bg-background focus:ring-1 focus:ring-primary/20 sm:w-36"
-                onChange={(event) => setGlobalFilter(event.target.value)}
-                placeholder="Filter data..."
-                value={globalFilter ?? ""}
-              />
-            </div>
-          )}
         </div>
-
-        {tabs && tabs.length > 1 && (
-          <div className="mt-3 overflow-hidden">
-            <div className="-mb-1 overflow-x-auto pb-1">
-              <nav
-                aria-label="Data view options"
-                className="inline-flex gap-0.5 rounded bg-muted/40 p-0.5"
-                role="tablist"
-              >
-                {tabs.map((tab) => {
-                  const isActive = activeTab === tab.id;
-                  const itemCount = tab.data?.length || 0;
-
-                  return (
-                    <button
-                      aria-controls={`tabpanel-${tab.id}`}
-                      aria-selected={isActive}
-                      className={cn(
-                        "flex items-center gap-1 rounded-md px-2.5 py-1.5 font-medium text-xs transition-all duration-200",
-                        "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-1",
-                        "disabled:opacity-60",
-                        isActive
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
-                      )}
-                      disabled={isTransitioning}
-                      key={tab.id}
-                      onClick={() => handleTabChange(tab.id)}
-                      role="tab"
-                      tabIndex={isActive ? 0 : -1}
-                      type="button"
-                    >
-                      <span>{tab.label}</span>
-                      {itemCount > 0 && (
-                        <span
-                          className={cn(
-                            "inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 font-semibold text-[10px]",
-                            isActive
-                              ? "bg-primary/15 text-primary"
-                              : "bg-muted-foreground/20 text-muted-foreground/70"
-                          )}
-                        >
-                          {itemCount > 99 ? "99+" : itemCount}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-          </div>
-        )}
       </CardHeader>
 
-      <CardContent className="overflow-hidden px-2 pb-2 sm:px-3">
+      <CardContent className="p-0">
         <div
           className={cn(
-            "relative transition-all duration-300 ease-out",
+            "relative transition-all duration-300 ease-in-out",
             isTransitioning && "scale-[0.98] opacity-40"
           )}
           onMouseLeave={handleMouseLeave}
@@ -460,19 +432,12 @@ export function DataTable<TData extends { name: string | number }, TValue>({
                             (header.column.columnDef.meta as any)?.className,
                             header.column.getCanSort()
                               ? "group cursor-pointer select-none transition-all duration-200 hover:bg-muted/30 hover:text-foreground"
-                              : "select-none"
+                              : "select-none",
+                            getColumnWidthClass(header.getSize())
                           )}
                           key={header.id}
                           onClick={header.column.getToggleSortingHandler()}
                           role={header.column.getCanSort() ? "button" : undefined}
-                          style={{
-                            width:
-                              header.getSize() !== 150
-                                ? `${Math.min(header.getSize(), 300)}px`
-                                : undefined,
-                            maxWidth: "300px",
-                            minWidth: "80px",
-                          }}
                           tabIndex={header.column.getCanSort() ? 0 : -1}
                         >
                           <div className="flex items-center gap-1.5">
@@ -506,7 +471,7 @@ export function DataTable<TData extends { name: string | number }, TValue>({
                     const hasSubRows = subRows && subRows.length > 0;
                     const isExpanded = expandedRows.has(row.id);
                     const percentage = getRowPercentage(row.original);
-                    const gradient = getPercentageGradient(percentage);
+                    const percentageClass = getPercentageClass(percentage);
 
                     return (
                       <Fragment key={row.id}>
@@ -517,7 +482,8 @@ export function DataTable<TData extends { name: string | number }, TValue>({
                             hoveredRow && hoveredRow !== row.id
                               ? "opacity-40 grayscale-[80%]"
                               : "opacity-100",
-                            !hoveredRow && (rowIndex % 2 === 0 ? "bg-background/50" : "bg-muted/10")
+                            !hoveredRow && (rowIndex % 2 === 0 ? "bg-background/50" : "bg-muted/10"),
+                            !hoveredRow && percentage > 0 && percentageClass
                           )}
                           onClick={() => {
                             if (hasSubRows) {
@@ -528,31 +494,16 @@ export function DataTable<TData extends { name: string | number }, TValue>({
                             }
                           }}
                           onMouseEnter={() => handleRowMouseEnter(row.original, row.id)}
-                          style={{
-                            background:
-                              !hoveredRow && percentage > 0 ? gradient.background : undefined,
-                            boxShadow:
-                              !hoveredRow && percentage > 0
-                                ? `inset 3px 0 0 0 ${gradient.accentColor}`
-                                : undefined,
-                          }}
                         >
                           {row.getVisibleCells().map((cell, cellIndex) => (
                             <TableCell
                               className={cn(
                                 "px-2 py-3 font-medium text-sm transition-colors duration-150 sm:px-4",
                                 cellIndex === 0 && "font-semibold text-foreground",
-                                (cell.column.columnDef.meta as any)?.className
+                                (cell.column.columnDef.meta as any)?.className,
+                                getColumnWidthClass(cell.column.getSize())
                               )}
                               key={cell.id}
-                              style={{
-                                width:
-                                  cell.column.getSize() !== 150
-                                    ? `${Math.min(cell.column.getSize(), 300)}px`
-                                    : undefined,
-                                maxWidth: "300px",
-                                minWidth: "80px",
-                              }}
                             >
                               <div className="flex items-center gap-2">
                                 {cellIndex === 0 && hasSubRows && (
@@ -598,26 +549,12 @@ export function DataTable<TData extends { name: string | number }, TValue>({
                                   <TableCell
                                     className={cn(
                                       "py-2 text-muted-foreground text-sm",
-                                      cellIndex === 0 ? "pl-8" : "px-3"
+                                      getColumnWidthClass(cell.column.getSize())
                                     )}
-                                    key={`sub-${cell.id}`}
-                                    style={{
-                                      width:
-                                        cell.column.getSize() !== 150
-                                          ? `${Math.min(cell.column.getSize(), 300)}px`
-                                          : undefined,
-                                      maxWidth: "300px",
-                                      minWidth: "80px",
-                                    }}
+                                    key={`${cell.id}-sub`}
                                   >
-                                    <div className="truncate">
-                                      {cellIndex === 0 ? (
-                                        <span className="text-xs">
-                                          ↳ {(subRow as any)[cell.column.id] || ""}
-                                        </span>
-                                      ) : (
-                                        (subRow as any)[cell.column.id] || ""
-                                      )}
+                                    <div className="pl-6 truncate">
+                                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                     </div>
                                   </TableCell>
                                 ))
@@ -631,37 +568,99 @@ export function DataTable<TData extends { name: string | number }, TValue>({
               </Table>
             </div>
           ) : (
-            <div
-              className="flex flex-col items-center justify-center py-8 text-center sm:py-16"
-              style={{ minHeight }}
-            >
-              <div className="mb-4">
-                <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/20">
-                  {globalFilter ? (
-                    <Search className="h-7 w-7 text-muted-foreground/50" />
-                  ) : (
-                    <DatabaseIcon className="h-7 w-7 text-muted-foreground/50" />
-                  )}
-                </div>
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted/50">
+                <DatabaseIcon className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h4 className="mb-2 font-medium text-base text-foreground">
-                {globalFilter ? "No results found" : emptyMessage}
-              </h4>
-              <p className="mb-4 max-w-sm text-muted-foreground text-sm">
+              <h4 className="mb-2 font-semibold text-lg">{emptyMessage}</h4>
+              <p className="max-w-sm text-muted-foreground text-sm">
                 {globalFilter
-                  ? `No data matches your search for "${globalFilter}". Try adjusting your search terms.`
-                  : "Data will appear here when available and ready to display."}
+                  ? "Try adjusting your search terms or filters."
+                  : "Data will appear here once available."}
               </p>
               {globalFilter && (
-                <button
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 font-medium text-primary text-sm transition-colors hover:bg-primary/15 hover:text-primary/80"
+                <Button
+                  className="mt-4"
                   onClick={() => setGlobalFilter("")}
-                  type="button"
+                  size="sm"
+                  variant="outline"
                 >
-                  <X className="h-4 w-4" />
-                  Clear search
-                </button>
+                  <X className="mr-2 h-4 w-4" />
+                  Clear Search
+                </Button>
               )}
+            </div>
+          )}
+
+          {shouldShowPagination && (
+            <div className="flex items-center justify-between border-t border-border/50 px-4 py-3">
+              <div className="text-muted-foreground text-sm">
+                Showing {Math.min((currentPage - 1) * paginationInfo.pageSize + 1, paginationInfo.totalRows)} to{" "}
+                {Math.min(currentPage * paginationInfo.pageSize, paginationInfo.totalRows)} of{" "}
+                {paginationInfo.totalRows} entries
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  size="sm"
+                  variant="outline"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, paginationInfo.totalPages) }, (_, i) => {
+                    const pageNumber = i + 1;
+                    return (
+                      <Button
+                        className={cn(
+                          "h-8 w-8",
+                          currentPage === pageNumber
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-background text-muted-foreground hover:bg-muted"
+                        )}
+                        key={pageNumber}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        {pageNumber}
+                      </Button>
+                    );
+                  })}
+                  {paginationInfo.totalPages > 5 && (
+                    <>
+                      <span className="px-2 text-muted-foreground">...</span>
+                      <Button
+                        className={cn(
+                          "h-8 w-8",
+                          currentPage === paginationInfo.totalPages
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-background text-muted-foreground hover:bg-muted"
+                        )}
+                        onClick={() => setCurrentPage(paginationInfo.totalPages)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        {paginationInfo.totalPages}
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <Button
+                  disabled={currentPage >= paginationInfo.totalPages}
+                  onClick={() => setCurrentPage((prev) => Math.min(paginationInfo.totalPages, prev + 1))}
+                  size="sm"
+                  variant="outline"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </div>
