@@ -20,10 +20,9 @@ import {
   formattedDateRangeAtom,
   timeGranularityAtom,
 } from "@/stores/jotai/filterAtoms";
+import { WebsitePageHeader } from "../_components/website-page-header";
 
-const PageHeader = lazy(() =>
-  import("./_components/page-header").then((m) => ({ default: m.PageHeader }))
-);
+// Removed PageHeader import - using shared WebsitePageHeader
 const FunnelsList = lazy(() =>
   import("./_components/funnels-list").then((m) => ({ default: m.FunnelsList }))
 );
@@ -281,20 +280,23 @@ export default function FunnelsPage() {
 
   return (
     <div className="mx-auto max-w-[1600px] space-y-4 p-3 sm:p-4 lg:p-6" ref={pageRef}>
-      <Suspense fallback={<PageHeaderSkeleton />}>
-        <PageHeader
-          funnelsCount={funnels.length}
-          hasError={!!funnelsError}
-          isLoading={funnelsLoading}
-          isRefreshing={isRefreshing}
-          onCreateFunnel={() => {
-            setEditingFunnel(null);
-            setIsDialogOpen(true);
-          }}
-          onRefresh={handleRefresh}
-          websiteName={websiteData?.name || ""}
-        />
-      </Suspense>
+      <WebsitePageHeader
+        title="Conversion Funnels"
+        description="Track user journeys and optimize conversion drop-off points"
+        icon={<ChartBarIcon className="h-6 w-6 text-primary" size={16} weight="duotone" />}
+        websiteId={websiteId}
+        websiteName={websiteData?.name || undefined}
+        isLoading={funnelsLoading}
+        isRefreshing={isRefreshing}
+        hasError={!!funnelsError}
+        onRefresh={handleRefresh}
+        onCreateAction={() => {
+          setEditingFunnel(null);
+          setIsDialogOpen(true);
+        }}
+        createActionLabel="Create Funnel"
+        subtitle={funnelsLoading ? undefined : `${funnels.length} funnel${funnels.length !== 1 ? "s" : ""}`}
+      />
 
       <Suspense fallback={<FunnelsListSkeleton />}>
         <FunnelsList

@@ -34,10 +34,8 @@ interface StatCardProps {
   isLoading?: boolean;
   className?: string;
   variant?: "default" | "success" | "info" | "warning" | "danger";
-  // Flag to indicate if decreasing values are positive (e.g., bounce rate, page load time)
   invertTrend?: boolean;
   id?: string;
-  // Mini chart data
   chartData?: MiniChartDataPoint[];
   showChart?: boolean;
   formatValue?: (value: number) => string;
@@ -48,14 +46,11 @@ const formatTrendValue = (value: string | number, formatter?: (v: number) => str
     if (formatter) {
       return formatter(value);
     }
-    // Show 1 decimal place for non-integers, otherwise format as a whole number.
     return Number.isInteger(value) ? formatMetricNumber(value) : value.toFixed(1);
   }
-  // It's a pre-formatted string like "1m 23s" or "50%", so return as is.
   return value;
 };
 
-// Memoized mini chart component
 const MiniChart = memo(({ data, id }: { data: MiniChartDataPoint[]; id: string }) => {
   const hasData = data && data.length > 0;
   const hasVariation = hasData && data.some((d) => d.value !== data[0].value);
@@ -156,7 +151,6 @@ export function StatCard({
   showChart = false,
   formatValue,
 }: StatCardProps) {
-  // Determine color based on variant
   const getVariantClasses = () => {
     switch (variant) {
       case "success":
@@ -172,7 +166,6 @@ export function StatCard({
     }
   };
 
-  // Determine if trend is a number or detailed Trend object
   const trendValue = typeof trend === "object" && trend !== null ? trend.change : trend;
 
   if (isLoading) {
@@ -212,10 +205,8 @@ export function StatCard({
     );
   }
 
-  // Check if value is a time string (like "1.75s", "500ms")
   const isTimeValue = typeof value === "string" && /\d+(\.\d+)?(s|ms)$/.test(value);
 
-  // Use formatMetricNumber for value display, unless it's a pre-formatted string (like time or already has %)
   const displayValue =
     (typeof value === "string" && (value.endsWith("%") || isTimeValue)) || typeof value !== "number"
       ? value.toString()
@@ -235,11 +226,9 @@ export function StatCard({
       id={id}
     >
       <div className="relative p-3 sm:p-4">
-        {/* Background decoration */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] to-transparent opacity-0 group-hover:opacity-100" />
 
         <div className="relative z-10 space-y-1.5 sm:space-y-2">
-          {/* Header with title and icon */}
           <div className="flex items-start justify-between">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
@@ -269,7 +258,6 @@ export function StatCard({
             )}
           </div>
 
-          {/* Trend and description row */}
           <div className="flex items-center justify-between text-[9px] sm:text-[10px] md:text-xs">
             <div className="flex min-h-[12px] items-center sm:min-h-[14px]">
               {trendValue !== undefined && !Number.isNaN(trendValue) && (
@@ -293,7 +281,6 @@ export function StatCard({
             )}
           </div>
 
-          {/* Chart */}
           {hasValidChartData && (
             <div className="-mb-0.5 sm:-mb-1 [--chart-color:theme(colors.primary.DEFAULT)] group-hover:[--chart-color:theme(colors.primary.500)]">
               <MiniChart data={chartData} id={id || `chart-${Math.random()}`} />

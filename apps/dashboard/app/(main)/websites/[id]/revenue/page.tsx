@@ -13,9 +13,8 @@ import { formattedDateRangeAtom, timeGranularityAtom } from "@/stores/jotai/filt
 import { useWebsiteRevenue } from "./hooks/use-website-revenue";
 
 // Lazy load components
-const PageHeader = lazy(() =>
-  import("./_components/page-header").then((m) => ({ default: m.PageHeader }))
-);
+// Removed PageHeader import - using shared WebsitePageHeader
+import { WebsitePageHeader } from "../_components/website-page-header";
 const RevenueMetrics = lazy(() =>
   import("./_components/revenue-metrics").then((m) => ({ default: m.RevenueMetrics }))
 );
@@ -144,14 +143,16 @@ export default function WebsiteRevenuePage() {
   if (!revenueConfig.isSetupComplete) {
     return (
       <div className="mx-auto max-w-[1600px] space-y-4 p-3 sm:p-4 lg:p-6">
-        <Suspense fallback={<PageHeaderSkeleton />}>
-          <PageHeader
-            isRefreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            websiteId={websiteId}
-            websiteName={websiteData?.name || undefined}
-          />
-        </Suspense>
+        <WebsitePageHeader
+          title="Revenue Analytics"
+          description="Track revenue and transaction data for this website"
+          icon={<CreditCardIcon className="h-6 w-6 text-green-600 dark:text-green-400" size={16} weight="duotone" />}
+          websiteId={websiteId}
+          websiteName={websiteData?.name || undefined}
+          isRefreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          showBackButton={true}
+        />
 
         <Suspense fallback={<Skeleton className="h-64 w-full" />}>
           <RevenueNotSetup websiteName={websiteData?.name || undefined} />
@@ -164,16 +165,18 @@ export default function WebsiteRevenuePage() {
   if (!(summaryStats.hasData || revenueLoading)) {
     return (
       <div className="mx-auto max-w-[1600px] space-y-4 p-3 sm:p-4 lg:p-6">
-        <Suspense fallback={<PageHeaderSkeleton />}>
-          <PageHeader
-            errorMessage={revenueError?.message}
-            hasError={!!revenueError}
-            isRefreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            websiteId={websiteId}
-            websiteName={websiteData?.name || undefined}
-          />
-        </Suspense>
+        <WebsitePageHeader
+          title="Revenue Analytics"
+          description="Track revenue and transaction data for this website"
+          icon={<CreditCardIcon className="h-6 w-6 text-green-600 dark:text-green-400" size={16} weight="duotone" />}
+          websiteId={websiteId}
+          websiteName={websiteData?.name || undefined}
+          isRefreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          hasError={!!revenueError}
+          errorMessage={revenueError?.message}
+          showBackButton={true}
+        />
 
         <Suspense fallback={<Skeleton className="h-64 w-full" />}>
           <NoRevenueData websiteName={websiteData?.name || undefined} />
@@ -185,16 +188,18 @@ export default function WebsiteRevenuePage() {
   // Main revenue page
   return (
     <div className="mx-auto max-w-[1600px] space-y-4 p-3 sm:p-4 lg:p-6">
-      <Suspense fallback={<PageHeaderSkeleton />}>
-        <PageHeader
-          errorMessage={revenueError?.message}
-          hasError={!!revenueError}
-          isRefreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          websiteId={websiteId}
-          websiteName={websiteData?.name || undefined}
-        />
-      </Suspense>
+      <WebsitePageHeader
+        title="Revenue Analytics"
+        description="Track revenue and transaction data for this website"
+        icon={<CreditCardIcon className="h-6 w-6 text-green-600 dark:text-green-400" size={16} weight="duotone" />}
+        websiteId={websiteId}
+        websiteName={websiteData?.name || undefined}
+        isRefreshing={isRefreshing}
+        onRefresh={handleRefresh}
+        hasError={!!revenueError}
+        errorMessage={revenueError?.message}
+        showBackButton={true}
+      />
 
       {/* Revenue Metrics */}
       <Suspense fallback={<RevenueMetricsSkeleton />}>

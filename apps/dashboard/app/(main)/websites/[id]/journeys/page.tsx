@@ -1,6 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { Path, Target } from "@phosphor-icons/react";
 import { useAtom } from "jotai";
 import {
   ArrowRight,
@@ -8,8 +9,6 @@ import {
   ExternalLink,
   MousePointer,
   RefreshCw,
-  Route,
-  Target,
   Timer,
   TrendingDown,
   TrendingUp,
@@ -38,6 +37,7 @@ import {
   formattedDateRangeAtom,
   timeGranularityAtom,
 } from "@/stores/jotai/filterAtoms";
+import { WebsitePageHeader } from "../_components/website-page-header";
 
 export default function JourneysPage() {
   const { id } = useParams();
@@ -547,35 +547,15 @@ export default function JourneysPage() {
   return (
     <div className="mx-auto max-w-[1600px] space-y-6 p-3 sm:p-4 lg:p-6">
       {/* Header */}
-      <div className="rounded border-b bg-muted/20 py-2 pb-6">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl border border-primary/20 bg-primary/10 p-3">
-                <Route className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="font-bold text-2xl text-foreground tracking-tight sm:text-3xl">
-                  User Journeys
-                </h1>
-                <p className="text-muted-foreground text-sm sm:text-base">
-                  Analyze user navigation patterns and identify optimization opportunities
-                </p>
-              </div>
-            </div>
-          </div>
-          <Button
-            className="gap-2 rounded-lg border-border/50 px-4 py-2 font-medium transition-all duration-300 hover:border-primary/50 hover:bg-primary/5"
-            disabled={isRefreshing}
-            onClick={handleRefresh}
-            size="default"
-            variant="outline"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            Refresh Data
-          </Button>
-        </div>
-      </div>
+      <WebsitePageHeader
+        title="User Journeys"
+        description="Analyze user navigation patterns and identify optimization opportunities"
+        icon={<Path className="h-6 w-6 text-primary" weight="duotone" />}
+        websiteId={websiteId}
+        websiteName={websiteData?.name || undefined}
+        isRefreshing={isRefreshing}
+        onRefresh={handleRefresh}
+      />
 
       {/* Enhanced Summary Stats */}
       <div className="space-y-4">

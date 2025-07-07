@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAnalyticsLocations } from "@/hooks/use-analytics";
 import { cn } from "@/lib/utils";
+import { WebsitePageHeader } from "../_components/website-page-header";
 
 // Dynamic import for MapComponent (heavy Leaflet/D3 dependencies)
 const MapComponent = dynamic(
@@ -48,44 +49,39 @@ function WebsiteMapPage() {
     <div className="flex h-[calc(100vh-7rem)] flex-col space-y-4 p-3 sm:p-4 lg:p-6">
       {/* Header with proper spacing */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-primary/10 p-2">
-            <Globe className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="font-semibold text-xl">Geographic Data</h1>
-            {!isLoading && totalVisitors > 0 && (
-              <p className="text-muted-foreground text-sm">
-                {totalVisitors.toLocaleString()} visitors across {topCountries.length} countries
-              </p>
-            )}
-          </div>
-        </div>
-
-        <Tabs onValueChange={(value) => setMode(value as "total" | "perCapita")} value={mode}>
-          <div className="relative border-b">
-            <TabsList className="h-10 w-full justify-start overflow-x-auto bg-transparent p-0">
-              <TabsTrigger
-                className="relative h-10 cursor-pointer touch-manipulation whitespace-nowrap rounded-none px-2 text-xs transition-colors hover:bg-muted/50 sm:px-4 sm:text-sm"
-                value="total"
-              >
-                Total Visitors
-                {mode === "total" && (
-                  <div className="absolute bottom-0 left-0 h-[2px] w-full bg-primary" />
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                className="relative h-10 cursor-pointer touch-manipulation whitespace-nowrap rounded-none px-2 text-xs transition-colors hover:bg-muted/50 sm:px-4 sm:text-sm"
-                value="perCapita"
-              >
-                Per Capita
-                {mode === "perCapita" && (
-                  <div className="absolute bottom-0 left-0 h-[2px] w-full bg-primary" />
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </div>
-        </Tabs>
+        <WebsitePageHeader
+          title="Geographic Data"
+          icon={<Globe className="h-5 w-5 text-primary" />}
+          websiteId={id}
+          variant="minimal"
+          subtitle={!isLoading && totalVisitors > 0 ? `${totalVisitors.toLocaleString()} visitors across ${topCountries.length} countries` : undefined}
+          additionalActions={
+            <Tabs onValueChange={(value) => setMode(value as "total" | "perCapita")} value={mode}>
+              <div className="relative border-b">
+                <TabsList className="h-10 w-full justify-start overflow-x-auto bg-transparent p-0">
+                  <TabsTrigger
+                    className="relative h-10 cursor-pointer touch-manipulation whitespace-nowrap rounded-none px-2 text-xs transition-colors hover:bg-muted/50 sm:px-4 sm:text-sm"
+                    value="total"
+                  >
+                    Total Visitors
+                    {mode === "total" && (
+                      <div className="absolute bottom-0 left-0 h-[2px] w-full bg-primary" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    className="relative h-10 cursor-pointer touch-manipulation whitespace-nowrap rounded-none px-2 text-xs transition-colors hover:bg-muted/50 sm:px-4 sm:text-sm"
+                    value="perCapita"
+                  >
+                    Per Capita
+                    {mode === "perCapita" && (
+                      <div className="absolute bottom-0 left-0 h-[2px] w-full bg-primary" />
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+            </Tabs>
+          }
+        />
       </div>
 
       {/* Main Content */}

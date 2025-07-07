@@ -21,7 +21,7 @@ import {
 import { DeleteGoalDialog } from "./_components/delete-goal-dialog";
 import { EditGoalDialog } from "./_components/edit-goal-dialog";
 import { GoalsList } from "./_components/goals-list";
-import { PageHeader } from "./_components/page-header";
+import { WebsitePageHeader } from "../_components/website-page-header";
 
 const PageHeaderSkeleton = () => (
   <div className="space-y-6">
@@ -224,20 +224,23 @@ export default function GoalsPage() {
 
   return (
     <div className="mx-auto max-w-[1600px] space-y-4 p-3 sm:p-4 lg:p-6" ref={pageRef}>
-      <Suspense fallback={<PageHeaderSkeleton />}>
-        <PageHeader
-          goalsCount={goals.length}
-          hasError={!!goalsError}
-          isLoading={goalsLoading}
-          isRefreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          onCreateGoal={() => {
-            setEditingGoal(null);
-            setIsDialogOpen(true);
-          }}
-          websiteName={websiteData?.name || ""}
-        />
-      </Suspense>
+      <WebsitePageHeader
+        title="Goals"
+        description="Track key conversions and measure success"
+        icon={<TrendDownIcon className="h-6 w-6 text-primary" size={16} weight="duotone" />}
+        websiteId={websiteId}
+        websiteName={websiteData?.name || undefined}
+        isLoading={goalsLoading}
+        isRefreshing={isRefreshing}
+        hasError={!!goalsError}
+        onRefresh={handleRefresh}
+        onCreateAction={() => {
+          setEditingGoal(null);
+          setIsDialogOpen(true);
+        }}
+        createActionLabel="Create Goal"
+        subtitle={goalsLoading ? undefined : `${goals.length} active goal${goals.length !== 1 ? "s" : ""}`}
+      />
 
       {isVisible && (
         <Suspense fallback={<GoalsListSkeleton />}>

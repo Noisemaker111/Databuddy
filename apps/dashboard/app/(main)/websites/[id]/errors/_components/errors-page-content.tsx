@@ -10,6 +10,7 @@ import type { DateRange } from "@/hooks/use-analytics";
 import type { DynamicQueryFilter } from "@/hooks/use-dynamic-query";
 import { useEnhancedErrorData } from "@/hooks/use-dynamic-query";
 import { EmptyState } from "../../_components/utils/ui-components";
+import { WebsitePageHeader } from "../../_components/website-page-header";
 import { ErrorDataTable } from "./error-data-table";
 // Import our separated components
 import { ErrorSummaryStats } from "./error-summary-stats";
@@ -214,7 +215,7 @@ export const ErrorsPageContent = ({ params }: ErrorsPageContentProps) => {
 
     for (const error of processedData.recent_errors) {
       // Add null check for error_message
-      if (!(error && error.error_message)) continue;
+      if (!error?.error_message) continue;
 
       const { type, category, severity } = categorizeError(error.error_message);
       const key = `${type}-${error.error_message}`;
@@ -252,6 +253,8 @@ export const ErrorsPageContent = ({ params }: ErrorsPageContentProps) => {
   // Handle loading progress animation
   useEffect(() => {
     if (isLoading) {
+      setLoadingProgress(0); // Reset progress when loading starts
+
       const intervals = [
         { target: 20, duration: 800 },
         { target: 45, duration: 1300 },
@@ -261,10 +264,12 @@ export const ErrorsPageContent = ({ params }: ErrorsPageContentProps) => {
       ];
 
       let currentIndex = 0;
+      let animationId: number;
+
       const updateProgress = () => {
         if (currentIndex < intervals.length) {
           const { target, duration } = intervals[currentIndex];
-          const startProgress = loadingProgress;
+          const startProgress = currentIndex === 0 ? 0 : intervals[currentIndex - 1]?.target || 0;
           const progressDiff = target - startProgress;
           const startTime = Date.now();
 
@@ -276,7 +281,7 @@ export const ErrorsPageContent = ({ params }: ErrorsPageContentProps) => {
             setLoadingProgress(currentProgress);
 
             if (progress < 1) {
-              requestAnimationFrame(animate);
+              animationId = requestAnimationFrame(animate);
             } else {
               currentIndex++;
               updateProgress();
@@ -288,10 +293,17 @@ export const ErrorsPageContent = ({ params }: ErrorsPageContentProps) => {
       };
 
       updateProgress();
-    } else {
-      setLoadingProgress(0);
+
+      // Cleanup function to cancel animation
+      return () => {
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+        }
+      };
     }
-  }, [isLoading, loadingProgress]);
+
+    setLoadingProgress(0);
+  }, [isLoading]); // Removed loadingProgress from dependencies
 
   if (error) {
     return (
@@ -326,39 +338,14 @@ export const ErrorsPageContent = ({ params }: ErrorsPageContentProps) => {
 
   return (
     <div className="mx-auto max-w-[1600px] space-y-6 p-3 sm:p-4 lg:p-6">
-      <div className="rounded border-b bg-muted/20 py-2 pb-6">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl border border-primary/20 bg-primary/10 p-3">
-                <BugIcon className="h-6 w-6 text-primary" size={16} weight="duotone" />
-              </div>
-              <div>
-                <h1 className="font-bold text-2xl text-foreground tracking-tight sm:text-3xl">
-                  Error Analytics
-                </h1>
-                <p className="text-muted-foreground text-sm sm:text-base">
-                  Monitor and analyze application errors to improve user experience
-                </p>
-              </div>
-            </div>
-          </div>
-          <Button
-            className="gap-2 rounded-lg border-border/50 px-4 py-2 font-medium transition-all duration-300 hover:border-primary/50 hover:bg-primary/5"
-            disabled={isRefreshing}
-            onClick={handleRefresh}
-            size="default"
-            variant="outline"
-          >
-            <ArrowClockwiseIcon
-              className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-              size={16}
-              weight="fill"
-            />
-            Refresh Data
-          </Button>
-        </div>
-      </div>
+      <WebsitePageHeader
+        title="Error Analytics"
+        description="Monitor and analyze application errors to improve user experience"
+        icon={<BugIcon className="h-6 w-6 text-primary" size={16} weight="duotone" />}
+        websiteId={websiteId}
+        isRefreshing={isRefreshing}
+        onRefresh={handleRefresh}
+      />
 
       {isLoading ? (
         <AnimatedLoading progress={loadingProgress} type="errors" />

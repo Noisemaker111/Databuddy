@@ -6,6 +6,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "sonner";
 import Providers from "./providers";
+import Script from "next/script";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -121,6 +122,10 @@ export default function RootLayout({
         trackErrors={true}
         trackPerformance={true}
         trackScreenViews={true}
+      />
+      <Script
+        crossOrigin="anonymous"
+        src="//unpkg.com/react-scan/dist/auto.global.js"
       />
       <body className="flex h-full min-h-screen flex-col bg-background text-foreground antialiased">
         <Providers>

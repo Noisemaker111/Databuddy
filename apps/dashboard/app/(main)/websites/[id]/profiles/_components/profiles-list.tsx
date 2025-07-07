@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useInfiniteAnalyticsProfiles } from "@/hooks/use-analytics";
+import { WebsitePageHeader } from "../../_components/website-page-header";
 import { ProfileRow } from "./profile-row";
 import { getDefaultDateRange } from "./profile-utils";
 
@@ -58,115 +59,122 @@ export function ProfilesList({ websiteId }: ProfilesListProps) {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-semibold text-lg tracking-tight">Recent Profiles</CardTitle>
-          <p className="text-muted-foreground text-sm">
-            Visitor profiles with session data and behavior patterns
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div className="h-16 animate-pulse rounded bg-muted/20" key={i} />
-            ))}
-          </div>
-          <div className="flex items-center justify-center pt-4">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2Icon className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Loading profiles...</span>
+      <div className="space-y-6">
+        <WebsitePageHeader
+          title="Recent Profiles"
+          description="Visitor profiles with session data and behavior patterns"
+          icon={<UserRound className="h-6 w-6 text-primary" />}
+          websiteId={websiteId}
+          variant="minimal"
+        />
+        <Card>
+          <CardContent>
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div className="h-16 animate-pulse rounded bg-muted/20" key={i} />
+              ))}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="flex items-center justify-center pt-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2Icon className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Loading profiles...</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   if (isError) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-semibold text-destructive text-lg tracking-tight">
-            Error Loading Profiles
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
-            {error?.message || "Failed to load profiles"}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <WebsitePageHeader
+          title="Recent Profiles"
+          description="Visitor profiles with session data and behavior patterns"
+          icon={<UserRound className="h-6 w-6 text-primary" />}
+          websiteId={websiteId}
+          variant="minimal"
+          hasError={true}
+          errorMessage={error?.message || "Failed to load profiles"}
+        />
+      </div>
     );
   }
 
   if (!allProfiles || allProfiles.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-semibold text-lg tracking-tight">Recent Profiles</CardTitle>
-          <p className="text-muted-foreground text-sm">
-            Visitor profiles with session data and behavior patterns
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="py-12 text-center text-muted-foreground">
-            <UserRound className="mx-auto mb-4 h-12 w-12 opacity-50" />
-            <p className="mb-2 font-medium text-lg">No profiles found</p>
-            <p className="text-sm">
-              Visitor profiles will appear here once users visit your website
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <WebsitePageHeader
+          title="Recent Profiles"
+          description="Visitor profiles with session data and behavior patterns"
+          icon={<UserRound className="h-6 w-6 text-primary" />}
+          websiteId={websiteId}
+          variant="minimal"
+        />
+        <Card>
+          <CardContent>
+            <div className="py-12 text-center text-muted-foreground">
+              <UserRound className="mx-auto mb-4 h-12 w-12 opacity-50" />
+              <p className="mb-2 font-medium text-lg">No profiles found</p>
+              <p className="text-sm">
+                Visitor profiles will appear here once users visit your website
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-semibold text-lg tracking-tight">
-          Recent Profiles ({allProfiles.length} loaded)
-        </CardTitle>
-        <p className="text-muted-foreground text-sm">
-          Visitor profiles with session data and behavior patterns
-        </p>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="divide-y divide-border">
-          {allProfiles.map((profile, index) => {
-            const profileKey = `${profile.visitor_id}-${profile.first_visit}-${profile.last_visit}-${index}`;
-            return (
-              <ProfileRow
-                index={index}
-                isExpanded={expandedProfileId === profileKey}
-                key={profileKey}
-                onToggle={() => toggleProfile(profileKey)}
-                profile={profile}
-              />
-            );
-          })}
-        </div>
+    <div className="space-y-6">
+      <WebsitePageHeader
+        title="Recent Profiles"
+        description="Visitor profiles with session data and behavior patterns"
+        icon={<UserRound className="h-6 w-6 text-primary" />}
+        websiteId={websiteId}
+        variant="minimal"
+        subtitle={`${allProfiles.length} loaded`}
+      />
+      <Card>
+        <CardContent className="p-0">
+          <div className="divide-y divide-border">
+            {allProfiles.map((profile, index) => {
+              const profileKey = `${profile.visitor_id}-${profile.first_visit}-${profile.last_visit}-${index}`;
+              return (
+                <ProfileRow
+                  index={index}
+                  isExpanded={expandedProfileId === profileKey}
+                  key={profileKey}
+                  onToggle={() => toggleProfile(profileKey)}
+                  profile={profile}
+                />
+              );
+            })}
+          </div>
 
-        {/* Load More Trigger */}
-        <div className="border-border border-t p-4">
-          {hasNextPage ? (
-            <div className="flex justify-center" ref={setLoadMoreRef}>
-              {isFetchingNextPage ? (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2Icon className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">Loading more profiles...</span>
-                </div>
-              ) : (
-                <Button className="w-full" onClick={() => fetchNextPage()} variant="outline">
-                  Load More Profiles
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="text-center text-muted-foreground text-sm">All profiles loaded</div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+          {/* Load More Trigger */}
+          <div className="border-border border-t p-4">
+            {hasNextPage ? (
+              <div className="flex justify-center" ref={setLoadMoreRef}>
+                {isFetchingNextPage ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2Icon className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Loading more profiles...</span>
+                  </div>
+                ) : (
+                  <Button className="w-full" onClick={() => fetchNextPage()} variant="outline">
+                    Load More Profiles
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground text-sm">All profiles loaded</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

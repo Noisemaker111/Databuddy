@@ -90,7 +90,7 @@ export const summaryBuilders: Record<string, ParameterBuilder> = {
     FROM session_metrics
   `,
 
-  events_by_date: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily', timezone: string = 'UTC') => {
+  events_by_date: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily', timezone = 'UTC') => {
     if (granularity === 'hourly') {
       return `
         WITH hour_range AS (
@@ -152,7 +152,7 @@ export const summaryBuilders: Record<string, ParameterBuilder> = {
         LEFT JOIN hourly_visitors hv ON hr.hour = hv.hour
         ORDER BY hr.hour ASC
       `;
-    } else {
+    } 
       return `
         WITH date_range AS (
           SELECT 
@@ -213,7 +213,7 @@ export const summaryBuilders: Record<string, ParameterBuilder> = {
         LEFT JOIN daily_visitors dv ON dr.date = dv.date
         ORDER BY dr.date ASC
       `;
-    }
+    
   },
 
   sessions_summary: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily') => `
@@ -227,16 +227,4 @@ export const summaryBuilders: Record<string, ParameterBuilder> = {
       AND event_name = 'screen_view'
   `,
 
-  test_data: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily') => `
-    SELECT 
-      'test' as name,
-      COUNT(DISTINCT anonymous_id) as visitors,
-      COUNT(*) as pageviews,
-      COUNT(DISTINCT session_id) as sessions
-    FROM analytics.events
-    WHERE client_id = ${escapeSqlString(websiteId)}
-      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
-      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-      AND event_name = 'screen_view'
-  `,
 } 
