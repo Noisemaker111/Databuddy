@@ -542,17 +542,15 @@ export function useAnalyticsSummary(websiteId: string, dateRange?: DateRange) {
   });
 }
 
-/**
- * Hook to fetch mini chart data for website cards
- */
+// Custom hook for mini chart data
 export function useMiniChartData(websiteId: string, options?: { enabled?: boolean }) {
-  return useQuery({
-    queryKey: ["analytics", "mini-chart", websiteId],
-    queryFn: () =>
-      fetchAnalyticsData<MiniChartResponse>(`/analytics/mini-chart/${websiteId}`, websiteId),
-    ...defaultQueryOptions,
-    enabled: options?.enabled !== undefined ? options.enabled : true,
+  const query = useQuery<MiniChartResponse>({
+    queryKey: ["analytics", websiteId, "mini-chart"],
+    queryFn: () => fetchAnalyticsData("summary/mini-chart", websiteId),
+    enabled: !!websiteId && (options?.enabled ?? true),
   });
+
+  return query;
 }
 
 /**
