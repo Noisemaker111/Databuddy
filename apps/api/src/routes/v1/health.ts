@@ -33,6 +33,8 @@ healthRouter.get("/", async (c) => {
         checkRedis()
     ]);
 
-    return c.json({ clickhouse, database, redis, success: clickhouse && database && redis, version: "1.0.0" });
+    const success = clickhouse && database && redis; // otherwise, degraded
+
+    return c.json({ clickhouse, database, redis, success, version: "1.0.0" }, success ? 200 : 503);
 });
 
