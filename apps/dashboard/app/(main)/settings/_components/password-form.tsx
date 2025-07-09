@@ -7,9 +7,7 @@ import {
   EyeSlashIcon,
   LockKeyIcon,
   ShieldCheckIcon,
-  SignOutIcon,
   SparkleIcon,
-  WarningIcon,
 } from "@phosphor-icons/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";

@@ -34,10 +34,12 @@ const testimonials = [
 		avatar: "bekacru.jpg",
 	},
 	{
-		name: "Emma Thompson",
-		profession: "Product Manager, CloudBase",
+		name: "Ahmet Kilinic",
+		link: "https://x.com/bruvimtired/status/1938972393357062401",
+		social: <XIcon />,
+		profession: "Software Engineer, @mail0dotcom",
 		description: "Migrated from Google Analytics - much better insights and 65x faster performance.",
-		avatar: "ET",
+		avatar: "ahmet.jpg",
 	},
 	{
 		name: "David Park",

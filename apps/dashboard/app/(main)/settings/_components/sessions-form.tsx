@@ -185,10 +185,9 @@ export function SessionsForm() {
         <div className="space-y-3">
           {sessions.map((s) => (
             <div
-              className={`flex items-start justify-between rounded-md border p-4 ${
-                s.isCurrent ? "border-primary/20 bg-primary/5" : ""
-              }`}
-              key={s.id}
+              className={`flex items-start justify-between rounded-md border p-4 ${s.isCurrent ? "border-primary/20 bg-primary/5" : ""
+                }`}
+              key={s.expiresAt.toString()}
             >
               <div className="flex items-start gap-3">
                 <div className="rounded-md bg-muted p-2">{getDeviceIcon(s.userAgent)}</div>
