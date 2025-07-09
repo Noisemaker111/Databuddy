@@ -20,11 +20,10 @@ export function SessionsList({ websiteId }: SessionsListProps) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, error } =
     useInfiniteAnalyticsSessions(websiteId, dateRange, 25);
 
-  const toggleSession = (sessionId: string) => {
-    setExpandedSessionId(expandedSessionId === sessionId ? null : sessionId);
-  };
+  const toggleSession = useCallback((sessionId: string) => {
+    setExpandedSessionId((currentId) => (currentId === sessionId ? null : sessionId));
+  }, []);
 
-  // Intersection Observer for infinite scrolling
   const [loadMoreRef, setLoadMoreRef] = useState<HTMLDivElement | null>(null);
 
   const handleIntersection = useCallback(
@@ -42,7 +41,7 @@ export function SessionsList({ websiteId }: SessionsListProps) {
 
     const observer = new IntersectionObserver(handleIntersection, {
       threshold: 0.1,
-      rootMargin: "200px", // Increased for better UX
+      rootMargin: "200px",
     });
 
     observer.observe(loadMoreRef);
@@ -52,7 +51,6 @@ export function SessionsList({ websiteId }: SessionsListProps) {
     };
   }, [loadMoreRef, handleIntersection]);
 
-  // Flatten all sessions from all pages (memoized for performance)
   const allSessions = useMemo(() => {
     return data?.pages.flatMap((page) => page.sessions) || [];
   }, [data?.pages]);
@@ -143,7 +141,7 @@ export function SessionsList({ websiteId }: SessionsListProps) {
                 index={index}
                 isExpanded={expandedSessionId === session.session_id}
                 key={session.session_id || index}
-                onToggle={() => toggleSession(session.session_id)}
+                onToggle={toggleSession}
                 session={session}
               />
             ))}

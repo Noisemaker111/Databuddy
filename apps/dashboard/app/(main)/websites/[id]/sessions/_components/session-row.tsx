@@ -10,6 +10,7 @@ import {
   MousePointerClickIcon,
   SparklesIcon,
 } from "lucide-react";
+import React, { useCallback } from "react";
 import { FaviconImage } from "@/components/analytics/favicon-image";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -25,7 +26,7 @@ interface SessionRowProps {
   session: any;
   index: number;
   isExpanded: boolean;
-  onToggle: () => void;
+  onToggle: (sessionId: string) => void;
 }
 
 function getReferrerDisplayInfo(session: any) {
@@ -44,7 +45,7 @@ function getReferrerDisplayInfo(session: any) {
   };
 }
 
-export function SessionRow({ session, index, isExpanded, onToggle }: SessionRowProps) {
+function SessionRowInternal({ session, index, isExpanded, onToggle }: SessionRowProps) {
   const errorCount = session.events?.filter((e: any) => e.error_message).length || 0;
   const customEventCount =
     session.events?.filter((e: any) => e.properties && Object.keys(e.properties).length > 0)
@@ -52,8 +53,12 @@ export function SessionRow({ session, index, isExpanded, onToggle }: SessionRowP
 
   const referrerInfo = getReferrerDisplayInfo(session);
 
+  const handleToggle = useCallback(() => {
+    onToggle(session.session_id);
+  }, [onToggle, session.session_id]);
+
   return (
-    <Collapsible onOpenChange={onToggle} open={isExpanded}>
+    <Collapsible onOpenChange={handleToggle} open={isExpanded}>
       <CollapsibleTrigger asChild>
         <div className="flex cursor-pointer items-center justify-between border-transparent border-l-4 p-5 transition-all duration-200 hover:border-primary/20 hover:bg-muted/30">
           <div className="flex min-w-0 flex-1 items-center gap-4">
@@ -254,3 +259,4 @@ export function SessionRow({ session, index, isExpanded, onToggle }: SessionRowP
     </Collapsible>
   );
 }
+export const SessionRow = React.memo(SessionRowInternal);
