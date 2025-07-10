@@ -52,8 +52,9 @@ const FORBIDDEN_SQL_KEYWORDS = [
   'TRUNCATE', 'MERGE', 'BULK', 'RESTORE', 'BACKUP'
 ] as const;
 
-const AI_MODEL = 'google/gemini-2.0-flash-001' as const;
-// const AI_MODEL = 'cohere/command-r' as const;
+const AI_MODEL = 'google/gemini-2.0-flash-001';
+// const AI_MODEL = 'x-ai/grok-4-07-09';
+// const AI_MODEL = 'cohere/command-r';
 
 const openai = new OpenAI(OPENAI_CONFIG);
 

@@ -16,16 +16,16 @@ export interface DynamicQueryRequest {
 export interface DynamicQueryFilter {
   field: string;
   operator:
-    | "eq"
-    | "ne"
-    | "gt"
-    | "gte"
-    | "lt"
-    | "lte"
-    | "in"
-    | "not_in"
-    | "contains"
-    | "starts_with";
+  | "eq"
+  | "ne"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "in"
+  | "not_in"
+  | "contains"
+  | "starts_with";
   value: string | number | (string | number)[];
 }
 
@@ -470,25 +470,25 @@ async function fetchDynamicQuery(
   // Prepare the request body
   const requestBody = Array.isArray(queryData)
     ? queryData.map((query) => ({
-        ...query,
-        startDate: dateRange.start_date,
-        endDate: dateRange.end_date,
-        timeZone: timezone,
-        limit: query.limit || 100,
-        page: query.page || 1,
-        filters: query.filters || [],
-        granularity: query.granularity || dateRange.granularity || "daily",
-      }))
+      ...query,
+      startDate: dateRange.start_date,
+      endDate: dateRange.end_date,
+      timeZone: timezone,
+      limit: query.limit || 100,
+      page: query.page || 1,
+      filters: query.filters || [],
+      granularity: query.granularity || dateRange.granularity || "daily",
+    }))
     : {
-        ...queryData,
-        startDate: dateRange.start_date,
-        endDate: dateRange.end_date,
-        timeZone: timezone,
-        limit: queryData.limit || 100,
-        page: queryData.page || 1,
-        filters: queryData.filters || [],
-        granularity: queryData.granularity || dateRange.granularity || "daily",
-      };
+      ...queryData,
+      startDate: dateRange.start_date,
+      endDate: dateRange.end_date,
+      timeZone: timezone,
+      limit: queryData.limit || 100,
+      page: queryData.page || 1,
+      filters: queryData.filters || [],
+      granularity: queryData.granularity || dateRange.granularity || "daily",
+    };
 
   const response = await fetch(url, {
     method: "POST",
@@ -631,7 +631,7 @@ export function useBatchDynamicQuery(
 
       if (result.success && result.data) {
         // Process each parameter result
-        result.data.forEach((paramResult) => {
+        for (const paramResult of result.data) {
           if (paramResult.success && paramResult.data) {
             processedResult.data[paramResult.parameter] = paramResult.data;
           } else {
@@ -640,7 +640,7 @@ export function useBatchDynamicQuery(
               error: paramResult.error,
             });
           }
-        });
+        }
       } else {
         processedResult.errors.push({
           parameter: "query",
@@ -1270,14 +1270,14 @@ export function useRevenueAnalytics(
     const revenueGrowth =
       trends.length >= 2
         ? (((trends[0]?.revenue || 0) - (trends[1]?.revenue || 0)) / (trends[1]?.revenue || 1)) *
-          100
+        100
         : 0;
 
     const transactionGrowth =
       trends.length >= 2
         ? (((trends[0]?.transactions || 0) - (trends[1]?.transactions || 0)) /
-            (trends[1]?.transactions || 1)) *
-          100
+          (trends[1]?.transactions || 1)) *
+        100
         : 0;
 
     // Calculate refund rate

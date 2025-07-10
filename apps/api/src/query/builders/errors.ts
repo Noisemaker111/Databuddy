@@ -141,7 +141,7 @@ export const errorBuilders: Record<string, ParameterBuilder> = {
       AND timestamp <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
       AND message != ''
     GROUP BY toDate(timestamp)
-    ORDER BY date DESC
+    ORDER BY date ASC
     LIMIT ${limit} OFFSET ${offset}
   `,
 } 
