@@ -211,6 +211,7 @@ async function insertWebVitals(
 		vitalsData.payload.eventId,
 		VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH,
 	);
+
 	if (await checkDuplicate(eventId, "web_vitals")) {
 		return;
 	}
