@@ -26,7 +26,7 @@ export function generateScriptTag(websiteId: string, trackingOptions: TrackingOp
   return `<script
     src="${scriptUrl}"
     data-client-id="${websiteId}"
-${optionsLine}    crossorigin="anonymous"
+${optionsLine}    crossOrigin="anonymous"
     async
   ></script>`;
 }
