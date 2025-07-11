@@ -90,6 +90,72 @@ export async function getAnalyticsOverviewData() {
 		const usersToday = usersTodayResult[0]?.value || 0;
 		const websitesToday = websitesTodayResult[0]?.value || 0;
 
+		// Historical data for charts
+		const thirtyDaysAgo = new Date();
+		thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+		const now = new Date();
+
+		const [usersPerDay, websitesPerDay] = await Promise.all([
+			db
+				.select({
+					date: sql<string>`DATE_TRUNC('day', ${usersTable.createdAt})`,
+					count: count(usersTable.id),
+				})
+				.from(usersTable)
+				.where(sql`${usersTable.createdAt} >= ${thirtyDaysAgo} AND ${usersTable.createdAt} <= ${now}`)
+				.groupBy(sql`1`)
+				.orderBy(sql`1 ASC`),
+			db
+				.select({
+					date: sql<string>`DATE_TRUNC('day', ${websitesTable.createdAt})`,
+					count: count(websitesTable.id),
+				})
+				.from(websitesTable)
+				.where(sql`${websitesTable.createdAt} >= ${thirtyDaysAgo} AND ${websitesTable.createdAt} <= ${now}`)
+				.groupBy(sql`1`)
+				.orderBy(sql`1 ASC`),
+		]);
+
+		// Cumulative data processing
+		const processCumulativeData = (
+			dailyData: { date: string; count: number }[],
+			initialTotal: number,
+		) => {
+			const cumulativeMap: { [key: string]: number } = {};
+			let runningTotal =
+				initialTotal - dailyData.reduce((acc, curr) => acc + curr.count, 0);
+
+			for (const item of dailyData) {
+				runningTotal += item.count;
+				const dateString = new Date(item.date).toISOString().split("T")[0];
+				cumulativeMap[dateString] = runningTotal;
+			}
+
+			// Fill in missing dates
+			const result: { date: string; value: number }[] = [];
+			const date = new Date(thirtyDaysAgo);
+			const today = new Date();
+			let lastValue =
+				initialTotal - dailyData.reduce((acc, curr) => acc + curr.count, 0);
+
+			while (date <= today) {
+				const dateString = date.toISOString().split("T")[0];
+				if (cumulativeMap[dateString]) {
+					lastValue = cumulativeMap[dateString];
+				}
+				result.push({ date: dateString, value: lastValue });
+				date.setDate(date.getDate() + 1);
+			}
+
+			return result.filter(item => new Date(item.date) <= now);
+		};
+
+		const usersCumulative = processCumulativeData(usersPerDay, totalUsers);
+		const websitesCumulative = processCumulativeData(
+			websitesPerDay,
+			totalWebsites,
+		);
+
 		// Initialize analytics variables
 		let events24h = 0;
 		let eventsMonthly = 0;
@@ -119,14 +185,14 @@ export async function getAnalyticsOverviewData() {
 				chQuery<{ count: number }>(`
           SELECT count() as count
           FROM analytics.events
-          WHERE time >= now() - INTERVAL 24 HOUR
+          WHERE time >= now() - INTERVAL 24 HOUR AND time <= now()
         `),
 
 				// Events in last 30 days
 				chQuery<{ count: number }>(`
           SELECT count() as count
           FROM analytics.events
-          WHERE time >= now() - INTERVAL 30 DAY
+          WHERE time >= now() - INTERVAL 30 DAY AND time <= now()
         `),
 
 				// Events over time (30 days)
@@ -135,7 +201,7 @@ export async function getAnalyticsOverviewData() {
             toDate(time) as date,
             count() as value
           FROM analytics.events
-          WHERE time >= now() - INTERVAL 30 DAY
+          WHERE time >= now() - INTERVAL 30 DAY AND time <= now()
           GROUP BY date
           ORDER BY date ASC
         `),
@@ -146,7 +212,7 @@ export async function getAnalyticsOverviewData() {
             formatDateTime(time, '%Y-%m-%d %H:00:00') as hour,
             count() as value
           FROM analytics.events
-          WHERE time >= now() - INTERVAL 24 HOUR
+          WHERE time >= now() - INTERVAL 24 HOUR AND time <= now()
           GROUP BY hour
           ORDER BY hour ASC
         `),
@@ -157,7 +223,7 @@ export async function getAnalyticsOverviewData() {
             event_name,
             count() as count
           FROM analytics.events
-          WHERE time >= now() - INTERVAL 24 HOUR
+          WHERE time >= now() - INTERVAL 24 HOUR AND time <= now()
           GROUP BY event_name
           ORDER BY count DESC
           LIMIT 5
@@ -169,7 +235,7 @@ export async function getAnalyticsOverviewData() {
             country,
             count(DISTINCT anonymous_id) as visitors
           FROM analytics.events
-          WHERE time >= now() - INTERVAL 7 DAY
+          WHERE time >= now() - INTERVAL 7 DAY AND time <= now()
           AND country IS NOT NULL
           GROUP BY country
           ORDER BY visitors DESC
@@ -182,7 +248,7 @@ export async function getAnalyticsOverviewData() {
             client_id as website,
             count() as value
           FROM analytics.events
-          WHERE time >= now() - INTERVAL 30 DAY
+          WHERE time >= now() - INTERVAL 30 DAY AND time <= now()
           GROUP BY website
           ORDER BY value DESC
           LIMIT 5
@@ -246,13 +312,18 @@ export async function getAnalyticsOverviewData() {
 				eventsOverTime,
 				events24hOverTime,
 				topWebsites,
+				usersPerDay,
+				websitesPerDay,
+				usersCumulative,
+				websitesCumulative,
+				recentWebsitesWithUsers,
 			},
 			error: null,
 		};
-	} catch (err) {
-		console.error("Error fetching analytics overview data for admin:", err);
-		if (err instanceof Error) {
-			return { data: null, error: err.message };
+	} catch (error) {
+		console.error("Failed to get analytics overview data:", error);
+		if (error instanceof Error) {
+			return { data: null, error: error.message };
 		}
 		return {
 			data: null,

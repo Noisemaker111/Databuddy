@@ -188,19 +188,19 @@ async function insertError(errorData: any, clientId: string): Promise<void> {
 		created_at: now,
 	};
 
-	clickHouse
-		.insert({
+	try {
+		await clickHouse.insert({
 			table: "analytics.errors",
 			values: [errorEvent],
 			format: "JSONEachRow",
-		})
-		.then(() => { })
-		.catch((err) => {
-			logger.error("Failed to insert error event", {
-				error: err as Error,
-				eventId,
-			});
 		});
+	} catch (err) {
+		logger.error("Failed to insert error event", {
+			error: err as Error,
+			eventId,
+		});
+		throw err;
+	}
 }
 
 async function insertWebVitals(
@@ -211,6 +211,7 @@ async function insertWebVitals(
 		vitalsData.payload.eventId,
 		VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH,
 	);
+
 	if (await checkDuplicate(eventId, "web_vitals")) {
 		return;
 	}
@@ -237,19 +238,19 @@ async function insertWebVitals(
 		created_at: now,
 	};
 
-	clickHouse
-		.insert({
+	try {
+		await clickHouse.insert({
 			table: "analytics.web_vitals",
 			values: [webVitalsEvent],
 			format: "JSONEachRow",
-		})
-		.then(() => { })
-		.catch((err) => {
-			logger.error("Failed to insert web vitals event", {
-				error: err as Error,
-				eventId,
-			});
 		});
+	} catch (err) {
+		logger.error("Failed to insert web vitals event", {
+			error: err as Error,
+			eventId,
+		});
+		throw err;
+	}
 }
 
 async function insertTrackEvent(
@@ -377,19 +378,19 @@ async function insertTrackEvent(
 		created_at: now,
 	};
 
-	clickHouse
-		.insert({
+	try {
+		await clickHouse.insert({
 			table: "analytics.events",
 			values: [trackEvent],
 			format: "JSONEachRow",
-		})
-		.then(() => { })
-		.catch((err) => {
-			logger.error("Failed to insert track event", {
-				error: err as Error,
-				eventId,
-			});
 		});
+	} catch (err) {
+		logger.error("Failed to insert track event", {
+			error: err as Error,
+			eventId,
+		});
+		throw err;
+	}
 }
 
 async function checkDuplicate(
@@ -573,7 +574,7 @@ const app = new Elysia()
 
 				try {
 					if (eventType === "track") {
-						insertTrackEvent(event, clientId, userAgent, ip);
+						await insertTrackEvent(event, clientId, userAgent, ip);
 						return {
 							status: "success",
 							type: "track",
@@ -581,7 +582,7 @@ const app = new Elysia()
 						};
 					}
 					if (eventType === "error") {
-						insertError(event, clientId);
+						await insertError(event, clientId);
 						return {
 							status: "success",
 							type: "error",
@@ -589,7 +590,7 @@ const app = new Elysia()
 						};
 					}
 					if (eventType === "web_vitals") {
-						insertWebVitals(event, clientId);
+						await insertWebVitals(event, clientId);
 						return {
 							status: "success",
 							type: "web_vitals",

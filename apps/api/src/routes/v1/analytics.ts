@@ -4,6 +4,7 @@ import { authMiddleware } from '../../middleware/auth';
 import { timezoneMiddleware } from '../../middleware/timezone';
 import { logger } from '../../lib/logger';
 import { websiteAuthHook } from '../../middleware/website';
+import { chQuery } from '@databuddy/db';
 
 type AnalyticsContext = {
   Variables: {
@@ -25,15 +26,15 @@ analyticsRouter.get('/summary', websiteAuthHook(), async (c: any) => {
   }
 
   try {
-    const { chQuery } = await import('@databuddy/db');
-
     const hasData = await chQuery<{ count: number }>(`
       SELECT COUNT(*) as count
       FROM analytics.events
-      WHERE client_id = '${website.id}'
+      WHERE client_id = {websiteId:String}
       AND event_name = 'screen_view'
       LIMIT 1
-    `);
+    `, { websiteId: website.id });
+
+    logger.info(hasData);
 
     const hasTrackingData = hasData[0]?.count > 0;
 
@@ -44,6 +45,7 @@ analyticsRouter.get('/summary', websiteAuthHook(), async (c: any) => {
       domain: website.domain
     });
   } catch (error) {
+    console.log(error);
     logger.error('Error checking tracking data', { error, website_id: website.id });
     return c.json({ success: false, error: "Error checking tracking data" }, 500);
   }
