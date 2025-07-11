@@ -2,11 +2,6 @@ import { useMutation, useQuery, useQueryClient, useQueries } from "@tanstack/rea
 import { useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import type { DateRange } from "./use-analytics";
-import {
-  type DynamicQueryFilter,
-  type DynamicQueryRequest,
-  useBatchDynamicQuery,
-} from "./use-dynamic-query";
 
 // Types
 export interface FunnelStep {
@@ -26,7 +21,7 @@ export interface FunnelFilter {
 export interface Funnel {
   id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   steps: FunnelStep[];
   filters?: FunnelFilter[];
   isActive: boolean;
@@ -76,6 +71,18 @@ export interface AutocompleteData {
   utmMediums: string[];
   utmCampaigns: string[];
 }
+export interface FunnelAnalyticsByReferrerResult {
+  referrer: string;
+  referrer_parsed: {
+    name: string;
+    type: string;
+    domain: string;
+  };
+  total_users: number;
+  completed_users: number;
+  conversion_rate: number;
+}
+
 
 // Hook for managing funnels (CRUD operations)
 export function useFunnels(websiteId: string, enabled = true) {
@@ -85,6 +92,9 @@ export function useFunnels(websiteId: string, enabled = true) {
     { websiteId },
     { enabled: enabled && !!websiteId }
   );
+
+  const funnelsData = useMemo(() => (query.data || []).map(f => ({ ...f, steps: f.steps as FunnelStep[], filters: (f.filters as FunnelFilter[]) || [] })), [query.data])
+
 
   // Create funnel mutation
   const createMutation = trpc.funnels.create.useMutation({
@@ -110,7 +120,7 @@ export function useFunnels(websiteId: string, enabled = true) {
   });
 
   return {
-    data: query.data || [],
+    data: funnelsData,
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
@@ -162,7 +172,7 @@ export function useFunnelAnalytics(
   websiteId: string,
   funnelId: string,
   dateRange: DateRange,
-  enabled = true
+  options: { enabled: boolean } = { enabled: true },
 ) {
   return trpc.funnels.getAnalytics.useQuery(
     {
@@ -171,7 +181,7 @@ export function useFunnelAnalytics(
       startDate: dateRange?.start_date,
       endDate: dateRange?.end_date,
     },
-    { enabled: enabled && !!websiteId && !!funnelId }
+    { enabled: options.enabled && !!websiteId && !!funnelId },
   );
 }
 
@@ -180,7 +190,7 @@ export function useFunnelAnalyticsByReferrer(
   websiteId: string,
   funnelId: string,
   dateRange?: DateRange,
-  enabled = true
+  options: { enabled: boolean } = { enabled: true },
 ) {
   return trpc.funnels.getAnalyticsByReferrer.useQuery(
     {
@@ -189,7 +199,7 @@ export function useFunnelAnalyticsByReferrer(
       startDate: dateRange?.start_date,
       endDate: dateRange?.end_date,
     },
-    { enabled: enabled && !!websiteId && !!funnelId }
+    { enabled: options.enabled && !!websiteId && !!funnelId },
   );
 }
 
@@ -204,7 +214,7 @@ export function useEnhancedFunnelAnalytics(
   const funnelQuery = useFunnel(websiteId, funnelId, enabled);
 
   // Get analytics data using direct endpoint
-  const analyticsQuery = useFunnelAnalytics(websiteId, funnelId, dateRange, enabled);
+  const analyticsQuery = useFunnelAnalytics(websiteId, funnelId, dateRange, { enabled });
 
   // Process and structure the enhanced data
   const enhancedData = useMemo(() => {
@@ -238,198 +248,112 @@ export function useEnhancedFunnelAnalytics(
   const error = funnelQuery.error || analyticsQuery.error;
 
   return {
-    // Main data
-    funnel: funnelQuery.data,
-    enhancedData,
-
-    // Loading states
+    data: enhancedData,
     isLoading,
-    isFunnelLoading: funnelQuery.isLoading,
-    isAnalyticsLoading: analyticsQuery.isLoading,
-
-    // Errors
     error,
-    funnelError: funnelQuery.error,
-    analyticsError: analyticsQuery.error,
-
-    // Data availability
-    hasPerformanceData: !!analyticsQuery.data,
-    hasStepsData: !!analyticsQuery.data?.steps_analytics?.length,
-
-    // Refetch functions
+    funnel: funnelQuery.data,
     refetch: () => {
       funnelQuery.refetch();
       analyticsQuery.refetch();
     },
-
-    // Individual query results for advanced usage
-    queries: {
-      funnel: funnelQuery,
-      analytics: analyticsQuery,
-    },
   };
 }
-
-// Hook for funnel comparison analytics
+// Hook for funnel comparison
 export function useFunnelComparison(
   websiteId: string,
   funnelIds: string[],
   dateRange: DateRange,
   enabled = true
 ) {
-  // Get analytics for each funnel using direct endpoints
-  const funnelQueries = funnelIds.map((funnelId) => ({
-    funnelId,
-    analytics: useFunnelAnalytics(websiteId, funnelId, dateRange, enabled),
-  }));
+  const funnels = useQueries({
+    queries: funnelIds.map((funnelId) => ({
+      queryKey: [
+        "funnels",
+        "getAnalytics",
+        { websiteId, funnelId, dateRange },
+      ],
+      queryFn: () =>
+        trpc.funnels.getAnalytics.query({
+          websiteId,
+          funnelId,
+          startDate: dateRange?.start_date,
+          endDate: dateRange?.end_date,
+        }),
+      enabled: enabled && !!websiteId && !!funnelId,
+    })),
+  });
 
-  // Process comparison data
   const comparisonData = useMemo(() => {
-    return funnelQueries.map(({ funnelId, analytics }) => ({
-      funnelId,
-      data: analytics.data || null,
-      hasData: !!analytics.data,
-      isLoading: analytics.isLoading,
-      error: analytics.error,
-    }));
-  }, [funnelQueries]);
-
-  const isLoading = funnelQueries.some((q) => q.analytics.isLoading);
-  const error = funnelQueries.find((q) => q.analytics.error)?.analytics.error;
+    return funnels.map((query, index) => {
+      const data = query.data;
+      return {
+        funnelId: funnelIds[index],
+        data: data ? data : null,
+        isLoading: query.isLoading,
+        error: query.error,
+      };
+    });
+  }, [funnels, funnelIds]);
 
   return {
-    comparisonData,
-    isLoading,
-    error,
-
-    // Helper to get best/worst performing funnels
-    getBestPerforming: () =>
-      comparisonData
-        .filter((f) => f.hasData)
-        .sort(
-          (a, b) => (b.data?.overall_conversion_rate || 0) - (a.data?.overall_conversion_rate || 0)
-        )[0],
-    getWorstPerforming: () =>
-      comparisonData
-        .filter((f) => f.hasData)
-        .sort(
-          (a, b) => (a.data?.overall_conversion_rate || 0) - (b.data?.overall_conversion_rate || 0)
-        )[0],
-
-    refetch: () => {
-      for (const q of funnelQueries) {
-        q.analytics.refetch();
-      }
-    },
+    data: comparisonData,
+    isLoading: funnels.some(q => q.isLoading),
   };
 }
 
-// Hook for overall funnel performance metrics (simplified)
+// Hook to get funnel performance metrics (for overview cards)
 export function useFunnelPerformance(
   websiteId: string,
   dateRange: DateRange,
   enabled = true
 ) {
-  // Get all funnels
-  const funnelsQuery = useFunnels(websiteId, enabled);
+  const { data: funnels, isLoading: funnelsLoading } = useFunnels(websiteId, enabled);
 
-  // Get basic analytics data using simple queries instead of broken funnel queries
-  const queries: DynamicQueryRequest[] = useMemo(
-    () => [
-      {
-        id: "overall_performance",
-        parameters: ["sessions_summary"],
-        limit: 1,
-        filters: [],
-      },
-    ],
-    []
-  );
+  const results = useQueries({
+    queries: (funnels || []).map((funnel) => ({
+      queryKey: [
+        "funnels",
+        "getAnalytics",
+        { websiteId, funnelId: funnel.id, dateRange },
+      ],
+      queryFn: () =>
+        trpc.funnels.getAnalytics.query({
+          websiteId,
+          funnelId: funnel.id,
+          startDate: dateRange?.start_date,
+          endDate: dateRange?.end_date,
+        }),
+      enabled: enabled && !!websiteId && !!funnel.id,
+    })),
+  });
 
-  const batchResult = useBatchDynamicQuery(websiteId, dateRange, queries);
-
-  // Process performance data
   const performanceData = useMemo(() => {
-    const sessionData = batchResult.getDataForQuery("overall_performance", "sessions_summary")[0];
-    const funnels = funnelsQuery.data || [];
-
-    return {
-      totalFunnels: funnels.length,
-      activeFunnels: funnels.filter((f) => f.isActive).length,
-      totalSessions: sessionData?.total_sessions || 0,
-      totalUsers: sessionData?.total_users || 0,
-      // Mock some funnel-specific metrics
-      avgConversionRate: Math.random() * 20 + 5,
-      topPerformingFunnel: funnels[0]?.name || "N/A",
-      totalConversions: Math.floor((sessionData?.total_sessions || 0) * 0.15),
-    };
-  }, [batchResult, funnelsQuery.data]);
+    return results
+      .map((result, index) => {
+        if (!result.data) return null;
+        return {
+          funnelId: funnels[index].id,
+          funnelName: funnels[index].name,
+          ...result.data,
+        };
+      })
+      .filter(Boolean);
+  }, [results, funnels]);
 
   return {
     data: performanceData,
-    isLoading: funnelsQuery.isLoading || batchResult.isLoading,
-    error: funnelsQuery.error || batchResult.error,
-    refetch: () => {
-      funnelsQuery.refetch();
-      batchResult.refetch();
-    },
+    isLoading: funnelsLoading || results.some((r) => r.isLoading),
   };
 }
 
-// Autocomplete hook using tRPC
 export function useAutocompleteData(websiteId: string, enabled = true) {
-  const query = trpc.funnels.getAutocomplete.useQuery(
-    { websiteId },
+  return trpc.funnels.getAutocomplete.useQuery(
+    {
+      websiteId,
+    },
     {
       enabled: enabled && !!websiteId,
-      staleTime: 60 * 60 * 1000, // 1 hour - autocomplete data doesn't change often
-      gcTime: 2 * 60 * 60 * 1000, // 2 hours
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      retry: 2,
+      staleTime: 1000 * 60 * 5, // 5 minutes
     }
   );
-
-  // Get suggestions for a specific field type
-  const getSuggestions = useCallback(
-    (fieldType: string, searchQuery = ""): string[] => {
-      if (!query.data) return [];
-
-      const fieldMap: Record<string, keyof AutocompleteData> = {
-        event_name: "customEvents",
-        path: "pagePaths",
-        browser_name: "browsers",
-        os_name: "operatingSystems",
-        country: "countries",
-        device_type: "deviceTypes",
-        utm_source: "utmSources",
-        utm_medium: "utmMediums",
-        utm_campaign: "utmCampaigns",
-      };
-
-      const fieldData = query.data[fieldMap[fieldType]] || [];
-
-      if (!searchQuery.trim()) {
-        return fieldData.slice(0, 10);
-      }
-
-      // Simple filtering
-      const filtered = fieldData.filter((value: string) =>
-        value.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-      return filtered.slice(0, 10);
-    },
-    [query.data]
-  );
-
-  return {
-    data: query.data,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    error: query.error,
-    refetch: query.refetch,
-    isFetching: query.isFetching,
-    getSuggestions,
-  };
 }

@@ -13,13 +13,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useFunnelAnalyticsByReferrer } from "@/hooks/use-funnels";
+import type { FunnelAnalyticsByReferrerResult } from "@/hooks/use-funnels";
+import type { TRPCClientErrorLike } from "@trpc/client";
+import type { UseTRPCQueryResult } from "@trpc/react-query/shared";
+import type { AppRouter } from "@databuddy/rpc/src/root";
 
 interface Props {
   websiteId: string;
   funnelId: string;
   dateRange: { start_date: string; end_date: string };
   onReferrerChange?: (referrer: string) => void;
+  data: UseTRPCQueryResult<any, any>["data"];
+  isLoading: boolean;
+  error: TRPCClientErrorLike<AppRouter> | null;
 }
 
 export default function FunnelAnalyticsByReferrer({
@@ -27,6 +33,9 @@ export default function FunnelAnalyticsByReferrer({
   funnelId,
   dateRange,
   onReferrerChange,
+  data,
+  isLoading,
+  error,
 }: Props) {
   const [selectedReferrer, setSelectedReferrer] = useState("all");
 
@@ -35,18 +44,16 @@ export default function FunnelAnalyticsByReferrer({
     onReferrerChange?.(referrer);
   };
 
-  const { data, isLoading, error } = useFunnelAnalyticsByReferrer(websiteId, funnelId, dateRange);
-
   const referrers = useMemo(() => {
-    if (!data?.data?.referrer_analytics) return [];
-    return data.data.referrer_analytics
-      .map((r) => ({
+    if (!data?.referrer_analytics) return [];
+    return data.referrer_analytics
+      .map((r: FunnelAnalyticsByReferrerResult) => ({
         value: r.referrer,
         label: r.referrer_parsed?.name || r.referrer || "Direct",
         parsed: r.referrer_parsed,
         users: r.total_users,
       }))
-      .sort((a, b) => b.users - a.users);
+      .sort((a: { users: number }, b: { users: number }) => b.users - a.users);
   }, [data]);
 
   if (isLoading) {
@@ -72,7 +79,7 @@ export default function FunnelAnalyticsByReferrer({
     );
   }
 
-  if (!data?.data?.referrer_analytics?.length) {
+  if (!data?.referrer_analytics?.length) {
     return (
       <Card className="rounded border-dashed">
         <CardContent className="pt-6">
@@ -90,7 +97,10 @@ export default function FunnelAnalyticsByReferrer({
   }
 
   const totalUsers =
-    data?.data?.referrer_analytics?.reduce((sum, r) => sum + r.total_users, 0) || 0;
+    data?.referrer_analytics?.reduce(
+      (sum: number, r: FunnelAnalyticsByReferrerResult) => sum + r.total_users,
+      0,
+    ) || 0;
 
   return (
     <div className="flex items-center justify-between">
@@ -112,7 +122,7 @@ export default function FunnelAnalyticsByReferrer({
               </Badge>
             </div>
           </SelectItem>
-          {referrers.map((option) => (
+          {referrers.map((option: any) => (
             <SelectItem key={option.value} value={option.value}>
               <div className="flex w-full items-center gap-2">
                 <ReferrerSourceCell

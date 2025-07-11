@@ -132,7 +132,6 @@ export default function FunnelsPage() {
     return () => observer.disconnect();
   }, []);
 
-  const [,] = useAtom(dateRangeAtom);
   const [currentGranularity] = useAtom(timeGranularityAtom);
   const [formattedDateRangeState] = useAtom(formattedDateRangeAtom);
 
@@ -164,9 +163,14 @@ export default function FunnelsPage() {
     isLoading: analyticsLoading,
     error: analyticsError,
     refetch: refetchAnalytics,
-  } = useFunnelAnalytics(websiteId, expandedFunnelId || "", memoizedDateRangeForTabs, {
-    enabled: !!expandedFunnelId,
-  });
+  } = useFunnelAnalytics(
+    websiteId,
+    expandedFunnelId || "",
+    memoizedDateRangeForTabs,
+    {
+      enabled: !!expandedFunnelId,
+    },
+  );
 
   const {
     data: referrerAnalyticsData,
@@ -180,7 +184,7 @@ export default function FunnelsPage() {
       start_date: formattedDateRangeState.startDate,
       end_date: formattedDateRangeState.endDate,
     },
-    { enabled: !!expandedFunnelId }
+    { enabled: !!expandedFunnelId },
   );
 
   // Preload autocomplete data for instant suggestions in dialogs
@@ -223,7 +227,7 @@ export default function FunnelsPage() {
         funnelId: funnel.id,
         updates: {
           name: funnel.name,
-          description: funnel.description,
+          description: funnel.description || "",
           steps: funnel.steps,
           filters: funnel.filters,
         },
@@ -257,9 +261,15 @@ export default function FunnelsPage() {
   };
 
   const formatCompletionTime = (seconds: number) => {
-    if (seconds < 60) return `${seconds}s`;
+    if (seconds < 60) return `${Math.round(seconds)}s`;
     if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
     return `${Math.round(seconds / 3600)}h`;
+  };
+
+  const handleRetry = () => {
+    if (expandedFunnelId) {
+      refetchAnalytics();
+    }
   };
 
   if (funnelsError) {
@@ -285,7 +295,7 @@ export default function FunnelsPage() {
         description="Track user journeys and optimize conversion drop-off points"
         icon={<ChartBarIcon className="h-6 w-6 text-primary" size={16} weight="duotone" />}
         websiteId={websiteId}
-        websiteName={websiteData?.name || undefined}
+        websiteName={websiteData?.name ?? undefined}
         isLoading={funnelsLoading}
         isRefreshing={isRefreshing}
         hasError={!!funnelsError}
@@ -317,51 +327,6 @@ export default function FunnelsPage() {
           {(funnel) => {
             if (expandedFunnelId !== funnel.id) return null;
 
-            const currentAnalyticsData = useMemo(() => {
-              if (selectedReferrer === "all") return analyticsData;
-
-              const referrerData = referrerAnalyticsData?.data?.referrer_analytics?.find(
-                (r) => r.referrer === selectedReferrer
-              );
-
-              if (!referrerData) return null;
-
-              return {
-                success: true,
-                data: {
-                  overall_conversion_rate: referrerData.overall_conversion_rate,
-                  total_users_entered: referrerData.total_users,
-                  total_users_completed: referrerData.completed_users,
-                  avg_completion_time: 0,
-                  avg_completion_time_formatted: "0s",
-                  biggest_dropoff_step: 1,
-                  biggest_dropoff_rate: 0,
-                  steps_analytics: referrerData.steps_analytics,
-                },
-              };
-            }, [selectedReferrer]);
-
-            const summaryStats = useMemo(() => {
-              const steps = currentAnalyticsData?.data?.steps_analytics;
-              if (!steps)
-                return {
-                  totalUsers: 0,
-                  overallConversion: 0,
-                  avgCompletionTime: 0,
-                  biggestDropoffRate: 0,
-                };
-
-              const totalUsers = steps[0]?.users || 0;
-              const finalUsers = steps[steps.length - 1]?.users || 0;
-              const overallConversion = totalUsers > 0 ? (finalUsers / totalUsers) * 100 : 0;
-              const avgCompletionTime =
-                steps.reduce((sum, step) => sum + ((step as any).avg_time_to_complete || 0), 0) /
-                steps.length;
-              const biggestDropoffRate = Math.max(...steps.map((step) => step.dropoff_rate || 0));
-
-              return { totalUsers, overallConversion, avgCompletionTime, biggestDropoffRate };
-            }, [currentAnalyticsData]);
-
             return (
               <Suspense
                 fallback={
@@ -384,16 +349,11 @@ export default function FunnelsPage() {
                   }}
                 >
                   <FunnelAnalytics
-                    data={currentAnalyticsData}
-                    error={selectedReferrer === "all" ? analyticsError : referrerAnalyticsError}
+                    data={analyticsData}
+                    error={analyticsError as Error | null}
                     formatCompletionTime={formatCompletionTime}
-                    isLoading={
-                      selectedReferrer === "all" ? analyticsLoading : referrerAnalyticsLoading
-                    }
-                    onRetry={
-                      selectedReferrer === "all" ? refetchAnalytics : refetchReferrerAnalytics
-                    }
-                    summaryStats={summaryStats}
+                    isLoading={analyticsLoading}
+                    onRetry={refetchAnalytics}
                   />
 
                   <div className="border-border/50 border-t pt-4">
@@ -405,6 +365,9 @@ export default function FunnelsPage() {
                       funnelId={funnel.id}
                       onReferrerChange={handleReferrerChange}
                       websiteId={websiteId}
+                      data={referrerAnalyticsData}
+                      isLoading={referrerAnalyticsLoading}
+                      error={referrerAnalyticsError as any}
                     />
                   </div>
                 </div>

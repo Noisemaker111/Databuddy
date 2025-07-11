@@ -10,19 +10,12 @@ import {
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { FunnelFlow } from "./funnel-flow";
-
-interface SummaryStats {
-  totalUsers: number;
-  overallConversion: number;
-  avgCompletionTime: number;
-  biggestDropoffRate: number;
-}
+import type { FunnelAnalyticsData } from "@/types/funnels";
 
 interface FunnelAnalyticsProps {
   isLoading: boolean;
   error: Error | null;
-  data: any;
-  summaryStats: SummaryStats;
+  data: FunnelAnalyticsData | undefined;
   onRetry: () => void;
   formatCompletionTime: (seconds: number) => string;
 }
@@ -31,7 +24,6 @@ export function FunnelAnalytics({
   isLoading,
   error,
   data,
-  summaryStats,
   onRetry,
   formatCompletionTime,
 }: FunnelAnalyticsProps) {
@@ -46,7 +38,10 @@ export function FunnelAnalytics({
           </div>
           <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <div className="animate-pulse rounded border bg-card p-3" key={i}>
+              <div
+                className="animate-pulse rounded border bg-card p-3"
+                key={`summary-stat-skeleton-${i + 1}`}
+              >
                 <div className="mb-1 flex items-center gap-2">
                   <div className="h-3 w-3 rounded bg-muted" />
                   <div className="h-3 w-12 rounded bg-muted" />
@@ -65,7 +60,7 @@ export function FunnelAnalytics({
           </div>
           <div className="space-y-2">
             {[...Array(3)].map((_, i) => (
-              <div className="animate-pulse space-y-1" key={i}>
+              <div className="animate-pulse space-y-1" key={`funnel-step-skeleton-${i + 1}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="h-5 w-5 rounded-full bg-muted" />
@@ -89,8 +84,8 @@ export function FunnelAnalytics({
           <div className="flex items-center gap-2">
             <TrendDownIcon className="h-4 w-4 text-destructive" size={14} weight="duotone" />
             <div>
-              <div className="font-medium text-destructive text-sm">Error loading analytics</div>
-              <div className="text-muted-foreground text-xs">{error.message}</div>
+              <div className="text-sm font-medium text-destructive">Error loading analytics</div>
+              <div className="text-xs text-muted-foreground">{error.message}</div>
             </div>
           </div>
           <Button className="h-7 gap-1 rounded" onClick={onRetry} size="sm" variant="outline">
@@ -102,7 +97,7 @@ export function FunnelAnalytics({
     );
   }
 
-  if (!data?.data?.steps_analytics) {
+  if (!data) {
     return null;
   }
 
@@ -112,41 +107,41 @@ export function FunnelAnalytics({
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <ChartBarIcon className="h-4 w-4 text-primary" size={14} weight="duotone" />
-          <h3 className="font-semibold text-foreground text-sm">Performance</h3>
+          <h3 className="text-sm font-semibold text-foreground">Performance</h3>
         </div>
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           <div className="rounded border bg-card p-3">
             <div className="mb-1 flex items-center gap-2">
               <UsersIcon className="text-muted-foreground" size={12} />
-              <span className="text-muted-foreground text-xs">Users</span>
+              <span className="text-xs text-muted-foreground">Users</span>
             </div>
-            <div className="font-semibold text-sm">{summaryStats.totalUsers.toLocaleString()}</div>
+            <div className="text-sm font-semibold">{data.total_users_entered.toLocaleString()}</div>
           </div>
           <div className="rounded border bg-card p-3">
             <div className="mb-1 flex items-center gap-2">
               <TargetIcon className="text-muted-foreground" size={12} />
-              <span className="text-muted-foreground text-xs">Conversion</span>
+              <span className="text-xs text-muted-foreground">Conversion</span>
             </div>
-            <div className="font-semibold text-primary text-sm">
-              {summaryStats.overallConversion.toFixed(1)}%
+            <div className="text-sm font-semibold text-primary">
+              {data.overall_conversion_rate.toFixed(1)}%
             </div>
           </div>
           <div className="rounded border bg-card p-3">
             <div className="mb-1 flex items-center gap-2">
               <ClockIcon className="text-muted-foreground" size={12} />
-              <span className="text-muted-foreground text-xs">Avg Time</span>
+              <span className="text-xs text-muted-foreground">Avg Time</span>
             </div>
-            <div className="font-semibold text-sm">
-              {formatCompletionTime(summaryStats.avgCompletionTime)}
+            <div className="text-sm font-semibold">
+              {formatCompletionTime(data.avg_completion_time)}
             </div>
           </div>
           <div className="rounded border bg-card p-3">
             <div className="mb-1 flex items-center gap-2">
               <TrendDownIcon className="text-muted-foreground" size={12} />
-              <span className="text-muted-foreground text-xs">Drop-off</span>
+              <span className="text-xs text-muted-foreground">Drop-off</span>
             </div>
-            <div className="font-semibold text-destructive text-sm">
-              {summaryStats.biggestDropoffRate.toFixed(1)}%
+            <div className="text-sm font-semibold text-destructive">
+              {data.biggest_dropoff_rate.toFixed(1)}%
             </div>
           </div>
         </div>
@@ -155,8 +150,8 @@ export function FunnelAnalytics({
       {/* Funnel Flow */}
       <FunnelFlow
         formatCompletionTime={formatCompletionTime}
-        steps={data.data.steps_analytics}
-        totalUsers={summaryStats.totalUsers}
+        steps={data.steps_analytics}
+        totalUsers={data.total_users_entered}
       />
     </div>
   );
