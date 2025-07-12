@@ -26,12 +26,12 @@ export const mainNavigation: NavigationSection[] = [
       { name: "Settings", icon: GearIcon, href: "/settings", rootLevel: true, highlight: true },
     ],
   },
-  {
-    title: "Early Access",
-    items: [
-      { name: "Revenue", icon: CurrencyDollarIcon, href: "/revenue", rootLevel: true, highlight: true, alpha: true },
-    ],
-  },
+  // {
+  //   title: "Early Access",
+  //   items: [
+  //     { name: "Revenue", icon: CurrencyDollarIcon, href: "/revenue", rootLevel: true, highlight: true, alpha: true },
+  //   ],
+  // },
   {
     title: "Resources",
     items: [
@@ -72,7 +72,7 @@ export const websiteNavigation: NavigationSection[] = [
       { name: "Funnels", icon: FunnelIcon, href: "/funnels", highlight: true },
       { name: "Goals", icon: TargetIcon, href: "/goals", highlight: true },
       { name: "Journeys", icon: GitBranchIcon, href: "/journeys", highlight: true },
-      { name: "Revenue", icon: CurrencyDollarIcon, href: "/revenue", highlight: true, alpha: true },
+      // { name: "Revenue", icon: CurrencyDollarIcon, href: "/revenue", highlight: true, alpha: true },
     ],
   },
   {
