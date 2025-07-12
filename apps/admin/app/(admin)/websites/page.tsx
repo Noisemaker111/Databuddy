@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Globe, ExternalLink } from "lucide-react";
+import { Globe, ExternalLink, Copy } from "lucide-react";
 import { getAllWebsitesAsAdmin } from "./actions";
 import { format } from 'date-fns';
 import Link from 'next/link';
@@ -22,6 +22,8 @@ import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
 import { WebsiteActions } from "./website-actions";
 import { WebsiteEventMetrics, formatNumber } from "@/components/website-event-metrics";
 import type { WebsiteWithUser } from "@/types/website";
+import { toast } from "sonner";
+import { WebsiteIdCopy } from "@/components/website-id-copy";
 
 // Helper function to get initials
 const getInitials = (name: string | null | undefined) => {
@@ -141,6 +143,8 @@ export default async function AdminWebsitesPage({
                               </Badge>
                             )}
                           </div>
+                          {/* Website ID with copy button */}
+                          <WebsiteIdCopy id={website.id} />
                           <div className="md:hidden text-xs text-muted-foreground mt-1">
                             {website.ownerName && `Owner: ${website.ownerName}`}
                             {website.domain && (
