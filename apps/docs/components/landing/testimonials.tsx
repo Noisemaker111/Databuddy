@@ -50,10 +50,12 @@ const testimonials = [
 		avatar: "maze.jpg",
 	},
 	{
-		name: "Sarah Kim",
-		profession: "Product Lead, TechStart",
-		description: "Privacy-first approach helped us stay compliant while getting better insights.",
-		avatar: "SK",
+		name: "Yassr Atti",
+		profession: "Founder, Call",
+		description: "everything you need for analytics is at @trydatabuddy 🔥",
+		link: "https://x.com/Yassr_Atti/status/1944455392018461107",
+		social: <XIcon />,
+		avatar: "yassr.jpg",
 	},
 	{
 		name: "Alex Chen",
