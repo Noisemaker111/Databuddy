@@ -1,13 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchRealTimeStats } from "../actions";
+import { fetchEventsPerSecond, type EventsPerSecondData } from "../actions";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface EventsPerSecondData {
-    timestamp: number;
-    count: number;
-}
 
 export function RealTimeEventsWidget() {
     const [eventsData, setEventsData] = useState<EventsPerSecondData[]>([]);
@@ -16,16 +11,10 @@ export function RealTimeEventsWidget() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const stats = await fetchRealTimeStats();
-                const now = Date.now();
-
-                setEventsData(prev => {
-                    const newData = [...prev, { timestamp: now, count: stats.events_last_minute }];
-                    // Keep only last 60 seconds of data
-                    return newData.filter(item => now - item.timestamp < 60000);
-                });
+                const data = await fetchEventsPerSecond();
+                setEventsData(data);
             } catch (error) {
-                console.error("Error fetching real-time stats:", error);
+                console.error("Error fetching events per second:", error);
             } finally {
                 setIsLoading(false);
             }
@@ -84,7 +73,7 @@ export function RealTimeEventsWidget() {
                     </div>
                 </div>
 
-                <div className="h-48 bg-background border rounded-lg p-3">
+                <div className="h-32 border rounded p-3">
                     {eventsData.length === 0 ? (
                         <div className="h-full flex items-center justify-center text-muted-foreground">
                             <p className="text-sm">No data yet...</p>
@@ -118,7 +107,7 @@ export function RealTimeEventsWidget() {
             </div>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="grid grid-cols-3 gap-2">
                 <div className="p-2 rounded bg-muted/30">
                     <div className="text-sm font-bold text-primary">{eventsData.length}</div>
                     <div className="text-xs text-muted-foreground">Points</div>

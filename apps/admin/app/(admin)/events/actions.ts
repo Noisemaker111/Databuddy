@@ -13,13 +13,13 @@ export interface ClickhouseEvent {
   event_id: string;
   session_start_time: string | null;
   timestamp: string;
-  
+
   // Page context
   referrer: string | null;
   url: string;
   path: string;
   title: string | null;
-  
+
   // Server enrichment
   ip: string;
   user_agent: string | null;
@@ -33,18 +33,18 @@ export interface ClickhouseEvent {
   country: string | null;
   region: string | null;
   city: string | null;
-  
+
   // User context
   screen_resolution: string | null;
   viewport_size: string | null;
   language: string | null;
   timezone: string | null;
-  
+
   // Connection info
   connection_type: string | null;
   rtt: number | null;
   downlink: number | null;
-  
+
   // Engagement metrics
   time_on_page: number | null;
   scroll_depth: number | null;
@@ -54,14 +54,14 @@ export interface ClickhouseEvent {
   is_bounce: number | null;
   has_exit_intent: boolean | null;
   page_size: number | null;
-  
+
   // UTM parameters
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
   utm_term: string | null;
   utm_content: string | null;
-  
+
   // Performance metrics
   load_time: number | null;
   dom_ready_time: number | null;
@@ -72,21 +72,21 @@ export interface ClickhouseEvent {
   render_time: number | null;
   redirect_time: number | null;
   domain_lookup_time: number | null;
-  
+
   // Web Vitals
   fcp: number | null;
   lcp: number | null;
   cls: number | null;
   fid: number | null;
   inp: number | null;
-  
+
   // Link tracking
   href: string | null;
   text: string | null;
-  
+
   // Custom event value
   value: number | null;
-  
+
   // Error tracking
   error_message: string | null;
   error_filename: string | null;
@@ -94,11 +94,11 @@ export interface ClickhouseEvent {
   error_colno: number | null;
   error_stack: string | null;
   error_type: string | null;
-  
+
   // Legacy
   properties: string;
   created_at: string;
-  
+
   [key: string]: any;
 }
 
@@ -148,6 +148,26 @@ export interface RealTimeStats {
   recent_errors: Array<{ time: string; event_name: string; path: string; error_message?: string }>;
 }
 
+export interface EventsPerSecondData {
+  timestamp: number;
+  count: number;
+}
+
+// Cache for real-time data to reduce DB load
+const realTimeCache: {
+  eventsPerSecond: EventsPerSecondData[];
+  lastUpdate: number;
+  stats: RealTimeStats | null;
+} = {
+  eventsPerSecond: [],
+  lastUpdate: 0,
+  stats: null
+};
+
+// Cache duration: 5 seconds for stats, 1 second for events per second
+const STATS_CACHE_DURATION = 5000;
+const EVENTS_CACHE_DURATION = 1000;
+
 function escapeString(str: string): string {
   return str.replace(/'/g, "''");
 }
@@ -184,7 +204,7 @@ export async function fetchEvents(params: EventsQueryParams = {}) {
 
     // Build the query conditions
     const conditions = [];
-    
+
     // Date range filters
     if (from) {
       const fromDate = new Date(from);
@@ -255,7 +275,7 @@ export async function fetchEvents(params: EventsQueryParams = {}) {
     if (search) {
       const escapedSearch = escapeString(search);
       const searchConditions = [];
-      
+
       // Only search UUID fields if search term looks like a UUID
       if (isValidUUID(search)) {
         searchConditions.push(`id = '${escapedSearch}'`);
@@ -269,7 +289,7 @@ export async function fetchEvents(params: EventsQueryParams = {}) {
         searchConditions.push(`toString(anonymous_id) ILIKE '%${escapedSearch}%'`);
         searchConditions.push(`toString(session_id) ILIKE '%${escapedSearch}%'`);
       }
-      
+
       // Text fields can use ILIKE directly
       searchConditions.push(`event_name ILIKE '%${escapedSearch}%'`);
       searchConditions.push(`url ILIKE '%${escapedSearch}%'`);
@@ -284,7 +304,7 @@ export async function fetchEvents(params: EventsQueryParams = {}) {
       searchConditions.push(`city ILIKE '%${escapedSearch}%'`);
       searchConditions.push(`ip ILIKE '%${escapedSearch}%'`);
       searchConditions.push(`user_agent ILIKE '%${escapedSearch}%'`);
-      
+
       conditions.push(`(${searchConditions.join(' OR ')})`);
     }
 
@@ -302,7 +322,7 @@ export async function fetchEvents(params: EventsQueryParams = {}) {
       FROM analytics.events
       ${whereClause}
     `;
-    
+
     const totalResult = await chQuery<{ total: number }>(totalQuery);
     const total = totalResult[0]?.total || 0;
 
@@ -315,9 +335,9 @@ export async function fetchEvents(params: EventsQueryParams = {}) {
       LIMIT ${limit}
       OFFSET ${offset}
     `;
-    
+
     const data = await chQuery<ClickhouseEvent>(eventsQuery);
-    
+
     return { data, total };
   } catch (error) {
     console.error("Error fetching events:", error);
@@ -328,12 +348,12 @@ export async function fetchEvents(params: EventsQueryParams = {}) {
 export async function fetchEventStats(params: Pick<EventsQueryParams, 'from' | 'to' | 'client_id'> = {}): Promise<EventStats> {
   try {
     const { from, to, client_id } = params;
-    
+
     const conditions = [];
     if (from) conditions.push(`time >= parseDateTimeBestEffort('${escapeString(from)}')`);
     if (to) conditions.push(`time <= parseDateTimeBestEffort('${escapeString(`${to} 23:59:59`)}')`);
     if (client_id) conditions.push(`client_id = '${escapeString(client_id)}'`);
-    
+
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
     // Main stats query
@@ -481,12 +501,54 @@ export async function fetchEventStats(params: Pick<EventsQueryParams, 'from' | '
   }
 }
 
+export async function fetchEventsPerSecond(): Promise<EventsPerSecondData[]> {
+  try {
+    const now = Date.now();
+
+    // Use cache if it's fresh enough
+    if (now - realTimeCache.lastUpdate < EVENTS_CACHE_DURATION && realTimeCache.eventsPerSecond.length > 0) {
+      return realTimeCache.eventsPerSecond;
+    }
+
+    // Only fetch the minimal data needed for events per second
+    const oneMinuteAgo = new Date(now - 60 * 1000);
+
+    const query = `
+      SELECT count() as count
+      FROM analytics.events
+      WHERE time >= parseDateTimeBestEffort('${oneMinuteAgo.toISOString()}')
+    `;
+
+    const result = await chQuery<{ count: number }>(query);
+    const currentCount = result[0]?.count || 0;
+
+    // Update cache
+    const newDataPoint = { timestamp: now, count: currentCount };
+    realTimeCache.eventsPerSecond = [...realTimeCache.eventsPerSecond, newDataPoint]
+      .filter(item => now - item.timestamp < 60000) // Keep only last 60 seconds
+      .slice(-60); // Limit to 60 data points max
+
+    realTimeCache.lastUpdate = now;
+
+    return realTimeCache.eventsPerSecond;
+  } catch (error) {
+    console.error("Error fetching events per second:", error);
+    return realTimeCache.eventsPerSecond;
+  }
+}
+
 export async function fetchRealTimeStats(): Promise<RealTimeStats> {
   try {
-    const now = new Date();
-    const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    const now = Date.now();
+
+    // Use cached stats if they're fresh enough
+    if (realTimeCache.stats && now - realTimeCache.lastUpdate < STATS_CACHE_DURATION) {
+      return realTimeCache.stats;
+    }
+
+    const oneMinuteAgo = new Date(now - 60 * 1000);
+    const oneHourAgo = new Date(now - 60 * 60 * 1000);
+    const fiveMinutesAgo = new Date(now - 5 * 60 * 1000);
 
     // Events in last minute
     const lastMinuteQuery = `
@@ -550,16 +612,22 @@ export async function fetchRealTimeStats(): Promise<RealTimeStats> {
       chQuery<{ time: string; event_name: string; path: string; error_message?: string }>(recentErrorsQuery)
     ]);
 
-    return {
+    const stats = {
       events_last_minute: lastMinuteResult[0]?.count || 0,
       events_last_hour: lastHourResult[0]?.count || 0,
       active_sessions: activeSessionsResult[0]?.count || 0,
       top_pages_now: topPagesNowResult,
       recent_errors: recentErrorsResult
     };
+
+    // Update cache
+    realTimeCache.stats = stats;
+    realTimeCache.lastUpdate = now;
+
+    return stats;
   } catch (error) {
     console.error("Error fetching real-time stats:", error);
-    return {
+    return realTimeCache.stats || {
       events_last_minute: 0,
       events_last_hour: 0,
       active_sessions: 0,
@@ -572,7 +640,7 @@ export async function fetchRealTimeStats(): Promise<RealTimeStats> {
 export async function exportEvents(params: EventsQueryParams = {}, format: 'csv' | 'json' = 'csv') {
   try {
     const { data } = await fetchEvents({ ...params, limit: 10000, offset: 0 });
-    
+
     if (format === 'json') {
       return {
         content: JSON.stringify(data, null, 2),
@@ -593,12 +661,12 @@ export async function exportEvents(params: EventsQueryParams = {}, format: 'csv'
     const headers = Object.keys(data[0]);
     const csvContent = [
       headers.join(','),
-      ...data.map(row => 
+      ...data.map(row =>
         headers.map(header => {
           const value = row[header];
           if (value === null || value === undefined) return '';
-          return typeof value === 'string' && value.includes(',') 
-            ? `"${value.replace(/"/g, '""')}"` 
+          return typeof value === 'string' && value.includes(',')
+            ? `"${value.replace(/"/g, '""')}"`
             : String(value);
         }).join(',')
       )
@@ -623,7 +691,7 @@ export async function fetchEventsBySession(sessionId: string) {
       WHERE session_id = '${escapeString(sessionId)}'
       ORDER BY time ASC
     `;
-    
+
     const data = await chQuery<ClickhouseEvent>(query);
     return { data, total: data.length };
   } catch (error) {
@@ -641,7 +709,7 @@ export async function fetchEventsByUser(anonymousId: string) {
       ORDER BY time DESC
       LIMIT 1000
     `;
-    
+
     const data = await chQuery<ClickhouseEvent>(query);
     return { data, total: data.length };
   } catch (error) {
