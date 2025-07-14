@@ -26,7 +26,7 @@ app.get('/', () => {
     set.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
     set.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Cookie, Cache-Control, X-Website-Id';
     set.headers.Vary = 'Origin, Access-Control-Request-Headers';
-    return new Response(null, { status: 204 });
+    return null; // Let Elysia build the response
   })
   .all('/trpc/*', async ({ request, set }) => {
     const response = await fetchRequestHandler({
