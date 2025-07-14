@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
-import { and, eq, isNull, websites } from '@databuddy/db';
+import { and, eq, isNull, websites, chQuery } from '@databuddy/db';
 import { TRPCError } from '@trpc/server';
 import { nanoid } from 'nanoid';
 import { checkAndTrackWebsiteCreation, getBillingCustomerId, trackWebsiteUsage } from '../utils/billing';
@@ -199,19 +199,36 @@ export const websitesRouter = createTRPCRouter({
                     body: { permissions: { website: ['create'] } },
                 });
                 if (!success) {
-                    throw new TRPCError({ code: 'FORBIDDEN', message: 'No permission in target organization.' });
+                    throw new TRPCError({ code: 'FORBIDDEN', message: 'Missing organization permissions.' });
                 }
             }
 
-            const [transferred] = await ctx.db
+            const [updatedWebsite] = await ctx.db
                 .update(websites)
-                .set({
-                    organizationId: input.organizationId || null,
-                    userId: input.organizationId ? website.userId : ctx.user.id,
-                } as any)
+                .set({ organizationId: input.organizationId } as any)
                 .where(eq(websites.id, input.websiteId))
                 .returning();
 
-            return transferred;
-        })
+            discordLogger.info(
+                "Website Transferred",
+                `Website "${updatedWebsite.name}" was transferred to organization "${input.organizationId}"`,
+                {
+                    websiteId: updatedWebsite.id,
+                    organizationId: input.organizationId,
+                    userId: ctx.user.id,
+                }
+            );
+
+            return updatedWebsite;
+        }),
+
+    isTrackingSetup: protectedProcedure
+        .input(z.object({ websiteId: z.string() }))
+        .query(async ({ input }) => {
+            const result = await chQuery<{ count: number }>(
+                `SELECT COUNT(*) as count FROM analytics.events WHERE client_id = {websiteId:String} AND event_name = 'screen_view' LIMIT 1`,
+                { websiteId: input.websiteId }
+            );
+            return { tracking_setup: (result[0]?.count ?? 0) > 0 };
+        }),
 }); 

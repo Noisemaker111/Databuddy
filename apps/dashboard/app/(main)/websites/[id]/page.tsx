@@ -14,7 +14,6 @@ import { DateRangePicker } from "@/components/date-range-picker";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useWebsiteAnalytics } from "@/hooks/use-analytics";
 import { useWebsite } from "@/hooks/use-websites";
 import {
   dateRangeAtom,
@@ -26,6 +25,7 @@ import {
 import type { FullTabProps, WebsiteDataTabProps } from "./_components/utils/types";
 import { EmptyState } from "./_components/utils/ui-components";
 import { useQueryClient } from "@tanstack/react-query";
+import { trpc } from "@/lib/trpc";
 
 type TabId =
   | "overview"
@@ -133,15 +133,12 @@ function WebsiteDetailsPage() {
 
   const { data, isLoading, isError, refetch: refetchWebsiteData } = useWebsite(id as string);
 
-  const { analytics: analyticsData, loading: analyticsLoading } = useWebsiteAnalytics(
-    id as string,
-    memoizedDateRangeForTabs
-  );
+  const { data: trackingSetupData, isLoading: isTrackingSetupLoading } = trpc.websites.isTrackingSetup.useQuery({ websiteId: id as string }, { enabled: !!id });
 
   const isTrackingSetup = useMemo(() => {
-    if (!data || analyticsLoading.summary) return null;
-    return analyticsData?.tracking_setup !== false;
-  }, [data, analyticsLoading.summary, analyticsData?.tracking_setup]);
+    if (!data || isTrackingSetupLoading) return null;
+    return trackingSetupData?.tracking_setup !== false;
+  }, [data, isTrackingSetupLoading, trackingSetupData?.tracking_setup]);
 
   useEffect(() => {
     if (isTrackingSetup === false && activeTab === "overview") {
