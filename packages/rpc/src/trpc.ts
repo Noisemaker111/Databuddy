@@ -1,6 +1,6 @@
 import { initTRPC, TRPCError, type inferAsyncReturnType } from '@trpc/server';
 import { db } from '@databuddy/db';
-import { apiAuth as auth } from '@databuddy/auth';
+import { auth } from '@databuddy/auth';
 import superjson from 'superjson';
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {
