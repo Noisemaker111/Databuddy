@@ -107,7 +107,7 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
                   WHERE 
                     client_id = {websiteId:String}
                     AND time >= parseDateTimeBestEffort({startDate:String})
-                    AND time <= parseDateTimeBestEffort({endDate:String} + ' 23:59:59')
+                    AND time <= parseDateTimeBestEffort(concat({endDate:String}, ' 23:59:59'))
                   GROUP BY session_id
                 ),
                 hourly_session_metrics AS (
@@ -128,7 +128,7 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
                   WHERE 
                     client_id = {websiteId:String}
                     AND time >= parseDateTimeBestEffort({startDate:String})
-                    AND time <= parseDateTimeBestEffort({endDate:String} + ' 23:59:59')
+                    AND time <= parseDateTimeBestEffort(concat({endDate:String}, ' 23:59:59'))
                   GROUP BY event_hour
                 )
                 SELECT
@@ -178,7 +178,7 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
                   WHERE
                     client_id = {websiteId:String}
                     AND time >= parseDateTimeBestEffort({startDate:String})
-                    AND time <= parseDateTimeBestEffort({endDate:String} + ' 23:59:59')
+                    AND time <= parseDateTimeBestEffort(concat({endDate:String}, ' 23:59:59'))
                   GROUP BY session_id
                 ),
                 daily_session_metrics AS (
@@ -199,7 +199,7 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
                   WHERE
                     client_id = {websiteId:String}
                     AND time >= parseDateTimeBestEffort({startDate:String})
-                    AND time <= parseDateTimeBestEffort({endDate:String} + ' 23:59:59')
+                    AND time <= parseDateTimeBestEffort(concat({endDate:String}, ' 23:59:59'))
                   GROUP BY event_date
                 )
                 SELECT
