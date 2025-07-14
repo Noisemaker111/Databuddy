@@ -1,24 +1,31 @@
 "use client";
 
-import React, { Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import type { WebsiteDataTabProps } from "../../_components/utils/types";
-import { useChat } from "../hooks/use-chat";
-import type { Message } from "../types/message";
+import { useAtom } from 'jotai';
+import {
+  modelAtom,
+  websiteIdAtom,
+  websiteDataAtom,
+  dateRangeAtom,
+  messagesAtom,
+  isLoadingAtom,
+  isInitializedAtom,
+} from '@/stores/jotai/assistantAtoms';
 import ChatSection, { ChatSkeleton } from "./chat-section";
 import VisualizationSection, { VisualizationSkeleton } from "./visualization-section";
+import type { Message } from "../types/message";
 
-export default function AIAssistantMain(props: WebsiteDataTabProps) {
-  const [currentWebsiteId, setCurrentWebsiteId] = useState(props.websiteId);
-  const [currentWebsiteName, setCurrentWebsiteName] = useState(props.websiteData?.name);
-  const chat = useChat(currentWebsiteId, currentWebsiteName);
+export default function AIAssistantMain() {
+  const [websiteId, setWebsiteId] = useAtom(websiteIdAtom);
+  const [websiteData, setWebsiteData] = useAtom(websiteDataAtom);
+  const [dateRange, setDateRange] = useAtom(dateRangeAtom);
+  const [messages] = useAtom(messagesAtom);
+  const [isLoading] = useAtom(isLoadingAtom);
+  const [isInitialized] = useAtom(isInitializedAtom);
 
-  const handleSelectChat = useCallback((websiteId: string, websiteName?: string) => {
-    setCurrentWebsiteId(websiteId);
-    setCurrentWebsiteName(websiteName);
-  }, []);
-
-  const latestVisualizationMessage = chat.messages
+  // Find latest visualization message and query message
+  const latestVisualizationMessage = messages
     .slice()
     .reverse()
     .find(
@@ -27,71 +34,64 @@ export default function AIAssistantMain(props: WebsiteDataTabProps) {
 
   let currentQueryMessage: Message | undefined;
   if (latestVisualizationMessage) {
-    const vizMessageIndex = chat.messages.findIndex((m) => m.id === latestVisualizationMessage.id);
+    const vizMessageIndex = messages.findIndex((m) => m.id === latestVisualizationMessage.id);
     if (vizMessageIndex > -1) {
       for (let i = vizMessageIndex - 1; i >= 0; i--) {
-        if (chat.messages[i].type === "user") {
-          currentQueryMessage = chat.messages[i];
+        if (messages[i].type === "user") {
+          currentQueryMessage = messages[i];
           break;
         }
       }
     }
   }
 
-  const shouldShowVisualization = useMemo(() => {
-    return (
-      latestVisualizationMessage?.data &&
-      latestVisualizationMessage?.chartType &&
-      latestVisualizationMessage?.responseType === "chart"
-    );
-  }, [latestVisualizationMessage]);
+  const shouldShowVisualization = !!(
+    latestVisualizationMessage?.data &&
+    latestVisualizationMessage?.chartType &&
+    latestVisualizationMessage?.responseType === "chart"
+  );
 
-  const hasRecentActivity = useMemo(() => {
-    return chat.messages.length > 1; // More than just the welcome message
-  }, [chat.messages.length]);
+  // Only local: handle switching chats
+  const handleSelectChat = useCallback((id: string, name?: string) => {
+    setWebsiteId(id);
+    setWebsiteData((prev) => prev ? { ...prev, name } : prev);
+  }, [setWebsiteId, setWebsiteData]);
 
   return (
-    <div className="flex flex-1 flex-col gap-3 overflow-hidden lg:flex-row">
-      <div
-        className={cn(
-          "flex flex-col overflow-hidden",
-          shouldShowVisualization ? "lg:flex-[0.6]" : "flex-1"
-        )}
-      >
-        <Suspense fallback={<ChatSkeleton />}>
-          <ChatSection
-            {...props}
-            handleKeyPress={chat.handleKeyPress}
-            inputValue={chat.inputValue}
-            isInitialized={chat.isInitialized}
-            isLoading={chat.isLoading}
-            isRateLimited={chat.isRateLimited}
-            messages={chat.messages}
-            onResetChat={chat.resetChat}
-            onSelectChat={handleSelectChat}
-            scrollAreaRef={chat.scrollAreaRef}
-            sendMessage={chat.sendMessage}
-            setInputValue={chat.setInputValue}
-            websiteData={{ ...props.websiteData, name: currentWebsiteName }}
-            websiteId={currentWebsiteId}
-          />
-        </Suspense>
-      </div>
-
-      {/* Visualization Section - simplified */}
-      {shouldShowVisualization && (
-        <div className="flex flex-[0.4] flex-col overflow-hidden">
-          <Suspense fallback={<VisualizationSkeleton />}>
-            <VisualizationSection
-              {...props}
-              currentMessage={currentQueryMessage}
-              hasVisualization={shouldShowVisualization}
-              latestVisualization={latestVisualizationMessage}
-              onQuickInsight={chat.sendMessage}
-            />
-          </Suspense>
+    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-background to-muted/20 pt-16 md:pl-72">
+      <div className="flex flex-1 overflow-hidden p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-1 flex-col gap-3 overflow-hidden lg:flex-row">
+          <div
+            className={cn(
+              "flex flex-col overflow-hidden",
+              shouldShowVisualization ? "lg:flex-[0.6]" : "flex-1"
+            )}
+          >
+            {!websiteData ? (
+              <ChatSkeleton />
+            ) : (
+              <Suspense fallback={<ChatSkeleton />}>
+                <ChatSection onSelectChat={handleSelectChat} />
+              </Suspense>
+            )}
+          </div>
+          {shouldShowVisualization && (
+            <div className="flex flex-[0.4] flex-col overflow-hidden">
+              <Suspense fallback={<VisualizationSkeleton />}>
+                <VisualizationSection
+                  currentMessage={currentQueryMessage}
+                  hasVisualization={shouldShowVisualization}
+                  latestVisualization={latestVisualizationMessage}
+                  websiteData={websiteData}
+                  websiteId={websiteId}
+                  dateRange={dateRange}
+                // onQuickInsight={...} // If needed, can use atom for this too
+                />
+              </Suspense>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

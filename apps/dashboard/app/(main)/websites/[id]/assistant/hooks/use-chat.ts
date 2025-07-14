@@ -1,6 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { getChatDB } from "../lib/chat-db";
 import type { Message } from "../types/message";
+import { useAtom } from 'jotai';
+import {
+  modelAtom,
+  websiteIdAtom,
+  websiteDataAtom,
+  dateRangeAtom,
+  messagesAtom,
+  inputValueAtom,
+  isLoadingAtom,
+  isRateLimitedAtom,
+  isInitializedAtom,
+  scrollAreaRefAtom,
+} from '@/stores/jotai/assistantAtoms';
 
 // StreamingUpdate interface to match API
 interface StreamingUpdate {
@@ -30,13 +43,17 @@ function generateWelcomeMessage(websiteName?: string): string {
   return `Hello! I'm Nova, your AI analytics partner for ${websiteName || "your website"}. I can help you understand your data with charts, single metrics, or detailed answers. Try asking me questions like:\n\n${examples.map((prompt: string) => `• "${prompt}"`).join("\n")}\n\nI'll automatically choose the best way to present your data - whether it's a chart, a single number, or a detailed explanation.`;
 }
 
-export function useChat(websiteId: string, websiteName?: string) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRateLimited, setIsRateLimited] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+export function useChat() {
+  const [model] = useAtom(modelAtom);
+  const [websiteId] = useAtom(websiteIdAtom);
+  const [websiteData] = useAtom(websiteDataAtom);
+  const [dateRange] = useAtom(dateRangeAtom);
+  const [messages, setMessages] = useAtom(messagesAtom);
+  const [inputValue, setInputValue] = useAtom(inputValueAtom);
+  const [isLoading, setIsLoading] = useAtom(isLoadingAtom);
+  const [isRateLimited, setIsRateLimited] = useAtom(isRateLimitedAtom);
+  const [isInitialized, setIsInitialized] = useAtom(isInitializedAtom);
+  const [scrollAreaRef] = useAtom(scrollAreaRefAtom);
   const rateLimitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const chatDB = getChatDB();
 
@@ -47,7 +64,7 @@ export function useChat(websiteId: string, websiteName?: string) {
     const initializeChat = async () => {
       try {
         // Load existing messages from IndexedDB
-        const existingMessages = await chatDB.getMessages(websiteId);
+        const existingMessages = await chatDB.getMessages(websiteId || '');
 
         if (isMounted) {
           if (existingMessages.length === 0) {
@@ -55,12 +72,12 @@ export function useChat(websiteId: string, websiteName?: string) {
             const welcomeMessage: Message = {
               id: "1",
               type: "assistant",
-              content: generateWelcomeMessage(websiteName),
+              content: generateWelcomeMessage(websiteData?.name || ''),
               timestamp: new Date(),
             };
 
             // Save welcome message to IndexedDB and set in state
-            await chatDB.saveMessage(welcomeMessage, websiteId);
+            await chatDB.saveMessage(welcomeMessage, websiteId || '');
             setMessages([welcomeMessage]);
           } else {
             // Load existing messages
@@ -68,7 +85,7 @@ export function useChat(websiteId: string, websiteName?: string) {
           }
 
           // Update chat metadata
-          await chatDB.createOrUpdateChat(websiteId, websiteName);
+          await chatDB.createOrUpdateChat(websiteId || '', websiteData?.name || '');
           setIsInitialized(true);
         }
       } catch (error) {
@@ -79,7 +96,7 @@ export function useChat(websiteId: string, websiteName?: string) {
           const welcomeMessage: Message = {
             id: "1",
             type: "assistant",
-            content: generateWelcomeMessage(websiteName),
+            content: generateWelcomeMessage(websiteData?.name || ''),
             timestamp: new Date(),
           };
           setMessages([welcomeMessage]);
@@ -93,11 +110,11 @@ export function useChat(websiteId: string, websiteName?: string) {
     return () => {
       isMounted = false;
     };
-  }, [websiteId, websiteName, chatDB]);
+  }, [websiteId, websiteData?.name, chatDB, setMessages, setIsInitialized]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
-      if (scrollAreaRef.current) {
+      if (scrollAreaRef?.current) {
         const scrollContainer = scrollAreaRef.current.querySelector(
           "[data-radix-scroll-area-viewport]"
         );
@@ -106,14 +123,14 @@ export function useChat(websiteId: string, websiteName?: string) {
         }
       }
     }, 50);
-  }, []);
+  }, [scrollAreaRef]);
 
   const lastMessage = messages[messages.length - 1];
   const lastMessageThinkingSteps = lastMessage?.thinkingSteps?.length || 0;
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages.length, lastMessageThinkingSteps, scrollToBottom]);
+  }, [scrollToBottom]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -138,7 +155,7 @@ export function useChat(websiteId: string, websiteName?: string) {
 
       // Save user message to IndexedDB immediately
       try {
-        await chatDB.saveMessage(userMessage, websiteId);
+        await chatDB.saveMessage(userMessage, websiteId || '');
       } catch (error) {
         console.error("Failed to save user message to IndexedDB:", error);
       }
@@ -165,12 +182,13 @@ export function useChat(websiteId: string, websiteName?: string) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Website-Id": websiteId,
+            "X-Website-Id": websiteId || '',
           },
           credentials: "include",
           body: JSON.stringify({
             message: messageContent,
-            website_id: websiteId,
+            website_id: websiteId || '',
+            model: model,
             context: { previousMessages: messages },
           }),
         });
@@ -274,7 +292,7 @@ export function useChat(websiteId: string, websiteName?: string) {
 
                     // Save completed assistant message to IndexedDB
                     try {
-                      await chatDB.saveMessage(completedMessage, websiteId);
+                      await chatDB.saveMessage(completedMessage, websiteId || '');
                     } catch (error) {
                       console.error("Failed to save assistant message to IndexedDB:", error);
                     }
@@ -333,6 +351,7 @@ export function useChat(websiteId: string, websiteName?: string) {
       messages,
       scrollToBottom,
       chatDB,
+      model,
     ]
   );
 
@@ -349,18 +368,18 @@ export function useChat(websiteId: string, websiteName?: string) {
   const resetChat = useCallback(async () => {
     try {
       // Clear messages from IndexedDB
-      await chatDB.clearMessages(websiteId);
+      await chatDB.clearMessages(websiteId || '');
 
       // Create new welcome message
       const welcomeMessage: Message = {
         id: "1",
         type: "assistant",
-        content: generateWelcomeMessage(websiteName),
+        content: generateWelcomeMessage(websiteData?.name || ''),
         timestamp: new Date(),
       };
 
       // Save welcome message to IndexedDB
-      await chatDB.saveMessage(welcomeMessage, websiteId);
+      await chatDB.saveMessage(welcomeMessage, websiteId || '');
 
       // Update state
       setMessages([welcomeMessage]);
@@ -371,7 +390,7 @@ export function useChat(websiteId: string, websiteName?: string) {
       const welcomeMessage: Message = {
         id: "1",
         type: "assistant",
-        content: generateWelcomeMessage(websiteName),
+        content: generateWelcomeMessage(websiteData?.name || ''),
         timestamp: new Date(),
       };
       setMessages([welcomeMessage]);
@@ -379,12 +398,13 @@ export function useChat(websiteId: string, websiteName?: string) {
 
     setInputValue("");
     setIsRateLimited(false);
+    setIsLoading(false);
 
     // Clear any existing timeout
     if (rateLimitTimeoutRef.current) {
       clearTimeout(rateLimitTimeoutRef.current);
     }
-  }, [websiteName, websiteId, chatDB]);
+  }, [websiteData?.name, websiteId, chatDB, setMessages, setInputValue, setIsRateLimited, setIsLoading]);
 
   return {
     messages,

@@ -1,55 +1,72 @@
-export type QueryWithParams = {
-  query: string
-  params: Record<string, unknown>
+import { z } from "zod";
+
+export const FilterOperators = {
+    eq: '=',
+    ne: '!=',
+    like: 'LIKE',
+    gt: '>',
+    lt: '<',
+    in: 'IN',
+    notIn: 'NOT IN'
+} as const;
+
+export const TimeGranularity = {
+    minute: 'toStartOfMinute',
+    hour: 'toStartOfHour',
+    day: 'toStartOfDay',
+    week: 'toStartOfWeek',
+    month: 'toStartOfMonth'
+} as const;
+
+export type FilterOperator = keyof typeof FilterOperators;
+export type TimeUnit = keyof typeof TimeGranularity | 'hourly' | 'daily';
+
+export interface Filter {
+    field: string;
+    op: FilterOperator;
+    value: string | number | (string | number)[];
 }
 
-export type ParameterBuilder = (
-  websiteId: string,
-  startDate: string,
-  endDate: string,
-  limit: number,
-  offset: number,
-  granularity?: 'hourly' | 'daily',
-  timezone?: string,
-  filters?: any[],
-  groupBy?: string,
-) => string | QueryWithParams
-
-export interface BuilderConfig {
-  metricSet: string;
-  nameColumn: string;
-  groupByColumns: string[];
-  eventName?: string;
-  extraWhere?: string;
-  orderBy: string;
-}
-
-export interface Website {
-  id: string;
-  domain: string;
-}
-
-export type AnalyticsContext = {
-  Variables: {
-    website: Website;
-    user: any;
-  };
-};
-
-export interface FilterRequest {
-  field: string;
-  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in' | 'contains' | 'starts_with';
-  value: string | number | Array<string | number>;
+export interface SimpleQueryConfig {
+    table?: string;
+    fields?: string[];
+    where?: string[];
+    groupBy?: string[];
+    orderBy?: string;
+    limit?: number;
+    timeField?: string;
+    allowedFilters?: string[];
+    customizable?: boolean;
+    plugins?: {
+        parseReferrers?: boolean;
+        normalizeUrls?: boolean;
+        [key: string]: any;
+    };
+    customSql?: (
+        websiteId: string,
+        startDate: string,
+        endDate: string,
+        filters?: Filter[],
+        granularity?: TimeUnit,
+        limit?: number,
+        offset?: number
+    ) => string | { sql: string; params: Record<string, unknown> };
 }
 
 export interface QueryRequest {
-  id?: string;
-  startDate: string;
-  endDate: string;
-  timeZone: string;
-  parameters: string[];
-  limit: number;
-  page: number;
-  filters: FilterRequest[];
-  granularity: 'hourly' | 'daily';
+    projectId: string;
+    type: string;
+    from: string;
+    to: string;
+    timeUnit?: TimeUnit;
+    filters?: Filter[];
+    groupBy?: string[];
+    orderBy?: string;
+    limit?: number;
+    offset?: number;
+}
+
+export interface CompiledQuery {
+    sql: string;
+    params: Record<string, unknown>;
 } 

@@ -1,88 +1,167 @@
-import type { ParameterBuilder } from '../types'
-import { escapeSqlString } from '../utils'
+import type { SimpleQueryConfig } from "../types";
 
-export const pageBuilders: Record<string, ParameterBuilder> = {
-  top_pages: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily') => `
-    SELECT 
-      path as name,
-      uniq(anonymous_id) as visitors,
-      COUNT(*) as pageviews,
-      uniq(session_id) as sessions
-    FROM analytics.events
-    WHERE client_id = ${escapeSqlString(websiteId)}
-      AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
-      AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-      AND event_name = 'screen_view'
-      AND path != ''
-    GROUP BY path
-    ORDER BY pageviews DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `,
+export const PagesBuilders: Record<string, SimpleQueryConfig> = {
+    top_pages: {
+        table: 'analytics.events',
+        fields: [
+            'path(path) as name',
+            'COUNT(*) as pageviews',
+            'COUNT(DISTINCT anonymous_id) as visitors',
+            'ROUND((COUNT(*) / SUM(COUNT(*)) OVER()) * 100, 2) as percentage'
+        ],
+        where: ['event_name = \'screen_view\'', 'path != \'\''],
+        groupBy: ['path(path)'],
+        orderBy: 'pageviews DESC',
+        limit: 100,
+        timeField: 'time',
+        allowedFilters: ['referrer', 'device_type', 'browser_name'],
+        customizable: true
+    },
 
-  exit_page: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily') => `
-    WITH sessions AS (
-      SELECT
-        session_id,
-        MAX(time) as session_end_time
-      FROM analytics.events
-      WHERE 
-        client_id = ${escapeSqlString(websiteId)}
-        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
-        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-        AND event_name = 'screen_view'
-        AND path != ''
-      GROUP BY session_id
-    ),
-    exit_pages AS (
-      SELECT
-        e.path,
-        COUNT(DISTINCT e.session_id) as exits,
-        COUNT(DISTINCT e.anonymous_id) as visitors
-      FROM analytics.events e
-      INNER JOIN sessions s ON e.session_id = s.session_id AND e.time = s.session_end_time
-      WHERE 
-        e.client_id = ${escapeSqlString(websiteId)}
-        AND e.time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
-        AND e.time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-        AND e.event_name = 'screen_view'
-        AND e.path != ''
-      GROUP BY e.path
-    )
-    SELECT 
-      path as name,
-      exits,
-      visitors,
-      exits as sessions
-    FROM exit_pages
-    WHERE path != ''
-    ORDER BY exits DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `,
+    entry_pages: {
+        table: 'analytics.events',
+        fields: [
+            'entry_page as name',
+            'COUNT(*) as entries',
+            'COUNT(DISTINCT anonymous_id) as visitors',
+            'ROUND((COUNT(*) / SUM(COUNT(*)) OVER()) * 100, 2) as percentage'
+        ],
+        where: ['event_name = \'screen_view\'', 'path != \'\''],
+        groupBy: ['entry_page'],
+        orderBy: 'entries DESC',
+        limit: 100,
+        timeField: 'time',
+        allowedFilters: ['referrer', 'device_type'],
+        customizable: true,
+        customSql: (
+            websiteId: string,
+            startDate: string,
+            endDate: string,
+            filters?: any[],
+            granularity?: any,
+            limit?: number,
+            offset?: number
+        ) => ({
+            sql: `
+            WITH session_entry AS (
+                SELECT 
+                    session_id,
+                    anonymous_id,
+                    path(path) as entry_page,
+                    time as entry_time,
+                    ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY time) as page_rank
+                FROM analytics.events
+                WHERE client_id = {websiteId:String}
+                    AND time >= parseDateTimeBestEffort({startDate:String})
+                    AND time <= parseDateTimeBestEffort({endDate:String})
+                    AND event_name = 'screen_view'
+                    AND path != ''
+            )
+            SELECT 
+                entry_page as name,
+                COUNT(*) as entries,
+                COUNT(DISTINCT anonymous_id) as visitors,
+                ROUND((COUNT(*) / SUM(COUNT(*)) OVER()) * 100, 2) as percentage
+            FROM session_entry
+            WHERE page_rank = 1
+            GROUP BY entry_page
+            ORDER BY entries DESC
+            LIMIT {limit:Int32} OFFSET {offset:Int32}
+            `,
+            params: {
+                websiteId,
+                startDate,
+                endDate,
+                limit: limit || 100,
+                offset: offset || 0,
+            }
+        })
+    },
 
-  entry_pages: (websiteId: string, startDate: string, endDate: string, limit: number, offset: number, granularity: 'hourly' | 'daily' = 'daily') => `
-    WITH session_entry AS (
-      SELECT 
-        session_id,
-        anonymous_id,
-        path as entry_page,
-        time as entry_time,
-        ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY time) as page_rank
-      FROM analytics.events
-      WHERE client_id = ${escapeSqlString(websiteId)}
-        AND time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})
-        AND time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})
-        AND event_name = 'screen_view'
-        AND path != ''
-    )
-    SELECT 
-      entry_page as name,
-      COUNT(*) as entries,
-      COUNT(DISTINCT session_id) as sessions,
-      COUNT(DISTINCT anonymous_id) as visitors
-    FROM session_entry
-    WHERE page_rank = 1
-    GROUP BY entry_page
-    ORDER BY entries DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `,
-} 
+    exit_pages: {
+        table: 'analytics.events',
+        fields: [
+            'path as name',
+            'COUNT(DISTINCT session_id) as exits',
+            'COUNT(DISTINCT anonymous_id) as visitors',
+            'ROUND((COUNT(DISTINCT session_id) / SUM(COUNT(DISTINCT session_id)) OVER()) * 100, 2) as percentage'
+        ],
+        where: ['event_name = \'screen_view\'', 'path != \'\''],
+        groupBy: ['path'],
+        orderBy: 'exits DESC',
+        limit: 100,
+        timeField: 'time',
+        allowedFilters: ['referrer', 'device_type'],
+        customizable: true,
+        customSql: (
+            websiteId: string,
+            startDate: string,
+            endDate: string,
+            filters?: any[],
+            granularity?: any,
+            limit?: number,
+            offset?: number
+        ) => ({
+            sql: `
+            WITH sessions AS (
+                SELECT
+                    session_id,
+                    MAX(time) as session_end_time
+                FROM analytics.events
+                WHERE client_id = {websiteId:String}
+                    AND time >= parseDateTimeBestEffort({startDate:String})
+                    AND time <= parseDateTimeBestEffort({endDate:String})
+                    AND event_name = 'screen_view'
+                    AND path != ''
+                GROUP BY session_id
+            ),
+            exit_pages AS (
+                SELECT
+                    path(e.path) as path,
+                    e.session_id,
+                    e.anonymous_id
+                FROM analytics.events e
+                INNER JOIN sessions s ON e.session_id = s.session_id AND e.time = s.session_end_time
+                WHERE e.client_id = {websiteId:String}
+                    AND e.time >= parseDateTimeBestEffort({startDate:String})
+                    AND e.time <= parseDateTimeBestEffort({endDate:String})
+                    AND e.event_name = 'screen_view'
+                    AND e.path != ''
+            )
+            SELECT 
+                path as name,
+                COUNT(DISTINCT session_id) as exits,
+                COUNT(DISTINCT anonymous_id) as visitors,
+                ROUND((COUNT(DISTINCT session_id) / SUM(COUNT(DISTINCT session_id)) OVER()) * 100, 2) as percentage
+            FROM exit_pages
+            GROUP BY path
+            ORDER BY exits DESC
+            LIMIT {limit:Int32} OFFSET {offset:Int32}
+            `,
+            params: {
+                websiteId,
+                startDate,
+                endDate,
+                limit: limit || 100,
+                offset: offset || 0,
+            }
+        })
+    },
+
+    page_performance: {
+        table: 'analytics.events',
+        fields: [
+            'path(path) as name',
+            'COUNT(*) as pageviews',
+            'ROUND(AVG(CASE WHEN time_on_page > 0 THEN time_on_page / 1000 ELSE NULL END), 2) as avg_time_on_page',
+            'COUNT(DISTINCT anonymous_id) as visitors'
+        ],
+        where: ['event_name = \'screen_view\'', 'path != \'\''],
+        groupBy: ['path(path)'],
+        orderBy: 'pageviews DESC',
+        limit: 100,
+        timeField: 'time',
+        allowedFilters: ['referrer', 'device_type'],
+        customizable: true
+    }
+}; 

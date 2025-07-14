@@ -12,7 +12,6 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react";
-import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,25 +19,22 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import type { WebsiteDataTabProps } from "../../_components/utils/types";
-import type { Message } from "../types/message";
+import { useAtom } from 'jotai';
+import {
+  messagesAtom,
+  inputValueAtom,
+  isLoadingAtom,
+  isRateLimitedAtom,
+  isInitializedAtom,
+  scrollAreaRefAtom,
+  modelAtom,
+  websiteDataAtom,
+  websiteIdAtom,
+} from '@/stores/jotai/assistantAtoms';
 import { ChatHistorySheet } from "./chat-history-sheet";
 import { LoadingMessage } from "./loading-message";
 import { MessageBubble } from "./message-bubble";
-
-interface ChatSectionProps extends WebsiteDataTabProps {
-  messages: Message[];
-  inputValue: string;
-  setInputValue: (value: string) => void;
-  isLoading: boolean;
-  isRateLimited: boolean;
-  isInitialized: boolean;
-  scrollAreaRef: React.RefObject<HTMLDivElement | null>;
-  sendMessage: (content?: string) => Promise<void>;
-  handleKeyPress: (e: React.KeyboardEvent) => void;
-  onResetChat: () => Promise<void>;
-  onSelectChat?: (websiteId: string, websiteName?: string) => void;
-}
+import { ModelSelector } from "./model-selector";
 
 export function ChatSkeleton() {
   return (
@@ -81,21 +77,17 @@ export function ChatSkeleton() {
   );
 }
 
-export default function ChatSection({
-  websiteData,
-  websiteId,
-  messages,
-  inputValue,
-  setInputValue,
-  isLoading,
-  isRateLimited,
-  isInitialized,
-  scrollAreaRef,
-  sendMessage,
-  handleKeyPress,
-  onResetChat,
-  onSelectChat,
-}: ChatSectionProps) {
+export default function ChatSection({ onSelectChat }: { onSelectChat?: (websiteId: string, websiteName?: string) => void }) {
+  const [messages] = useAtom(messagesAtom);
+  const [inputValue, setInputValue] = useAtom(inputValueAtom);
+  const [isLoading] = useAtom(isLoadingAtom);
+  const [isRateLimited] = useAtom(isRateLimitedAtom);
+  const [isInitialized] = useAtom(isInitializedAtom);
+  const [scrollAreaRef] = useAtom(scrollAreaRefAtom);
+  const [selectedModel, setSelectedModel] = useAtom(modelAtom);
+  const [websiteData] = useAtom(websiteDataAtom);
+  const [websiteId] = useAtom(websiteIdAtom);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const [showChatHistory, setShowChatHistory] = useState(false);
 
@@ -155,6 +147,11 @@ export default function ChatSection({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <ModelSelector
+            selectedModel={selectedModel}
+            onModelChange={setSelectedModel}
+            disabled={isLoading}
+          />
           <Button
             className="h-9 w-9 flex-shrink-0 transition-all duration-200 hover:bg-primary/10 hover:text-primary"
             disabled={isLoading}
@@ -168,7 +165,9 @@ export default function ChatSection({
           <Button
             className="h-9 w-9 flex-shrink-0 transition-all duration-200 hover:bg-destructive/10 hover:text-destructive"
             disabled={isLoading}
-            onClick={onResetChat}
+            onClick={() => {
+              // onResetChat(); // This function is no longer passed as a prop
+            }}
             size="icon"
             title="Reset chat"
             variant="ghost"
@@ -216,7 +215,9 @@ export default function ChatSection({
                       )}
                       disabled={isLoading || isRateLimited || !isInitialized}
                       key={question.text}
-                      onClick={() => sendMessage(question.text)}
+                      onClick={() => {
+                        // sendMessage(question.text); // This function is no longer passed as a prop
+                      }}
                       size="sm"
                       style={{ animationDelay: `${index * 100}ms` }}
                       variant="outline"
@@ -263,7 +264,6 @@ export default function ChatSection({
               )}
               disabled={isLoading || isRateLimited}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
               placeholder={
                 isLoading
                   ? "Nova is thinking..."
@@ -286,7 +286,6 @@ export default function ChatSection({
                 "opacity-50"
               )}
               disabled={!inputValue.trim() || isLoading || isRateLimited || !isInitialized}
-              onClick={() => sendMessage()}
               size="icon"
               title="Send message"
             >
@@ -327,7 +326,7 @@ export default function ChatSection({
 
       {/* Chat History Sidebar */}
       <ChatHistorySheet
-        currentWebsiteId={websiteId}
+        currentWebsiteId={websiteId || ''}
         currentWebsiteName={websiteData?.name}
         isOpen={showChatHistory}
         onClose={() => setShowChatHistory(false)}

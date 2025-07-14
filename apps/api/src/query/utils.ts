@@ -1,122 +1,156 @@
-import type { ParameterBuilder, BuilderConfig } from './types';
-import sqlstring from 'sqlstring'
+import { referrers } from "@databuddy/shared";
+import { getCountryCode, getCountryName } from "@databuddy/shared";
 
-export function escapeSqlString(value: string | number): string {
-  if (typeof value === 'number') {
-    return value.toString()
-  }
-  return sqlstring.escape(value)
+export interface ParsedReferrer {
+    type: string;
+    name: string;
+    domain: string;
+    url: string;
 }
 
-// Define reusable metric sets
-export const METRICS = {
-  standard: `
-    uniq(anonymous_id) as visitors,
-    COUNT(*) as pageviews,
-    uniq(session_id) as sessions
-  `,
-  performance: `
-    uniq(anonymous_id) as visitors,
-    avgIf(load_time, load_time > 0) as avg_load_time,
-    avgIf(ttfb, ttfb > 0) as avg_ttfb,
-    avgIf(dom_ready_time, dom_ready_time > 0) as avg_dom_ready_time,
-    avgIf(render_time, render_time > 0) as avg_render_time,
-    avgIf(fcp, fcp > 0) as avg_fcp,
-    avgIf(lcp, lcp > 0) as avg_lcp,
-    avgIf(cls, cls >= 0) as avg_cls
-  `,
-  errors: `
-    COUNT(*) as total_errors,
-    COUNT(DISTINCT error_message) as unique_error_types,
-    uniq(anonymous_id) as affected_users,
-    uniq(session_id) as affected_sessions
-  `,
-  exits: `
-    uniq(anonymous_id) as visitors,
-    COUNT(*) as exits,
-    uniq(session_id) as sessions
-  `
-};
-
-// Query builder factory
-export function createQueryBuilder(config: BuilderConfig): ParameterBuilder {
-  return (websiteId, startDate, endDate, limit, offset, granularity = 'daily') => {
-    const whereClauses = [
-      `client_id = ${escapeSqlString(websiteId)}`,
-      `time >= parseDateTimeBestEffort(${escapeSqlString(startDate)})`,
-      `time <= parseDateTimeBestEffort(${escapeSqlString(endDate)})`,
-      `event_name = 'screen_view'`
-    ];
-
-    if (config.eventName) {
-      whereClauses.push(`event_name = ${escapeSqlString(config.eventName)}`);
+function parseReferrer(referrerUrl: string | null | undefined, currentDomain?: string | null): ParsedReferrer {
+    if (!referrerUrl) {
+        return { type: "direct", name: "Direct", url: "", domain: "" };
     }
 
-    if (config.extraWhere) {
-      whereClauses.push(config.extraWhere);
+    try {
+        const url = new URL(referrerUrl);
+        const hostname = url.hostname;
+
+        if (currentDomain && (hostname === currentDomain || hostname.endsWith(`.${currentDomain}`))) {
+            return { type: "direct", name: "Direct", url: "", domain: "" };
+        }
+
+        const match = getReferrerByDomain(hostname);
+        if (match) {
+            return { type: match.type, name: match.name, url: referrerUrl, domain: hostname };
+        }
+
+        if (url.searchParams.has("q") || url.searchParams.has("query") || url.searchParams.has("search")) {
+            return { type: "search", name: hostname, url: referrerUrl, domain: hostname };
+        }
+
+        return { type: "unknown", name: hostname, url: referrerUrl, domain: hostname };
+    } catch {
+        return { type: "direct", name: "Direct", url: referrerUrl, domain: "" };
+    }
+}
+
+function getReferrerByDomain(domain: string): { type: string; name: string } | null {
+    if (domain in referrers) {
+        const match = referrers[domain];
+        return match || null;
     }
 
-    return `
-      SELECT 
-        ${config.nameColumn} as name,
-        ${config.metricSet}
-      FROM analytics.events
-      WHERE ${whereClauses.join(' AND ')}
-      GROUP BY ${config.groupByColumns.join(', ')}
-      ORDER BY ${config.orderBy}
-      LIMIT ${limit} OFFSET ${offset}
-    `;
-  };
+    const parts = domain.split(".");
+    for (let i = 1; i < parts.length - 1; i++) {
+        const partial = parts.slice(i).join(".");
+        if (partial in referrers) {
+            const match = referrers[partial];
+            return match || null;
+        }
+    }
+    return null;
 }
 
-export function createStandardQuery(nameColumn: string, groupByColumns: string[], extraWhere?: string, orderBy = 'visitors DESC'): ParameterBuilder {
-  return createQueryBuilder({
-    metricSet: METRICS.standard,
-    nameColumn,
-    groupByColumns,
-    extraWhere,
-    orderBy
-  });
+export function applyPlugins(data: Record<string, any>[], config: any, websiteDomain?: string | null): Record<string, any>[] {
+    let result = data;
+
+    if (shouldApplyReferrerParsing(config)) {
+        result = applyReferrerParsing(result, websiteDomain);
+    }
+
+    if (config.plugins?.normalizeUrls) {
+        result = applyUrlNormalization(result);
+    }
+
+    if (config.plugins?.normalizeGeo) {
+        result = applyGeoNormalization(result);
+    }
+
+    if (config.plugins?.deduplicateGeo) {
+        result = deduplicateGeoRows(result);
+    }
+
+    return result;
 }
 
-export function createAlias(targetParameter: string): ParameterBuilder {
-  return (websiteId, startDate, endDate, limit, offset, granularity = 'daily') => {
-    // This will be resolved at runtime by the parameter registry
-    throw new Error(`Alias ${targetParameter} needs to be resolved by parameter registry`);
-  };
+export function deduplicateGeoRows(rows: Record<string, any>[]): Record<string, any>[] {
+    const map = new Map<string, Record<string, any>>();
+    let totalVisitors = 0;
+    for (const row of rows) {
+        const code = row.country_code || row.name;
+        if (!code) continue;
+        if (!map.has(code)) {
+            map.set(code, { ...row });
+        } else {
+            const existing = map.get(code);
+            if (existing) {
+                existing.pageviews += row.pageviews || 0;
+                existing.visitors += row.visitors || 0;
+            }
+            // Optionally, merge other fields as needed
+        }
+    }
+    // Recalculate total visitors for percentage
+    for (const row of map.values()) {
+        totalVisitors += row.visitors || 0;
+    }
+    for (const row of map.values()) {
+        row.percentage = totalVisitors > 0 ? Math.round((row.visitors / totalVisitors) * 100) : 0;
+    }
+    return Array.from(map.values());
 }
 
-// Helper function to get metric type for a parameter
-export function getMetricType(parameter: string): string {
-  const performanceParams = [
-    'slow_pages', 'performance_by_country', 'performance_by_device',
-    'performance_by_browser', 'performance_by_os', 'performance_by_region'
-  ]
+function shouldApplyReferrerParsing(config: any): boolean {
+    return config.plugins?.parseReferrers || shouldAutoParseReferrers(config);
+}
 
-  const errorParams = [
-    'recent_errors', 'error_types', 'errors_by_page', 'errors_by_browser',
-    'errors_by_os', 'errors_by_country', 'errors_by_device', 'error_trends'
-  ]
+function applyReferrerParsing(data: Record<string, any>[], websiteDomain?: string | null): Record<string, any>[] {
+    return data.map(row => {
+        const referrerUrl = row.name || row.referrer;
+        if (!referrerUrl) return row;
 
-  const webVitalsParams = [
-    'web_vitals_overview', 'web_vitals_by_page', 'web_vitals_by_device', 'web_vitals_trends'
-  ]
+        const parsed = parseReferrer(referrerUrl, websiteDomain);
 
-  const revenueParams = [
-    'revenue_summary', 'revenue_trends', 'recent_transactions', 'recent_refunds',
-    'revenue_by_country', 'revenue_by_currency', 'revenue_by_card_brand'
-  ]
+        return {
+            ...row,
+            name: parsed.name,
+            referrer: referrerUrl,
+            domain: parsed.domain
+        };
+    });
+}
 
-  const exitParams = ['exit_page']
+function applyUrlNormalization(data: Record<string, any>[]): Record<string, any>[] {
+    return data.map(row => {
+        if (row.path) {
+            try {
+                const url = new URL(row.path.startsWith('http') ? row.path : `https://example.com${row.path}`);
+                row.path_clean = url.pathname;
+            } catch {
+                row.path_clean = row.path;
+            }
+        }
+        return row;
+    });
+}
 
-  const specialParams = ['sessions_summary']
+function applyGeoNormalization(data: Record<string, any>[]): Record<string, any>[] {
+    return data.map(row => {
+        // Only normalize if row has a 'name' field (country/region/etc)
+        if (!row.name) return row;
+        const code = getCountryCode(row.name);
+        const name = getCountryName(code);
+        return {
+            ...row,
+            country_code: code,
+            country_name: name,
+        };
+    });
+}
 
-  if (performanceParams.includes(parameter)) return 'performance'
-  if (errorParams.includes(parameter)) return 'errors'
-  if (webVitalsParams.includes(parameter)) return 'web_vitals'
-  if (revenueParams.includes(parameter)) return 'revenue'
-  if (exitParams.includes(parameter)) return 'exits'
-  if (specialParams.includes(parameter)) return 'special'
-
-  return 'standard'
+function shouldAutoParseReferrers(config: any): boolean {
+    const referrerConfigs = ['top_referrers', 'referrer', 'traffic_sources'];
+    return referrerConfigs.includes(config.type || config.name);
 } 

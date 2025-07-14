@@ -9,13 +9,11 @@ export type AuthClientConfig = {
   debug?: boolean;
 };
 
-// Default configuration that can be overridden
 const defaultConfig: AuthClientConfig = {
   baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL as string,
   debug: process.env.NODE_ENV !== "production",
 };
 
-// Create a singleton instance with the default configuration
 export const authClient = createAuthClient({
   baseURL: defaultConfig.baseURL,
   plugins: [

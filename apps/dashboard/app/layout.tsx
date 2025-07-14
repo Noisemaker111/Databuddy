@@ -3,7 +3,6 @@ import "./globals.css";
 import { Databuddy } from "@databuddy/sdk";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "sonner";
 import Providers from "./providers";
 import Script from "next/script";
@@ -129,7 +128,6 @@ export default function RootLayout({
       />
       <body className="flex h-full min-h-screen flex-col bg-background text-foreground antialiased">
         <Providers>
-          <NextTopLoader color="hsl(var(--primary))" height={2} showSpinner={false} />
           <main className="flex-1">{children}</main>
         </Providers>
         <Toaster closeButton duration={1500} position="top-center" richColors />

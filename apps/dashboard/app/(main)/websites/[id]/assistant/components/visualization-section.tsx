@@ -53,6 +53,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { WebsiteDataTabProps } from "../../_components/utils/types";
 import type { Message } from "../types/message";
+import { useAtom } from 'jotai';
+import {
+  websiteDataAtom,
+  websiteIdAtom,
+  dateRangeAtom,
+  messagesAtom,
+} from '@/stores/jotai/assistantAtoms';
+import { cn } from '@/lib/utils';
 
 interface VisualizationSectionProps extends WebsiteDataTabProps {
   latestVisualization?: Message;
@@ -127,19 +135,26 @@ interface TransformResult {
   xAxisKey: string;
 }
 
-export default function VisualizationSection({
-  latestVisualization,
-  hasVisualization = false,
-}: VisualizationSectionProps) {
+export default function VisualizationSection() {
+  const [websiteData] = useAtom(websiteDataAtom);
+  const [websiteId] = useAtom(websiteIdAtom);
+  const [dateRange] = useAtom(dateRangeAtom);
+  const [messages] = useAtom(messagesAtom);
+
+  // Find the latest assistant message with a chartType
+  const latestAssistantMsg = useMemo(() => {
+    return [...messages].reverse().find((msg: Message) => msg.type === 'assistant' && msg.chartType);
+  }, [messages]);
+
   const rawAiData = useMemo(() => {
-    if (!latestVisualization?.data || latestVisualization.data.length === 0) return [];
-    return latestVisualization.data;
-  }, [latestVisualization]);
+    if (!latestAssistantMsg?.data || latestAssistantMsg.data.length === 0) return [];
+    return latestAssistantMsg.data;
+  }, [latestAssistantMsg]);
 
   const chartDisplayConfig = useMemo(() => {
     if (!rawAiData || rawAiData.length === 0)
       return { chartDataForDisplay: [], finalXAxisKey: "date" };
-    const chartType = latestVisualization?.chartType;
+    const chartType = latestAssistantMsg?.chartType;
 
     // For bar charts, use the raw data directly if it's already in the right format
     if (chartType === "bar" && rawAiData.length > 0) {
@@ -230,7 +245,7 @@ export default function VisualizationSection({
       }
     }
     return { chartDataForDisplay: finalChartData, finalXAxisKey: xAxisKeyFromFunc };
-  }, [rawAiData, latestVisualization?.chartType]);
+  }, [rawAiData, latestAssistantMsg?.chartType]);
 
   const chartConfig = useMemo(() => {
     if (!chartDisplayConfig.chartDataForDisplay || chartDisplayConfig.chartDataForDisplay.length === 0) {
@@ -260,22 +275,22 @@ export default function VisualizationSection({
 
   const renderChartContent = () => {
     if (
-      !(hasVisualization && rawAiData) ||
+      !(websiteData && rawAiData) ||
       rawAiData.length === 0 ||
-      !latestVisualization?.chartType
+      !latestAssistantMsg?.chartType
     ) {
       return (
         <div
-          className={`flex h-full min-h-[200px] flex-col items-center justify-center py-6 text-center text-muted-foreground transition-all duration-300 ${hasVisualization ? "animate-pulse" : "fade-in-0 slide-in-from-bottom-2 animate-in"}`}
+          className={`flex h-full min-h-[200px] flex-col items-center justify-center py-6 text-center text-muted-foreground transition-all duration-300 ${websiteData ? "animate-pulse" : "fade-in-0 slide-in-from-bottom-2 animate-in"}`}
         >
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-muted transition-all duration-300">
             <Database className="h-6 w-6 opacity-50" />
           </div>
           <h3 className="mb-1 font-medium text-sm transition-all duration-300">
-            {hasVisualization ? "Loading Visualization..." : "No Visualization Available"}
+            {websiteData ? "Loading Visualization..." : "No Visualization Available"}
           </h3>
           <p className="max-w-xs px-4 text-xs transition-all duration-300">
-            {hasVisualization
+            {websiteData
               ? "Processing your data query..."
               : "Ask a question that needs a chart or table to see your data visualized here. For single metrics or general questions, check the chat area."}
           </p>
@@ -283,7 +298,7 @@ export default function VisualizationSection({
       );
     }
 
-    const { chartType: aiChartType } = latestVisualization;
+    const { chartType: aiChartType } = latestAssistantMsg;
     const showMetricsChart = ["line", "bar", "area", "multi_line", "stacked_bar", "grouped_bar"].includes(
       aiChartType?.toLowerCase() || ""
     );
@@ -510,29 +525,29 @@ export default function VisualizationSection({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded border bg-background shadow-sm transition-all duration-300">
       <div
-        className={`flex flex-shrink-0 items-center gap-2 border-b p-3 transition-all duration-300 ${hasVisualization ? "bg-muted/30" : "bg-muted/10"}`}
+        className={`flex flex-shrink-0 items-center gap-2 border-b p-3 transition-all duration-300 ${websiteData ? "bg-muted/30" : "bg-muted/10"}`}
       >
         <div
-          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded transition-all duration-300 ${hasVisualization ? "bg-primary/10" : "bg-muted/20"}`}
+          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded transition-all duration-300 ${websiteData ? "bg-primary/10" : "bg-muted/20"}`}
         >
           <TrendingUp
-            className={`h-4 w-4 transition-all duration-300 ${hasVisualization ? "text-primary" : "text-muted-foreground/60"}`}
+            className={`h-4 w-4 transition-all duration-300 ${websiteData ? "text-primary" : "text-muted-foreground/60"}`}
           />
         </div>
         <div className="min-w-0 flex-1">
           <h2
-            className={`truncate font-semibold text-base transition-all duration-300 ${hasVisualization ? "text-foreground" : "text-muted-foreground/80"}`}
+            className={`truncate font-semibold text-base transition-all duration-300 ${websiteData ? "text-foreground" : "text-muted-foreground/80"}`}
           >
             Data Visualization
           </h2>
         </div>
-        {latestVisualization?.chartType && hasVisualization && (
+        {latestAssistantMsg?.chartType && websiteData && (
           <Badge
             className="fade-in-0 slide-in-from-right-1 animate-in gap-1 whitespace-nowrap px-2 py-1 text-xs duration-300"
             variant="outline"
           >
-            {getChartIcon(latestVisualization.chartType)}
-            {getChartTypeDescription(latestVisualization.chartType)}
+            {getChartIcon(latestAssistantMsg.chartType)}
+            {getChartTypeDescription(latestAssistantMsg.chartType)}
             {rawAiData && rawAiData.length > 0 && ` (${rawAiData.length})`}
           </Badge>
         )}
@@ -541,7 +556,7 @@ export default function VisualizationSection({
       <div className="min-h-0 flex-1 overflow-y-auto">
         <ScrollArea className="h-full">
           <div
-            className={`p-3 transition-all duration-300 ${hasVisualization ? "opacity-100" : "opacity-90"}`}
+            className={`p-3 transition-all duration-300 ${websiteData ? "opacity-100" : "opacity-90"}`}
           >
             {renderChartContent()}
           </div>

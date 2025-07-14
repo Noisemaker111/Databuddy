@@ -5,15 +5,12 @@ import { useAtom } from "jotai";
 import { useParams } from "next/navigation";
 import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { useRevenueConfig } from "@/app/(main)/revenue/hooks/use-revenue-config";
-// Card components removed - using direct div styling for consistency with overview tab
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWebsite } from "@/hooks/use-websites";
 import { formattedDateRangeAtom, timeGranularityAtom } from "@/stores/jotai/filterAtoms";
 import { useWebsiteRevenue } from "./hooks/use-website-revenue";
 
-// Lazy load components
-// Removed PageHeader import - using shared WebsitePageHeader
 import { WebsitePageHeader } from "../_components/website-page-header";
 const RevenueMetrics = lazy(() =>
   import("./_components/revenue-metrics").then((m) => ({ default: m.RevenueMetrics }))
@@ -50,7 +47,6 @@ const PageHeaderSkeleton = () => (
       </div>
     </div>
 
-    {/* Metrics Skeleton */}
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
       {[...Array(4)].map((_, i) => (
         <div className="overflow-hidden rounded-lg border bg-card" key={`${i + 1}-metrics-skeleton`}>
@@ -95,7 +91,6 @@ export default function WebsiteRevenuePage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Date range state
   const [formattedDateRangeState] = useAtom(formattedDateRangeAtom);
   const [currentGranularity] = useAtom(timeGranularityAtom);
 
@@ -108,7 +103,6 @@ export default function WebsiteRevenuePage() {
     [formattedDateRangeState, currentGranularity]
   );
 
-  // Fetch data
   const { data: websiteData } = useWebsite(websiteId);
   const revenueConfig = useRevenueConfig();
   const {
@@ -130,7 +124,6 @@ export default function WebsiteRevenuePage() {
     }
   }, [refetch, revenueConfig.refetch]);
 
-  // Loading state
   if (revenueConfig.isLoading) {
     return (
       <div className="mx-auto max-w-[1600px] space-y-4 p-3 sm:p-4 lg:p-6">
@@ -139,7 +132,6 @@ export default function WebsiteRevenuePage() {
     );
   }
 
-  // Revenue not set up
   if (!revenueConfig.isSetupComplete) {
     return (
       <div className="mx-auto max-w-[1600px] space-y-4 p-3 sm:p-4 lg:p-6">
@@ -161,7 +153,6 @@ export default function WebsiteRevenuePage() {
     );
   }
 
-  // No data state
   if (!(summaryStats.hasData || revenueLoading)) {
     return (
       <div className="mx-auto max-w-[1600px] space-y-4 p-3 sm:p-4 lg:p-6">
@@ -185,7 +176,6 @@ export default function WebsiteRevenuePage() {
     );
   }
 
-  // Main revenue page
   return (
     <div className="mx-auto max-w-[1600px] space-y-4 p-3 sm:p-4 lg:p-6">
       <WebsitePageHeader
@@ -201,7 +191,6 @@ export default function WebsiteRevenuePage() {
         showBackButton={true}
       />
 
-      {/* Revenue Metrics */}
       <Suspense fallback={<RevenueMetricsSkeleton />}>
         <RevenueMetrics
           isLoading={revenueLoading}
@@ -210,7 +199,6 @@ export default function WebsiteRevenuePage() {
         />
       </Suspense>
 
-      {/* Revenue Analytics Tabs */}
       <Tabs className="space-y-4" onValueChange={setActiveTab} value={activeTab}>
         <div className="relative border-b">
           <TabsList className="h-10 w-full justify-start overflow-x-auto bg-transparent p-0">
