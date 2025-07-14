@@ -1,19 +1,9 @@
-"use client";
-
-import { CheckCircle } from "@phosphor-icons/react";
+import { CheckCircle } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/layout/logo";
-import { useEffect, useState } from "react";
 
 export default function PaymentSuccess() {
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    if (!mounted) return null;
 
     return (
         <div className="flex h-screen flex-col items-center justify-center bg-background p-4">
