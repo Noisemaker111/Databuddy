@@ -249,7 +249,6 @@ export const goalsRouter = createTRPCRouter({
             const filters = goalData.filters as Array<{ field: string; operator: string; value: string | string[] }> || [];
             const filterConditions = buildFilterConditions(filters, 'f', {});
 
-            // Get total unique users for the website in the date range
             const totalWebsiteUsersQuery = `
                 SELECT COUNT(DISTINCT session_id) as total_users
                 FROM analytics.events
@@ -260,7 +259,6 @@ export const goalsRouter = createTRPCRouter({
             const totalWebsiteUsersResult = await chQuery<{ total_users: number }>(totalWebsiteUsersQuery);
             const totalWebsiteUsers = totalWebsiteUsersResult[0]?.total_users || 0;
 
-            // Build the step query (copied from funnels.ts, but only one step)
             let whereCondition = '';
             if (steps[0].type === 'PAGE_VIEW') {
                 const targetPath = steps[0].target.replace(/'/g, "''");
