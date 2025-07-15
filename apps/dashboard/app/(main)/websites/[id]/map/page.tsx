@@ -14,6 +14,7 @@ import { WebsitePageHeader } from "../_components/website-page-header";
 
 interface CountryData {
   country: string;
+  country_code?: string;
   visitors: number;
   pageviews: number;
 }
@@ -60,8 +61,9 @@ function WebsiteMapPage() {
   });
 
   const locationData: LocationData = {
-    countries: (getDataForQuery("map-countries", "countries") || []).map((item: { name: string; visitors: number; pageviews: number }) => ({
-      country: item.name,
+    countries: (getDataForQuery("map-countries", "countries") || []).map((item: { name: string; visitors: number; pageviews: number; country_code?: string; country_name?: string }) => ({
+      country: item.country_name || item.name,
+      country_code: item.country_code || item.name,
       visitors: item.visitors,
       pageviews: item.pageviews,
     })),
@@ -187,7 +189,7 @@ function WebsiteMapPage() {
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).style.display = "none";
                                 }}
-                                src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${country.country.toUpperCase()}.svg`}
+                                src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${country.country_code?.toUpperCase() || country.country.toUpperCase()}.svg`}
                               />
                             </div>
                             <div className="min-w-0 flex-1">

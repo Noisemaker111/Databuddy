@@ -51,7 +51,7 @@ export function MapComponent({
 
     return {
       data: validCountries.map((country: any) => ({
-        value: country.country.toUpperCase(),
+        value: country.country_code?.toUpperCase() || country.country.toUpperCase(),
         count: country.visitors,
         percentage: (country.visitors / totalVisitors) * 100,
       })),
