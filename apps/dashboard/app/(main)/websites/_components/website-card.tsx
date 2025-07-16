@@ -38,15 +38,15 @@ const getTrend = (data: MiniChartDataPoint[]) => {
   const avg = (arr: MiniChartDataPoint[]) => arr.reduce((sum, p) => sum + p.value, 0) / arr.length;
   const [prevAvg, currAvg] = [avg(first), avg(second)];
 
-  if (prevAvg === 0) return currAvg > 0 ? { type: "up", value: 100 } : null;
+  if (prevAvg === 0) return currAvg > 0 ? { type: "up", value: 100 } : { type: "neutral", value: 0 };
 
   const change = ((currAvg - prevAvg) / prevAvg) * 100;
-  const type = change > 5 ? "up" : change < -5 ? "down" : "neutral";
-
+  let type: "up" | "down" | "neutral" = "neutral";
+  if (change > 5) type = "up";
+  else if (change < -5) type = "down";
   return { type, value: Math.abs(change) };
 };
 
-// Memoized chart component
 const Chart = memo(({ data, id }: { data: MiniChartDataPoint[]; id: string }) => (
   <div className="chart-container">
     <ResponsiveContainer height={50} width="100%">
@@ -89,7 +89,6 @@ Chart.displayName = "Chart";
 export const WebsiteCard = memo(({ website, chartData, isLoadingChart }: WebsiteCardProps) => {
   const data = chartData || [];
 
-  // Memoize expensive calculations
   const { totalViews, trend } = useMemo(
     () => ({
       totalViews: data.reduce((sum, point) => sum + point.value, 0),
@@ -164,7 +163,7 @@ export const WebsiteCard = memo(({ website, chartData, isLoadingChart }: Website
                     ) : (
                       <>
                         <MinusIcon aria-hidden="true" className="h-4 w-4 text-muted-foreground" weight="fill" />
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground">0%</span>
                       </>
                     )}
                   </div>
