@@ -22,7 +22,8 @@ import {
   Search,
   X,
 } from "lucide-react";
-import React, { Fragment, useCallback, useMemo, useRef, useState } from "react";
+import React, { Fragment, useCallback, useMemo, useRef, useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { ArrowsOutSimple, ArrowsOutSimpleIcon, X as XIcon } from "@phosphor-icons/react";
 
 interface TabConfig<TData> {
   id: string;
@@ -145,6 +147,142 @@ const EnhancedSkeleton = ({ minHeight }: { minHeight: string | number }) => (
   </div>
 );
 
+// FullScreenTable: minimal, maximized table for full-screen mode
+function FullScreenTable<TData extends { name: string | number }, TValue>({
+  data,
+  columns,
+  search,
+  onClose,
+  initialPageSize = 50,
+}: {
+  data: TData[];
+  columns: any[];
+  search: string;
+  onClose: () => void;
+  initialPageSize?: number;
+}) {
+  const [globalFilter, setGlobalFilter] = useState(search);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [selectedRow, setSelectedRow] = useState<string | null>(null);
+  const table = useReactTable({
+    data,
+    columns,
+    state: { sorting, globalFilter },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+  // Tooltip for truncated cell
+  const [tooltip, setTooltip] = useState<{ value: string; x: number; y: number } | null>(null);
+  const handleCellMouseEnter = (e: React.MouseEvent, value: string) => {
+    const target = e.currentTarget as HTMLElement;
+    if (target.scrollWidth > target.clientWidth) {
+      const rect = target.getBoundingClientRect();
+      setTooltip({ value, x: rect.left + rect.width / 2, y: rect.top });
+    }
+  };
+  const handleCellMouseLeave = () => setTooltip(null);
+  return (
+    <div className="flex flex-col h-full w-full bg-background relative">
+      {/* Floating close button */}
+      <button
+        type="button"
+        aria-label="Close full screen"
+        title="Close"
+        className="fixed top-6 right-8 z-30 flex items-center justify-center rounded-full bg-background shadow-lg border border-border p-3 text-muted-foreground hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+        onClick={onClose}
+        tabIndex={0}
+        style={{ boxShadow: "0 4px 24px 0 rgba(0,0,0,0.12)" }}
+      >
+        <XIcon size={22} weight="duotone" />
+      </button>
+      <div className="flex items-center justify-between px-6 py-4 border-b bg-background sticky top-0 z-10">
+        <input
+          aria-label="Search table"
+          className="h-9 w-80 border rounded px-4 text-base focus:ring focus:ring-primary/20 bg-muted/20"
+          placeholder="Filter data..."
+          value={globalFilter}
+          onChange={e => setGlobalFilter(e.target.value)}
+        />
+      </div>
+      <div className="flex-1 overflow-auto custom-scrollbar">
+        <table className="min-w-full border-separate border-spacing-0 text-sm">
+          <thead className="sticky top-0 bg-background z-10">
+            {table.getHeaderGroups().map(headerGroup => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map(header => (
+                  <th
+                    key={header.id}
+                    className="px-4 py-3 border-b border-border font-semibold text-left bg-background select-none cursor-pointer"
+                    style={{ position: 'sticky', top: 0, background: 'inherit', zIndex: 2 }}
+                    onClick={header.column.getToggleSortingHandler()}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        header.column.getToggleSortingHandler()?.(e as any);
+                      }
+                    }}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.column.getIsSorted() === 'asc' ? ' ▲' : header.column.getIsSorted() === 'desc' ? ' ▼' : ''}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.slice(0, initialPageSize).map(row => (
+              <tr
+                key={row.id}
+                className={`transition hover:bg-primary/5 cursor-pointer${selectedRow === row.id ? " bg-primary/10" : ""}`}
+                onClick={() => setSelectedRow(row.id)}
+                tabIndex={0}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedRow(row.id);
+                  }
+                }}
+              >
+                {row.getVisibleCells().map(cell => (
+                  <td
+                    key={cell.id}
+                    className="px-4 py-2 border-b border-border truncate max-w-xs relative group"
+                    onMouseEnter={e => handleCellMouseEnter(e, String(cell.getValue() ?? ""))}
+                    onMouseLeave={handleCellMouseLeave}
+                  >
+                    <span className="block truncate">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </span>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {/* Tooltip for truncated cell */}
+        {tooltip && (
+          <div
+            className="fixed z-50 px-3 py-1 rounded bg-foreground text-background text-xs shadow-lg pointer-events-none animate-fadein"
+            style={{ left: tooltip.x, top: tooltip.y - 32, transform: "translateX(-50%)" }}
+          >
+            {tooltip.value}
+          </div>
+        )}
+      </div>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+        .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #e5e7eb #fff; }
+        @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fadein { animation: fadein 0.18s; }
+      `}</style>
+    </div>
+  );
+}
+
 export function DataTable<TData extends { name: string | number }, TValue>({
   data,
   columns,
@@ -163,16 +301,53 @@ export function DataTable<TData extends { name: string | number }, TValue>({
   expandable = false,
   renderTooltipContent,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState("");
-  const [activeTab, setActiveTab] = React.useState(tabs?.[0]?.id || "");
-  const [isTransitioning, setIsTransitioning] = React.useState(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [activeTab, setActiveTab] = useState(tabs?.[0]?.id || "");
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [tooltipState, setTooltipState] = useState<{
     visible: boolean;
     content: React.ReactNode;
   }>({ visible: false, content: null });
+  const [fullScreen, setFullScreen] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+  const lastFocusedElement = useRef<HTMLElement | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  // Focus trap and restore
+  useEffect(() => {
+    if (!fullScreen) return;
+    lastFocusedElement.current = document.activeElement as HTMLElement;
+    const focusable = modalRef.current?.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable?.length) focusable[0].focus();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullScreen(false);
+      if (e.key === "Tab" && focusable && focusable.length) {
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      lastFocusedElement.current?.focus();
+    };
+  }, [fullScreen]);
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -316,13 +491,9 @@ export function DataTable<TData extends { name: string | number }, TValue>({
     );
   }
 
-  return (
-    <Card
-      className={cn(
-        "w-full overflow-hidden border bg-card/50 shadow-sm backdrop-blur-sm",
-        className
-      )}
-    >
+  // Extracted table content for DRYness
+  const renderTableContent = () => (
+    <>
       <CardHeader className="px-2 pb-2 sm:px-3">
         <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
           <div className="min-w-0 flex-1">
@@ -331,19 +502,31 @@ export function DataTable<TData extends { name: string | number }, TValue>({
               <p className="mt-0.5 line-clamp-2 text-muted-foreground text-xs">{description}</p>
             )}
           </div>
-
-          {showSearch && (
-            <div className="relative w-full flex-shrink-0 sm:w-auto">
-              <Search className="-translate-y-1/2 absolute top-1/2 left-2 h-3 w-3 transform text-muted-foreground/50" />
-              <Input
-                aria-label={`Search ${title}`}
-                className="h-7 w-full border-0 bg-muted/30 pr-2 pl-7 text-xs focus:bg-background focus:ring-1 focus:ring-primary/20 sm:w-36"
-                onChange={(event) => setGlobalFilter(event.target.value)}
-                placeholder="Filter data..."
-                value={globalFilter ?? ""}
-              />
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {showSearch && (
+              <div className="relative w-full flex-shrink-0 sm:w-auto">
+                <Search className="-translate-y-1/2 absolute top-1/2 left-2 h-3 w-3 transform text-muted-foreground/50" />
+                <Input
+                  aria-label={`Search ${title}`}
+                  className="h-7 w-full border-0 bg-muted/30 pr-2 pl-7 text-xs focus:bg-background focus:ring-1 focus:ring-primary/20 sm:w-36"
+                  onChange={(event) => setGlobalFilter(event.target.value)}
+                  placeholder="Filter data..."
+                  value={globalFilter ?? ""}
+                />
+              </div>
+            )}
+            {!fullScreen && (
+              <button
+                type="button"
+                aria-label="Full screen"
+                title="Full screen"
+                className="ml-2 flex items-center justify-center rounded bg-muted/30 p-2 text-muted-foreground hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                onClick={() => setFullScreen(true)}
+              >
+                <ArrowsOutSimpleIcon size={18} />
+              </button>
+            )}
+          </div>
         </div>
 
         {tabs && tabs.length > 1 && (
@@ -356,7 +539,7 @@ export function DataTable<TData extends { name: string | number }, TValue>({
               >
                 {tabs.map((tab) => {
                   const isActive = activeTab === tab.id;
-                  const itemCount = tab.data?.length || 0;
+                  const itemCount = tab?.data?.length || 0;
 
                   return (
                     <button
@@ -670,6 +853,46 @@ export function DataTable<TData extends { name: string | number }, TValue>({
           )}
         </div>
       </CardContent>
-    </Card>
+    </>
+  );
+
+  return (
+    <>
+      <Card
+        className={cn(
+          "w-full overflow-hidden border bg-card/50 shadow-sm backdrop-blur-sm",
+          className
+        )}
+      >
+        {renderTableContent()}
+      </Card>
+      {hasMounted && fullScreen && ReactDOM.createPortal(
+        <div
+          ref={modalRef}
+          tabIndex={-1}
+          className="fixed inset-0 z-[1000] flex items-center justify-center"
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-[3px] transition-opacity animate-fadein" />
+          {/* Modal */}
+          <div className="relative w-[92vw] h-[92vh] bg-background rounded-2xl shadow-2xl flex flex-col scale-100 animate-scalein overflow-hidden border border-border border-[1px]">
+            <FullScreenTable
+              data={tableData}
+              columns={tableColumns}
+              search={globalFilter}
+              onClose={() => setFullScreen(false)}
+              initialPageSize={50}
+            />
+          </div>
+          <style>{`
+            @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes scalein { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+            .animate-fadein { animation: fadein 0.2s; }
+            .animate-scalein { animation: scalein 0.2s; }
+          `}</style>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
