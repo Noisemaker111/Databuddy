@@ -5,25 +5,17 @@ import { cacheable } from '@databuddy/redis';
 
 type Permission = 'read' | 'update' | 'delete' | 'transfer';
 
-const getWebsiteById = cacheable(
-    async (id: string) => {
-        try {
-            if (!id) return null;
-            return await db.query.websites.findFirst({
-                where: eq(websites.id, id),
-            });
-        } catch (error) {
-            console.error('Error fetching website by ID:', { error, id });
-            return null;
-        }
-    },
-    {
-        expireInSec: 600,
-        prefix: 'website_by_id',
-        staleWhileRevalidate: true,
-        staleTime: 60
+const getWebsiteById = async (id: string) => {
+    try {
+        if (!id) return null;
+        return await db.query.websites.findFirst({
+            where: eq(websites.id, id),
+        });
+    } catch (error) {
+        console.error('Error fetching website by ID:', { error, id });
+        return null;
     }
-);
+};
 
 /**
  * A utility to centralize authorization checks for websites.
@@ -38,6 +30,14 @@ export async function authorizeWebsiteAccess(
     permission: Permission
 ) {
     const website = await getWebsiteById(websiteId);
+
+    // Add detailed logging for debugging
+    console.log('[authorizeWebsiteAccess]', {
+        websiteId,
+        isPublic: website?.isPublic,
+        ctxUser: ctx.user,
+        permission
+    });
 
     if (!website) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Website not found.' });
