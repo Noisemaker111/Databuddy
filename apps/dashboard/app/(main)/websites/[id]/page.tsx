@@ -134,19 +134,17 @@ function WebsiteDetailsPage() {
   const { data: trackingSetupData, isLoading: isTrackingSetupLoading, error: trackingSetupError } = trpc.websites.isTrackingSetup.useQuery({ websiteId: id as string }, { enabled: !!id });
   const trackingSetupUnauthorized = trackingSetupError?.data?.httpStatus === 401;
   const isTrackingSetup = useMemo(() => {
-    if (!data || isTrackingSetupLoading || trackingSetupUnauthorized) return null;
+    if (!data || isTrackingSetupLoading) return null;
     return trackingSetupData?.tracking_setup ?? false;
-  }, [data, isTrackingSetupLoading, trackingSetupData?.tracking_setup, trackingSetupUnauthorized]);
+  }, [data, isTrackingSetupLoading, trackingSetupData?.tracking_setup]);
 
   useEffect(() => {
-    if (!trackingSetupUnauthorized) {
-      if (isTrackingSetup === false && activeTab === "overview") {
-        setActiveTab("tracking-setup");
-      } else if (isTrackingSetup === true && activeTab === "tracking-setup") {
-        setActiveTab("overview");
-      }
+    if (isTrackingSetup === false && activeTab === "overview") {
+      setActiveTab("tracking-setup");
+    } else if (isTrackingSetup === true && activeTab === "tracking-setup") {
+      setActiveTab("overview");
     }
-  }, [isTrackingSetup, activeTab, setActiveTab, trackingSetupUnauthorized]);
+  }, [isTrackingSetup, activeTab, setActiveTab]);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -223,25 +221,14 @@ function WebsiteDetailsPage() {
     );
   }
 
-  // Tabs: if tracking setup is unauthorized, just show normal tabs (no tracking-setup tab)
-  const tabs: TabDefinition[] = trackingSetupUnauthorized
-    ? [
-      { id: "overview", label: "Overview", className: "pt-2 space-y-2" },
-      { id: "audience", label: "Audience" },
-      { id: "performance", label: "Performance" },
-      { id: "settings", label: "Settings" },
-    ]
-    : isTrackingSetup
-      ? [
-        { id: "overview", label: "Overview", className: "pt-2 space-y-2" },
-        { id: "audience", label: "Audience" },
-        { id: "performance", label: "Performance" },
-        { id: "settings", label: "Settings" },
-      ]
-      : [
-        { id: "tracking-setup", label: "Setup Tracking" },
-        { id: "settings", label: "Settings" },
-      ];
+  // Always show all tabs
+  const tabs: TabDefinition[] = [
+    { id: "overview", label: "Overview", className: "pt-2 space-y-2" },
+    { id: "audience", label: "Audience" },
+    { id: "performance", label: "Performance" },
+    { id: "tracking-setup", label: "Setup Tracking" },
+    { id: "settings", label: "Settings" },
+  ];
 
   return (
     <div className="mx-auto max-w-[1600px] p-3 sm:p-4 lg:p-6">
@@ -356,17 +343,19 @@ function WebsiteDetailsPage() {
             ))}
           </TabsList>
         </div>
-        {trackingSetupUnauthorized && (
-          <div className="mt-2 text-sm text-red-500">
-            You do not have access to tracking setup for this website.
-          </div>
-        )}
         <TabsContent
           className={`${tabs.find((t) => t.id === activeTab)?.className || ""} animate-fadeIn transition-all duration-200`}
           key={activeTab}
           value={activeTab as TabId}
         >
-          {renderTabContent(activeTab as TabId)}
+          {/* If tracking-setup tab is active and trackingSetupError is 401, show a message */}
+          {activeTab === "tracking-setup" && (trackingSetupError as any)?.data?.httpStatus === 401 ? (
+            <div className="mt-2 text-sm text-red-500">
+              You do not have access to tracking setup for this website.
+            </div>
+          ) : (
+            renderTabContent(activeTab as TabId)
+          )}
         </TabsContent>
       </Tabs>
     </div>
