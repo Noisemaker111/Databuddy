@@ -239,17 +239,32 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
   },
 
   active_stats: {
-    table: 'analytics.events',
-    fields: [
-      'COUNT(DISTINCT anonymous_id) as active_users',
-      'COUNT(DISTINCT session_id) as active_sessions'
-    ],
-    where: [
-      'event_name = \'screen_view\'',
-      'time >= now() - INTERVAL 5 MINUTE'
-    ],
+    customSql: (websiteId: string, startDate?: string, endDate?: string) => {
+      let timeCondition = '';
+      if (startDate && endDate) {
+        timeCondition = 'time >= parseDateTimeBestEffort({startDate:String}) AND time <= parseDateTimeBestEffort({endDate:String})';
+      } else {
+        timeCondition = 'time >= now() - INTERVAL 5 MINUTE';
+      }
+      return {
+        sql: `
+          SELECT
+            COUNT(DISTINCT anonymous_id) as active_users,
+            COUNT(DISTINCT session_id) as active_sessions
+          FROM analytics.events
+          WHERE event_name = 'screen_view'
+            AND client_id = {websiteId:String}
+            AND ${timeCondition}
+        `,
+        params: {
+          websiteId,
+          ...(startDate && endDate ? { startDate, endDate } : {})
+        }
+      };
+    },
     timeField: 'time',
     allowedFilters: ['path', 'referrer'],
-    customizable: true
+    customizable: true,
+    appendEndOfDayToTo: false
   }
 }; 

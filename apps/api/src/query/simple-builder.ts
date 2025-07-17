@@ -95,21 +95,34 @@ export class SimpleQueryBuilder {
     }
 
     private buildWhereClause(params: Record<string, unknown>): string[] {
-        const whereClause = [
-            ...(this.config.where || []),
-            "client_id = {websiteId:String}",
-            `${this.config.timeField || 'time'} >= parseDateTimeBestEffort({from:String})`,
-            `${this.config.timeField || 'time'} <= parseDateTimeBestEffort(concat({to:String}, ' 23:59:59'))`
-        ];
+        const whereClause: string[] = [];
+
+        if (this.config.where) {
+            whereClause.push(...this.config.where);
+        }
+
+        whereClause.push("client_id = {websiteId:String}");
+
+        const timeField = this.config.timeField || 'time';
+        whereClause.push(`${timeField} >= parseDateTimeBestEffort({from:String})`);
+
+        const appendEndOfDay = this.config.appendEndOfDayToTo !== false;
+        if (appendEndOfDay) {
+            whereClause.push(`${timeField} <= parseDateTimeBestEffort(concat({to:String}, ' 23:59:59'))`);
+        } else {
+            whereClause.push(`${timeField} <= parseDateTimeBestEffort({to:String})`);
+        }
 
         if (this.request.filters) {
-            this.request.filters.forEach((filter, i) => {
+            for (let i = 0; i < this.request.filters.length; i++) {
+                const filter = this.request.filters[i];
+                if (!filter) continue;
                 if (this.config.allowedFilters?.includes(filter.field)) {
                     const { clause, params: filterParams } = this.buildFilter(filter, i);
                     whereClause.push(clause);
                     Object.assign(params, filterParams);
                 }
-            });
+            }
         }
 
         return whereClause;
