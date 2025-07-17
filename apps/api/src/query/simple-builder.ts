@@ -99,7 +99,7 @@ export class SimpleQueryBuilder {
             ...(this.config.where || []),
             "client_id = {websiteId:String}",
             `${this.config.timeField || 'time'} >= parseDateTimeBestEffort({from:String})`,
-            `${this.config.timeField || 'time'} <= parseDateTimeBestEffort({to:String})`
+            `${this.config.timeField || 'time'} <= parseDateTimeBestEffort(concat({to:String}, ' 23:59:59'))`
         ];
 
         if (this.request.filters) {

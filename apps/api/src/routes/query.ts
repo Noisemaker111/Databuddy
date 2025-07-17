@@ -188,11 +188,13 @@ const getWebsiteDomain = cacheable(
 );
 
 async function executeDynamicQuery(request: any, queryParams: any) {
-    const { website_id, start_date, end_date } = queryParams;
+    const start_date = queryParams.start_date || queryParams.startDate;
+    const end_date = queryParams.end_date || queryParams.endDate;
+    const website_id = queryParams.website_id;
     const websiteDomain = website_id ? await getWebsiteDomain(website_id) : null;
 
     const getTimeUnit = (granularity?: string): 'hour' | 'day' => {
-        if (['hourly', 'hour'].includes(granularity || '')) return 'hour';
+        if (["hourly", "hour"].includes(granularity || '')) return 'hour';
         return 'day';
     };
 

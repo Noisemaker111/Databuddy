@@ -2,8 +2,10 @@ import type { SimpleQueryConfig, Filter, TimeUnit } from "../types";
 
 export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
   summary_metrics: {
-    customSql: (websiteId: string, startDate: string, endDate: string) => ({
-      sql: `
+    customSql: (websiteId: string, startDate: string, endDate: string) => {
+      console.log('[summary_metrics] websiteId:', websiteId, 'startDate:', startDate, 'endDate:', endDate);
+      return {
+        sql: `
             WITH session_metrics AS (
               SELECT
                 session_id,
@@ -12,7 +14,7 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
               WHERE 
                 client_id = {websiteId:String}
                 AND time >= parseDateTimeBestEffort({startDate:String})
-                AND time <= parseDateTimeBestEffort({endDate:String})
+                AND time <= parseDateTimeBestEffort(concat({endDate:String}, ' 23:59:59'))
               GROUP BY session_id
             ),
             session_durations AS (
@@ -21,9 +23,9 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
                 dateDiff('second', MIN(time), MAX(time)) as duration
               FROM analytics.events
               WHERE 
-                client_id = {websiteId:String}
+                client_id = {websiteId:String} 
                 AND time >= parseDateTimeBestEffort({startDate:String})
-                AND time <= parseDateTimeBestEffort({endDate:String})
+                AND time <= parseDateTimeBestEffort(concat({endDate:String}, ' 23:59:59'))
               GROUP BY session_id
               HAVING duration > 0
             ),
@@ -34,7 +36,7 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
               WHERE 
                 client_id = {websiteId:String}
                 AND time >= parseDateTimeBestEffort({startDate:String})
-                AND time <= parseDateTimeBestEffort({endDate:String})
+                AND time <= parseDateTimeBestEffort(concat({endDate:String}, ' 23:59:59'))
                 AND event_name = 'screen_view'
             ),
             all_events AS (
@@ -44,7 +46,7 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
               WHERE 
                 client_id = {websiteId:String}
                 AND time >= parseDateTimeBestEffort({startDate:String})
-                AND time <= parseDateTimeBestEffort({endDate:String})
+                AND time <= parseDateTimeBestEffort(concat({endDate:String}, ' 23:59:59'))
             )
             SELECT
               sum(page_count) as pageviews,
@@ -56,12 +58,13 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
             FROM session_metrics
             LEFT JOIN session_durations as sd ON session_metrics.session_id = sd.session_id
         `,
-      params: {
-        websiteId,
-        startDate,
-        endDate,
-      }
-    }),
+        params: {
+          websiteId,
+          startDate,
+          endDate,
+        }
+      };
+    },
     timeField: 'time',
     allowedFilters: ['path', 'referrer', 'device_type', 'browser_name', 'country'],
     customizable: true
