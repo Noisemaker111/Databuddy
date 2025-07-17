@@ -13,28 +13,33 @@ export interface UserAgentInfo {
 		isBot: boolean;
 		name?: string;
 		type?: string;
-		reason?: string;
-		category?: string;
 	};
 	browser?: string;
 	os?: string;
-	device?: string;
+	device?: "desktop" | "mobile" | "tablet" | "unknown";
 }
 
 /**
- * Parse user agent to extract useful information, with normalization and fallback logic
+ * Parse user agent to extract useful information
  */
 export function parseUserAgent(userAgent: string): {
-	browser: UAParser.IBrowser;
-	os: UAParser.IOS;
-	device: UAParser.IDevice;
+	browserName?: string;
+	browserVersion?: string;
+	osName?: string;
+	osVersion?: string;
+	deviceType?: string;
+	deviceBrand?: string;
+	deviceModel?: string;
 } {
 	if (!userAgent) {
-		const parser = new UAParser();
 		return {
-			browser: parser.getBrowser(),
-			os: parser.getOS(),
-			device: parser.getDevice(),
+			browserName: undefined,
+			browserVersion: undefined,
+			osName: undefined,
+			osVersion: undefined,
+			deviceType: undefined,
+			deviceBrand: undefined,
+			deviceModel: undefined,
 		};
 	}
 
@@ -43,23 +48,28 @@ export function parseUserAgent(userAgent: string): {
 		const result = parser.getResult();
 
 		return {
-			browser: result.browser,
-			os: result.os,
-			device: result.device,
+			browserName: result.browser.name || undefined,
+			browserVersion: result.browser.version || undefined,
+			osName: result.os.name || undefined,
+			osVersion: result.os.version || undefined,
+			deviceType: result.device.type || undefined,
+			deviceBrand: result.device.vendor || undefined,
+			deviceModel: result.device.model || undefined,
 		};
 	} catch (error) {
-		const parser = new UAParser();
+		// If parsing fails, return undefined values
 		return {
-			browser: parser.getBrowser(),
-			os: parser.getOS(),
-			device: parser.getDevice(),
+			browserName: undefined,
+			browserVersion: undefined,
+			osName: undefined,
+			osVersion: undefined,
+			deviceType: undefined,
+			deviceBrand: undefined,
+			deviceModel: undefined,
 		};
 	}
 }
 
-/**
- * Detect bots using known patterns, headless/automation, and suspicious headers
- */
 export function detectBot(
 	userAgent: string,
 	request: Request,
@@ -71,7 +81,6 @@ export function detectBot(
 } {
 	const ua = userAgent || "";
 
-	// 1. Known bots from list
 	const detectedBot = bots.find((bot) => new RegExp(bot.regex, "i").test(ua));
 	if (detectedBot) {
 		return {
@@ -82,54 +91,6 @@ export function detectBot(
 		};
 	}
 
-	// 2. Headless/automation detection
-	const headlessPatterns = [
-		/HeadlessChrome/i,
-		/Puppeteer/i,
-		/Playwright/i,
-		/Selenium/i,
-		/WebDriver/i,
-		/PhantomJS/i,
-		/NightmareJS/i,
-		/Node\.js/i,
-		/Go-http-client/i,
-		/HttpClient/i,
-		/curl\//i,
-		/wget\//i,
-		/python-requests/i,
-		/Java\//i,
-		/libwww-perl/i,
-		/Apache-HttpClient/i,
-		/okhttp/i,
-		/axios/i,
-		/CFNetwork/i,
-		/Google-Structured-Data-Testing-Tool/i,
-		/Slackbot-LinkExpanding/i,
-		/Discordbot/i,
-		/TelegramBot/i,
-		/WhatsApp/i,
-		/SkypeUriPreview/i,
-		/bitlybot/i,
-		/FacebookExternalHit/i,
-		/Twitterbot/i,
-		/Applebot/i,
-		/BingPreview/i,
-		/YandexBot/i,
-		/Baiduspider/i,
-		/Sogou/i,
-		/Exabot/i,
-		/facebot/i,
-		/ia_archiver/i
-	];
-	if (headlessPatterns.some((re) => re.test(ua))) {
-		return {
-			isBot: true,
-			reason: "headless_or_automation",
-			category: "Automation/Headless",
-		};
-	}
-
-	// 3. Suspicious headers
 	if (!userAgent) {
 		return {
 			isBot: true,
@@ -137,6 +98,7 @@ export function detectBot(
 			category: "Missing Headers",
 		};
 	}
+
 	if (!request.headers.get("accept")) {
 		return {
 			isBot: true,
@@ -144,43 +106,11 @@ export function detectBot(
 			category: "Missing Headers",
 		};
 	}
+
 	if (ua.length < 10) {
 		return {
 			isBot: true,
 			reason: "user_agent_too_short",
-			category: "Suspicious Pattern",
-		};
-	}
-	if (/[^\x20-\x7E]/.test(ua)) {
-		return {
-			isBot: true,
-			reason: "non_ascii_characters",
-			category: "Suspicious Pattern",
-		};
-	}
-	if (/Mozilla\/5\.0 \(compatible;?\)/i.test(ua) && ua.length < 40) {
-		return {
-			isBot: true,
-			reason: "generic_compatible_user_agent",
-			category: "Suspicious Pattern",
-		};
-	}
-
-	// 4. Heuristics: known bot substrings, very long/short UAs
-	const botSubstrings = [
-		"bot", "spider", "crawl", "checker", "fetch", "analyzer", "scrape", "monitor", "preview", "scan", "archiver"
-	];
-	if (botSubstrings.some((s) => ua.toLowerCase().includes(s))) {
-		return {
-			isBot: true,
-			reason: "bot_substring_detected",
-			category: "Heuristic",
-		};
-	}
-	if (ua.length > 512) {
-		return {
-			isBot: true,
-			reason: "user_agent_too_long",
 			category: "Suspicious Pattern",
 		};
 	}
