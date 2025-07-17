@@ -131,8 +131,7 @@ function WebsiteDetailsPage() {
 
   const { data, isLoading, isError, refetch: refetchWebsiteData } = useWebsite(id as string);
 
-  const { data: trackingSetupData, isLoading: isTrackingSetupLoading, error: trackingSetupError } = trpc.websites.isTrackingSetup.useQuery({ websiteId: id as string }, { enabled: !!id });
-  const trackingSetupUnauthorized = trackingSetupError?.data?.httpStatus === 401;
+  const { data: trackingSetupData, isLoading: isTrackingSetupLoading } = trpc.websites.isTrackingSetup.useQuery({ websiteId: id as string }, { enabled: !!id });
   const isTrackingSetup = useMemo(() => {
     if (!data || isTrackingSetupLoading) return null;
     return trackingSetupData?.tracking_setup ?? false;
@@ -204,7 +203,7 @@ function WebsiteDetailsPage() {
     return <TabLoadingSkeleton />;
   }
 
-  if (isError || !data || trackingSetupError) {
+  if (isError || !data) {
     return (
       <div className="select-none pt-8">
         <EmptyState
@@ -221,14 +220,17 @@ function WebsiteDetailsPage() {
     );
   }
 
-  // Always show all tabs
-  const tabs: TabDefinition[] = [
-    { id: "overview", label: "Overview", className: "pt-2 space-y-2" },
-    { id: "audience", label: "Audience" },
-    { id: "performance", label: "Performance" },
-    { id: "tracking-setup", label: "Setup Tracking" },
-    { id: "settings", label: "Settings" },
-  ];
+  const tabs: TabDefinition[] = isTrackingSetup
+    ? [
+      { id: "overview", label: "Overview", className: "pt-2 space-y-2" },
+      { id: "audience", label: "Audience" },
+      { id: "performance", label: "Performance" },
+      { id: "settings", label: "Settings" },
+    ]
+    : [
+      { id: "tracking-setup", label: "Setup Tracking" },
+      { id: "settings", label: "Settings" },
+    ];
 
   return (
     <div className="mx-auto max-w-[1600px] p-3 sm:p-4 lg:p-6">
@@ -348,17 +350,10 @@ function WebsiteDetailsPage() {
           key={activeTab}
           value={activeTab as TabId}
         >
-          {/* If tracking-setup tab is active and trackingSetupError is 401, show a message */}
-          {activeTab === "tracking-setup" && (trackingSetupError as any)?.data?.httpStatus === 401 ? (
-            <div className="mt-2 text-sm text-red-500">
-              You do not have access to tracking setup for this website.
-            </div>
-          ) : (
-            renderTabContent(activeTab as TabId)
-          )}
+          {renderTabContent(activeTab as TabId)}
         </TabsContent>
-      </Tabs>
-    </div>
+      </Tabs >
+    </div >
   );
 }
 
