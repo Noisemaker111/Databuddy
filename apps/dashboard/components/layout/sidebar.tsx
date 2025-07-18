@@ -18,8 +18,9 @@ import { SandboxHeader } from "./navigation/sandbox-header";
 import { WebsiteHeader } from "./navigation/website-header";
 import { OrganizationSelector } from "./organization-selector";
 import { TopHeader } from "./top-header";
+import type { Session } from "@databuddy/auth";
 
-export function Sidebar() {
+export function Sidebar({ session }: { session: Session }) {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { websites } = useWebsites();
@@ -100,7 +101,7 @@ export function Sidebar() {
 
     return (
       <div className="space-y-4">
-        <OrganizationSelector />
+        <OrganizationSelector session={session} />
         {mainNavigation.map((section) => (
           <NavigationSection
             items={section.items}
@@ -115,7 +116,7 @@ export function Sidebar() {
 
   return (
     <>
-      <TopHeader setMobileOpen={() => setIsMobileOpen(true)} />
+      <TopHeader setMobileOpen={() => setIsMobileOpen(true)} session={session} />
 
       {isMobileOpen && (
         <div
