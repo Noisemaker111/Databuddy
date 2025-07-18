@@ -177,11 +177,6 @@ export const auth = betterAuth({
             }
         }),
         twoFactor(),
-        multiSession(),
-        // captcha({
-        //     provider: "cloudflare-turnstile",
-        //     secretKey: process.env.RECAPTCHA_SECRET_KEY as string,
-        // })
         customSession(async ({ user: sessionUser, session }) => {
             const [dbUser] = await db.query.user.findMany({
                 where: eq(user.id, session.userId),
