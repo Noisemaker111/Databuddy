@@ -1035,8 +1035,7 @@
                     text:
                       i.innerText ||
                       i.getAttribute("title") ||
-                      r.getAttribute("alt") ||
-                      r.getAttribute("title"),
+                      r.getAttribute("alt"),
                   });
                 }
               } catch (e) { }
