@@ -132,6 +132,10 @@ function parseDurationToSeconds(duration: string): number {
         d: 86400,
     }[unit]
 
+    if (multiplier === undefined) {
+        throw new Error(`Invalid duration format: ${duration}`)
+    }
+
     return num * multiplier
 }
 
