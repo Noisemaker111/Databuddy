@@ -28,6 +28,7 @@ import type { CreateWebsiteData, Website } from "@/hooks/use-websites";
 import { useCreateWebsite, useUpdateWebsite } from "@/hooks/use-websites";
 import { authClient } from "@databuddy/auth/client";
 import { LoaderCircle } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -56,7 +57,7 @@ export function WebsiteDialog({
   onSave = () => { },
 }: WebsiteDialogProps) {
   const isEditing = !!website;
-  const { data: activeOrganization } = authClient.useActiveOrganization();
+  const { data: activeOrganization } = trpc.organizations.getActiveOrganization.useQuery();
   const formRef = useRef<HTMLFormElement>(null);
 
   const createWebsiteMutation = useCreateWebsite();

@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useOrganizations } from "@/hooks/use-organizations";
+import { useOrganizations, useUserOrganizations } from "@/hooks/use-organizations";
 import { cn } from "@/lib/utils";
 
 const getOrganizationInitials = (name: string) => {
@@ -28,35 +28,38 @@ const getOrganizationInitials = (name: string) => {
 
 export function OrganizationSelector() {
   const {
-    organizations,
     activeOrganization,
-    isLoading,
+    isLoading: isActiveOrgLoading,
     setActiveOrganization,
     isSettingActiveOrganization,
   } = useOrganizations();
+
+  const {
+    organizations,
+    isLoading: isOrganizationsLoading,
+  } = useUserOrganizations();
+
+  const isLoading = isActiveOrgLoading || isOrganizationsLoading;
   const router = useRouter();
   const [isOpen, setIsOpen] = React.useState(false);
   const [showCreateDialog, setShowCreateDialog] = React.useState(false);
 
-  const handleSelectOrganization = React.useCallback(
-    (organizationId: string | null) => {
-      if (organizationId === activeOrganization?.id) return;
-      if (organizationId === null && !activeOrganization) return;
-      setActiveOrganization(organizationId);
-      setIsOpen(false);
-    },
-    [activeOrganization, setActiveOrganization]
-  );
+  const handleSelectOrganization = (organizationId: string | null) => {
+    if (organizationId === activeOrganization?.id) return;
+    if (organizationId === null && !activeOrganization) return;
+    setActiveOrganization(organizationId);
+    setIsOpen(false);
+  };
 
-  const handleCreateOrganization = React.useCallback(() => {
+  const handleCreateOrganization = () => {
     setShowCreateDialog(true);
     setIsOpen(false);
-  }, []);
+  };
 
-  const handleManageOrganizations = React.useCallback(() => {
+  const handleManageOrganizations = () => {
     router.push("/organizations");
     setIsOpen(false);
-  }, [router]);
+  };
 
   if (isLoading) {
     return (
