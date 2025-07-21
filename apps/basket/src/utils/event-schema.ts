@@ -24,13 +24,16 @@ const connectionTypeSchema = z.enum([
     "unknown",
 ]).nullable().optional();
 
+const now = Date.now();
+const MAX_FUTURE_MS = 60 * 60 * 1000; // 1 hour
+
 export const analyticsEventSchema = z.object({
     eventId: z.string().min(1).max(128),
     name: z.string().min(1).max(128),
     anonymousId: z.string().min(1).max(128).nullable().optional(),
     sessionId: z.string().min(1).max(128).nullable().optional(),
-    timestamp: z.number().int().gte(946684800000).lte(Date.now() + 31_536_000_000).nullable().optional(), // year 2000 to 1 year in future
-    sessionStartTime: z.number().int().gte(946684800000).lte(Date.now() + 31_536_000_000).nullable().optional(),
+    timestamp: z.number().int().gte(946684800000).lte(now + MAX_FUTURE_MS).nullable().optional(), // year 2000 to 1 year in future
+    sessionStartTime: z.number().int().gte(946684800000).lte(now + MAX_FUTURE_MS).nullable().optional(),
     referrer: z.string().max(2048).nullable().optional(),
     path: z.string().max(2048),
     title: z.string().max(512).nullable().optional(),
@@ -78,7 +81,7 @@ export const errorEventSchema = z.object({
         eventId: z.string().min(1).max(128).nullable().optional(),
         anonymousId: z.string().min(1).max(128).nullable().optional(),
         sessionId: z.string().min(1).max(128).nullable().optional(),
-        timestamp: z.number().int().gte(946684800000).lte(Date.now() + 31_536_000_000).nullable().optional(),
+        timestamp: z.number().int().gte(946684800000).lte(now + MAX_FUTURE_MS).nullable().optional(),
         path: z.string().max(2048),
         message: z.string().max(2048),
         filename: z.string().max(512).nullable().optional(),
@@ -94,7 +97,7 @@ export const webVitalsEventSchema = z.object({
         eventId: z.string().min(1).max(128).nullable().optional(),
         anonymousId: z.string().min(1).max(128).nullable().optional(),
         sessionId: z.string().min(1).max(128).nullable().optional(),
-        timestamp: z.number().int().gte(946684800000).lte(Date.now() + 31_536_000_000).nullable().optional(),
+        timestamp: z.number().int().gte(946684800000).lte(now + MAX_FUTURE_MS).nullable().optional(),
         path: z.string().max(2048),
         fcp: z.number().min(0).max(60000).nullable().optional(),
         lcp: z.number().min(0).max(60000).nullable().optional(),
