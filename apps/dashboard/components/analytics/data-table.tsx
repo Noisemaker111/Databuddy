@@ -679,13 +679,13 @@ export function DataTable<TData extends { name: string | number }, TValue>({
 
   if (isLoading) {
     return (
-      <Card
+      <div
         className={cn(
           "w-full overflow-hidden border bg-card/50 shadow-sm backdrop-blur-sm",
           className
         )}
       >
-        <CardHeader className="px-2 pb-2 sm:px-3">
+        <div className="px-2 pb-2 sm:px-3">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
             <div className="min-w-0 flex-1">
               <Skeleton className="h-5 w-32 rounded-md" />
@@ -707,18 +707,18 @@ export function DataTable<TData extends { name: string | number }, TValue>({
               </div>
             </div>
           )}
-        </CardHeader>
-        <CardContent className="px-2 pb-2 sm:px-3">
+        </div>
+        <div className="px-2 pb-2 sm:px-3">
           <EnhancedSkeleton minHeight={minHeight} />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   // Extracted table content for DRYness
   const renderTableContent = () => (
     <>
-      <CardHeader className="px-2 pb-2 sm:px-3">
+      <div className="px-2 pb-2 sm:px-3 pt-2">
         <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
           <div className="min-w-0 flex-1">
             <h3 className="truncate font-semibold text-foreground text-sm">{title}</h3>
@@ -804,9 +804,9 @@ export function DataTable<TData extends { name: string | number }, TValue>({
             </div>
           </div>
         )}
-      </CardHeader>
+      </div>
 
-      <CardContent className="overflow-hidden px-2 pb-2 sm:px-3">
+      <div className="overflow-hidden">
         <div
           className={cn(
             "relative transition-all duration-300 ease-out",
@@ -846,7 +846,7 @@ export function DataTable<TData extends { name: string | number }, TValue>({
           {table.getRowModel().rows.length ? (
             <div
               aria-labelledby={`tab-${activeTab}`}
-              className="relative overflow-auto rounded-md border border-border/50 bg-background/50 sm:rounded-lg"
+              className="relative overflow-auto border border-border/50 bg-background custom-scrollbar"
               id={`tabpanel-${activeTab}`}
               role="tabpanel"
               style={{ height: minHeight }}
@@ -870,7 +870,7 @@ export function DataTable<TData extends { name: string | number }, TValue>({
                                   : undefined
                           }
                           className={cn(
-                            "h-11 bg-muted/20 px-2 font-semibold text-muted-foreground text-xs uppercase tracking-wide backdrop-blur-sm sm:px-4",
+                            "h-10 bg-muted px-2 font-semibold text-muted-foreground text-xs uppercase tracking-wide",
                             (header.column.columnDef.meta as any)?.className,
                             header.column.getCanSort()
                               ? "group cursor-pointer select-none transition-all duration-200 hover:bg-muted/30 hover:text-foreground"
@@ -926,7 +926,7 @@ export function DataTable<TData extends { name: string | number }, TValue>({
                       <Fragment key={row.id}>
                         <TableRow
                           className={cn(
-                            "relative h-12 border-border/20 transition-all duration-300 ease-in-out",
+                            "relative h-11 border-border/20 transition-all duration-300 ease-in-out pl-3",
                             (onRowClick && !hasSubRows) || hasSubRows ? "cursor-pointer" : "",
                             hoveredRow && hoveredRow !== row.id
                               ? "opacity-40 grayscale-[80%]"
@@ -951,7 +951,7 @@ export function DataTable<TData extends { name: string | number }, TValue>({
                           {row.getVisibleCells().map((cell, cellIndex) => (
                             <TableCell
                               className={cn(
-                                "px-2 py-3 font-medium text-sm transition-colors duration-150 sm:px-4",
+                                "px-2 py-2 font-medium text-sm transition-colors duration-150",
                                 cellIndex === 0 && "font-semibold text-foreground",
                                 (cell.column.columnDef.meta as any)?.className
                               )}
@@ -1008,8 +1008,8 @@ export function DataTable<TData extends { name: string | number }, TValue>({
                                 row.getVisibleCells().map((cell, cellIndex) => (
                                   <TableCell
                                     className={cn(
-                                      "py-2 text-muted-foreground text-sm",
-                                      cellIndex === 0 ? "pl-8" : "px-3"
+                                      "py-1 text-muted-foreground text-sm",
+                                      cellIndex === 0 ? "pl-8" : "px-2"
                                     )}
                                     key={`sub-${cell.id}`}
                                     style={{
@@ -1076,20 +1076,20 @@ export function DataTable<TData extends { name: string | number }, TValue>({
             </div>
           )}
         </div>
-      </CardContent>
+      </div>
     </>
   );
 
   return (
     <>
-      <Card
+      <div
         className={cn(
-          "w-full overflow-hidden border bg-card/50 shadow-sm backdrop-blur-sm",
+          "w-full overflow-hidden border bg-card/50 shadow-sm backdrop-blur-sm rounded",
           className
         )}
       >
         {renderTableContent()}
-      </Card>
+      </div>
       {hasMounted && fullScreen && ReactDOM.createPortal(
         <div
           ref={modalRef}
@@ -1124,6 +1124,27 @@ export function DataTable<TData extends { name: string | number }, TValue>({
     </>
   );
 }
+
+// Custom scrollbar styles
+// You can move this to a CSS/SCSS file if preferred
+<style jsx global>{`
+  .custom-scrollbar::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db;
+  }
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #e5e7eb transparent;
+  }
+`}</style>
 
 
 
