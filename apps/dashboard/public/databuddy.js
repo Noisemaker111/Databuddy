@@ -568,53 +568,17 @@
       const clampTime = (v) => typeof v === "number" ? Math.min(60000, Math.max(0, v)) : v;
 
       try {
-        if (window.performance?.getEntriesByType) {
-          const navEntries = window.performance.getEntriesByType("navigation");
-          if (navEntries && navEntries.length > 0) {
-            const navEntry = navEntries[0];
+        const navEntry = window.performance?.getEntriesByType("navigation")[0];
+        if (!navEntry) return {};
 
-            const navigationStart = navEntry.startTime || 0;
-
-            return {
-              load_time: clampTime(Math.round(navEntry.loadEventEnd - navigationStart)),
-              dom_ready_time: clampTime(Math.round(navEntry.domContentLoadedEventEnd - navigationStart)),
-              ttfb: clampTime(Math.round(navEntry.responseStart - navigationStart)),
-              request_time: clampTime(Math.round(navEntry.responseEnd - navEntry.responseStart)),
-              render_time: Math.max(0, Math.round(navEntry.domComplete - navEntry.domContentLoadedEventEnd)),
-            };
-          }
-        }
-
-        if (window.performance?.timing) {
-          const timing = window.performance.timing;
-          const navigationStart = timing.navigationStart;
-
-          if (navigationStart === 0) return {};
-
-          return {
-            load_time: timing.loadEventEnd > 0 ? clampTime(timing.loadEventEnd - navigationStart) : 0,
-            dom_ready_time:
-              timing.domContentLoadedEventEnd > 0
-                ? clampTime(timing.domContentLoadedEventEnd - navigationStart)
-                : 0,
-            dom_interactive:
-              timing.domInteractive > 0 ? Math.max(0, timing.domInteractive - navigationStart) : 0,
-            ttfb:
-              timing.responseStart > 0 && timing.requestStart > 0
-                ? clampTime(timing.responseStart - timing.requestStart)
-                : 0,
-            request_time:
-              timing.responseEnd > 0 && timing.requestStart > 0
-                ? clampTime(timing.responseEnd - timing.requestStart)
-                : 0,
-            render_time:
-              timing.domComplete > 0 && timing.domContentLoadedEventEnd > 0
-                ? Math.max(0, timing.domComplete - timing.domContentLoadedEventEnd)
-                : 0,
-          };
-        }
-
-        return {};
+        return {
+          load_time: clampTime(Math.round(navEntry.loadEventEnd)),
+          dom_ready_time: clampTime(Math.round(navEntry.domContentLoadedEventEnd)),
+          dom_interactive: clampTime(Math.round(navEntry.domInteractive)),
+          ttfb: clampTime(Math.round(navEntry.responseStart - navEntry.requestStart)),
+          request_time: clampTime(Math.round(navEntry.responseEnd - navEntry.requestStart)),
+          render_time: Math.max(0, Math.round(navEntry.domComplete - navEntry.domContentLoadedEventEnd)),
+        };
       } catch (e) {
         return {};
       }
