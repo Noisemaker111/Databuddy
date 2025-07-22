@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+
+jobs:
+  check-api:
+    name: API - Type Check & Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install --frozen-lockfile
+      - run: bun run tsc --noEmit
+      - run: bun run biome check .
+
+  check-basket:
+    name: Basket - Type Check & Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/basket
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install --frozen-lockfile
+      - run: bun run tsc --noEmit
+      - run: bun run biome check .
+
+  check-dashboard:
+    name: Dashboard - Type Check & Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install --frozen-lockfile
+      - run: bun run tsc --noEmit
+      - run: bun run biome check . 
