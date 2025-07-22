@@ -37,8 +37,8 @@ const MIN_TIMESTAMP = 946684800000; // year 2000
 export const analyticsEventSchema = z.object({
     eventId: z.uuid(),
     name: z.string().min(1).max(128),
-    anonymousId: z.templateLiteral([z.literal("anon_"), z.string()]).nullable().optional(),
-    sessionId: z.templateLiteral([z.literal("sess_"), z.string()]).nullable().optional(),
+    anonymousId: z.templateLiteral([z.literal("anon_"), z.string().max(32)]).nullable().optional(),
+    sessionId: z.templateLiteral([z.literal("sess_"), z.string().max(32)]).nullable().optional(),
     timestamp: z.number().int().gte(MIN_TIMESTAMP).nullable().optional()
         .refine(val => val == null || val <= Date.now() + MAX_FUTURE_MS, {
             message: 'Timestamp too far in the future (max 1 hour ahead)'
