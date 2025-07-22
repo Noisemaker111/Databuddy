@@ -33,6 +33,12 @@ export function addPercentages<T extends BaseTabItem>(data: T[]): T[] {
   }));
 }
 
+// Utility for compact number formatting
+const formatNumber = (value: number | null | undefined): string => {
+  if (value == null || Number.isNaN(value)) return "0";
+  return Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(value);
+};
+
 // Generic function to create columns for any tab data
 export function createTabColumns<T extends BaseTabItem>(
   primaryField: string,
@@ -53,10 +59,12 @@ export function createTabColumns<T extends BaseTabItem>(
     {
       accessorKey: "visitors",
       header: "Visitors",
+      cell: (info: CellContext<T, unknown>) => <span className="font-medium">{formatNumber(info.getValue() as number)}</span>,
     },
     {
       accessorKey: "pageviews",
       header: "Views",
+      cell: (info: CellContext<T, unknown>) => <span className="font-medium">{formatNumber(info.getValue() as number)}</span>,
     },
     {
       accessorKey: "percentage",

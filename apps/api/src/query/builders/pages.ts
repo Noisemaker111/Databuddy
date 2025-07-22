@@ -22,13 +22,13 @@ export const PagesBuilders: Record<string, SimpleQueryConfig> = {
         table: 'analytics.events',
         fields: [
             'entry_page as name',
-            'COUNT(*) as entries',
+            'COUNT(*) as pageviews',
             'COUNT(DISTINCT anonymous_id) as visitors',
             'ROUND((COUNT(*) / SUM(COUNT(*)) OVER()) * 100, 2) as percentage'
         ],
         where: ['event_name = \'screen_view\'', 'path != \'\''],
         groupBy: ['entry_page'],
-        orderBy: 'entries DESC',
+        orderBy: 'pageviews DESC',
         limit: 100,
         timeField: 'time',
         allowedFilters: ['referrer', 'device_type'],
@@ -59,13 +59,13 @@ export const PagesBuilders: Record<string, SimpleQueryConfig> = {
             )
             SELECT 
                 entry_page as name,
-                COUNT(*) as entries,
+                COUNT(*) as pageviews,
                 COUNT(DISTINCT anonymous_id) as visitors,
                 ROUND((COUNT(*) / SUM(COUNT(*)) OVER()) * 100, 2) as percentage
             FROM session_entry
             WHERE page_rank = 1
             GROUP BY entry_page
-            ORDER BY entries DESC
+            ORDER BY pageviews DESC
             LIMIT {limit:Int32} OFFSET {offset:Int32}
             `,
             params: {
@@ -82,13 +82,13 @@ export const PagesBuilders: Record<string, SimpleQueryConfig> = {
         table: 'analytics.events',
         fields: [
             'path as name',
-            'COUNT(DISTINCT session_id) as exits',
+            'COUNT(DISTINCT session_id) as pageviews',
             'COUNT(DISTINCT anonymous_id) as visitors',
             'ROUND((COUNT(DISTINCT session_id) / SUM(COUNT(DISTINCT session_id)) OVER()) * 100, 2) as percentage'
         ],
         where: ['event_name = \'screen_view\'', 'path != \'\''],
         groupBy: ['path'],
-        orderBy: 'exits DESC',
+        orderBy: 'pageviews DESC',
         limit: 100,
         timeField: 'time',
         allowedFilters: ['referrer', 'device_type'],
@@ -130,12 +130,12 @@ export const PagesBuilders: Record<string, SimpleQueryConfig> = {
             )
             SELECT 
                 path as name,
-                COUNT(DISTINCT session_id) as exits,
+                COUNT(DISTINCT session_id) as pageviews,
                 COUNT(DISTINCT anonymous_id) as visitors,
                 ROUND((COUNT(DISTINCT session_id) / SUM(COUNT(DISTINCT session_id)) OVER()) * 100, 2) as percentage
             FROM exit_pages
             GROUP BY path
-            ORDER BY exits DESC
+            ORDER BY pageviews DESC
             LIMIT {limit:Int32} OFFSET {offset:Int32}
             `,
             params: {

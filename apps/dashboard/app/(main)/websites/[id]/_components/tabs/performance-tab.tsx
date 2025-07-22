@@ -20,7 +20,6 @@ import { calculatePerformanceSummary } from "@/lib/performance-utils";
 import type { PerformanceEntry, PerformanceSummary } from "@/types/performance";
 import type { FullTabProps } from "../utils/types";
 
-// Memoized utility functions
 const getPerformanceRating = (score: number): { rating: string; className: string } => {
   if (score >= 90) return { rating: "Excellent", className: "text-green-500" };
   if (score >= 70) return { rating: "Good", className: "text-green-500" };
@@ -36,7 +35,11 @@ const formatPerformanceTime = (value: number): string => {
   return seconds % 1 === 0 ? `${seconds.toFixed(0)}s` : `${seconds.toFixed(1)}s`;
 };
 
-// Memoized component to prevent re-renders
+const formatNumber = (value: number | null | undefined): string => {
+  if (value == null || Number.isNaN(value)) return "0";
+  return Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(value);
+};
+
 const PerformanceMetricCell = ({ value, type = "time" }: { value?: number; type?: "time" | "cls" }) => {
   if (!value || value === 0) {
     return <span className="text-muted-foreground">N/A</span>;
@@ -63,13 +66,12 @@ const PerformanceMetricCell = ({ value, type = "time" }: { value?: number; type?
   );
 };
 
-// Memoized performance columns to prevent recreation
 const performanceColumns = [
   {
     id: "visitors",
     accessorKey: "visitors",
     header: "Visitors",
-    cell: ({ getValue }: any) => getValue()?.toLocaleString() ?? "0",
+    cell: ({ getValue }: any) => formatNumber(getValue()),
   },
   {
     id: "avg_load_time",
@@ -97,7 +99,6 @@ const performanceColumns = [
   },
 ];
 
-// Memoized name column factory
 const createNameColumn = (
   header: string,
   iconRenderer?: (name: string) => React.ReactNode,
@@ -118,7 +119,6 @@ const createNameColumn = (
   },
 });
 
-// Memoized performance summary card
 const PerformanceSummaryCard = ({
   summary,
   activeFilter,
@@ -189,7 +189,7 @@ const PerformanceSummaryCard = ({
           )}
         </div>
         <div className="font-bold text-2xl text-green-600">
-          {summary.fastPages}
+          {formatNumber(summary.fastPages)}
           <span className="ml-1 text-muted-foreground text-sm">
             ({Math.round((summary.fastPages / summary.totalPages) * 100)}%)
           </span>
@@ -214,7 +214,7 @@ const PerformanceSummaryCard = ({
           )}
         </div>
         <div className="font-bold text-2xl text-red-600">
-          {summary.slowPages}
+          {formatNumber(summary.slowPages)}
           <span className="ml-1 text-muted-foreground text-sm">
             ({Math.round((summary.slowPages / summary.totalPages) * 100)}%)
           </span>
@@ -239,7 +239,6 @@ export function WebsitePerformanceTab({
     error,
   } = useEnhancedPerformanceData(websiteId, dateRange);
 
-  // Optimized refresh handler
   const handleRefresh = useCallback(async () => {
     if (isRefreshing) {
       try {
@@ -254,7 +253,6 @@ export function WebsitePerformanceTab({
     handleRefresh();
   }, [handleRefresh]);
 
-  // Memoized filter function
   const filterPagesByPerformance = useCallback(
     (pages: PerformanceEntry[], filter: "fast" | "slow" | null) => {
       if (!filter) return pages;
@@ -266,7 +264,6 @@ export function WebsitePerformanceTab({
     []
   );
 
-  // Optimized data processing with single pass
   const { processedData, performanceSummary } = useMemo(() => {
     if (!performanceResults?.length) {
       return {
@@ -289,7 +286,6 @@ export function WebsitePerformanceTab({
       };
     }
 
-    // Single pass data processing
     const data = performanceResults
       .filter(result => result.success && result.data)
       .reduce((acc, result) => Object.assign(acc, result.data), {} as Record<string, any>);
@@ -312,7 +308,6 @@ export function WebsitePerformanceTab({
     return { processedData, performanceSummary };
   }, [performanceResults, activeFilter, filterPagesByPerformance]);
 
-  // Memoized tab configuration
   const tabs = useMemo(() => {
     const formatPageName = (name: string) => {
       try {

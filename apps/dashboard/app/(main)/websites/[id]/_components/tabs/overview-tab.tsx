@@ -165,7 +165,6 @@ function UnauthorizedAccessError() {
   );
 }
 
-// Device type to icon mapping utility
 const deviceTypeIconMap: Record<string, React.ElementType> = {
   mobile: DeviceMobileIcon,
   tablet: DeviceTabletIcon,
@@ -209,78 +208,65 @@ export function WebsiteOverviewTab({
   isRefreshing,
   setIsRefreshing,
 }: FullTabProps) {
-  const queries = useMemo(
-    () => [
-      {
-        id: "overview-summary",
-        parameters: QUERY_CONFIG.parameters.summary,
-        limit: QUERY_CONFIG.limit,
-        granularity: dateRange.granularity,
-      },
-      {
-        id: "overview-pages",
-        parameters: QUERY_CONFIG.parameters.pages,
-        limit: QUERY_CONFIG.limit,
-        granularity: dateRange.granularity,
-      },
-      {
-        id: "overview-traffic",
-        parameters: QUERY_CONFIG.parameters.traffic,
-        limit: QUERY_CONFIG.limit,
-        granularity: dateRange.granularity,
-      },
-      {
-        id: "overview-tech",
-        parameters: QUERY_CONFIG.parameters.tech,
-        limit: QUERY_CONFIG.limit,
-        granularity: dateRange.granularity,
-      },
-      {
-        id: "overview-custom-events",
-        parameters: QUERY_CONFIG.parameters.customEvents,
-        limit: QUERY_CONFIG.limit,
-        granularity: dateRange.granularity,
-      },
-    ],
-    [dateRange.granularity]
-  );
+  const queries = [
+    {
+      id: "overview-summary",
+      parameters: QUERY_CONFIG.parameters.summary,
+      limit: QUERY_CONFIG.limit,
+      granularity: dateRange.granularity,
+    },
+    {
+      id: "overview-pages",
+      parameters: QUERY_CONFIG.parameters.pages,
+      limit: QUERY_CONFIG.limit,
+      granularity: dateRange.granularity,
+    },
+    {
+      id: "overview-traffic",
+      parameters: QUERY_CONFIG.parameters.traffic,
+      limit: QUERY_CONFIG.limit,
+      granularity: dateRange.granularity,
+    },
+    {
+      id: "overview-tech",
+      parameters: QUERY_CONFIG.parameters.tech,
+      limit: QUERY_CONFIG.limit,
+      granularity: dateRange.granularity,
+    },
+    {
+      id: "overview-custom-events",
+      parameters: QUERY_CONFIG.parameters.customEvents,
+      limit: QUERY_CONFIG.limit,
+      granularity: dateRange.granularity,
+    },
+  ];
 
-  // Fetch all overview data in a single batch query
   const {
-    results,
     isLoading: batchLoading,
     error: batchError,
     refetch: refetchBatch,
     getDataForQuery,
   } = useBatchDynamicQuery(websiteId, dateRange, queries);
 
-  // Combine all data into analytics object for backward compatibility
-  const analytics = useMemo(
-    () => ({
-      summary: getDataForQuery("overview-summary", "summary_metrics")?.[0] || null,
-      today: getDataForQuery("overview-summary", "today_metrics")?.[0] || null,
-      events_by_date: getDataForQuery("overview-summary", "events_by_date") || [],
-      top_pages: getDataForQuery("overview-pages", "top_pages") || [],
-      entry_pages: getDataForQuery("overview-pages", "entry_pages") || [],
-      exit_pages: getDataForQuery("overview-pages", "exit_pages") || [],
-      top_referrers: getDataForQuery("overview-traffic", "top_referrers") || [],
-      utm_sources: getDataForQuery("overview-traffic", "utm_sources") || [],
-      utm_mediums: getDataForQuery("overview-traffic", "utm_mediums") || [],
-      utm_campaigns: getDataForQuery("overview-traffic", "utm_campaigns") || [],
-      device_types: getDataForQuery("overview-tech", "device_types") || [],
-      browser_versions: getDataForQuery("overview-tech", "browsers") || [],
-      operating_systems: getDataForQuery("overview-tech", "operating_systems") || [], // <-- add this line
-    }),
-    [getDataForQuery]
-  );
+  const analytics = {
+    summary: getDataForQuery("overview-summary", "summary_metrics")?.[0] || null,
+    today: getDataForQuery("overview-summary", "today_metrics")?.[0] || null,
+    events_by_date: getDataForQuery("overview-summary", "events_by_date") || [],
+    top_pages: getDataForQuery("overview-pages", "top_pages") || [],
+    entry_pages: getDataForQuery("overview-pages", "entry_pages") || [],
+    exit_pages: getDataForQuery("overview-pages", "exit_pages") || [],
+    top_referrers: getDataForQuery("overview-traffic", "top_referrers") || [],
+    utm_sources: getDataForQuery("overview-traffic", "utm_sources") || [],
+    utm_mediums: getDataForQuery("overview-traffic", "utm_mediums") || [],
+    utm_campaigns: getDataForQuery("overview-traffic", "utm_campaigns") || [],
+    device_types: getDataForQuery("overview-tech", "device_types") || [],
+    browser_versions: getDataForQuery("overview-tech", "browsers") || [],
+    operating_systems: getDataForQuery("overview-tech", "operating_systems") || [],
+  };
 
-  // Extract custom events data
-  const customEventsData = useMemo(
-    () => ({
-      custom_events: getDataForQuery("overview-custom-events", "custom_events") || [],
-    }),
-    [getDataForQuery]
-  );
+  const customEventsData = {
+    custom_events: getDataForQuery("overview-custom-events", "custom_events") || [],
+  };
 
   const loading = {
     summary: batchLoading || isRefreshing,
@@ -291,15 +277,13 @@ export function WebsiteOverviewTab({
   const [visibleMetrics] = useAtom(metricVisibilityAtom);
   const [, toggleMetricAction] = useAtom(toggleMetricAtom);
 
-  // Wrapper function to handle type conversion for MetricToggles
   const toggleMetric = useCallback((metric: string) => {
     if (metric in visibleMetrics) {
       toggleMetricAction(metric as keyof typeof visibleMetrics);
     }
   }, [visibleMetrics, toggleMetricAction]);
 
-  // Convert MetricVisibilityState to Record<string, boolean> for MetricToggles compatibility
-  const metricsForToggles: Record<string, boolean> = {
+  const metricsForToggles = {
     pageviews: visibleMetrics.pageviews,
     visitors: visibleMetrics.visitors,
     sessions: visibleMetrics.sessions,
@@ -333,114 +317,13 @@ export function WebsiteOverviewTab({
 
   const isLoading = loading.summary || isRefreshing;
 
-  if (error instanceof Error && error.message === "UNAUTHORIZED_ACCESS") {
-    return <UnauthorizedAccessError />;
-  }
+  const [expandedProperties, setExpandedProperties] = useState<Set<string>>(new Set());
 
-  const referrerCustomCell = useCallback((info: any) => {
+  const referrerCustomCell = (info: any) => {
     const cellData: ReferrerSourceCellData = info.row.original;
     return <ReferrerSourceCell {...cellData} />;
-  }, []);
+  };
 
-  // Utility functions for data processing
-  const filterFutureEvents = useCallback((events: any[]) => {
-    const userTimezone = getUserTimezone();
-    const now = dayjs().tz(userTimezone);
-
-    return events.filter((event: any) => {
-      const eventDate = dayjs.utc(event.date).tz(userTimezone);
-
-      if (dateRange.granularity === 'hourly') {
-        return eventDate.isBefore(now);
-      }
-
-      const endOfToday = now.endOf('day');
-      return eventDate.isBefore(endOfToday) || eventDate.isSame(endOfToday, 'day');
-    });
-  }, [dateRange.granularity]);
-
-  const chartData = useMemo(() => {
-    if (!analytics.events_by_date?.length) return [];
-
-    const filteredEvents = filterFutureEvents(analytics.events_by_date);
-
-    return filteredEvents.map((event: any): ChartDataPoint => {
-      const filtered: ChartDataPoint = {
-        date: formatDateByGranularity(event.date, dateRange.granularity),
-      };
-
-      if (visibleMetrics.pageviews) {
-        filtered.pageviews = event.pageviews;
-      }
-
-      if (visibleMetrics.visitors) {
-        filtered.visitors = event.visitors || event.unique_visitors || 0;
-      }
-
-      if (visibleMetrics.sessions) {
-        filtered.sessions = event.sessions;
-      }
-
-      if (visibleMetrics.bounce_rate) {
-        filtered.bounce_rate = event.bounce_rate;
-      }
-
-      if (visibleMetrics.avg_session_duration) {
-        filtered.avg_session_duration = event.avg_session_duration;
-      }
-
-      return filtered;
-    });
-  }, [analytics.events_by_date, visibleMetrics, dateRange.granularity, filterFutureEvents]);
-
-  const miniChartData = useMemo(() => {
-    if (!analytics.events_by_date?.length) return {};
-
-    const filteredEvents = filterFutureEvents(analytics.events_by_date);
-
-    const createChartSeries = (field: string, transform?: (value: any) => number) =>
-      filteredEvents.map((event: any) => ({
-        date: formatDateByGranularity(event.date, dateRange.granularity),
-        value: transform ? transform(event[field]) : (event[field] || 0),
-      }));
-
-    return {
-      visitors: createChartSeries('visitors'),
-      sessions: createChartSeries('sessions'),
-      pageviews: createChartSeries('pageviews'),
-      pagesPerSession: createChartSeries('pages_per_session'),
-      bounceRate: createChartSeries('bounce_rate'),
-      sessionDuration: createChartSeries('avg_session_duration'),
-    };
-  }, [analytics.events_by_date, filterFutureEvents, dateRange.granularity]);
-
-  // Page processing utilities
-  const processedTopPages = useMemo(() =>
-    analytics.top_pages || [],
-    [analytics.top_pages]
-  );
-
-  const processedEntryPages = useMemo(() => {
-    if (!analytics.entry_pages?.length) return [];
-
-    return analytics.entry_pages.map((page: any) => ({
-      ...page,
-      pageviews: page.entries,
-      visitors: page.visitors,
-    }));
-  }, [analytics.entry_pages]);
-
-  const processedExitPages = useMemo(() => {
-    if (!analytics.exit_pages?.length) return [];
-
-    return analytics.exit_pages.map((page: any) => ({
-      ...page,
-      pageviews: page.exits,
-      visitors: page.visitors || page.sessions, // fallback to sessions if visitors not available
-    }));
-  }, [analytics.exit_pages]);
-
-  // Table configurations
   const referrerTabs = useTableTabs({
     referrers: {
       data: analytics.top_referrers || [],
@@ -471,28 +354,24 @@ export function WebsiteOverviewTab({
 
   const pagesTabs = useTableTabs({
     top_pages: {
-      data: processedTopPages,
+      data: analytics.top_pages || [],
       label: "Top Pages",
       primaryField: "name",
       primaryHeader: "Page",
     },
     entry_pages: {
-      data: processedEntryPages,
+      data: analytics.entry_pages || [],
       label: "Entry Pages",
       primaryField: "name",
       primaryHeader: "Page",
     },
     exit_pages: {
-      data: processedExitPages,
+      data: analytics.exit_pages || [],
       label: "Exit Pages",
       primaryField: "name",
       primaryHeader: "Page",
     },
   });
-
-  const dateFrom = useMemo(() => new Date(dateRange.start_date), [dateRange.start_date]);
-  const dateTo = useMemo(() => new Date(dateRange.end_date), [dateRange.end_date]);
-  const dateDiff = useMemo(() => differenceInDays(dateTo, dateFrom), [dateTo, dateFrom]);
 
   const metricColors = {
     pageviews: "blue-500",
@@ -501,130 +380,80 @@ export function WebsiteOverviewTab({
     bounce_rate: "amber-500",
     avg_session_duration: "red-500",
   };
+  const dateFrom = new Date(dateRange.start_date);
+  const dateTo = new Date(dateRange.end_date);
+  const dateDiff = differenceInDays(dateTo, dateFrom);
 
-  const calculateTrends = useMemo(() => {
-    if (!analytics.events_by_date?.length || analytics.events_by_date.length < 2) {
-      return {};
-    }
+  const filterFutureEvents = (events: any[]) => {
+    const userTimezone = getUserTimezone();
+    const now = dayjs().tz(userTimezone);
 
-    const events = [...analytics.events_by_date].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+    return events.filter((event: any) => {
+      const eventDate = dayjs.utc(event.date).tz(userTimezone);
 
-    const midpoint = Math.floor(events.length / 2);
-    const previousPeriodData = events.slice(0, midpoint);
-    const currentPeriodData = events.slice(midpoint);
-
-    if (previousPeriodData.length === 0 || currentPeriodData.length === 0) {
-      return {};
-    }
-
-    const sumCountMetric = (
-      period: MetricPoint[],
-      field: keyof Pick<MetricPoint, "pageviews" | "visitors" | "sessions">
-    ) => period.reduce((acc, item) => acc + (Number(item[field]) || 0), 0);
-
-    const currentSumVisitors = sumCountMetric(currentPeriodData, "visitors");
-    const currentSumSessions = sumCountMetric(currentPeriodData, "sessions");
-    const currentSumPageviews = sumCountMetric(currentPeriodData, "pageviews");
-    const currentPagesPerSession =
-      currentSumSessions > 0 ? currentSumPageviews / currentSumSessions : 0;
-
-    const previousSumVisitors = sumCountMetric(previousPeriodData, "visitors");
-    const previousSumSessions = sumCountMetric(previousPeriodData, "sessions");
-    const previousSumPageviews = sumCountMetric(previousPeriodData, "pageviews");
-    const previousPagesPerSession =
-      previousSumSessions > 0 ? previousSumPageviews / previousSumSessions : 0;
-
-    const averageRateMetric = (
-      period: MetricPoint[],
-      field: keyof Pick<MetricPoint, "bounce_rate" | "avg_session_duration">
-    ) => {
-      const validEntries = period
-        .map((item) => Number(item[field]))
-        .filter((value) => !Number.isNaN(value) && value > 0);
-      if (validEntries.length === 0) return 0;
-      return validEntries.reduce((acc, value) => acc + value, 0) / validEntries.length;
-    };
-
-    const currentBounceRateAvg = averageRateMetric(currentPeriodData, "bounce_rate");
-    const previousBounceRateAvg = averageRateMetric(previousPeriodData, "bounce_rate");
-    const currentSessionDurationAvg = averageRateMetric(currentPeriodData, "avg_session_duration");
-    const previousSessionDurationAvg = averageRateMetric(
-      previousPeriodData,
-      "avg_session_duration"
-    );
-
-    const calculateTrendPercentage = (current: number, previous: number, minimumBase = 0) => {
-      if (previous < minimumBase && !(previous === 0 && current === 0)) {
-        return;
+      if (dateRange.granularity === 'hourly') {
+        return eventDate.isBefore(now);
       }
-      if (previous === 0) {
-        return current === 0 ? 0 : undefined;
-      }
-      const change = calculatePercentChange(current, previous);
-      return Math.max(-100, Math.min(1000, Math.round(change)));
-    };
 
-    const canShowSessionBasedTrend = previousSumSessions >= MIN_PREVIOUS_SESSIONS_FOR_TREND;
+      const endOfToday = now.endOf('day');
+      return eventDate.isBefore(endOfToday) || eventDate.isSame(endOfToday, 'day');
+    });
+  };
 
-    // Get period start and end dates
-    const previousPeriodStart = previousPeriodData[0]?.date;
-    const previousPeriodEnd = previousPeriodData[previousPeriodData.length - 1]?.date;
-    const currentPeriodStart = currentPeriodData[0]?.date;
-    const currentPeriodEnd = currentPeriodData[currentPeriodData.length - 1]?.date;
-
-    const createDetailedTrend = (current: number, previous: number, minimumBase = 0) => {
-      const change = calculateTrendPercentage(current, previous, minimumBase);
-      if (change === undefined) return change;
-
-      return {
-        change,
-        current,
-        previous,
-        currentPeriod: { start: currentPeriodStart, end: currentPeriodEnd },
-        previousPeriod: { start: previousPeriodStart, end: previousPeriodEnd },
+  const chartData = (() => {
+    if (!analytics.events_by_date?.length) return [];
+    const filteredEvents = filterFutureEvents(analytics.events_by_date);
+    return filteredEvents.map((event: any): ChartDataPoint => {
+      const filtered: ChartDataPoint = {
+        date: formatDateByGranularity(event.date, dateRange.granularity),
       };
-    };
+      if (visibleMetrics.pageviews) {
+        filtered.pageviews = event.pageviews;
+      }
+      if (visibleMetrics.visitors) {
+        filtered.visitors = event.visitors || event.unique_visitors || 0;
+      }
+      if (visibleMetrics.sessions) {
+        filtered.sessions = event.sessions;
+      }
+      if (visibleMetrics.bounce_rate) {
+        filtered.bounce_rate = event.bounce_rate;
+      }
+      if (visibleMetrics.avg_session_duration) {
+        filtered.avg_session_duration = event.avg_session_duration;
+      }
+      return filtered;
+    });
+  })();
 
+  const miniChartData = (() => {
+    if (!analytics.events_by_date?.length) return {};
+    const filteredEvents = filterFutureEvents(analytics.events_by_date);
+    const createChartSeries = (field: string, transform?: (value: any) => number) =>
+      filteredEvents.map((event: any) => ({
+        date: formatDateByGranularity(event.date, dateRange.granularity),
+        value: transform ? transform(event[field]) : (event[field] || 0),
+      }));
     return {
-      visitors: createDetailedTrend(
-        currentSumVisitors,
-        previousSumVisitors,
-        MIN_PREVIOUS_VISITORS_FOR_TREND
-      ),
-      sessions: createDetailedTrend(
-        currentSumSessions,
-        previousSumSessions,
-        MIN_PREVIOUS_SESSIONS_FOR_TREND
-      ),
-      pageviews: createDetailedTrend(
-        currentSumPageviews,
-        previousSumPageviews,
-        MIN_PREVIOUS_PAGEVIEWS_FOR_TREND
-      ),
-      pages_per_session: canShowSessionBasedTrend
-        ? createDetailedTrend(currentPagesPerSession, previousPagesPerSession)
-        : undefined,
-      bounce_rate: canShowSessionBasedTrend
-        ? createDetailedTrend(currentBounceRateAvg, previousBounceRateAvg)
-        : undefined,
-      session_duration: canShowSessionBasedTrend
-        ? createDetailedTrend(currentSessionDurationAvg, previousSessionDurationAvg)
-        : undefined,
+      visitors: createChartSeries('visitors'),
+      sessions: createChartSeries('sessions'),
+      pageviews: createChartSeries('pageviews'),
+      pagesPerSession: createChartSeries('pages_per_session'),
+      bounceRate: createChartSeries('bounce_rate'),
+      sessionDuration: createChartSeries('avg_session_duration'),
     };
-  }, [analytics.events_by_date]);
+  })();
 
-  const processedDeviceData = useMemo(() => {
+  const processedDeviceData = (() => {
     const deviceData = analytics.device_types || [];
     return deviceData.map((item: any) => ({
       name: item.name,
       visitors: item.visitors,
       percentage: item.percentage,
     }));
-  }, [analytics.device_types]);
+  })();
 
-  const processedBrowserData = useMemo(() => {
+  const processedBrowserData = (() => {
     const browserData = analytics.browser_versions || [];
     return browserData.map((item: any) => ({
       name: item.name,
@@ -634,20 +463,16 @@ export function WebsiteOverviewTab({
       icon: getBrowserIcon(item.name),
       category: "browser",
     }));
-  }, [analytics.browser_versions]);
+  })();
 
-  const processedOSData = useMemo(() => {
-    return analytics.operating_systems.map((item: any) => ({
-      name: item.name,
-      visitors: item.visitors,
-      pageviews: item.pageviews,
-      percentage: item.percentage ?? 0,
-      icon: getOSIcon(item.name),
-      category: "os",
-    }));
-  }, [analytics.operating_systems]);
-
-  const [expandedProperties, setExpandedProperties] = useState<Set<string>>(new Set());
+  const processedOSData = analytics.operating_systems.map((item: any) => ({
+    name: item.name,
+    visitors: item.visitors,
+    pageviews: item.pageviews,
+    percentage: item.percentage ?? 0,
+    icon: getOSIcon(item.name),
+    category: "os",
+  }));
 
   const togglePropertyExpansion = (propertyId: string) => {
     const newExpanded = new Set(expandedProperties);
@@ -659,13 +484,11 @@ export function WebsiteOverviewTab({
     setExpandedProperties(newExpanded);
   };
 
-  const processedCustomEventsData = useMemo(() => {
+  const processedCustomEventsData = (() => {
     if (!customEventsData?.custom_events?.length) {
       return [];
     }
-
     const customEvents = customEventsData.custom_events;
-
     return customEvents.map((event: any) => {
       return {
         ...event,
@@ -679,10 +502,9 @@ export function WebsiteOverviewTab({
         propertyCategories: [],
       };
     });
-  }, [customEventsData]);
+  })();
 
-  // Utility functions to reduce duplication
-  const createTechnologyCell = useCallback((header: string) => (info: any) => {
+  const createTechnologyCell = () => (info: any) => {
     const entry = info.row.original;
     return (
       <div className="flex items-center gap-3">
@@ -690,36 +512,27 @@ export function WebsiteOverviewTab({
         <span className="font-medium">{entry.name}</span>
       </div>
     );
-  }, []);
+  };
 
-  const createPercentageCell = useCallback(() => (info: any) => {
+  const createPercentageCell = () => (info: any) => {
     const percentage = info.getValue() as number;
     return <PercentageBadge percentage={percentage} />;
-  }, []);
+  };
 
-  const createMetricCell = useCallback((label: string) => (info: any) => (
+  const formatNumber = (value: number | null | undefined): string => {
+    if (value == null || Number.isNaN(value)) return "0";
+    return Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(value);
+  };
+
+  const createMetricCell = (label: string) => (info: any) => (
     <div>
-      <div className="font-medium text-foreground">{info.getValue()?.toLocaleString()}</div>
+      <div className="font-medium text-foreground">{formatNumber(info.getValue())}</div>
       <div className="text-muted-foreground text-xs">{label}</div>
     </div>
-  ), []);
+  );
 
-  const baseTechnologyColumns = useMemo(() => [
-    {
-      id: "visitors",
-      accessorKey: "visitors",
-      header: "Visitors",
-    },
-    {
-      id: "percentage",
-      accessorKey: "percentage",
-      header: "Share",
-      cell: createPercentageCell(),
-    },
-  ], [createPercentageCell]);
-
-  const deviceColumns = useMemo(
-    () => [
+  const deviceColumns =
+    [
       {
         id: "device_type",
         accessorKey: "device_type",
@@ -733,7 +546,7 @@ export function WebsiteOverviewTab({
         id: "visitors",
         accessorKey: "visitors",
         header: "Visitors",
-        cell: (info: any) => <span className="font-medium">{info.getValue()?.toLocaleString()}</span>,
+        cell: (info: any) => <span className="font-medium">{formatNumber(info.getValue())}</span>,
       },
       {
         id: "percentage",
@@ -741,38 +554,66 @@ export function WebsiteOverviewTab({
         header: "Share",
         cell: createPercentageCell(),
       },
-    ],
-    [createPercentageCell]
-  );
+    ]
 
-  const browserColumns = useMemo(
-    () => [
+  const browserColumns =
+    [
       {
         id: "name",
         accessorKey: "name",
         header: "Browser",
-        cell: createTechnologyCell("Browser"),
+        cell: createTechnologyCell(),
       },
-      ...baseTechnologyColumns,
-    ],
-    [createTechnologyCell, baseTechnologyColumns]
-  );
+      {
+        id: "visitors",
+        accessorKey: "visitors",
+        header: "Visitors",
+        cell: (info: any) => <span className="font-medium">{formatNumber(info.getValue())}</span>,
+      },
+      {
+        id: "pageviews",
+        accessorKey: "pageviews",
+        header: "Pageviews",
+        cell: (info: any) => <span className="font-medium">{formatNumber(info.getValue())}</span>,
+      },
+      {
+        id: "percentage",
+        accessorKey: "percentage",
+        header: "Share",
+        cell: createPercentageCell(),
+      },
+    ]
 
-  const osColumns = useMemo(
-    () => [
+  const osColumns =
+    [
       {
         id: "name",
         accessorKey: "name",
         header: "Operating System",
-        cell: createTechnologyCell("Operating System"),
+        cell: createTechnologyCell(),
       },
-      ...baseTechnologyColumns,
-    ],
-    [createTechnologyCell, baseTechnologyColumns]
-  );
+      {
+        id: "visitors",
+        accessorKey: "visitors",
+        header: "Visitors",
+        cell: (info: any) => <span className="font-medium">{formatNumber(info.getValue())}</span>,
+      },
+      {
+        id: "pageviews",
+        accessorKey: "pageviews",
+        header: "Pageviews",
+        cell: (info: any) => <span className="font-medium">{formatNumber(info.getValue())}</span>,
+      },
+      {
+        id: "percentage",
+        accessorKey: "percentage",
+        header: "Share",
+        cell: createPercentageCell(),
+      },
+    ]
 
-  const customEventsColumns = useMemo(
-    () => [
+  const customEventsColumns =
+    [
       {
         id: "name",
         accessorKey: "name",
@@ -805,24 +646,120 @@ export function WebsiteOverviewTab({
         header: "Share",
         cell: createPercentageCell(),
       },
-    ],
-    [createMetricCell, createPercentageCell]
-  );
+    ]
 
-  // Get user's timezone
   const userTimezone = getUserTimezone();
   dayjs.extend(utc);
   dayjs.extend(timezone);
   const todayDate = dayjs().tz(userTimezone).format("YYYY-MM-DD");
-  const todayEvent = useMemo(() =>
-    analytics.events_by_date.find(
-      (event: any) => dayjs(event.date).tz(userTimezone).format("YYYY-MM-DD") === todayDate
-    ),
-    [analytics.events_by_date, userTimezone, todayDate]
+  const todayEvent = analytics.events_by_date.find(
+    (event: any) => dayjs(event.date).tz(userTimezone).format("YYYY-MM-DD") === todayDate
   );
   const todayVisitors = todayEvent?.visitors ?? 0;
   const todaySessions = todayEvent?.sessions ?? 0;
   const todayPageviews = todayEvent?.pageviews ?? 0;
+
+  const calculateTrends = (() => {
+    if (!analytics.events_by_date?.length || analytics.events_by_date.length < 2) {
+      return {};
+    }
+    const events = [...analytics.events_by_date].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    const midpoint = Math.floor(events.length / 2);
+    const previousPeriodData = events.slice(0, midpoint);
+    const currentPeriodData = events.slice(midpoint);
+    if (previousPeriodData.length === 0 || currentPeriodData.length === 0) {
+      return {};
+    }
+    const sumCountMetric = (
+      period: MetricPoint[],
+      field: keyof Pick<MetricPoint, "pageviews" | "visitors" | "sessions">
+    ) => period.reduce((acc, item) => acc + (Number(item[field]) || 0), 0);
+    const currentSumVisitors = sumCountMetric(currentPeriodData, "visitors");
+    const currentSumSessions = sumCountMetric(currentPeriodData, "sessions");
+    const currentSumPageviews = sumCountMetric(currentPeriodData, "pageviews");
+    const currentPagesPerSession =
+      currentSumSessions > 0 ? currentSumPageviews / currentSumSessions : 0;
+    const previousSumVisitors = sumCountMetric(previousPeriodData, "visitors");
+    const previousSumSessions = sumCountMetric(previousPeriodData, "sessions");
+    const previousSumPageviews = sumCountMetric(previousPeriodData, "pageviews");
+    const previousPagesPerSession =
+      previousSumSessions > 0 ? previousSumPageviews / previousSumSessions : 0;
+    const averageRateMetric = (
+      period: MetricPoint[],
+      field: keyof Pick<MetricPoint, "bounce_rate" | "avg_session_duration">
+    ) => {
+      const validEntries = period
+        .map((item) => Number(item[field]))
+        .filter((value) => !Number.isNaN(value) && value > 0);
+      if (validEntries.length === 0) return 0;
+      return validEntries.reduce((acc, value) => acc + value, 0) / validEntries.length;
+    };
+    const currentBounceRateAvg = averageRateMetric(currentPeriodData, "bounce_rate");
+    const previousBounceRateAvg = averageRateMetric(previousPeriodData, "bounce_rate");
+    const currentSessionDurationAvg = averageRateMetric(currentPeriodData, "avg_session_duration");
+    const previousSessionDurationAvg = averageRateMetric(
+      previousPeriodData,
+      "avg_session_duration"
+    );
+    const calculateTrendPercentage = (current: number, previous: number, minimumBase = 0) => {
+      if (previous < minimumBase && !(previous === 0 && current === 0)) {
+        return;
+      }
+      if (previous === 0) {
+        return current === 0 ? 0 : undefined;
+      }
+      const change = calculatePercentChange(current, previous);
+      return Math.max(-100, Math.min(1000, Math.round(change)));
+    };
+    const canShowSessionBasedTrend = previousSumSessions >= MIN_PREVIOUS_SESSIONS_FOR_TREND;
+    const previousPeriodStart = previousPeriodData[0]?.date;
+    const previousPeriodEnd = previousPeriodData[previousPeriodData.length - 1]?.date;
+    const currentPeriodStart = currentPeriodData[0]?.date;
+    const currentPeriodEnd = currentPeriodData[currentPeriodData.length - 1]?.date;
+    const createDetailedTrend = (current: number, previous: number, minimumBase = 0) => {
+      const change = calculateTrendPercentage(current, previous, minimumBase);
+      if (change === undefined) return change;
+      return {
+        change,
+        current,
+        previous,
+        currentPeriod: { start: currentPeriodStart, end: currentPeriodEnd },
+        previousPeriod: { start: previousPeriodStart, end: previousPeriodEnd },
+      };
+    };
+    return {
+      visitors: createDetailedTrend(
+        currentSumVisitors,
+        previousSumVisitors,
+        MIN_PREVIOUS_VISITORS_FOR_TREND
+      ),
+      sessions: createDetailedTrend(
+        currentSumSessions,
+        previousSumSessions,
+        MIN_PREVIOUS_SESSIONS_FOR_TREND
+      ),
+      pageviews: createDetailedTrend(
+        currentSumPageviews,
+        previousSumPageviews,
+        MIN_PREVIOUS_PAGEVIEWS_FOR_TREND
+      ),
+      pages_per_session: canShowSessionBasedTrend
+        ? createDetailedTrend(currentPagesPerSession, previousPagesPerSession)
+        : undefined,
+      bounce_rate: canShowSessionBasedTrend
+        ? createDetailedTrend(currentBounceRateAvg, previousBounceRateAvg)
+        : undefined,
+      session_duration: canShowSessionBasedTrend
+        ? createDetailedTrend(currentSessionDurationAvg, previousSessionDurationAvg)
+        : undefined,
+    };
+  })();
+
+  if (error instanceof Error && error.message === "UNAUTHORIZED_ACCESS") {
+    return <UnauthorizedAccessError />;
+  }
 
   return (
     <div className="space-y-6">
@@ -909,7 +846,7 @@ export function WebsiteOverviewTab({
             key={metric.id}
             chartData={isLoading ? undefined : metric.chartData}
             className="h-full"
-            description={metric.description}
+            description={metric.description && metric.id !== "pages-per-session-chart" && metric.id !== "bounce-rate-chart" && metric.id !== "session-duration-chart" ? formatNumber(Number(metric.description.split(" ")[0])) + " today" : metric.description}
             icon={metric.icon}
             id={metric.id}
             isLoading={isLoading}
@@ -917,7 +854,7 @@ export function WebsiteOverviewTab({
             title={metric.title}
             trend={metric.trend}
             trendLabel={metric.trend !== undefined ? "vs previous period" : undefined}
-            value={metric.value}
+            value={typeof metric.value === "number" ? formatNumber(metric.value) : metric.value}
             variant={metric.variant || "default"}
             formatValue={metric.formatValue}
             invertTrend={metric.invertTrend}
@@ -1028,7 +965,7 @@ export function WebsiteOverviewTab({
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="font-medium text-foreground text-sm">
-                    {propertyTotal.toLocaleString()}
+                    {formatNumber(propertyTotal)}
                   </div>
                   <div className="rounded bg-primary/10 px-2 py-0.5 font-medium text-primary text-xs">
                     {propertyValues.length} {propertyValues.length === 1 ? "value" : "values"}
@@ -1051,7 +988,7 @@ export function WebsiteOverviewTab({
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-foreground text-sm">
-                          {valueItem.count.toLocaleString()}
+                          {formatNumber(valueItem.count)}
                         </span>
                         <div className="min-w-[2.5rem] rounded bg-muted px-2 py-0.5 text-center font-medium text-muted-foreground text-xs">
                           {valueItem.percentage}%
@@ -1075,7 +1012,7 @@ export function WebsiteOverviewTab({
           description="Device breakdown"
           initialPageSize={8}
           isLoading={isLoading}
-          minHeight={200}
+          minHeight={350}
           showSearch={false}
           title="Devices"
         />
@@ -1086,7 +1023,7 @@ export function WebsiteOverviewTab({
           description="Browser breakdown"
           initialPageSize={8}
           isLoading={isLoading}
-          minHeight={200}
+          minHeight={350}
           showSearch={false}
           title="Browsers"
         />
@@ -1097,7 +1034,7 @@ export function WebsiteOverviewTab({
           description="OS breakdown"
           initialPageSize={8}
           isLoading={isLoading}
-          minHeight={200}
+          minHeight={350}
           showSearch={false}
           title="Operating Systems"
         />
