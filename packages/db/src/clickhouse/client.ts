@@ -1,5 +1,5 @@
-import type { LogParams, ErrorLogParams, WarnLogParams, Logger, ResponseJSON } from '@clickhouse/client';
-import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
+import type { ResponseJSON } from '@clickhouse/client';
+import { createClient } from '@clickhouse/client';
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
 
 
@@ -94,31 +94,27 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
   query: string,
   params?: Record<string, unknown>
 ): Promise<ResponseJSON<T>> {
-  const start = Date.now();
   const res = await clickHouse.query({
     query,
     query_params: params,
   });
-  const beforeParse = Date.now();
   const json = await res.json<T>();
-  const afterParse = Date.now();
   const keys = Object.keys(json.data[0] || {});
   const response = {
     ...json,
     data: json.data.map((item) => {
       return keys.reduce((acc, key) => {
         const meta = json.meta?.find((m) => m.name === key);
-        return Object.assign(acc, {
-          [key]:
-            item[key] && meta?.type.includes('Int')
-              ? Number.parseFloat(item[key] as string)
-              : item[key],
-        });
-      }, {} as T);
+        acc[key] =
+          item[key] && meta?.type.includes('Int')
+            ? Number.parseFloat(item[key] as string)
+            : item[key];
+        return acc;
+      }, {} as Record<string, any>);
     }),
   };
 
-  return response;
+  return response as ResponseJSON<T>;
 }
 
 export async function chQuery<T extends Record<string, any>>(

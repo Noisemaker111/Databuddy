@@ -1,19 +1,17 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 import { and, eq, isNull, desc, sql } from 'drizzle-orm';
-import { escape as sqlEscape } from 'sqlstring';
 import { TRPCError } from '@trpc/server';
 import { funnelDefinitions, chQuery } from '@databuddy/db';
 import { authorizeWebsiteAccess } from '../utils/auth';
 import { logger } from '../utils/discord-webhook';
 import { parseReferrer } from '../utils/referrer';
 
-// Validation schemas
 const funnelStepSchema = z.object({
     type: z.enum(['PAGE_VIEW', 'EVENT', 'CUSTOM']),
     target: z.string().min(1),
     name: z.string().min(1),
-    conditions: z.record(z.any()).optional(),
+    conditions: z.record(z.string(), z.any()).optional(),
 });
 
 const funnelFilterSchema = z.object({
@@ -52,7 +50,6 @@ const funnelAnalyticsSchema = z.object({
     endDate: z.string().optional(),
 });
 
-// Security - allowed fields for filtering
 const ALLOWED_FIELDS = new Set([
     'id', 'client_id', 'event_name', 'anonymous_id', 'time', 'session_id',
     'event_type', 'event_id', 'session_start_time', 'timestamp',
@@ -74,7 +71,6 @@ const ALLOWED_OPERATORS = new Set([
     'equals', 'contains', 'not_equals', 'in', 'not_in',
 ]);
 
-// Utility functions
 const buildFilterConditions = (
     filters: Array<{ field: string; operator: string; value: string | string[] }>,
     paramPrefix: string,
@@ -117,7 +113,6 @@ const getDefaultDateRange = () => {
 };
 
 export const funnelsRouter = createTRPCRouter({
-    // Get autocomplete data for funnel creation
     getAutocomplete: protectedProcedure
         .input(analyticsDateRangeSchema)
         .query(async ({ ctx, input }) => {
@@ -236,7 +231,6 @@ export const funnelsRouter = createTRPCRouter({
             }
         }),
 
-    // Get all funnels for a website
     list: protectedProcedure
         .input(z.object({ websiteId: z.string() }))
         .query(async ({ ctx, input }) => {
@@ -272,7 +266,6 @@ export const funnelsRouter = createTRPCRouter({
             }
         }),
 
-    // Get a specific funnel
     getById: protectedProcedure
         .input(z.object({ id: z.string(), websiteId: z.string() }))
         .query(async ({ ctx, input }) => {
@@ -311,7 +304,6 @@ export const funnelsRouter = createTRPCRouter({
             }
         }),
 
-    // Create a new funnel
     create: protectedProcedure
         .input(createFunnelSchema)
         .mutation(async ({ ctx, input }) => {
@@ -708,7 +700,6 @@ export const funnelsRouter = createTRPCRouter({
                 }>(sessionReferrerQuery, params);
 
 
-                // Group events by session
                 const sessionEvents = new Map<string, Array<{
                     step_number: number,
                     step_name: string,
@@ -723,7 +714,6 @@ export const funnelsRouter = createTRPCRouter({
                     sessionEvents.get(event.session_id)?.push(event);
                 }
 
-                // Group sessions strictly by lowercased domain (fallback to 'direct')
                 const referrerGroups = new Map<string, { parsed: ReturnType<typeof parseReferrer>, sessionIds: Set<string> }>();
                 for (const [sessionId, events] of sessionEvents) {
                     if (events.length > 0) {
@@ -740,7 +730,6 @@ export const funnelsRouter = createTRPCRouter({
                     }
                 }
 
-                // Calculate analytics for each referrer group
                 const referrerAnalytics = [];
                 for (const [groupKey, group] of referrerGroups) {
                     const stepCounts = new Map<number, Set<string>>();
@@ -771,7 +760,6 @@ export const funnelsRouter = createTRPCRouter({
                     });
                 }
 
-                // AGGREGATE BY DOMAIN
                 const aggregated = new Map<string, {
                     parsed: ReturnType<typeof parseReferrer>,
                     total_users: number,
@@ -780,7 +768,7 @@ export const funnelsRouter = createTRPCRouter({
                     conversion_rate_count: number
                 }>();
                 for (const { referrer, referrer_parsed, total_users, completed_users, conversion_rate } of referrerAnalytics) {
-                    const key = referrer; // This is the domain, e.g., "github.com"
+                    const key = referrer;
                     if (!aggregated.has(key)) {
                         aggregated.set(key, {
                             parsed: referrer_parsed,

@@ -1,11 +1,9 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 import { and, eq, isNull, desc, sql, inArray } from 'drizzle-orm';
-import { escape as sqlEscape } from 'sqlstring';
 import { TRPCError } from '@trpc/server';
 import { goals, chQuery } from '@databuddy/db';
 import { authorizeWebsiteAccess } from '../utils/auth';
-import { logger } from '../utils/discord-webhook';
 
 const goalSchema = z.object({
     type: z.enum(['PAGE_VIEW', 'EVENT', 'CUSTOM']),
@@ -66,7 +64,6 @@ const ALLOWED_OPERATORS = new Set([
     'equals', 'contains', 'not_equals', 'in', 'not_in',
 ]);
 
-// Refactored buildFilterConditions to use parameterized values
 const buildFilterConditions = (filters: Array<{ field: string; operator: string; value: string | string[] }>, paramPrefix: string, params: Record<string, unknown>) => {
     if (!filters || filters.length === 0) return '';
     const filterConditions = filters.map((filter, i) => {
@@ -105,7 +102,6 @@ const getDefaultDateRange = () => {
 };
 
 export const goalsRouter = createTRPCRouter({
-    // List all goals for a website
     list: protectedProcedure
         .input(z.object({ websiteId: z.string() }))
         .query(async ({ ctx, input }) => {
@@ -120,7 +116,6 @@ export const goalsRouter = createTRPCRouter({
                 .orderBy(desc(goals.createdAt));
             return result;
         }),
-    // Get a specific goal
     getById: protectedProcedure
         .input(z.object({ id: z.string(), websiteId: z.string() }))
         .query(async ({ ctx, input }) => {
@@ -139,7 +134,6 @@ export const goalsRouter = createTRPCRouter({
             }
             return result[0];
         }),
-    // Create a new goal
     create: protectedProcedure
         .input(createGoalSchema)
         .mutation(async ({ ctx, input }) => {
@@ -162,7 +156,6 @@ export const goalsRouter = createTRPCRouter({
 
             return newGoal;
         }),
-    // Update a goal
     update: protectedProcedure
         .input(updateGoalSchema)
         .mutation(async ({ ctx, input }) => {
@@ -192,7 +185,6 @@ export const goalsRouter = createTRPCRouter({
                 .returning();
             return updatedGoal;
         }),
-    // Delete a goal (soft delete)
     delete: protectedProcedure
         .input(z.object({ id: z.string() }))
         .mutation(async ({ ctx, input }) => {
@@ -220,7 +212,6 @@ export const goalsRouter = createTRPCRouter({
                 ));
             return { success: true };
         }),
-    // Get goal analytics (conversion rate)
     getAnalytics: protectedProcedure
         .input(analyticsDateRangeSchema)
         .query(async ({ ctx, input }) => {
@@ -305,7 +296,6 @@ export const goalsRouter = createTRPCRouter({
                 first_occurrence: number;
             }>(analysisQuery, params);
 
-            // Process the results to calculate analytics
             const sessionEvents = new Map<string, Array<{ step_number: number, step_name: string, first_occurrence: number }>>();
             for (const event of rawResults) {
                 if (!sessionEvents.has(event.session_id)) {
@@ -317,7 +307,6 @@ export const goalsRouter = createTRPCRouter({
                     first_occurrence: event.first_occurrence
                 });
             }
-            // Calculate analytics
             const stepCounts = new Map<number, Set<string>>();
             for (const [sessionId, events] of sessionEvents) {
                 events.sort((a, b) => a.first_occurrence - b.first_occurrence);
@@ -332,7 +321,6 @@ export const goalsRouter = createTRPCRouter({
                     }
                 }
             }
-            // Build analytics results
             const goalCompletions = stepCounts.get(1)?.size || 0;
             const conversion_rate = totalWebsiteUsers > 0 ? (goalCompletions / totalWebsiteUsers) * 100 : 0;
             const dropoffs = 0;
@@ -356,7 +344,6 @@ export const goalsRouter = createTRPCRouter({
                 steps_analytics: analyticsResults
             };
         }),
-    // Bulk analytics for multiple goals
     bulkAnalytics: protectedProcedure
         .input(z.object({
             websiteId: z.string(),
@@ -381,9 +368,8 @@ export const goalsRouter = createTRPCRouter({
             const params: Record<string, unknown> = {
                 websiteId: input.websiteId,
                 startDate,
-                endDate: endDate + ' 23:59:59',
+                endDate: `${endDate} 23:59:59`,
             };
-            // Get total unique users for the website in the date range
             const totalWebsiteUsersQuery = `
                 SELECT COUNT(DISTINCT session_id) as total_users
                 FROM analytics.events

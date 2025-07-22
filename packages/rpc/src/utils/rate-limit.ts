@@ -46,7 +46,6 @@ export class RateLimiter {
             }
 
             const prevWindowCount = results[0]?.[1] ? Number.parseInt(results[0][1] as string) : 0
-            const currentWindowCount = results[1]?.[1] ? Number.parseInt(results[1][1] as string) : 0
             const newCurrentWindowCount = results[2]?.[1] as number
 
             if (typeof newCurrentWindowCount !== 'number') {
