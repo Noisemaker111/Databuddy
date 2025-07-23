@@ -7,8 +7,8 @@ import { websites } from "@databuddy/db";
 import { cacheable } from "@databuddy/redis";
 import { auth } from "@databuddy/auth";
 import { createRateLimitMiddleware } from "../middleware/rate-limit";
+import { userPreferences } from "@databuddy/db";
 
-// Schema definitions
 const FilterSchema = t.Object({
     field: t.String(),
     op: t.Enum({
@@ -67,15 +67,26 @@ export const query = new Elysia({ prefix: '/v1/query' })
         const url = new URL(request.url);
         const website_id = url.searchParams.get('website_id');
 
-        // If no website_id provided, require auth
         if (!website_id) {
             if (!session?.user) {
                 throw new Error('Unauthorized');
             }
-            return { user: session.user, session };
+            let timezone = 'UTC';
+            if (session.user) {
+                const pref = await db.query.userPreferences.findFirst({
+                    where: eq(userPreferences.userId, session.user.id),
+                });
+                if (pref?.timezone && pref.timezone !== 'auto') {
+                    timezone = pref.timezone;
+                } else {
+                    timezone = request.headers.get('x-timezone') || url.searchParams.get('timezone') || 'UTC';
+                }
+            } else {
+                timezone = request.headers.get('x-timezone') || url.searchParams.get('timezone') || 'UTC';
+            }
+            return { user: session.user, session, timezone };
         }
 
-        // Get website info
         const website = await db.query.websites.findFirst({
             where: eq(websites.id, website_id),
         });
@@ -84,17 +95,29 @@ export const query = new Elysia({ prefix: '/v1/query' })
             throw new Error('Website not found');
         }
 
-        // Allow public websites without auth
         if (website.isPublic) {
-            return { user: null, session: null, website };
+            const timezone = request.headers.get('x-timezone') || url.searchParams.get('timezone') || 'UTC';
+            return { user: null, session: null, website, timezone };
         }
 
-        // Require auth for private websites
         if (!session?.user) {
             throw new Error('Unauthorized');
         }
 
-        return { user: session.user, session, website };
+        let timezone = 'UTC';
+        if (session.user) {
+            const pref = await db.query.userPreferences.findFirst({
+                where: eq(userPreferences.userId, session.user.id),
+            });
+            if (pref?.timezone && pref.timezone !== 'auto') {
+                timezone = pref.timezone;
+            } else {
+                timezone = request.headers.get('x-timezone') || url.searchParams.get('timezone') || 'UTC';
+            }
+        } else {
+            timezone = request.headers.get('x-timezone') || url.searchParams.get('timezone') || 'UTC';
+        }
+        return { user: session.user, session, website, timezone };
     })
     .get('/types', ({ user }) => ({
         success: true,
@@ -131,13 +154,13 @@ export const query = new Elysia({ prefix: '/v1/query' })
         body: CompileRequestSchema
     })
 
-    .post('/', async ({ body, query, user }) => {
+    .post('/', async ({ body, query, user, website, timezone }) => {
         try {
             if (Array.isArray(body)) {
                 const results = await Promise.all(
                     body.map(async (queryRequest) => {
                         try {
-                            return await executeDynamicQuery(queryRequest, query);
+                            return await executeDynamicQuery(queryRequest, { ...query, timezone });
                         } catch (error) {
                             return {
                                 success: false,
@@ -154,7 +177,7 @@ export const query = new Elysia({ prefix: '/v1/query' })
                 };
             }
 
-            const result = await executeDynamicQuery(body, query);
+            const result = await executeDynamicQuery(body, { ...query, timezone });
             return {
                 success: true,
                 ...result
