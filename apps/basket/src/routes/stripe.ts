@@ -1,6 +1,7 @@
 import { clickHouse, db, eq, userStripeConfig } from '@databuddy/db';
 import { Elysia } from 'elysia';
 import Stripe from 'stripe';
+import { logger } from '../lib/logger';
 
 /**
  * STRIPE CHECKOUT SETUP GUIDE
@@ -102,10 +103,9 @@ async function getStripeConfigByToken(
       isLiveMode: config.isLiveMode,
     };
   } catch (error) {
-    console.error(
-      `Error fetching Stripe config for token ${webhookToken}:`,
-      error
-    );
+    logger.error(`Error fetching Stripe config for token ${webhookToken}`, {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     return null;
   }
 }
@@ -145,7 +145,7 @@ async function handleWebhook(request: Request, set: any, config: StripeConfig) {
       return { error: 'Live/test mode mismatch' };
     }
 
-    console.log(`📦 Stripe webhook received for user ${config.userId}:`, {
+    logger.info(`📦 Stripe webhook received for user ${config.userId}:`, {
       type: event.type,
       id: event.id,
       livemode: event.livemode,
@@ -153,15 +153,24 @@ async function handleWebhook(request: Request, set: any, config: StripeConfig) {
 
     try {
       await processWebhookEvent(event, config);
-      console.log(`✅ Successfully processed ${event.type}`);
+      logger.info(`✅ Successfully processed ${event.type}`);
     } catch (processingError) {
-      console.error('❌ Error processing webhook event:', processingError);
+      logger.error('❌ Error processing webhook event:', {
+        error:
+          processingError instanceof Error
+            ? processingError.message
+            : 'Unknown error',
+      });
+      set.status = 500;
+      return { error: 'Error processing webhook event' };
     }
 
     set.status = 200;
     return { received: true, eventType: event.type };
   } catch (err) {
-    console.error('⚠️ Webhook signature verification failed:', err);
+    logger.error('⚠️ Webhook signature verification failed:', {
+      error: err instanceof Error ? err.message : 'Unknown error',
+    });
     logSecurityEvent(
       'signature_verification_failed',
       config.webhookToken,
@@ -203,7 +212,7 @@ async function processWebhookEvent(event: Stripe.Event, config: StripeConfig) {
   if (handler) {
     await handler(event.data.object as any);
   } else {
-    console.log(`🔄 Unhandled event type: ${event.type}`);
+    logger.info(`🔄 Unhandled event type: ${event.type}`);
   }
 }
 
@@ -274,7 +283,7 @@ async function insertPaymentIntent(
     session_id: sessionId,
   });
 
-  console.log(`✅ PaymentIntent ${pi.id} processed for client ${clientId}`);
+  logger.info(`✅ PaymentIntent ${pi.id} processed for client ${clientId}`);
 }
 
 async function insertCharge(charge: Stripe.Charge, config: StripeConfig) {
@@ -309,7 +318,7 @@ async function insertCharge(charge: Stripe.Charge, config: StripeConfig) {
     session_id: sessionId,
   });
 
-  console.log(`✅ Charge ${charge.id} processed for client ${clientId}`);
+  logger.info(`✅ Charge ${charge.id} processed for client ${clientId}`);
 }
 
 async function insertRefund(refund: Stripe.Refund, config: StripeConfig) {
@@ -336,7 +345,7 @@ async function insertRefund(refund: Stripe.Refund, config: StripeConfig) {
     session_id: sessionId,
   });
 
-  console.log(`✅ Refund ${refund.id} processed for client ${clientId}`);
+  logger.info(`✅ Refund ${refund.id} processed for client ${clientId}`);
 }
 
 function logSecurityEvent(
@@ -353,12 +362,9 @@ function logSecurityEvent(
   };
 
   if (IS_PRODUCTION) {
-    console.warn(`🚨 Security Event: ${eventType}`, logData);
+    logger.warn(`🚨 Security Event: ${eventType}`, logData);
   } else {
-    console.log(`🔍 Security Event (disabled): ${eventType}`, {
-      webhookToken,
-      ip,
-    });
+    logger.info(`🔍 Security Event (disabled): ${eventType}`, logData);
   }
 }
 
@@ -379,7 +385,9 @@ function logSecurityEvent(
 //             })
 //             .where(eq(userStripeConfig.webhookToken, webhookToken))
 //     } catch (error) {
-//         console.error('Error updating webhook success:', error)
+//         logger.error('Error updating webhook success:', {
+//             error: error instanceof Error ? error.message : 'Unknown error',
+//         });
 //     }
 // }
 
@@ -398,7 +406,9 @@ function logSecurityEvent(
 //             })
 //             .where(eq(userStripeConfig.webhookToken, webhookToken))
 //     } catch (error) {
-//         console.error('Error updating webhook failure:', error)
+//         logger.error('Error updating webhook failure:', {
+//             error: error instanceof Error ? error.message : 'Unknown error',
+//         });
 //     }
 // }
 

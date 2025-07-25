@@ -6,7 +6,9 @@ const resolutionSchema = z
   .regex(resolutionRegex, "Must be in the format 'WIDTHxHEIGHT'")
   .refine((val) => {
     const match = val.match(resolutionRegex);
-    if (!match) return false;
+    if (!match) {
+      return false;
+    }
     const width = Number(match[1]);
     const height = Number(match[2]);
     return width >= 240 && width <= 10_000 && height >= 240 && height <= 10_000;

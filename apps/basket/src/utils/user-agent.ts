@@ -5,7 +5,7 @@
  * and platform identification.
  */
 
-import { bots } from '@databuddy/shared';
+import { bots, logger } from '@databuddy/shared';
 import { UAParser } from 'ua-parser-js';
 
 export interface UserAgentInfo {
@@ -57,7 +57,13 @@ export function parseUserAgent(userAgent: string): {
       deviceModel: result.device.model || undefined,
     };
   } catch (error) {
-    // If parsing fails, return undefined values
+    logger.error(
+      'User Agent Parse Error',
+      `Failed to parse user agent: ${userAgent}`,
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    );
     return {
       browserName: undefined,
       browserVersion: undefined,

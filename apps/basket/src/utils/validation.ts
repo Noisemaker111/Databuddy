@@ -4,9 +4,8 @@
  * Provides reusable validation and sanitization functions for analytics data.
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
-// Constants for validation limits
 export const VALIDATION_LIMITS = {
   STRING_MAX_LENGTH: 2048,
   SHORT_STRING_MAX_LENGTH: 255,
@@ -19,7 +18,6 @@ export const VALIDATION_LIMITS = {
   TIMEZONE_MAX_LENGTH: 64,
 } as const;
 
-// Safe header whitelist
 export const SAFE_HEADERS = new Set([
   'user-agent',
   'referer',
@@ -53,7 +51,6 @@ export function sanitizeString(input: unknown, maxLength?: number): string {
     .split('')
     .filter((char) => {
       const code = char.charCodeAt(0);
-      // Remove control characters (0-8, 11, 12, 14-31, 127)
       return !(
         code <= 8 ||
         code === 11 ||
@@ -63,23 +60,28 @@ export function sanitizeString(input: unknown, maxLength?: number): string {
       );
     })
     .join('')
-    .replace(/[<>'"&]/g, '') // Remove potential XSS characters
-    .replace(/\s+/g, ' '); // Normalize whitespace
+    .replace(/[<>'"&]/g, '')
+    .replace(/\s+/g, ' ');
 }
+
+const timezoneRegex = /^[A-Za-z_/+-]{1,64}$/;
+const languageRegex = /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/;
+const sessionIdRegex = /^[a-zA-Z0-9_-]+$/;
+const resolutionRegex = /^\d{1,5}x\d{1,5}$/;
 
 /**
  * Validates and sanitizes timezone strings
  */
 export function validateTimezone(timezone: unknown): string {
-  if (typeof timezone !== 'string') return '';
+  if (typeof timezone !== 'string') {
+    return '';
+  }
 
   const sanitized = sanitizeString(
     timezone,
     VALIDATION_LIMITS.TIMEZONE_MAX_LENGTH
   );
 
-  // Basic timezone format validation (IANA timezone format)
-  const timezoneRegex = /^[A-Za-z_/+-]{1,64}$/;
   if (!timezoneRegex.test(sanitized)) {
     return '';
   }
@@ -92,10 +94,10 @@ export function validateTimezone(timezone: unknown): string {
  */
 export function validateTimezoneOffset(offset: unknown): number | null {
   if (typeof offset === 'number') {
-    // Timezone offset should be between -12 and +14 hours in minutes
     if (offset >= -12 * 60 && offset <= 14 * 60) {
       return Math.round(offset);
     }
+    return null;
   }
   return null;
 }
@@ -104,15 +106,15 @@ export function validateTimezoneOffset(offset: unknown): number | null {
  * Validates and sanitizes language strings
  */
 export function validateLanguage(language: unknown): string {
-  if (typeof language !== 'string') return '';
+  if (typeof language !== 'string') {
+    return '';
+  }
 
   const sanitized = sanitizeString(
     language,
     VALIDATION_LIMITS.LANGUAGE_MAX_LENGTH
   );
 
-  // Basic language tag validation (RFC 5646)
-  const languageRegex = /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/;
   if (!languageRegex.test(sanitized)) {
     return '';
   }
@@ -124,15 +126,15 @@ export function validateLanguage(language: unknown): string {
  * Validates session ID format
  */
 export function validateSessionId(sessionId: unknown): string {
-  if (typeof sessionId !== 'string') return '';
+  if (typeof sessionId !== 'string') {
+    return '';
+  }
 
   const sanitized = sanitizeString(
     sessionId,
     VALIDATION_LIMITS.SESSION_ID_MAX_LENGTH
   );
 
-  // Session ID should be alphanumeric with hyphens/underscores
-  const sessionIdRegex = /^[a-zA-Z0-9_-]+$/;
   if (!sessionIdRegex.test(sanitized)) {
     return '';
   }
@@ -144,7 +146,9 @@ export function validateSessionId(sessionId: unknown): string {
  * Validates and sanitizes UTM parameters
  */
 export function validateUtmParameter(utm: unknown): string {
-  if (typeof utm !== 'string') return '';
+  if (typeof utm !== 'string') {
+    return '';
+  }
 
   return sanitizeString(utm, VALIDATION_LIMITS.UTM_MAX_LENGTH);
 }
@@ -179,13 +183,14 @@ export function validateNumeric(
  * Validates URL format
  */
 export function validateUrl(url: unknown): string {
-  if (typeof url !== 'string') return '';
+  if (typeof url !== 'string') {
+    return '';
+  }
 
   const sanitized = sanitizeString(url);
 
   try {
     const parsed = new URL(sanitized);
-    // Only allow http/https protocols
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return '';
     }
@@ -236,16 +241,16 @@ export function validateProperties(
   const validated: Record<string, unknown> = {};
   const props = properties as Record<string, unknown>;
 
-  // Limit number of properties to prevent DoS
   const keys = Object.keys(props).slice(0, 100);
 
   for (const key of keys) {
     const sanitizedKey = sanitizeString(key, 128);
-    if (!sanitizedKey) continue;
+    if (!sanitizedKey) {
+      continue;
+    }
 
     const value = props[key];
 
-    // Validate different value types
     if (typeof value === 'string') {
       validated[sanitizedKey] = sanitizeString(value);
     } else if (typeof value === 'number') {
@@ -255,7 +260,6 @@ export function validateProperties(
     } else if (value === null || value === undefined) {
       validated[sanitizedKey] = null;
     }
-    // Skip complex objects/arrays for security
   }
 
   return validated;
@@ -272,7 +276,7 @@ export const analyticsEventSchema = z.object({
       .string()
       .max(VALIDATION_LIMITS.SESSION_ID_MAX_LENGTH)
       .optional(),
-    properties: z.record(z.unknown()).optional(),
+    properties: z.record(z.string(), z.unknown()).optional(),
     property: z
       .string()
       .max(VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH)
@@ -304,17 +308,18 @@ export function validatePayloadSize(
  * Performance metrics validation
  */
 export function validatePerformanceMetric(value: unknown): number | undefined {
-  return validateNumeric(value, 0, 300_000) as number | undefined; // Max 5 minutes in milliseconds
+  return validateNumeric(value, 0, 300_000) as number | undefined;
 }
 
 /**
  * Validates screen resolution format
  */
 export function validateScreenResolution(resolution: unknown): string {
-  if (typeof resolution !== 'string') return '';
+  if (typeof resolution !== 'string') {
+    return '';
+  }
 
   const sanitized = sanitizeString(resolution, 32);
-  const resolutionRegex = /^\d{1,5}x\d{1,5}$/;
 
   return resolutionRegex.test(sanitized) ? sanitized : '';
 }
@@ -323,7 +328,7 @@ export function validateScreenResolution(resolution: unknown): string {
  * Validates viewport size format
  */
 export function validateViewportSize(viewport: unknown): string {
-  return validateScreenResolution(viewport); // Same format as screen resolution
+  return validateScreenResolution(viewport);
 }
 
 /**

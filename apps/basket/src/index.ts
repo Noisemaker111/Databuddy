@@ -15,7 +15,7 @@ const app = new Elysia()
       )
     );
   })
-  .onBeforeHandle(async ({ request, set }) => {
+  .onBeforeHandle(({ request, set }) => {
     // const { isBot } = await checkBotId();
     // if (isBot) {
     //   return new Response(null, { status: 403 });
