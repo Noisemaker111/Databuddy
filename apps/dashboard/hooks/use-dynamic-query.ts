@@ -611,11 +611,11 @@ export function useMapLocationData(
       parameters: ["country"],
       limit: 100,
     },
-    // {
-    //   id: "map-regions",
-    //   parameters: ["region"],
-    //   limit: 100,
-    // },
+    {
+      id: "map-regions",
+      parameters: ["region"],
+      limit: 100,
+    },
   ];
 
   return useBatchDynamicQuery(websiteId, dateRange, queries, options);
