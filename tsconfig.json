@@ -2,9 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
     "esModuleInterop": true,
     "strictNullChecks": true
@@ -17,11 +15,7 @@
     ".turbo",
     "**/node_modules"
   ],
-  "include": [
-    "apps/**/*",
-    "packages/**/*",
-    "lib"
-  ],
+  "include": ["apps/**/*", "packages/**/*", "lib"],
   "skipLibCheck": true,
   "noResolve": true,
   "noImplicitAny": false

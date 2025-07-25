@@ -10,16 +10,16 @@ import { CustomEventsBuilders } from "./custom-events";
 import { ProfilesBuilders } from "./profiles";
 
 export const QueryBuilders = {
-    ...SummaryBuilders,
-    ...PagesBuilders,
-    ...TrafficBuilders,
-    ...DevicesBuilders,
-    ...GeoBuilders,
-    ...ErrorsBuilders,
-    ...PerformanceBuilders,
-    ...SessionsBuilders,
-    ...CustomEventsBuilders,
-    ...ProfilesBuilders
+	...SummaryBuilders,
+	...PagesBuilders,
+	...TrafficBuilders,
+	...DevicesBuilders,
+	...GeoBuilders,
+	...ErrorsBuilders,
+	...PerformanceBuilders,
+	...SessionsBuilders,
+	...CustomEventsBuilders,
+	...ProfilesBuilders,
 };
 
-export type QueryType = keyof typeof QueryBuilders; 
+export type QueryType = keyof typeof QueryBuilders;
