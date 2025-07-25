@@ -608,12 +608,12 @@ export function useMapLocationData(
   const queries: DynamicQueryRequest[] = [
     {
       id: "map-countries",
-      parameters: ["countries"],
+      parameters: ["country"],
       limit: 100,
     },
     {
       id: "map-regions",
-      parameters: ["regions"],
+      parameters: ["region"],
       limit: 100,
     },
   ];

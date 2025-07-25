@@ -1,7 +1,7 @@
 import type { SimpleQueryConfig } from "../types";
 import { Analytics } from "../../types/tables";
 
-export const GeoBuilders: Record<string, SimpleQueryConfig<typeof Analytics.events>> = {
+export const GeoBuilders: Record<string, SimpleQueryConfig> = {
     country: {
         table: Analytics.events,
         fields: [

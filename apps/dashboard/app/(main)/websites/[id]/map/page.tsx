@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Globe, HelpCircle, MapPin } from "lucide-react";
+import { GlobeIcon, MapPinIcon, QuestionIcon } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMapLocationData } from "@/hooks/use-dynamic-query";
 import { cn } from "@/lib/utils";
 import { WebsitePageHeader } from "../_components/website-page-header";
+import { CountryFlag } from "@/components/analytics/icons/CountryFlag";
 
 interface CountryData {
   country: string;
@@ -50,24 +51,24 @@ function WebsiteMapPage() {
   const { id } = useParams<{ id: string }>();
   const [mode, setMode] = useState<"total" | "perCapita">("total");
 
-  if (!id) {
-    return <div>No website ID</div>;
-  }
-
-  const { results, isLoading, getDataForQuery } = useMapLocationData(id, {
+  const { isLoading, getDataForQuery } = useMapLocationData(id, {
     start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     end_date: new Date().toISOString().split('T')[0],
     granularity: 'daily'
   });
 
+  if (!id) {
+    return <div>No website ID</div>;
+  }
+
   const locationData: LocationData = {
-    countries: (getDataForQuery("map-countries", "countries") || []).map((item: { name: string; visitors: number; pageviews: number; country_code?: string; country_name?: string }) => ({
+    countries: (getDataForQuery("map-countries", "country") || []).map((item: { name: string; visitors: number; pageviews: number; country_code?: string; country_name?: string }) => ({
       country: item.country_name || item.name,
       country_code: item.country_code || item.name,
       visitors: item.visitors,
       pageviews: item.pageviews,
     })),
-    regions: (getDataForQuery("map-regions", "regions") || []).map((item: { name: string; visitors: number; pageviews: number }) => ({
+    regions: (getDataForQuery("map-regions", "region") || []).map((item: { name: string; visitors: number; pageviews: number }) => ({
       country: item.name,
       visitors: item.visitors,
       pageviews: item.pageviews,
@@ -86,7 +87,7 @@ function WebsiteMapPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <WebsitePageHeader
           title="Geographic Data"
-          icon={<Globe className="h-5 w-5 text-primary" />}
+          icon={<GlobeIcon className="h-5 w-5 text-primary" weight="duotone" aria-label="Globe" />}
           websiteId={id}
           variant="minimal"
           subtitle={!isLoading && totalVisitors > 0 ? `${totalVisitors.toLocaleString()} visitors across ${topCountries.length} countries` : undefined}
@@ -124,7 +125,7 @@ function WebsiteMapPage() {
           <CardHeader className="flex-shrink-0 pb-3">
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
+                <MapPinIcon className="h-4 w-4" weight="duotone" aria-label="World Map" />
                 World Map
               </span>
               <Badge className="text-xs" variant="secondary">
@@ -145,7 +146,7 @@ function WebsiteMapPage() {
         <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded md:w-72 md:flex-none">
           <CardHeader className="flex-shrink-0 pb-3">
             <CardTitle className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
+              <GlobeIcon className="h-4 w-4" weight="duotone" aria-label="Top Countries" />
               Top Countries
             </CardTitle>
           </CardHeader>
@@ -220,7 +221,7 @@ function WebsiteMapPage() {
                     <div className="flex items-center justify-between p-3">
                       <div className="flex min-w-0 flex-1 items-center gap-3">
                         <div className="flex h-4 w-6 flex-shrink-0 items-center justify-center rounded bg-muted">
-                          <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                          <QuestionIcon className="h-3 w-3 text-muted-foreground" weight="duotone" aria-label="Unknown" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="font-medium text-sm">Unknown</div>
@@ -244,7 +245,7 @@ function WebsiteMapPage() {
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="mb-4">
                       <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/20">
-                        <Globe className="h-7 w-7 text-muted-foreground/50" />
+                        <GlobeIcon className="h-7 w-7 text-muted-foreground/50" weight="duotone" aria-label="No Data" />
                       </div>
                     </div>
                     <h4 className="mb-2 font-medium text-base text-foreground">

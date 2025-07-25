@@ -16,9 +16,8 @@ import {
   Search,
   X,
 } from "lucide-react";
-import React, { Fragment, useCallback, useMemo, useRef, useState, useEffect } from "react";
+import React, { Fragment, useCallback, useRef, useState, useEffect } from "react";
 import ReactDOM from "react-dom";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
