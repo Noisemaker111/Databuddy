@@ -86,7 +86,7 @@ class DiscordWebhook {
 	/**
 	 * Send a simple text message
 	 */
-	async sendMessage(
+	sendMessage(
 		content: string,
 		options: Partial<DiscordWebhookMessage> = {}
 	): Promise<boolean> {
@@ -101,7 +101,7 @@ class DiscordWebhook {
 	/**
 	 * Send a message with embed
 	 */
-	async sendEmbed(
+	sendEmbed(
 		embed: DiscordEmbed,
 		options: Partial<DiscordWebhookMessage> = {}
 	): Promise<boolean> {
@@ -116,7 +116,7 @@ class DiscordWebhook {
 	/**
 	 * Send a log message with proper formatting
 	 */
-	async sendLog(logMessage: LogMessage): Promise<boolean> {
+	sendLog(logMessage: LogMessage): Promise<boolean> {
 		const {
 			level,
 			title,
@@ -171,7 +171,7 @@ class DiscordWebhook {
 	/**
 	 * Quick log methods for different levels
 	 */
-	async logInfo(
+	logInfo(
 		title: string,
 		message: string,
 		metadata?: Record<string, unknown>
@@ -179,7 +179,7 @@ class DiscordWebhook {
 		return this.sendLog({ level: 'info', title, message, metadata });
 	}
 
-	async logSuccess(
+	logSuccess(
 		title: string,
 		message: string,
 		metadata?: Record<string, unknown>
@@ -187,7 +187,7 @@ class DiscordWebhook {
 		return this.sendLog({ level: 'success', title, message, metadata });
 	}
 
-	async logWarning(
+	logWarning(
 		title: string,
 		message: string,
 		metadata?: Record<string, unknown>
@@ -195,7 +195,7 @@ class DiscordWebhook {
 		return this.sendLog({ level: 'warning', title, message, metadata });
 	}
 
-	async logError(
+	logError(
 		title: string,
 		message: string,
 		metadata?: Record<string, unknown>
@@ -203,7 +203,7 @@ class DiscordWebhook {
 		return this.sendLog({ level: 'error', title, message, metadata });
 	}
 
-	async logDebug(
+	logDebug(
 		title: string,
 		message: string,
 		metadata?: Record<string, unknown>
@@ -214,7 +214,7 @@ class DiscordWebhook {
 	/**
 	 * Send user activity log
 	 */
-	async logUserActivity(
+	logUserActivity(
 		action: string,
 		userId: string,
 		details?: Record<string, unknown>
@@ -231,7 +231,7 @@ class DiscordWebhook {
 	/**
 	 * Send error with stack trace
 	 */
-	async logException(
+	logException(
 		error: Error,
 		context?: Record<string, unknown>
 	): Promise<boolean> {
@@ -252,7 +252,7 @@ class DiscordWebhook {
 	/**
 	 * Send system notification
 	 */
-	async sendSystemNotification(
+	sendSystemNotification(
 		title: string,
 		message: string,
 		level: LogLevel = 'info'
@@ -273,7 +273,7 @@ class DiscordWebhook {
 	/**
 	 * Core send method with rate limiting
 	 */
-	private async send(payload: DiscordWebhookMessage): Promise<boolean> {
+	private send(payload: DiscordWebhookMessage): Promise<boolean> {
 		return new Promise((resolve) => {
 			this.rateLimitQueue.push(async () => {
 				try {

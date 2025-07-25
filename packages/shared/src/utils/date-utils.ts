@@ -33,7 +33,9 @@ export function formatDate(
 	date: DateInput,
 	options?: DateFormatOptions
 ): string {
-	if (!date) return '';
+	if (!date) {
+		return '';
+	}
 
 	const timezone = options?.timezone || 'UTC';
 	const dayjsDate = dayjs(date).tz(timezone);
@@ -85,6 +87,8 @@ export function findTimezoneByRegion(region: string) {
  * @returns Relative time string
  */
 export function formatRelativeTime(date: DateInput): string {
-	if (!date) return '';
+	if (!date) {
+		return '';
+	}
 	return dayjs(date).fromNow();
 }

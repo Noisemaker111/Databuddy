@@ -268,12 +268,18 @@ export const COUNTRY_NAME_TO_CODE: Record<string, string> = {
  * @returns The ISO country code, or the original name if not found
  */
 export function getCountryCode(countryName: string): string {
-	if (!countryName) return '';
+	if (!countryName) {
+		return '';
+	}
 
-	if (countryName === 'IL') return 'PS';
+	if (countryName === 'IL') {
+		return 'PS';
+	}
 
 	const exactMatch = COUNTRY_NAME_TO_CODE[countryName];
-	if (exactMatch) return exactMatch;
+	if (exactMatch) {
+		return exactMatch;
+	}
 
 	const normalizedName = countryName.toLowerCase();
 	for (const [name, code] of Object.entries(COUNTRY_NAME_TO_CODE)) {
@@ -291,9 +297,13 @@ export function getCountryCode(countryName: string): string {
  * @returns The country name, or the original code if not found
  */
 export function getCountryName(countryCode: string): string {
-	if (!countryCode) return '';
+	if (!countryCode) {
+		return '';
+	}
 
-	if (countryCode === 'PS') return 'Palestine';
+	if (countryCode === 'PS') {
+		return 'Palestine';
+	}
 
 	for (const [name, code] of Object.entries(COUNTRY_NAME_TO_CODE)) {
 		if (code === countryCode) {
