@@ -19,6 +19,7 @@ import { useEnhancedPerformanceData } from "@/hooks/use-dynamic-query";
 import { calculatePerformanceSummary } from "@/lib/performance-utils";
 import type { PerformanceEntry, PerformanceSummary } from "@/types/performance";
 import type { FullTabProps } from "../utils/types";
+import { getCountryCode, getCountryName } from "@databuddy/shared";
 
 const getPerformanceRating = (score: number): { rating: string; className: string } => {
   if (score >= 90) return { rating: "Excellent", className: "text-green-500" };
@@ -336,10 +337,26 @@ export function WebsitePerformanceTab({
       return <CountryFlag country={item?.country_code || name} size={16} />;
     };
 
+    const getRegionCountryIcon = (name: string) => {
+      const countryPart = name.split(",")[1]?.trim();
+      const code = getCountryCode(countryPart || "");
+      return <CountryFlag country={code} size={16} />;
+    };
+
+    const formatRegionName = (name: string) => {
+      const [region, countryPart] = name.split(",").map(s => s.trim());
+      const code = getCountryCode(countryPart || "");
+      const countryName = getCountryName(code);
+      if (countryName && region && countryName.toLowerCase() === region.toLowerCase()) {
+        return countryName;
+      }
+      return countryName ? `${region}, ${countryName}` : name;
+    };
+
     const configs = [
       { id: "pages", label: "Pages", data: processedData.pages, iconRenderer: undefined, nameFormatter: formatPageName },
       { id: "countries", label: "Country", data: processedData.countries, iconRenderer: getCountryIcon },
-      { id: "regions", label: "Regions", data: processedData.regions, iconRenderer: () => <MapPin className="h-4 w-4 text-primary" /> },
+      { id: "regions", label: "Regions", data: processedData.regions, iconRenderer: getRegionCountryIcon, nameFormatter: formatRegionName },
       { id: "devices", label: "Device Types", data: processedData.devices, iconRenderer: getDeviceIcon },
       { id: "browsers", label: "Browsers", data: processedData.browsers, iconRenderer: (name: string) => <BrowserIcon name={name} size="sm" /> },
       { id: "operating_systems", label: "Operating Systems", data: processedData.operating_systems, iconRenderer: (name: string) => <OSIcon name={name} size="sm" /> },
