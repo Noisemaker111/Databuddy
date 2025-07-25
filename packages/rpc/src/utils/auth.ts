@@ -1,3 +1,4 @@
+import { websitesApi } from '@databuddy/auth';
 import { db, eq, websites } from '@databuddy/db';
 import { cacheable } from '@databuddy/redis';
 import { TRPCError } from '@trpc/server';
@@ -8,7 +9,9 @@ type Permission = 'read' | 'update' | 'delete' | 'transfer';
 const getWebsiteById = cacheable(
   async (id: string) => {
     try {
-      if (!id) return null;
+      if (!id) {
+        return null;
+      }
       return await db.query.websites.findFirst({
         where: eq(websites.id, id),
       });
@@ -59,7 +62,7 @@ export async function authorizeWebsiteAccess(
   }
 
   if (website.organizationId) {
-    const { success } = await ctx.auth.api.hasPermission({
+    const { success } = await websitesApi.hasPermission({
       headers: ctx.headers,
       body: { permissions: { website: [permission] } },
     });

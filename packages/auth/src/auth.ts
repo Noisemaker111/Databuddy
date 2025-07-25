@@ -272,6 +272,10 @@ export const auth = betterAuth({
   ],
 });
 
+export const websitesApi = {
+  hasPermission: auth.api.hasPermission,
+};
+
 export type User = (typeof auth)['$Infer']['Session']['user'] & {
   role?: string;
 };

@@ -1,3 +1,4 @@
+import { websitesApi } from '@databuddy/auth';
 import { and, chQuery, eq, isNull, websites } from '@databuddy/db';
 import { createDrizzleCache, redis } from '@databuddy/redis';
 import { TRPCError } from '@trpc/server';
@@ -88,7 +89,7 @@ export const websitesRouter = createTRPCRouter({
               );
           return ctx.db.query.websites.findMany({
             where,
-            orderBy: (websites, { desc }) => [desc(websites.createdAt)],
+            orderBy: (table, { desc }) => [desc(table.createdAt)],
           });
         },
       });
@@ -102,7 +103,7 @@ export const websitesRouter = createTRPCRouter({
         key: cacheKey,
         ttl: 60,
         tables: ['websites'],
-        queryFn: async () => authorizeWebsiteAccess(ctx, input.id, 'read'),
+        queryFn: () => authorizeWebsiteAccess(ctx, input.id, 'read'),
       });
     }),
 
@@ -110,7 +111,7 @@ export const websitesRouter = createTRPCRouter({
     .input(createWebsiteSchema)
     .mutation(async ({ ctx, input }) => {
       if (input.organizationId) {
-        const { success } = await ctx.auth.api.hasPermission({
+        const { success } = await websitesApi.hasPermission({
           headers: ctx.headers,
           body: { permissions: { website: ['create'] } },
         });
@@ -254,14 +255,10 @@ export const websitesRouter = createTRPCRouter({
   transfer: protectedProcedure
     .input(transferWebsiteSchema)
     .mutation(async ({ ctx, input }) => {
-      const website = await authorizeWebsiteAccess(
-        ctx,
-        input.websiteId,
-        'update'
-      );
+      await authorizeWebsiteAccess(ctx, input.websiteId, 'update');
 
       if (input.organizationId) {
-        const { success } = await ctx.auth.api.hasPermission({
+        const { success } = await websitesApi.hasPermission({
           headers: ctx.headers,
           body: { permissions: { website: ['create'] } },
         });
