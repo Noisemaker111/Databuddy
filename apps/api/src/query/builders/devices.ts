@@ -1,7 +1,7 @@
-import type { SimpleQueryConfig } from "../types";
 import { Analytics } from "../../types/tables";
+import type { SimpleQueryConfig } from "../types";
 
-export const DevicesBuilders: Record<string, SimpleQueryConfig<typeof Analytics.events>> = {
+export const DevicesBuilders: Record<string, SimpleQueryConfig> = {
     browser_name: {
         table: Analytics.events,
         fields: [

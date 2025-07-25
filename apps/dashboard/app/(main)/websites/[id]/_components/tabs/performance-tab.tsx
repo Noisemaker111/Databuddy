@@ -286,9 +286,12 @@ export function WebsitePerformanceTab({
       };
     }
 
-    const data = performanceResults
+    const data: Record<string, any> = {};
+    performanceResults
       .filter(result => result.success && result.data)
-      .reduce((acc, result) => Object.assign(acc, result.data), {} as Record<string, any>);
+      .forEach(result => {
+        Object.assign(data, result.data);
+      });
 
     const allPages = data.slow_pages || [];
     const filteredPages = filterPagesByPerformance(allPages, activeFilter);
