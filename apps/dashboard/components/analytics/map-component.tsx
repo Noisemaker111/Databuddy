@@ -7,7 +7,7 @@ import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GeoJSON, MapContainer } from "react-leaflet";
 import { getCountryPopulation } from "@/lib/data";
-import { useCountries, useSubdivisions } from "@/lib/geo";
+import { useCountries } from "@/lib/geo";
 import { CountryFlag } from "./icons/CountryFlag";
 
 interface TooltipContent {
@@ -58,39 +58,13 @@ export function MapComponent({
     };
   }, [locationsData?.countries]);
 
-  const subdivisionData = useMemo(() => {
-    if (!locationsData?.cities) return null;
-
-    const regions: Record<string, { visitors: number; pageviews: number }> = {};
-
-    for (const city of locationsData.cities) {
-      const regionKey = `${city.country}-${city.region}`;
-      if (!regions[regionKey]) {
-        regions[regionKey] = { visitors: 0, pageviews: 0 };
-      }
-      regions[regionKey].visitors += city.visitors;
-      regions[regionKey].pageviews += city.pageviews;
-    }
-
-    return {
-      data: Object.entries(regions).map(([key, data]) => ({
-        value: key,
-        count: data.visitors,
-        percentage:
-          (data.visitors /
-            (locationsData.cities.reduce((sum: number, c: any) => sum + c.visitors, 0) || 1)) *
-          100,
-      })),
-    };
-  }, [locationsData?.cities]);
-
   const [dataVersion, setDataVersion] = useState<number>(0);
 
   useEffect(() => {
-    if (countryData || subdivisionData) {
+    if (countryData) {
       setDataVersion((prev) => prev + 1);
     }
-  }, [countryData, subdivisionData]);
+  }, [countryData]);
 
   const [tooltipContent, setTooltipContent] = useState<TooltipContent | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<TooltipPosition>({
@@ -144,7 +118,6 @@ export function MapComponent({
     };
   }, [processedCountryData, mode]);
 
-  const { data: subdivisionsGeoData } = useSubdivisions();
   const { data: countriesGeoData } = useCountries();
 
   const handleStyle = (feature: Feature<any>) => {
@@ -252,7 +225,7 @@ export function MapComponent({
         </div>
       )}
 
-      {(countriesGeoData || subdivisionsGeoData) && (
+      {(countriesGeoData) && (
         <MapContainer
           attributionControl={false}
           center={[40, 3]}
