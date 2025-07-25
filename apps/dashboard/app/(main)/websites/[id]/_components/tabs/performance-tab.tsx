@@ -1,10 +1,9 @@
 "use client";
 
-import { Question } from "@phosphor-icons/react";
+import { QuestionIcon } from "@phosphor-icons/react";
 import {
   AlertTriangle,
   CheckCircle,
-  MapPin,
   Monitor,
   Smartphone,
   TrendingUp,
@@ -148,7 +147,7 @@ const PerformanceSummaryCard = ({
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>
-                <Question className="h-3 w-3 text-muted-foreground" />
+                <QuestionIcon className="h-3 w-3 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
                 <p>A weighted score based on page load times and visitor counts.</p>

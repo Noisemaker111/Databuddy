@@ -21,6 +21,13 @@
 			}
 		}
 	},
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": "off"
+			}
+		}
+	},
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double"
