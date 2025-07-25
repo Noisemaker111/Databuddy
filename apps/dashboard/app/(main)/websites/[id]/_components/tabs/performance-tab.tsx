@@ -21,6 +21,9 @@ import type { FullTabProps } from "../utils/types";
 import { getCountryCode, getCountryName } from "@databuddy/shared";
 
 const getPerformanceRating = (score: number): { rating: string; className: string } => {
+  if (typeof score !== "number" || Number.isNaN(score)) {
+    return { rating: "Unknown", className: "text-muted-foreground" };
+  }
   if (score >= 90) return { rating: "Excellent", className: "text-green-500" };
   if (score >= 70) return { rating: "Good", className: "text-green-500" };
   if (score >= 50) return { rating: "Moderate", className: "text-yellow-500" };
@@ -337,14 +340,23 @@ export function WebsitePerformanceTab({
     };
 
     const getRegionCountryIcon = (name: string) => {
+      if (typeof name !== "string" || !name.includes(",")) {
+        return <CountryFlag country={""} size={16} />;
+      }
       const countryPart = name.split(",")[1]?.trim();
       const code = getCountryCode(countryPart || "");
       return <CountryFlag country={code} size={16} />;
     };
 
     const formatRegionName = (name: string) => {
+      if (typeof name !== "string" || !name.includes(",")) {
+        return name || "Unknown region";
+      }
       const [region, countryPart] = name.split(",").map(s => s.trim());
-      const code = getCountryCode(countryPart || "");
+      if (!region || !countryPart) {
+        return name || "Unknown region";
+      }
+      const code = getCountryCode(countryPart);
       const countryName = getCountryName(code);
       if (countryName && region && countryName.toLowerCase() === region.toLowerCase()) {
         return countryName;

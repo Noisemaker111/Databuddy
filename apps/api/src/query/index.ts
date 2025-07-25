@@ -17,7 +17,8 @@ const QuerySchema = z.object({
     groupBy: z.array(z.string()).optional(),
     orderBy: z.string().optional(),
     limit: z.number().min(1).max(1000).optional(),
-    offset: z.number().min(0).optional()
+    offset: z.number().min(0).optional(),
+    timezone: z.string().optional()
 });
 
 export const executeQuery = async (request: QueryRequest, websiteDomain?: string | null, timezone?: string) => {
