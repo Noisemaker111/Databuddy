@@ -517,9 +517,7 @@ async function logBlockedTraffic(
 				format: 'JSONEachRow',
 			})
 			.then(() => {
-				logger.info('Logged blocked traffic', {
-					blockedEvent,
-				});
+				logger.info('Logged blocked traffic', { blockedEvent });
 			})
 			.catch((err) => {
 				logger.error('Failed to log blocked traffic', { error: err as Error });
