@@ -64,7 +64,7 @@ async function _resolveOwnerId(website: Website): Promise<string | null> {
 
 const getOwnerId = cacheable(
 	async (website: Website): Promise<string | null> => {
-		return _resolveOwnerId(website);
+		return await _resolveOwnerId(website);
 	},
 	{
 		expireInSec: 300,
@@ -149,7 +149,9 @@ export function isValidOrigin(
  * @throws {Error} if the domain format is invalid.
  */
 export function normalizeDomain(domain: string): string {
-	if (!domain) return '';
+	if (!domain) {
+		return '';
+	}
 	let urlString = domain.toLowerCase().trim();
 
 	// Ensure there's a protocol for the URL constructor to work correctly.
@@ -327,7 +329,7 @@ const getWebsiteByIdCached = cacheable(
 
 const getOwnerIdCached = cacheable(
 	async (website: Website): Promise<string | null> => {
-		return _resolveOwnerId(website);
+		return await _resolveOwnerId(website);
 	},
 	{
 		expireInSec: 300,
