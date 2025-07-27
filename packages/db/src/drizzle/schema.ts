@@ -540,10 +540,7 @@ export const apikey = pgTable(
 			'btree',
 			table.prefix.asc().nullsLast().op('text_ops')
 		),
-		index('apikey_enabled_idx').using(
-			'btree',
-			table.enabled.asc().nullsLast().op('boolean_ops')
-		),
+		index('apikey_enabled_idx').using('btree', table.enabled.asc().nullsLast()),
 	]
 );
 export const organization = pgTable(
