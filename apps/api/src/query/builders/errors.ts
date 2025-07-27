@@ -1,10 +1,7 @@
 import { Analytics } from '../../types/tables';
 import type { SimpleQueryConfig } from '../types';
 
-export const ErrorsBuilders: Record<
-	string,
-	SimpleQueryConfig<typeof Analytics.errors>
-> = {
+export const ErrorsBuilders: Record<string, SimpleQueryConfig> = {
 	recent_errors: {
 		table: Analytics.errors,
 		fields: [

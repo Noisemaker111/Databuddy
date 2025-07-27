@@ -1,10 +1,7 @@
 import { Analytics } from '../../types/tables';
 import type { SimpleQueryConfig } from '../types';
 
-export const TrafficBuilders: Record<
-	string,
-	SimpleQueryConfig<typeof Analytics.events>
-> = {
+export const TrafficBuilders: Record<string, SimpleQueryConfig> = {
 	top_referrers: {
 		table: Analytics.events,
 		fields: [
