@@ -1,10 +1,7 @@
 import { Analytics } from '../../types/tables';
 import type { Filter, SimpleQueryConfig, TimeUnit } from '../types';
 
-export const SummaryBuilders: Record<
-	string,
-	SimpleQueryConfig<typeof Analytics.events>
-> = {
+export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
 	summary_metrics: {
 		customSql: (
 			websiteId: string,
@@ -117,14 +114,14 @@ export const SummaryBuilders: Record<
 			websiteId: string,
 			startDate: string,
 			endDate: string,
-			_filters?: Filter[],
-			granularity?: TimeUnit,
+			_filters?: unknown[],
+			_granularity?: unknown,
 			_limit?: number,
 			_offset?: number,
 			timezone?: string
 		) => {
 			const tz = timezone || 'UTC';
-			const isHourly = granularity === 'hour' || granularity === 'hourly';
+			const isHourly = _granularity === 'hour' || _granularity === 'hourly';
 
 			if (isHourly) {
 				return {
