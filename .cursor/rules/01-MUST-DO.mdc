@@ -1,0 +1,48 @@
+---
+description: Basic guidelines for the project so vibe coders don't fuck it up
+globs: 
+alwaysApply: true
+---
+Always ensure type-safety, don't use type: any unless needed, when creating APIs, responses, or components, create proper interfaces and make them in the shared types folders where it fits best, not in the same file
+
+When working on anything, try to split off components, utils, anything reusable to ensure better loading speed and less complexity
+
+LESS COMPLEXITY IS BETTER, the fewer lines, the less complex logic the better
+
+Naming convention is lower-case-like-this
+
+Think about mobile responsiveness when doing any UI tasks or changes
+
+NEVER add placeholders, mock data, or anything similar
+
+Always use rounded, not rounded-xl or rounded-md, always rounded
+
+ALWAYS use bun, never npm, never pnpm, just bun
+
+Don't use lucide for icons, ONLY use phosphor icons, use width="duotone" for most, but for arrows use fill, for plus icons don't add width
+
+Handle complex data transformations independently of React.
+Keep these modules decoupled from React for improved modularity and testability.
+View Components:
+
+Decouple state management, data transformations, and API interactions from the React lifecycle.
+Simplify data flow to eliminate prop drilling and callback hell.
+Prioritize modularity and testability in all components.
+
+Never throw errors in server actions, use try catch and return the error to the client
+
+For all blogs and content pages, add TL;DRs near the title on the top for better conversion
+
+ALWAYS use error boundaries properly
+
+use console properly, like console.error, console.time, console.json, console.table, etc
+
+Use Dayjs NEVER date-fns, and Tanstack query for hooks, NEVER SWR
+
+Use ONLY Zod V4 from zod/v4 never zod 3 from zod
+
+use Icon at the end of phosphor react icons, like CaretIcon not Caret
+
+use json.stringify() when adding debugging
+
+Almost NEVER use useEffect unless it's critical

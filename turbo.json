@@ -33,8 +33,21 @@
     "db:push": {
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "dependsOn": ["^db:generate"],
       "persistent": false
+    },
+    "db:migrate": {
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "persistent": false
+    },
+    "db:deploy": {
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "persistent": false
+    },
+    "db:studio": {
+      "cache": false,
+      "persistent": true
     },
     "lint": {
       "dependsOn": ["^lint"],
