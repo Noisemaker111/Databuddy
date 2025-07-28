@@ -45,9 +45,7 @@ export default function PricingTable({
 	);
 
 	const handleRetry = useCallback(() => {
-		if (typeof refetch === 'function') {
-			refetch();
-		}
+		if (typeof refetch === 'function') refetch();
 	}, [refetch]);
 
 	if (isLoading) {
@@ -476,7 +474,8 @@ export const PricingCardButton = React.forwardRef<
 		setLoading(true);
 		try {
 			await onClick?.(e);
-		} catch (_error) {
+		} catch (error) {
+			console.error(error);
 		} finally {
 			setLoading(false);
 		}

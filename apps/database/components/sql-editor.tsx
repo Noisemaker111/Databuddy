@@ -4,6 +4,7 @@ import {
 	CheckCircle,
 	Clock,
 	Copy,
+	Download,
 	History,
 	Play,
 	Save,
@@ -20,6 +21,7 @@ import {
 	CardTitle,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
@@ -60,7 +62,9 @@ export function SqlEditor({
 					timestamp: new Date(item.timestamp),
 				}));
 				setQueryHistory(parsed);
-			} catch (_error) {}
+			} catch (error) {
+				console.error('Failed to load query history:', error);
+			}
 		}
 	}, []);
 
@@ -71,7 +75,7 @@ export function SqlEditor({
 	};
 
 	// Add query to history
-	const _addToHistory = (
+	const addToHistory = (
 		query: string,
 		success: boolean,
 		duration?: number,
@@ -105,7 +109,9 @@ export function SqlEditor({
 	const copyToClipboard = async (text: string) => {
 		try {
 			await navigator.clipboard.writeText(text);
-		} catch (_error) {}
+		} catch (error) {
+			console.error('Failed to copy to clipboard:', error);
+		}
 	};
 
 	// Save query as file

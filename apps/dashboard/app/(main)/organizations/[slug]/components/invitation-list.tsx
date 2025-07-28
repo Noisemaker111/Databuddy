@@ -33,9 +33,7 @@ export function InvitationList({
 		useState<InvitationToCancel | null>(null);
 
 	const handleCancel = async () => {
-		if (!invitationToCancel) {
-			return;
-		}
+		if (!invitationToCancel) return;
 		await onCancelInvitation(invitationToCancel.id);
 		setInvitationToCancel(null);
 	};

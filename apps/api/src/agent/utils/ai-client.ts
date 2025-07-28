@@ -27,18 +27,33 @@ export async function getAICompletion(
 	request: AICompletionRequest
 ): Promise<AICompletionResponse> {
 	const startTime = Date.now();
-	const completion = await openai.chat.completions.create({
-		model: AI_MODEL,
-		messages: [{ role: 'system', content: request.prompt }],
-		temperature: request.temperature ?? 0.1,
-		response_format: { type: 'json_object' },
-	});
 
-	const content = completion.choices[0]?.message?.content || '';
-	const _aiTime = Date.now() - startTime;
+	try {
+		const completion = await openai.chat.completions.create({
+			model: AI_MODEL,
+			messages: [{ role: 'system', content: request.prompt }],
+			temperature: request.temperature ?? 0.1,
+			response_format: { type: 'json_object' },
+		});
 
-	return {
-		content,
-		usage: completion.usage,
-	};
+		const content = completion.choices[0]?.message?.content || '';
+		const aiTime = Date.now() - startTime;
+
+		console.info('🤖 [AI Client] Completion completed', {
+			timeTaken: `${aiTime}ms`,
+			contentLength: content.length,
+			usage: completion.usage,
+		});
+
+		return {
+			content,
+			usage: completion.usage,
+		};
+	} catch (error) {
+		console.error('❌ [AI Client] Completion failed', {
+			error: error instanceof Error ? error.message : 'Unknown error',
+			timeTaken: Date.now() - startTime,
+		});
+		throw error;
+	}
 }

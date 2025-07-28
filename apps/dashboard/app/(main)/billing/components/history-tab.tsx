@@ -4,14 +4,23 @@ import {
 	ArrowSquareOutIcon,
 	CalendarIcon,
 	CheckIcon,
+	ClockIcon,
 	CreditCardIcon,
 	FileTextIcon,
+	XIcon,
 } from '@phosphor-icons/react';
 import dayjs from 'dayjs';
 import { useBilling } from '@/app/(main)/billing/hooks/use-billing';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Customer, Invoice } from '../data/billing-data';
 
@@ -121,9 +130,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
 }
 
 function SubscriptionHistoryCard({ customerData }: { customerData: any }) {
-	if (!customerData?.products?.length) {
-		return null;
-	}
+	if (!customerData?.products?.length) return null;
 
 	return (
 		<Card>

@@ -45,18 +45,13 @@ function UsageCard({
 	const isOverLimit = !isUnlimited && percentage >= 100;
 
 	const getIcon = () => {
-		if (feature.name.toLowerCase().includes('event')) {
-			return ChartBarIcon;
-		}
-		if (feature.name.toLowerCase().includes('storage')) {
-			return DatabaseIcon;
-		}
+		if (feature.name.toLowerCase().includes('event')) return ChartBarIcon;
+		if (feature.name.toLowerCase().includes('storage')) return DatabaseIcon;
 		if (
 			feature.name.toLowerCase().includes('user') ||
 			feature.name.toLowerCase().includes('member')
-		) {
+		)
 			return UsersIcon;
-		}
 		return ChartBarIcon;
 	};
 

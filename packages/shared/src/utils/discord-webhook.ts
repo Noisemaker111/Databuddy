@@ -286,12 +286,16 @@ class DiscordWebhook {
 					});
 
 					if (!response.ok) {
+						console.error(
+							`Discord webhook failed: ${response.status} ${response.statusText}`
+						);
 						resolve(false);
 						return;
 					}
 
 					resolve(true);
-				} catch (_error) {
+				} catch (error) {
+					console.error('Discord webhook error:', error);
 					resolve(false);
 				}
 			});
@@ -315,7 +319,9 @@ class DiscordWebhook {
 			if (task) {
 				task();
 				// Discord rate limit: 5 requests per 2 seconds
-				setTimeout(() => {}, 400);
+				setTimeout(() => {
+					console.log('Discord webhook rate limit timeout');
+				}, 400);
 			}
 		}
 

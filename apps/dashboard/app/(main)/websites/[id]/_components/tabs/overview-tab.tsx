@@ -372,7 +372,8 @@ export function WebsiteOverviewTab({
 			const doRefresh = async () => {
 				try {
 					await refetchBatch();
-				} catch (_error) {
+				} catch (error) {
+					console.error('Failed to refresh data:', error);
 				} finally {
 					if (isMounted) {
 						setIsRefreshing(false);
@@ -848,9 +849,11 @@ export function WebsiteOverviewTab({
 		const canShowSessionBasedTrend =
 			previousSumSessions >= MIN_PREVIOUS_SESSIONS_FOR_TREND;
 		const previousPeriodStart = previousPeriodData[0]?.date;
-		const previousPeriodEnd = previousPeriodData.at(-1)?.date;
+		const previousPeriodEnd =
+			previousPeriodData[previousPeriodData.length - 1]?.date;
 		const currentPeriodStart = currentPeriodData[0]?.date;
-		const currentPeriodEnd = currentPeriodData.at(-1)?.date;
+		const currentPeriodEnd =
+			currentPeriodData[currentPeriodData.length - 1]?.date;
 		const createDetailedTrend = (
 			current: number,
 			previous: number,

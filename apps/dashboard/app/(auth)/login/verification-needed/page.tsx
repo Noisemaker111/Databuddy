@@ -32,7 +32,7 @@ export default function VerificationNeededPage() {
 					},
 				},
 			});
-		} catch (_error) {
+		} catch (error) {
 			setIsLoading(false);
 			toast.error('Failed to send verification email. Please try again later.');
 		}

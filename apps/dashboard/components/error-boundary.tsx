@@ -22,6 +22,7 @@ export function ErrorBoundary({ children, fallback }: ErrorBoundaryProps) {
 
 	useEffect(() => {
 		const errorHandler = (error: ErrorEvent) => {
+			console.error('Error caught by boundary:', error);
 			setError(error.error);
 			setHasError(true);
 		};
@@ -31,9 +32,7 @@ export function ErrorBoundary({ children, fallback }: ErrorBoundaryProps) {
 	}, []);
 
 	if (hasError) {
-		if (fallback) {
-			return <>{fallback}</>;
-		}
+		if (fallback) return <>{fallback}</>;
 
 		return (
 			<div className="flex h-full min-h-[400px] w-full items-center justify-center p-6">

@@ -11,7 +11,7 @@ import {
 	Robot,
 	User,
 } from '@phosphor-icons/react';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
 	Accordion,
 	AccordionContent,
@@ -44,9 +44,7 @@ function ThinkingStepsPreview({ steps }: { steps: string[] }) {
 	const maxPreviewSteps = 3;
 
 	useEffect(() => {
-		if (steps.length === 0) {
-			return;
-		}
+		if (steps.length === 0) return;
 
 		// Show the latest steps in the preview (sliding window)
 		const latestSteps = steps.slice(-maxPreviewSteps);
@@ -61,9 +59,7 @@ function ThinkingStepsPreview({ steps }: { steps: string[] }) {
 		}
 	}, [steps]);
 
-	if (visibleSteps.length === 0) {
-		return null;
-	}
+	if (visibleSteps.length === 0) return null;
 
 	return (
 		<div className="mt-2 max-h-20 space-y-1 overflow-hidden">
@@ -96,9 +92,7 @@ function ThinkingStepsPreview({ steps }: { steps: string[] }) {
 }
 
 function ThinkingStepsAccordion({ steps }: { steps: string[] }) {
-	if (steps.length === 0) {
-		return null;
-	}
+	if (steps.length === 0) return null;
 
 	return (
 		<Accordion className="w-full" collapsible type="single">

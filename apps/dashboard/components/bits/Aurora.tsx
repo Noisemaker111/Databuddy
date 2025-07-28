@@ -1,5 +1,5 @@
 import { Color, Mesh, Program, Renderer, Triangle } from 'ogl';
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export interface CommonProps {
 	onReady?: () => void;
@@ -142,18 +142,14 @@ export default function Aurora(props: AuroraProps) {
 
 	useEffect(() => {
 		const ctn = ctnDom.current;
-		if (!ctn) {
-			return;
-		}
+		if (!ctn) return;
 
 		const renderer = new Renderer();
 		const gl = renderer.gl;
 		gl.clearColor(1, 1, 1, 1);
 
 		function resize() {
-			if (!ctn) {
-				return;
-			}
+			if (!ctn) return;
 			renderer.setSize(ctn.offsetWidth, ctn.offsetHeight);
 		}
 		window.addEventListener('resize', resize);

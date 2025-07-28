@@ -22,7 +22,9 @@ export function createRateLimitMiddleware(options: RateLimitOptions) {
 					headers: request.headers,
 				});
 				userId = session?.user?.id;
-			} catch (_error) {}
+			} catch (error) {
+				console.error('[Rate Limit] Auth error:', error);
+			}
 		}
 
 		const identifier = getRateLimitIdentifier(userId, request.headers);

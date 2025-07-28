@@ -39,16 +39,12 @@ export function TransferAssets({ organizationId }: { organizationId: string }) {
 			: null;
 
 	const handleTransfer = () => {
-		if (!(selectedWebsite && selectedSide)) {
-			return;
-		}
+		if (!(selectedWebsite && selectedSide)) return;
 
 		const website = [...personalWebsites, ...organizationWebsites].find(
 			(w) => w.id === selectedWebsite
 		);
-		if (!website) {
-			return;
-		}
+		if (!website) return;
 
 		const organizationIdToUse =
 			selectedSide === 'personal' ? organizationId : undefined;

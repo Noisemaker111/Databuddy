@@ -1,6 +1,7 @@
 'use client';
 
 import { CircleNotch } from '@phosphor-icons/react';
+import React from 'react';
 import { cn } from '../../lib/utils';
 
 export const Spinner = ({ className }: { className?: string }) => {

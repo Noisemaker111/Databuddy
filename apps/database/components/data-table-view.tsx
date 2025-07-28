@@ -50,6 +50,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
+	DialogTrigger,
 } from '@/components/ui/dialog';
 import {
 	DropdownMenu,
@@ -130,9 +131,7 @@ const FieldIcon = ({
 	label: string | null;
 	children: React.ReactNode;
 }) => {
-	if (children === null) {
-		return null;
-	}
+	if (children === null) return null;
 	return (
 		<TooltipProvider delayDuration={20}>
 			<Tooltip>
@@ -192,7 +191,7 @@ const ValueCell = ({
 		if (dataType.includes('DateTime')) {
 			const truncated =
 				stringValue.length > 16
-					? `${stringValue.substring(0, 16)}...`
+					? stringValue.substring(0, 16) + '...'
 					: stringValue;
 			return (
 				<span
@@ -228,15 +227,12 @@ const ValueCell = ({
 };
 
 const getTypeIcon = (type: string) => {
-	if (type.includes('DateTime')) {
+	if (type.includes('DateTime'))
 		return <Calendar className="size-3 text-blue-500" />;
-	}
-	if (type.includes('Int') || type.includes('Float')) {
+	if (type.includes('Int') || type.includes('Float'))
 		return <Hash className="size-3 text-green-500" />;
-	}
-	if (type.includes('String')) {
+	if (type.includes('String'))
 		return <Type className="size-3 text-purple-500" />;
-	}
 	return <Binary className="size-3 text-gray-500" />;
 };
 
@@ -298,7 +294,7 @@ export function DataTableView({
 		setRowSelection({});
 	};
 
-	const _EditDialog = () => (
+	const EditDialog = () => (
 		<Dialog
 			onOpenChange={(open) => !open && setEditingRow(null)}
 			open={!!editingRow}
@@ -384,7 +380,7 @@ export function DataTableView({
 							variant="outline"
 						>
 							{col.type.length > 6
-								? `${col.type.substring(0, 6)}...`
+								? col.type.substring(0, 6) + '...'
 								: col.type}
 						</Badge>
 					</div>
@@ -485,9 +481,7 @@ export function DataTableView({
 												className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 												disabled={confirmText !== 'DELETE'}
 												onClick={() => {
-													if (onDeleteRow) {
-														onDeleteRow(rowData);
-													}
+													if (onDeleteRow) onDeleteRow(rowData);
 													setConfirmText('');
 												}}
 											>
@@ -504,20 +498,11 @@ export function DataTableView({
 		};
 
 		return [selectColumn, ...fields, actionColumn];
-	}, [
-		columns,
-		onDeleteRow,
-		onEditRow,
-		handleEditRow,
-		handleHideRow,
-		confirmText,
-	]);
+	}, [columns, onDeleteRow, onEditRow, handleEditRow, handleHideRow]);
 
 	// Filter out hidden rows
 	const filteredData = React.useMemo(() => {
-		if (!data) {
-			return [];
-		}
+		if (!data) return [];
 		return data.filter((row) => {
 			const rowId = JSON.stringify(row);
 			return !hiddenRows.has(rowId);
@@ -552,11 +537,11 @@ export function DataTableView({
 		columnResizeMode: 'onChange',
 	});
 
-	const rows = React.useMemo(() => table.getRowModel().rows, [table]);
+	const rows = React.useMemo(() => table.getRowModel().rows, [table, data]);
 	const selectedRowsCount = table.getSelectedRowModel().rows.length;
 
 	// Table controls component
-	const _TableControls = () => (
+	const TableControls = () => (
 		<div className="flex items-center justify-between border-b bg-muted/30 p-4">
 			<div className="flex items-center gap-2">
 				{/* Column visibility */}

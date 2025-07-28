@@ -1,6 +1,7 @@
 'use client';
 
 import {
+	ArrowRightIcon,
 	BuildingsIcon,
 	CheckIcon,
 	GearIcon,

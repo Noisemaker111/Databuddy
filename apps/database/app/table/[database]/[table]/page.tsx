@@ -41,7 +41,7 @@ export default async function TableDetail({
 	useEffect(() => {
 		loadTableData();
 		loadTableStats();
-	}, [loadTableData, loadTableStats]);
+	}, [database, table]);
 
 	const loadTableData = async (limit = 1000) => {
 		setLoading(true);
@@ -91,7 +91,9 @@ export default async function TableDetail({
 			if (result.success && result.data.length > 0) {
 				setStats(result.data[0]);
 			}
-		} catch (_err) {}
+		} catch (err) {
+			console.error('Failed to load table stats:', err);
+		}
 	};
 
 	const exportTable = async () => {
@@ -212,7 +214,11 @@ export default async function TableDetail({
 		}
 	};
 
-	const hideRow = (_rowData: Record<string, any>) => {};
+	const hideRow = (rowData: Record<string, any>) => {
+		// This is handled locally in the DataTableView component
+		// Could be extended to persist hidden rows to localStorage or backend
+		console.log('Row hidden:', rowData);
+	};
 
 	return (
 		<div className="flex h-full w-full flex-col overflow-hidden bg-background">

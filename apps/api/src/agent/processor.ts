@@ -32,6 +32,12 @@ export async function* processAssistantRequest(
 	const startTime = Date.now();
 
 	try {
+		console.info('✅ [Assistant Processor] Input validated', {
+			message: request.message,
+			website_id: request.website_id,
+			website_hostname: request.website_hostname,
+		});
+
 		if (context.user.role === 'ADMIN') {
 			context.debugInfo.validatedInput = {
 				message: request.message,
@@ -53,6 +59,11 @@ export async function* processAssistantRequest(
 
 		const aiResponse = await getAICompletion({ prompt: fullPrompt });
 		const aiTime = Date.now() - aiStart;
+
+		console.info('📝 [Assistant Processor] Raw AI response received', {
+			timeTaken: `${aiTime}ms`,
+			contentLength: aiResponse.content.length,
+		});
 
 		const parsedResponse = parseAIResponse(aiResponse.content);
 
@@ -82,6 +93,11 @@ export async function* processAssistantRequest(
 			};
 			return;
 		}
+		console.info('✅ [Assistant Processor] AI response parsed', {
+			responseType: aiJson.response_type,
+			hasSQL: !!aiJson.sql,
+			thinkingSteps: aiJson.thinking_steps?.length || 0,
+		});
 
 		// Process thinking steps
 		if (aiJson.thinking_steps?.length) {
@@ -133,6 +149,9 @@ export async function* processAssistantRequest(
 	} catch (error: unknown) {
 		const errorMessage =
 			error instanceof Error ? error.message : 'Unknown error';
+		console.error('💥 [Assistant Processor] Processing error', {
+			error: errorMessage,
+		});
 
 		yield {
 			type: 'error',

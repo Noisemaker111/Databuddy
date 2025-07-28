@@ -73,6 +73,8 @@ async function apiRequest<T>(
 	const timeoutId = setTimeout(() => controller.abort(), 30_000); // 30s timeout
 
 	try {
+		console.log(`Making API request to: ${API_BASE_URL}/v1${endpoint}`);
+
 		const response = await fetch(`${API_BASE_URL}/v1${endpoint}`, {
 			credentials: 'include',
 			headers: {
@@ -109,6 +111,7 @@ async function apiRequest<T>(
 		}
 
 		const data = await response.json();
+		console.log('API response:', { status: response.status, data });
 
 		if (!data.success && data.error) {
 			throw new Error(data.error);
@@ -149,9 +152,7 @@ const redditApi = {
 		const result = await apiRequest<RedditMentionsResponse>(
 			`/reddit/mentions?${params}`
 		);
-		if (result.error) {
-			throw new Error(result.error);
-		}
+		if (result.error) throw new Error(result.error);
 
 		return (
 			result.data || {
@@ -176,9 +177,7 @@ const redditApi = {
 
 	getHealth: async (): Promise<RedditHealthResponse> => {
 		const result = await apiRequest<RedditHealthResponse>('/reddit/health');
-		if (result.error) {
-			throw new Error(result.error);
-		}
+		if (result.error) throw new Error(result.error);
 		return (
 			result.data || {
 				status: 'unhealthy',
@@ -192,9 +191,7 @@ const redditApi = {
 		const result = await apiRequest<{ success: boolean }>('/reddit/refresh', {
 			method: 'POST',
 		});
-		if (result.error) {
-			throw new Error(result.error);
-		}
+		if (result.error) throw new Error(result.error);
 		return result.data || { success: false };
 	},
 
@@ -229,9 +226,7 @@ const redditApi = {
 		});
 
 		const result = await apiRequest<any>(`/reddit/analytics?${params}`);
-		if (result.error) {
-			throw new Error(result.error);
-		}
+		if (result.error) throw new Error(result.error);
 		return result.data;
 	},
 };
@@ -256,11 +251,15 @@ export function useRedditMentions(
 		backgroundSync?: boolean;
 	}
 ) {
+	console.log('useRedditMentions called with:', { filters, options });
+
 	const queryResult = useQuery({
 		queryKey: redditKeys.mentionsList(filters),
 		queryFn: async () => {
+			console.log('Fetching Reddit mentions...');
 			try {
 				const result = await redditApi.getMentions(filters);
+				console.log('Reddit mentions result:', result);
 
 				// Store in localStorage for offline access
 				if (typeof window !== 'undefined') {
@@ -276,6 +275,8 @@ export function useRedditMentions(
 
 				return result;
 			} catch (error) {
+				console.error('Error fetching Reddit mentions:', error);
+
 				// Try to load from cache on error
 				if (typeof window !== 'undefined') {
 					const cached = localStorage.getItem('reddit-mentions-cache');
@@ -283,6 +284,7 @@ export function useRedditMentions(
 						const { data, timestamp } = JSON.parse(cached);
 						// Use cache if it's less than 1 hour old
 						if (Date.now() - timestamp < 3_600_000) {
+							console.log('Using cached data due to API error');
 							return data;
 						}
 					}
@@ -334,7 +336,8 @@ export function useRedditHealth() {
 		queryFn: async () => {
 			try {
 				return await redditApi.getHealth();
-			} catch (_error) {
+			} catch (error) {
+				console.error('Error checking Reddit health:', error);
 				return {
 					status: 'unhealthy' as const,
 					reddit_connected: false,
@@ -364,6 +367,8 @@ export function useRefreshRedditMentions() {
 			queryClient.invalidateQueries({ queryKey: redditKeys.all });
 		},
 		onError: (error: Error) => {
+			console.error('Error refreshing Reddit mentions:', error);
+
 			let message = 'Failed to refresh Reddit mentions';
 			if (error.message.includes('rate limit')) {
 				message = 'Rate limit exceeded. Please wait before refreshing again.';
@@ -405,7 +410,8 @@ export function useExportRedditData() {
 		onSuccess: () => {
 			toast.success('Data exported successfully');
 		},
-		onError: (_error: Error) => {
+		onError: (error: Error) => {
+			console.error('Error exporting data:', error);
 			toast.error('Failed to export data. Please try again.');
 		},
 	});
@@ -425,18 +431,14 @@ export function useRedditAnalytics(filters: SearchFilters, enabled = false) {
 // Utility hook for managing search history
 export function useSearchHistory() {
 	const getHistory = useCallback(() => {
-		if (typeof window === 'undefined') {
-			return [];
-		}
+		if (typeof window === 'undefined') return [];
 		const history = localStorage.getItem('reddit-search-history');
 		return history ? JSON.parse(history) : [];
 	}, []);
 
 	const addToHistory = useCallback(
 		(filters: SearchFilters) => {
-			if (typeof window === 'undefined') {
-				return;
-			}
+			if (typeof window === 'undefined') return;
 
 			const history = getHistory();
 			const newEntry = {

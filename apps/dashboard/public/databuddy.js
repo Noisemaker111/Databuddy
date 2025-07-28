@@ -89,7 +89,7 @@
 
 				try {
 					return await response.json();
-				} catch (_e) {
+				} catch (e) {
 					const text = await response.text();
 					return text ? JSON.parse(text) : null;
 				}
@@ -253,9 +253,7 @@
 		}
 
 		init() {
-			if (this.isServer()) {
-				return;
-			}
+			if (this.isServer()) return;
 
 			if (this.options.trackSessions) {
 				this.anonymousId = this.getOrCreateAnonymousId();
@@ -327,9 +325,7 @@
 		}
 
 		trackScrollDepth() {
-			if (this.isServer()) {
-				return;
-			}
+			if (this.isServer()) return;
 			const scrollHeight =
 				document.documentElement.scrollHeight - window.innerHeight;
 			const currentScroll = window.scrollY;
@@ -426,9 +422,7 @@
 		}
 
 		async sendBatchBeacon(events) {
-			if (this.isServer() || !navigator.sendBeacon) {
-				return null;
-			}
+			if (this.isServer() || !navigator.sendBeacon) return null;
 
 			try {
 				const baseUrl = this.api.baseUrl;
@@ -445,7 +439,7 @@
 				if (success) {
 					return { success: true };
 				}
-			} catch (_e) {}
+			} catch (e) {}
 
 			return null;
 		}
@@ -458,9 +452,7 @@
 		}
 
 		async track(eventName, properties) {
-			if (this.options.disabled || this.isLikelyBot) {
-				return;
-			}
+			if (this.options.disabled || this.isLikelyBot) return;
 
 			if (this.options.samplingRate < 1.0) {
 				const samplingValue = Math.random();
@@ -520,15 +512,13 @@
 				if (beaconResult) {
 					return beaconResult;
 				}
-			} catch (_e) {}
+			} catch (e) {}
 
 			return this.send(payload);
 		}
 
 		async sendBeacon(event) {
-			if (this.isServer()) {
-				return null;
-			}
+			if (this.isServer()) return null;
 
 			try {
 				const eventData =
@@ -565,11 +555,11 @@
 						if (success) {
 							return { success: true };
 						}
-					} catch (_e) {}
+					} catch (e) {}
 				}
 
 				return null;
-			} catch (_error) {
+			} catch (error) {
 				return null;
 			}
 		}
@@ -608,18 +598,14 @@
 		}
 
 		collectNavigationTiming() {
-			if (this.isServer() || !this.options.trackPerformance) {
-				return {};
-			}
+			if (this.isServer() || !this.options.trackPerformance) return {};
 
 			const clampTime = (v) =>
 				typeof v === 'number' ? Math.min(60_000, Math.max(0, v)) : v;
 
 			try {
 				const navEntry = window.performance?.getEntriesByType('navigation')[0];
-				if (!navEntry) {
-					return {};
-				}
+				if (!navEntry) return {};
 
 				return {
 					load_time: clampTime(Math.round(navEntry.loadEventEnd)),
@@ -638,15 +624,13 @@
 						Math.round(navEntry.domComplete - navEntry.domContentLoadedEventEnd)
 					),
 				};
-			} catch (_e) {
+			} catch (e) {
 				return {};
 			}
 		}
 
 		getUtmParams() {
-			if (typeof window === 'undefined') {
-				return {};
-			}
+			if (typeof window === 'undefined') return {};
 
 			const urlParams = new URLSearchParams(window.location.search);
 			return {
@@ -659,9 +643,7 @@
 		}
 
 		detectBot() {
-			if (typeof window === 'undefined') {
-				return false;
-			}
+			if (typeof window === 'undefined') return false;
 
 			return (
 				navigator.webdriver ||
@@ -671,9 +653,7 @@
 		}
 
 		setupBotDetection() {
-			if (typeof window === 'undefined') {
-				return;
-			}
+			if (typeof window === 'undefined') return;
 
 			for (const event of ['mousemove', 'scroll', 'keydown']) {
 				window.addEventListener(
@@ -687,9 +667,7 @@
 		}
 
 		setupExitTracking() {
-			if (typeof window === 'undefined') {
-				return;
-			}
+			if (typeof window === 'undefined') return;
 
 			window.addEventListener(
 				'scroll',
@@ -707,9 +685,7 @@
 			);
 
 			window.addEventListener('mouseout', (e) => {
-				if (e.clientY <= 0) {
-					this.hasExitIntent = true;
-				}
+				if (e.clientY <= 0) this.hasExitIntent = true;
 			});
 
 			document.addEventListener('click', (e) => {
@@ -717,10 +693,9 @@
 				if (link?.href) {
 					try {
 						const linkUrl = new URL(link.href);
-						if (linkUrl.origin === window.location.origin) {
+						if (linkUrl.origin === window.location.origin)
 							this.isInternalNavigation = true;
-						}
-					} catch (_err) {}
+					} catch (err) {}
 				}
 			});
 
@@ -732,9 +707,7 @@
 
 			// Simple exit handler
 			const exitHandler = () => {
-				if (this.options.enableBatching) {
-					this.flushBatch();
-				}
+				if (this.options.enableBatching) this.flushBatch();
 
 				// Always track exit data, let the server handle deduplication
 				this.trackExitData();
@@ -750,9 +723,7 @@
 		}
 
 		trackExitData() {
-			if (this.isServer()) {
-				return;
-			}
+			if (this.isServer()) return;
 
 			const baseContext = this.getBaseContext();
 
@@ -793,14 +764,12 @@
 		async sendExitEventImmediately(exitEvent) {
 			try {
 				const beaconResult = await this.sendBeacon(exitEvent);
-				if (beaconResult) {
-					return beaconResult;
-				}
+				if (beaconResult) return beaconResult;
 
 				return this.api.fetch('/', exitEvent, {
 					keepalive: true,
 				});
-			} catch (_e) {
+			} catch (e) {
 				return null;
 			}
 		}
@@ -810,7 +779,9 @@
 				for (const o of this.webVitalObservers) {
 					try {
 						o.disconnect();
-					} catch (_e) {}
+					} catch (e) {
+						console.error(e);
+					}
 				}
 				this.webVitalObservers = [];
 			}
@@ -831,7 +802,7 @@
 			}
 		}
 
-		initWebVitalsObservers(_eventName) {
+		initWebVitalsObservers(eventName) {
 			if (
 				this.isServer() ||
 				!this.options.trackWebVitals ||
@@ -852,9 +823,8 @@
 					if (
 						reported ||
 						!Object.values(metrics).some((m) => m !== null && m !== 0)
-					) {
+					)
 						return;
-					}
 					reported = true;
 					this.trackWebVitals({
 						timestamp: Date.now(),
@@ -876,7 +846,7 @@
 							observer.observe({ type, buffered: true });
 							this.webVitalObservers.push(observer);
 						}
-					} catch (_e) {}
+					} catch (e) {}
 				};
 
 				observe('paint', (entries) => {
@@ -888,10 +858,8 @@
 				});
 
 				observe('largest-contentful-paint', (entries) => {
-					const entry = entries.at(-1);
-					if (entry) {
-						metrics.lcp = Math.round(entry.startTime);
-					}
+					const entry = entries[entries.length - 1];
+					if (entry) metrics.lcp = Math.round(entry.startTime);
 				});
 
 				observe('layout-shift', (entries) => {
@@ -918,9 +886,7 @@
 				});
 
 				this.webVitalsVisibilityChangeHandler = () => {
-					if (document.visibilityState === 'hidden') {
-						report();
-					}
+					if (document.visibilityState === 'hidden') report();
 				};
 				document.addEventListener(
 					'visibilitychange',
@@ -936,7 +902,7 @@
 				});
 
 				this.webVitalsReportTimeoutId = setTimeout(report, 10_000);
-			} catch (_e) {}
+			} catch (e) {}
 		}
 
 		getConnectionInfo() {
@@ -961,9 +927,7 @@
 		}
 
 		trackCustomEvent(eventName, properties = {}) {
-			if (this.isServer()) {
-				return;
-			}
+			if (this.isServer()) return;
 
 			let finalProperties;
 			if (properties === undefined || properties === null) {
@@ -978,9 +942,7 @@
 		}
 
 		getBaseContext() {
-			if (this.isServer()) {
-				return {};
-			}
+			if (this.isServer()) return {};
 
 			const utmParams = this.getUtmParams();
 			const connectionInfo = this.getConnectionInfo();
@@ -1021,17 +983,13 @@
 			// Validate referrer and path as URLs
 			let referrer = this.global?.referrer || document.referrer || 'direct';
 			try {
-				if (referrer && referrer !== 'direct') {
-					new URL(referrer);
-				}
+				if (referrer && referrer !== 'direct') new URL(referrer);
 			} catch {
 				referrer = null;
 			}
 			let path = window.location.href;
 			try {
-				if (path) {
-					new URL(path);
-				}
+				if (path) new URL(path);
 			} catch {
 				path = null;
 			}
@@ -1060,9 +1018,7 @@
 		}
 
 		async trackError(errorData) {
-			if (this.isServer()) {
-				return;
-			}
+			if (this.isServer()) return;
 
 			const errorEvent = {
 				type: 'error',
@@ -1090,15 +1046,13 @@
 				if (beaconResult) {
 					return beaconResult;
 				}
-			} catch (_e) {}
+			} catch (e) {}
 
 			return this.send(errorEvent);
 		}
 
 		async trackWebVitals(vitalsData) {
-			if (this.isServer()) {
-				return;
-			}
+			if (this.isServer()) return;
 
 			// Clamp fcp and lcp to 60000
 			const clamp = (v) =>
@@ -1129,7 +1083,7 @@
 				if (beaconResult) {
 					return beaconResult;
 				}
-			} catch (_e) {}
+			} catch (e) {}
 
 			return this.send(webVitalsEvent);
 		}
@@ -1149,9 +1103,7 @@
 				...t,
 			});
 
-			if (this.isServer()) {
-				return;
-			}
+			if (this.isServer()) return;
 
 			if (this.options.trackScreenViews) {
 				this.trackScreenViews();
@@ -1193,15 +1145,13 @@
 											r.getAttribute('alt'),
 									});
 								}
-							} catch (_e) {}
+							} catch (e) {}
 						}
 					}
 				});
 		}
 		trackScreenViews() {
-			if (this.isServer()) {
-				return;
-			}
+			if (this.isServer()) return;
 
 			const t = history.pushState;
 			history.pushState = function (...s) {
@@ -1263,9 +1213,7 @@
 				});
 		}
 		screenView(t, r) {
-			if (this.isServer()) {
-				return;
-			}
+			if (this.isServer()) return;
 
 			let i;
 			let n;
@@ -1345,7 +1293,7 @@
 
 				return;
 			}
-		} catch (_e) {
+		} catch (e) {
 			// localStorage not available, continue with initialization
 		}
 
@@ -1353,7 +1301,7 @@
 			document.currentScript ||
 			(() => {
 				const scripts = document.getElementsByTagName('script');
-				return scripts.at(-1);
+				return scripts[scripts.length - 1];
 			})();
 
 		function getConfig() {
@@ -1400,7 +1348,7 @@
 						urlParams[key] = value;
 					}
 				});
-			} catch (_e) {}
+			} catch (e) {}
 
 			const config = {
 				...globalConfig,
@@ -1409,12 +1357,8 @@
 			};
 
 			if (config.samplingRate !== undefined) {
-				if (config.samplingRate < 0) {
-					config.samplingRate = 0;
-				}
-				if (config.samplingRate > 1) {
-					config.samplingRate = 1;
-				}
+				if (config.samplingRate < 0) config.samplingRate = 0;
+				if (config.samplingRate > 1) config.samplingRate = 1;
 			}
 
 			if (config.maxRetries !== undefined && config.maxRetries < 0) {
@@ -1422,36 +1366,25 @@
 			}
 
 			if (config.initialRetryDelay !== undefined) {
-				if (config.initialRetryDelay < 50) {
-					config.initialRetryDelay = 50;
-				}
-				if (config.initialRetryDelay > 10_000) {
+				if (config.initialRetryDelay < 50) config.initialRetryDelay = 50;
+				if (config.initialRetryDelay > 10_000)
 					config.initialRetryDelay = 10_000;
-				}
 			}
 
 			if (config.batchSize !== undefined) {
-				if (config.batchSize < 1) {
-					config.batchSize = 1;
-				}
-				if (config.batchSize > 50) {
-					config.batchSize = 50;
-				}
+				if (config.batchSize < 1) config.batchSize = 1;
+				if (config.batchSize > 50) config.batchSize = 50;
 			}
 
 			if (config.batchTimeout !== undefined) {
-				if (config.batchTimeout < 100) {
-					config.batchTimeout = 100;
-				}
-				if (config.batchTimeout > 30_000) {
-					config.batchTimeout = 30_000;
-				}
+				if (config.batchTimeout < 100) config.batchTimeout = 100;
+				if (config.batchTimeout > 30_000) config.batchTimeout = 30_000;
 			}
 
 			if (config.apiUrl) {
 				try {
 					new URL(config.apiUrl);
-				} catch (_e) {
+				} catch (e) {
 					config.apiUrl = 'https://basket.databuddy.cc';
 				}
 			} else {
@@ -1474,16 +1407,12 @@
 		}
 
 		function init() {
-			if (window.databuddy) {
-				return;
-			}
+			if (window.databuddy) return;
 
 			const config = getConfig();
 			const clientId = getClientId(config);
 
-			if (!clientId) {
-				return;
-			}
+			if (!clientId) return;
 			window.databuddy = new d({
 				...config,
 				clientId,
@@ -1519,7 +1448,7 @@
 			try {
 				localStorage.setItem('databuddy_opt_out', 'true');
 				localStorage.setItem('databuddy_disabled', 'true');
-			} catch (_e) {
+			} catch (e) {
 				// localStorage not available
 			}
 
@@ -1549,18 +1478,26 @@
 				window.db.flush = noop;
 				window.db.setGlobalProperties = noop;
 			}
+
+			console.log(
+				'Databuddy: Tracking has been disabled. Reload the page for full effect.'
+			);
 		};
 
 		window.databuddyOptIn = () => {
 			try {
 				localStorage.removeItem('databuddy_opt_out');
 				localStorage.removeItem('databuddy_disabled');
-			} catch (_e) {
+			} catch (e) {
 				// localStorage not available
 			}
 
 			window.databuddyOptedOut = false;
 			window.databuddyDisabled = false;
+
+			console.log(
+				'Databuddy: Tracking has been enabled. Reload the page for full effect.'
+			);
 		};
 
 		// Check if user wants to opt out via URL parameter
@@ -1572,7 +1509,7 @@
 			) {
 				window.databuddyOptOut();
 			}
-		} catch (_e) {
+		} catch (e) {
 			// URL parsing failed
 		}
 	} else if (typeof exports === 'object') {

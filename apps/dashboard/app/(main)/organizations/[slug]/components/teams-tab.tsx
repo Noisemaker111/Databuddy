@@ -5,12 +5,13 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardHeader,
 	CardTitle,
 } from '@/components/ui/card';
 import { TeamView } from './team-view';
 
 export function TeamsTab({ organization }: { organization: any }) {
-	if (!organization?.id) {
+	if (!(organization && organization.id)) {
 		return (
 			<div className="py-12 text-center">
 				<Card className="mx-auto max-w-md">

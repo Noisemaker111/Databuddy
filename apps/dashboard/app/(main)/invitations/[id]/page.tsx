@@ -15,6 +15,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 type InvitationData = {
 	organizationName: string;
@@ -88,6 +89,7 @@ export default function AcceptInvitationPage() {
 					setStatus('ready');
 				}
 			} catch (err: any) {
+				console.error('Error fetching invitation:', err);
 				setStatus('error');
 				setError(err.message || 'An unexpected error occurred');
 			}
@@ -97,9 +99,7 @@ export default function AcceptInvitationPage() {
 	}, [invitationId]);
 
 	const handleAcceptInvitation = async () => {
-		if (!invitation) {
-			return;
-		}
+		if (!invitation) return;
 
 		setStatus('accepting');
 		try {
@@ -117,6 +117,7 @@ export default function AcceptInvitationPage() {
 				setError('Failed to accept invitation');
 			}
 		} catch (err: any) {
+			console.error('Error accepting invitation:', err);
 			setStatus('error');
 			setError(err.message || 'Failed to accept invitation');
 		}

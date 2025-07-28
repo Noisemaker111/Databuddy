@@ -1,9 +1,10 @@
 'use client';
 
-import { ArrowLeft, Clock, Copy, Play } from 'lucide-react';
+import { ArrowLeft, Clock, Copy, Download, Play } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { DataTable } from '@/components/data-table';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
 	Card,
@@ -33,9 +34,7 @@ export default function SqlConsole() {
 	const [executionTime, setExecutionTime] = useState<number | null>(null);
 
 	const executeQuery = async () => {
-		if (!query.trim()) {
-			return;
-		}
+		if (!query.trim()) return;
 
 		setLoading(true);
 		setError(null);
@@ -66,7 +65,9 @@ export default function SqlConsole() {
 	const copyQuery = async () => {
 		try {
 			await navigator.clipboard.writeText(query);
-		} catch (_error) {}
+		} catch (error) {
+			console.error('Failed to copy query:', error);
+		}
 	};
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {

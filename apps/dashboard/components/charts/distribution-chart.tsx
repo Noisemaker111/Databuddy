@@ -44,9 +44,7 @@ interface DistributionChartProps {
 
 // Simple tooltip
 const CustomTooltip = ({ active, payload }: any) => {
-	if (!(active && payload && payload.length)) {
-		return null;
-	}
+	if (!(active && payload && payload.length)) return null;
 
 	const data = payload[0];
 	return (
@@ -99,9 +97,7 @@ export function DistributionChart({
 
 	// Process chart data
 	const chartData = useMemo(() => {
-		if (!data || data.length === 0) {
-			return [];
-		}
+		if (!data || data.length === 0) return [];
 
 		// Sort by value
 		const sortedData = [...data].sort((a, b) => b.value - a.value);

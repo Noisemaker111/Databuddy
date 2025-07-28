@@ -32,7 +32,12 @@ export async function* handleMetricResponse(
 				parsedAiJson.metric_value
 			);
 			yield* sendMetricResponse(parsedAiJson, metricValue, context);
-		} catch (_queryError: unknown) {
+		} catch (queryError: unknown) {
+			console.error('❌ Metric SQL execution error', {
+				error:
+					queryError instanceof Error ? queryError.message : 'Unknown error',
+				sql: parsedAiJson.sql,
+			});
 			yield* sendMetricResponse(
 				parsedAiJson,
 				parsedAiJson.metric_value,
@@ -48,9 +53,7 @@ function extractMetricValue(
 	queryData: unknown[],
 	defaultValue: unknown
 ): unknown {
-	if (!(queryData.length && queryData[0])) {
-		return defaultValue;
-	}
+	if (!(queryData.length && queryData[0])) return defaultValue;
 
 	const firstRow = queryData[0] as Record<string, unknown>;
 	const valueKey =

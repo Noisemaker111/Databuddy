@@ -1,10 +1,12 @@
 'use client';
 
 import { Path, Target } from '@phosphor-icons/react';
+import type { ColumnDef } from '@tanstack/react-table';
 import { useAtom } from 'jotai';
 import {
 	ArrowRight,
 	ChevronRight,
+	ExternalLink,
 	MousePointer,
 	RefreshCw,
 	Timer,
@@ -22,6 +24,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ClosableAlert } from '@/components/ui/closable-alert';
 import { useJourneyAnalytics } from '@/hooks/use-dynamic-query';
 import { useWebsite } from '@/hooks/use-websites';
+import { cn } from '@/lib/utils';
 import {
 	dateRangeAtom,
 	formattedDateRangeAtom,
@@ -34,7 +37,7 @@ export default function JourneysPage() {
 	const websiteId = id as string;
 	const [isRefreshing, setIsRefreshing] = useState(false);
 
-	const [_currentDateRange] = useAtom(dateRangeAtom);
+	const [currentDateRange] = useAtom(dateRangeAtom);
 	const [currentGranularity] = useAtom(timeGranularityAtom);
 	const [formattedDateRangeState] = useAtom(formattedDateRangeAtom);
 
@@ -67,7 +70,8 @@ export default function JourneysPage() {
 		setIsRefreshing(true);
 		try {
 			await refetchBatch();
-		} catch (_error) {
+		} catch (error) {
+			console.error('Failed to refresh journey data:', error);
 		} finally {
 			setIsRefreshing(false);
 		}
@@ -75,14 +79,10 @@ export default function JourneysPage() {
 
 	// Helper function to create better page display
 	const formatPagePath = (url: string) => {
-		if (!url) {
-			return '/';
-		}
+		if (!url) return '/';
 		try {
 			let path = url.startsWith('http') ? new URL(url).pathname : url;
-			if (!path.startsWith('/')) {
-				path = `/${path}`;
-			}
+			if (!path.startsWith('/')) path = `/${path}`;
 			return path;
 		} catch {
 			return url.startsWith('/') ? url : `/${url}`;
@@ -92,9 +92,7 @@ export default function JourneysPage() {
 	// Helper to get page name from path
 	const getPageDisplayName = (path: string) => {
 		const cleanPath = formatPagePath(path);
-		if (cleanPath === '/') {
-			return 'Home';
-		}
+		if (cleanPath === '/') return 'Home';
 		return cleanPath.split('/').filter(Boolean).join(' › ') || 'Home';
 	};
 
@@ -198,7 +196,7 @@ export default function JourneysPage() {
 				),
 			},
 		],
-		[createEnhancedPageColumn]
+		[]
 	);
 
 	// Journey Paths - with better visualization
@@ -296,7 +294,7 @@ export default function JourneysPage() {
 				),
 			},
 		],
-		[getPageDisplayName]
+		[]
 	);
 
 	// Drop-offs - with visual indicators
@@ -402,7 +400,7 @@ export default function JourneysPage() {
 				},
 			},
 		],
-		[createEnhancedPageColumn]
+		[]
 	);
 
 	// Entry Points - with visual enhancements
@@ -459,8 +457,7 @@ export default function JourneysPage() {
 				header: 'Bounce Rate',
 				cell: (info: any) => {
 					const rate = info.getValue() as number;
-					const safeRate =
-						typeof rate === 'number' && !Number.isNaN(rate) ? rate : 0;
+					const safeRate = typeof rate === 'number' && !isNaN(rate) ? rate : 0;
 					return (
 						<div>
 							<Badge
@@ -485,7 +482,7 @@ export default function JourneysPage() {
 				cell: (info: any) => {
 					const value = info.getValue() as number;
 					const safeValue =
-						typeof value === 'number' && !Number.isNaN(value) ? value : 0;
+						typeof value === 'number' && !isNaN(value) ? value : 0;
 					return (
 						<div>
 							<div>
@@ -497,7 +494,7 @@ export default function JourneysPage() {
 				},
 			},
 		],
-		[createEnhancedPageColumn]
+		[]
 	);
 
 	// Create tabs structure for DataTable with better organization

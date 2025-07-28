@@ -15,9 +15,7 @@ const getUser = cache(async () => {
 	const session = await auth.api.getSession({
 		headers: await headers(),
 	});
-	if (!session) {
-		return null;
-	}
+	if (!session) return null;
 	return session.user;
 });
 
@@ -101,9 +99,7 @@ const profileUpdateSchema = z.object({
  */
 export async function updateUserProfile(formData: FormData) {
 	const currentUser = await getUser();
-	if (!currentUser) {
-		return { error: 'Unauthorized' };
-	}
+	if (!currentUser) return { error: 'Unauthorized' };
 
 	try {
 		// Parse and validate form data
@@ -119,7 +115,7 @@ export async function updateUserProfile(formData: FormData) {
 		});
 
 		// Update user in database
-		const _updated = await db
+		const updated = await db
 			.update(user)
 			.set({
 				firstName: validatedData.firstName,
@@ -147,6 +143,8 @@ export async function updateUserProfile(formData: FormData) {
 		revalidatePath('/settings');
 		return { success: true };
 	} catch (error) {
+		console.error('Profile update error:', error);
+
 		// Log profile update error
 		await logger.error(
 			'Profile Update Failed',
@@ -170,9 +168,7 @@ export async function updateUserProfile(formData: FormData) {
  */
 export async function deactivateUserAccount(formData: FormData) {
 	const currentUser = await getUser();
-	if (!currentUser) {
-		return { error: 'Unauthorized' };
-	}
+	if (!currentUser) return { error: 'Unauthorized' };
 
 	try {
 		const password = formData.get('password');
@@ -212,6 +208,8 @@ export async function deactivateUserAccount(formData: FormData) {
 		revalidatePath('/settings');
 		return { success: true };
 	} catch (error) {
+		console.error('Account deletion error:', error);
+
 		// Log account deactivation error
 		await logger.error(
 			'Account Deactivation Failed',

@@ -23,6 +23,7 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import {
 	Breadcrumb,
 	BreadcrumbItem,

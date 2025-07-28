@@ -104,9 +104,7 @@ export function CreateOrganizationDialog({
 			.replace(/-+/g, '-')
 			.replace(/^-+|-+$/g, '');
 		setFormData((prev) => ({ ...prev, slug: cleanSlug }));
-		if (cleanSlug === '') {
-			setSlugManuallyEdited(false);
-		}
+		if (cleanSlug === '') setSlugManuallyEdited(false);
 	};
 
 	// Form validation
@@ -120,9 +118,7 @@ export function CreateOrganizationDialog({
 
 	// Image crop modal handlers
 	const handleCropModalOpenChange = (isOpen: boolean) => {
-		if (!isOpen && fileInputRef.current) {
-			fileInputRef.current.value = '';
-		}
+		if (!isOpen && fileInputRef.current) fileInputRef.current.value = '';
 		if (!isOpen) {
 			setImageSrc(null);
 			setCrop(undefined);
@@ -180,8 +176,9 @@ export function CreateOrganizationDialog({
 				toast.success('Logo saved successfully!');
 			};
 			reader.readAsDataURL(croppedFile);
-		} catch (_e) {
+		} catch (e) {
 			toast.error('Failed to crop image.');
+			console.error(e);
 		}
 	};
 
@@ -196,9 +193,7 @@ export function CreateOrganizationDialog({
 
 	// Submit handler
 	const handleSubmit = async () => {
-		if (!isFormValid) {
-			return;
-		}
+		if (!isFormValid) return;
 		try {
 			createOrganization(formData);
 			handleClose();

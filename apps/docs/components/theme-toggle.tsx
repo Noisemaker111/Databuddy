@@ -2,6 +2,7 @@
 
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -17,9 +18,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
 	};
 
 	const toggleTheme = () => {
-		if (!document.startViewTransition) {
-			switchTheme();
-		}
+		if (!document.startViewTransition) switchTheme();
 		document.startViewTransition(switchTheme);
 	};
 

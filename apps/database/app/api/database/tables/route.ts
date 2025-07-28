@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
 			data: tables,
 		});
 	} catch (error) {
+		console.error('Error fetching tables:', error);
 		return NextResponse.json(
 			{
 				success: false,

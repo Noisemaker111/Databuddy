@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarIcon, LightningIcon } from '@phosphor-icons/react';
+import { CalendarIcon, LightningIcon, XIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import {
 	Dialog,
@@ -64,8 +64,10 @@ export function CancelSubscriptionDialog({
 							{periodEndDate ? (
 								<>Keep access until {periodEndDate}. No additional charges.</>
 							) : (
-								"Keep access until your current billing period ends. No
-									additional charges."
+								<>
+									Keep access until your current billing period ends. No
+									additional charges.
+								</>
 							)}
 						</p>
 					</button>

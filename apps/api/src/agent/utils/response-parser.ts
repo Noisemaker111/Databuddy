@@ -17,11 +17,22 @@ export function parseAIResponse(rawResponse: string): ParsedAIResponse {
 
 		const parsedData = AIResponseJsonSchema.parse(JSON.parse(cleanedResponse));
 
+		console.info('✅ [Response Parser] AI response parsed successfully', {
+			responseType: parsedData.response_type,
+			hasSQL: !!parsedData.sql,
+			thinkingSteps: parsedData.thinking_steps?.length || 0,
+		});
+
 		return {
 			success: true,
 			data: parsedData,
 		};
 	} catch (parseError) {
+		console.error('❌ [Response Parser] AI response parsing failed', {
+			error: parseError instanceof Error ? parseError.message : 'Unknown error',
+			rawResponseLength: rawResponse.length,
+		});
+
 		return {
 			success: false,
 			error:

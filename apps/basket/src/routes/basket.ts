@@ -445,7 +445,7 @@ async function checkDuplicate(
 async function logBlockedTraffic(
 	request: Request,
 	body: any,
-	_query: any,
+	query: any,
 	blockReason: string,
 	blockCategory: string,
 	botName?: string,
@@ -566,6 +566,12 @@ const app = new Elysia()
 			if (eventType === 'track') {
 				const parseResult = analyticsEventSchema.safeParse(body);
 				if (!parseResult.success) {
+					console.error(
+						'Blocked event schema errors:',
+						parseResult.error.issues,
+						'Payload:',
+						body
+					);
 					await logBlockedTraffic(
 						request,
 						body,
@@ -588,6 +594,12 @@ const app = new Elysia()
 			if (eventType === 'error') {
 				const parseResult = errorEventSchema.safeParse(body);
 				if (!parseResult.success) {
+					console.error(
+						'Blocked event schema errors:',
+						parseResult.error.issues,
+						'Payload:',
+						body
+					);
 					await logBlockedTraffic(
 						request,
 						body,
@@ -610,6 +622,12 @@ const app = new Elysia()
 			if (eventType === 'web_vitals') {
 				const parseResult = webVitalsEventSchema.safeParse(body);
 				if (!parseResult.success) {
+					console.error(
+						'Blocked event schema errors:',
+						parseResult.error.issues,
+						'Payload:',
+						body
+					);
 					await logBlockedTraffic(
 						request,
 						body,
@@ -675,6 +693,12 @@ const app = new Elysia()
 				if (eventType === 'track') {
 					const parseResult = analyticsEventSchema.safeParse(event);
 					if (!parseResult.success) {
+						console.error(
+							'Blocked event schema errors:',
+							parseResult.error.issues,
+							'Payload:',
+							event
+						);
 						await logBlockedTraffic(
 							request,
 							event,
@@ -711,6 +735,12 @@ const app = new Elysia()
 				if (eventType === 'error') {
 					const parseResult = errorEventSchema.safeParse(event);
 					if (!parseResult.success) {
+						console.error(
+							'Blocked event schema errors:',
+							parseResult.error.issues,
+							'Payload:',
+							event
+						);
 						await logBlockedTraffic(
 							request,
 							event,
@@ -747,6 +777,12 @@ const app = new Elysia()
 				if (eventType === 'web_vitals') {
 					const parseResult = webVitalsEventSchema.safeParse(event);
 					if (!parseResult.success) {
+						console.error(
+							'Blocked event schema errors:',
+							parseResult.error.issues,
+							'Payload:',
+							event
+						);
 						await logBlockedTraffic(
 							request,
 							event,

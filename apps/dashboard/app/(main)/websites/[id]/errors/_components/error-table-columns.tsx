@@ -130,7 +130,7 @@ export const createErrorTypeColumns = () => [
 
 export const createDeviceColumn = () =>
 	createNameColumn('Device Type', (name) => {
-		if (!name) {
+		if (!name)
 			return (
 				<MonitorIcon
 					className="h-4 w-4 text-gray-500"
@@ -138,7 +138,6 @@ export const createDeviceColumn = () =>
 					weight="duotone"
 				/>
 			);
-		}
 
 		const device = name.toLowerCase();
 		return device.includes('mobile') || device.includes('phone') ? (

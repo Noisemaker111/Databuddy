@@ -43,16 +43,15 @@ export const ErrorsPageContent = ({ params }: ErrorsPageContentProps) => {
 	// Add a new filter
 	const addFilter = (field: string, value: string | number) => {
 		// Prevent adding duplicate filters
-		if (activeFilters.some((f) => f.field === field && f.value === value)) {
+		if (activeFilters.some((f) => f.field === field && f.value === value))
 			return;
-		}
 
 		const newFilter: DynamicQueryFilter = { field, operator: 'eq', value };
 		setActiveFilters((prev) => [...prev, newFilter]);
 	};
 
 	// Remove a filter
-	const _removeFilter = (filterToRemove: DynamicQueryFilter) => {
+	const removeFilter = (filterToRemove: DynamicQueryFilter) => {
 		setActiveFilters((prev) =>
 			prev.filter(
 				(f) =>
@@ -64,7 +63,7 @@ export const ErrorsPageContent = ({ params }: ErrorsPageContentProps) => {
 	};
 
 	// Clear all filters
-	const _clearFilters = () => {
+	const clearFilters = () => {
 		setActiveFilters([]);
 	};
 
@@ -86,7 +85,8 @@ export const ErrorsPageContent = ({ params }: ErrorsPageContentProps) => {
 		try {
 			await refetch();
 			toast.success('Error data refreshed');
-		} catch (_error) {
+		} catch (error) {
+			console.error('Failed to refresh data:', error);
 			toast.error('Failed to refresh error data.');
 		} finally {
 			setIsRefreshing(false);
@@ -182,9 +182,7 @@ export const ErrorsPageContent = ({ params }: ErrorsPageContentProps) => {
 
 	// Find the top error
 	const topError = useMemo(() => {
-		if (!processedData.error_types?.length) {
-			return null;
-		}
+		if (!processedData.error_types?.length) return null;
 
 		return processedData.error_types.reduce(
 			(max, error) => (error.count > max.count ? error : max),
@@ -194,9 +192,7 @@ export const ErrorsPageContent = ({ params }: ErrorsPageContentProps) => {
 
 	// Chart data for error trends
 	const errorChartData = useMemo(() => {
-		if (!processedData.error_trends?.length) {
-			return [];
-		}
+		if (!processedData.error_trends?.length) return [];
 
 		return processedData.error_trends.map((point: any) => ({
 			date: safeFormatDate(point.date, 'MMM d'),

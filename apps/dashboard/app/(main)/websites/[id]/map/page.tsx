@@ -4,6 +4,7 @@ import { GlobeIcon, MapPinIcon, QuestionIcon } from '@phosphor-icons/react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
+import { CountryFlag } from '@/components/analytics/icons/CountryFlag';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -194,18 +195,20 @@ function WebsiteMapPage() {
 					<CardContent className="min-h-0 flex-1 overflow-hidden p-0">
 						{isLoading ? (
 							<div className="space-y-2 p-4">
-								{new Array(6).fill(0).map((_, i) => (
-									<div
-										className="flex items-center justify-between p-3"
-										key={`country-skeleton-${i + 1}`}
-									>
-										<div className="flex items-center gap-3">
-											<Skeleton className="h-4 w-6 rounded" />
-											<Skeleton className="h-4 w-20" />
+								{Array(6)
+									.fill(0)
+									.map((_, i) => (
+										<div
+											className="flex items-center justify-between p-3"
+											key={`country-skeleton-${i + 1}`}
+										>
+											<div className="flex items-center gap-3">
+												<Skeleton className="h-4 w-6 rounded" />
+												<Skeleton className="h-4 w-20" />
+											</div>
+											<Skeleton className="h-4 w-12" />
 										</div>
-										<Skeleton className="h-4 w-12" />
-									</div>
-								))}
+									))}
 							</div>
 						) : (
 							<div className="max-h-full overflow-y-auto">

@@ -93,9 +93,7 @@ function useUserTimezone(): string {
 	}, []);
 
 	// Return user's preferred timezone or browser timezone if 'auto'
-	if (!preferences) {
-		return browserTimezone;
-	}
+	if (!preferences) return browserTimezone;
 
 	return preferences.timezone === 'auto'
 		? browserTimezone
@@ -288,7 +286,7 @@ export function useBatchDynamicQuery(
 			return [];
 		}
 
-		return query.data.results.map((result, _index) => {
+		return query.data.results.map((result, index) => {
 			const processedResult = {
 				queryId: result.queryId,
 				success: false, // Will be set based on parameter results
@@ -391,9 +389,7 @@ export function useQueryOptions(
 		queryKey: ['query-options'],
 		queryFn: async () => {
 			const res = await fetch('/api/query/types');
-			if (!res.ok) {
-				throw new Error('Failed to fetch query options');
-			}
+			if (!res.ok) throw new Error('Failed to fetch query options');
 			return res.json();
 		},
 		staleTime: 60 * 60 * 1000, // 1 hour

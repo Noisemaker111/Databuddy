@@ -27,9 +27,7 @@ export function UserMenu() {
 	const router = useRouter();
 
 	const getUserInitials = () => {
-		if (!session?.user?.name) {
-			return 'U';
-		}
+		if (!session?.user?.name) return 'U';
 		return session.user.name
 			.split(' ')
 			.map((n: string) => n[0])

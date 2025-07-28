@@ -10,9 +10,7 @@ interface TopErrorCardProps {
 }
 
 export const TopErrorCard = ({ topError }: TopErrorCardProps) => {
-	if (!topError) {
-		return null;
-	}
+	if (!topError) return null;
 
 	return (
 		<Card>

@@ -38,7 +38,7 @@ export default function MagicLinkPage() {
 					},
 				},
 			});
-		} catch (_error) {
+		} catch (error) {
 			setIsLoading(false);
 			toast.error('Failed to send magic link. Please try again.');
 		}

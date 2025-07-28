@@ -59,7 +59,7 @@ export function AuthForm({
 				const result = await loginWithEmail(formData.email, formData.password, {
 					redirectUrl: redirectTo,
 					router,
-					onError: (_error) => {
+					onError: (error) => {
 						toast.error('Invalid credentials');
 					},
 				});
@@ -80,7 +80,7 @@ export function AuthForm({
 					{
 						redirectUrl: redirectTo,
 						router,
-						onError: (_error) => {
+						onError: (error) => {
 							toast.error('Failed to create account');
 						},
 					}
@@ -90,7 +90,7 @@ export function AuthForm({
 					toast.success('Account created successfully');
 				}
 			}
-		} catch (_error) {
+		} catch (error) {
 			toast.error('Something went wrong');
 		} finally {
 			setIsLoading(false);
@@ -108,7 +108,7 @@ export function AuthForm({
 			if (result.error) {
 				toast.error(`Failed to sign in with ${provider}`);
 			}
-		} catch (_error) {
+		} catch (error) {
 			toast.error('Something went wrong');
 		} finally {
 			setIsLoading(false);

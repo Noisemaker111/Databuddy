@@ -14,9 +14,7 @@ const getUser = cache(async () => {
 	const session = await auth.api.getSession({
 		headers: await headers(),
 	});
-	if (!session) {
-		return null;
-	}
+	if (!session) return null;
 	return session.user;
 });
 
@@ -32,9 +30,7 @@ const preferencesSchema = z.object({
  */
 export async function getUserPreferences() {
 	const user = await getUser();
-	if (!user) {
-		return { error: 'Unauthorized' };
-	}
+	if (!user) return { error: 'Unauthorized' };
 
 	try {
 		// Try to find existing preferences
@@ -73,6 +69,8 @@ export async function getUserPreferences() {
 
 		return { data: preferences };
 	} catch (error) {
+		console.error('Failed to get user preferences', { error });
+
 		// Log preferences error
 		await logger.error(
 			'Preferences Setup Failed',
@@ -93,9 +91,7 @@ export async function getUserPreferences() {
  */
 export async function updateUserPreferences(formData: FormData) {
 	const user = await getUser();
-	if (!user) {
-		return { error: 'Unauthorized' };
-	}
+	if (!user) return { error: 'Unauthorized' };
 
 	try {
 		// Parse and validate form data
@@ -149,6 +145,7 @@ export async function updateUserPreferences(formData: FormData) {
 		revalidatePath('/settings');
 		return { success: true, data: preferences };
 	} catch (error) {
+		console.error('Preferences update error:', error);
 		if (error instanceof z.ZodError) {
 			return { error: error.errors[0].message };
 		}

@@ -4,6 +4,7 @@ import {
 	ArrowClockwiseIcon,
 	ArrowLeftIcon,
 	CurrencyDollarIcon,
+	PlusIcon,
 	WarningCircleIcon,
 } from '@phosphor-icons/react';
 import Link from 'next/link';

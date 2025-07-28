@@ -11,7 +11,9 @@ export default function GlobalError({
 	error: Error & { digest?: string };
 	reset: () => void;
 }) {
-	useEffect(() => {}, []);
+	useEffect(() => {
+		console.error('Global error occurred:', error);
+	}, [error]);
 
 	const handleGoToHomepage = () => {
 		window.location.href = '/';

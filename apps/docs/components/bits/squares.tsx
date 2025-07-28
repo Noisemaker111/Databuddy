@@ -32,9 +32,7 @@ const Squares: React.FC<SquaresProps> = ({
 
 	useEffect(() => {
 		const canvas = canvasRef.current;
-		if (!canvas) {
-			return;
-		}
+		if (!canvas) return;
 		const ctx = canvas.getContext('2d');
 
 		const resizeCanvas = () => {
@@ -48,9 +46,7 @@ const Squares: React.FC<SquaresProps> = ({
 		resizeCanvas();
 
 		const drawGrid = () => {
-			if (!ctx) {
-				return;
-			}
+			if (!ctx) return;
 
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -160,9 +156,7 @@ const Squares: React.FC<SquaresProps> = ({
 
 		return () => {
 			window.removeEventListener('resize', resizeCanvas);
-			if (requestRef.current) {
-				cancelAnimationFrame(requestRef.current);
-			}
+			if (requestRef.current) cancelAnimationFrame(requestRef.current);
 			canvas.removeEventListener('mousemove', handleMouseMove);
 			canvas.removeEventListener('mouseleave', handleMouseLeave);
 		};

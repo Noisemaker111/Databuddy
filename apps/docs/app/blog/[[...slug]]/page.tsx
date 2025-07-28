@@ -17,9 +17,7 @@ export default async function BlogPage(props: {
 }) {
 	const params = await props.params;
 	const page = blogSource.getPage(params.slug);
-	if (!page) {
-		notFound();
-	}
+	if (!page) notFound();
 
 	const MDXContent = page.data.body;
 	const publishedDate = new Date(page.data.publishedAt);
@@ -283,9 +281,7 @@ export async function generateMetadata(props: {
 }) {
 	const params = await props.params;
 	const page = blogSource.getPage(params.slug);
-	if (!page) {
-		notFound();
-	}
+	if (!page) notFound();
 
 	const title = `${String(page.data.title || 'Databuddy Blog')} | Databuddy Blog`;
 	const description = String(

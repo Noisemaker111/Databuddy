@@ -139,7 +139,7 @@ export function TimezonePreferences() {
 			setOriginalPreferences(localPreferences);
 			setHasChanges(false);
 			refetch();
-		} catch (_error) {
+		} catch (error) {
 			toast.error('Failed to save preferences');
 		} finally {
 			setSaving(false);
@@ -264,12 +264,11 @@ export function TimezonePreferences() {
 									setLocalPreferences({ ...localPreferences, timezone: 'auto' })
 								}
 								onKeyDown={(e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
+									if (e.key === 'Enter' || e.key === ' ')
 										setLocalPreferences({
 											...localPreferences,
 											timezone: 'auto',
 										});
-									}
 								}}
 								size="sm"
 								variant={
@@ -316,12 +315,11 @@ export function TimezonePreferences() {
 														})
 													}
 													onKeyDown={(e) => {
-														if (e.key === 'Enter' || e.key === ' ') {
+														if (e.key === 'Enter' || e.key === ' ')
 															setLocalPreferences({
 																...localPreferences,
 																timezone: tz.region,
 															});
-														}
 													}}
 												>
 													<div className="flex items-center justify-between">
@@ -365,12 +363,11 @@ export function TimezonePreferences() {
 										})
 									}
 									onKeyDown={(e) => {
-										if (e.key === 'Enter' || e.key === ' ') {
+										if (e.key === 'Enter' || e.key === ' ')
 											setLocalPreferences({
 												...localPreferences,
 												dateFormat: option.value,
 											});
-										}
 									}}
 								>
 									<div className="flex items-center justify-between">
@@ -415,12 +412,11 @@ export function TimezonePreferences() {
 										})
 									}
 									onKeyDown={(e) => {
-										if (e.key === 'Enter' || e.key === ' ') {
+										if (e.key === 'Enter' || e.key === ' ')
 											setLocalPreferences({
 												...localPreferences,
 												timeFormat: option.value,
 											});
-										}
 									}}
 								>
 									<div className="flex items-center justify-between">

@@ -1,6 +1,6 @@
 'use client';
 
-import { Trash } from '@phosphor-icons/react';
+import { Target, Trash } from '@phosphor-icons/react';
 import {
 	AlertDialog,
 	AlertDialogAction,

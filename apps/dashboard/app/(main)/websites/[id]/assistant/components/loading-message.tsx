@@ -1,6 +1,7 @@
 'use client';
 
 import { Robot } from '@phosphor-icons/react';
+import React from 'react';
 
 export function LoadingMessage() {
 	return (

@@ -17,9 +17,7 @@ export function ThemeToggle({ className }: ThemeTogglerProps) {
 	};
 
 	const toggleTheme = () => {
-		if (!document.startViewTransition) {
-			switchTheme();
-		}
+		if (!document.startViewTransition) switchTheme();
 		document.startViewTransition(switchTheme);
 	};
 

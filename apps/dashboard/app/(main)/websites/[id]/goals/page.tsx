@@ -4,6 +4,7 @@ import { TrendDownIcon } from '@phosphor-icons/react';
 import { useAtom } from 'jotai';
 import { useParams } from 'next/navigation';
 import {
+	lazy,
 	Suspense,
 	useCallback,
 	useEffect,
@@ -32,7 +33,7 @@ import { GoalsList } from './_components/goals-list';
 
 const GoalsListSkeleton = () => (
 	<div className="space-y-3">
-		{[...new Array(3)].map((_, i) => (
+		{[...Array(3)].map((_, i) => (
 			<Card className="animate-pulse rounded-xl" key={`goal-skeleton-${i + 1}`}>
 				<div className="p-6">
 					<div className="mb-4 flex items-start justify-between">
@@ -143,7 +144,8 @@ export default function GoalsPage() {
 			if (goalIds.length > 0) {
 				refetchAnalytics();
 			}
-		} catch (_error) {
+		} catch (error) {
+			console.error('Failed to refresh goal data:', error);
 		} finally {
 			setIsRefreshing(false);
 		}
@@ -178,14 +180,18 @@ export default function GoalsPage() {
 			}
 			setIsDialogOpen(false);
 			setEditingGoal(null);
-		} catch (_error) {}
+		} catch (error) {
+			console.error('Failed to save goal:', error);
+		}
 	};
 
 	const handleDeleteGoal = async (goalId: string) => {
 		try {
 			await deleteGoal(goalId);
 			setDeletingGoalId(null);
-		} catch (_error) {}
+		} catch (error) {
+			console.error('Failed to delete goal:', error);
+		}
 	};
 
 	if (goalsError) {

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { useSession } from '@/components/layout/session-provider';
+import { AuthLoading } from './auth-loading';
 
 interface RedirectToSignUpProps {
 	children: React.ReactNode;

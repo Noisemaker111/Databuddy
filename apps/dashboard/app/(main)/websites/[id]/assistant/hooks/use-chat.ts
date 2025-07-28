@@ -46,7 +46,7 @@ export function useChat() {
 	const [model] = useAtom(modelAtom);
 	const [websiteId] = useAtom(websiteIdAtom);
 	const [websiteData] = useAtom(websiteDataAtom);
-	const [_dateRange] = useAtom(dateRangeAtom);
+	const [dateRange] = useAtom(dateRangeAtom);
 	const [messages, setMessages] = useAtom(messagesAtom);
 	const [inputValue, setInputValue] = useAtom(inputValueAtom);
 	const [isLoading, setIsLoading] = useAtom(isLoadingAtom);
@@ -88,7 +88,9 @@ export function useChat() {
 						websiteData?.name || ''
 					);
 				}
-			} catch (_error) {
+			} catch (error) {
+				console.error('Failed to initialize chat from IndexedDB:', error);
+
 				// Fallback to welcome message in memory only
 				if (isMounted) {
 					const welcomeMessage: Message = {
@@ -122,8 +124,8 @@ export function useChat() {
 		}, 50);
 	}, [scrollAreaRef]);
 
-	const lastMessage = messages.at(-1);
-	const _lastMessageThinkingSteps = lastMessage?.thinkingSteps?.length || 0;
+	const lastMessage = messages[messages.length - 1];
+	const lastMessageThinkingSteps = lastMessage?.thinkingSteps?.length || 0;
 
 	useEffect(() => {
 		scrollToBottom();
@@ -141,9 +143,7 @@ export function useChat() {
 	const sendMessage = useCallback(
 		async (content?: string) => {
 			const messageContent = content || inputValue.trim();
-			if (!messageContent || isLoading || isRateLimited) {
-				return;
-			}
+			if (!messageContent || isLoading || isRateLimited) return;
 
 			const userMessage: Message = {
 				id: Date.now().toString(),
@@ -155,7 +155,9 @@ export function useChat() {
 			// Save user message to IndexedDB immediately
 			try {
 				await chatDB.saveMessage(userMessage, websiteId || '');
-			} catch (_error) {}
+			} catch (error) {
+				console.error('Failed to save user message to IndexedDB:', error);
+			}
 
 			setMessages((prev) => [...prev, userMessage]);
 			setInputValue('');
@@ -236,9 +238,7 @@ export function useChat() {
 				try {
 					while (true) {
 						const { done, value } = await reader.read();
-						if (done) {
-							break;
-						}
+						if (done) break;
 
 						const chunk = new TextDecoder().decode(value);
 						const lines = chunk.split('\n');
@@ -301,7 +301,12 @@ export function useChat() {
 												completedMessage,
 												websiteId || ''
 											);
-										} catch (_error) {}
+										} catch (error) {
+											console.error(
+												'Failed to save assistant message to IndexedDB:',
+												error
+											);
+										}
 
 										setMessages((prev) =>
 											prev.map((msg) =>
@@ -324,14 +329,17 @@ export function useChat() {
 										);
 										break;
 									}
-								} catch (_parseError) {}
+								} catch (parseError) {
+									console.warn('Failed to parse SSE data:', line);
+								}
 							}
 						}
 					}
 				} finally {
 					reader.releaseLock();
 				}
-			} catch (_error) {
+			} catch (error) {
+				console.error('Failed to get AI response:', error);
 				setMessages((prev) =>
 					prev.map((msg) =>
 						msg.id === assistantId
@@ -356,10 +364,6 @@ export function useChat() {
 			scrollToBottom,
 			chatDB,
 			model,
-			setInputValue,
-			setIsLoading,
-			setIsRateLimited,
-			setMessages,
 		]
 	);
 
@@ -391,7 +395,9 @@ export function useChat() {
 
 			// Update state
 			setMessages([welcomeMessage]);
-		} catch (_error) {
+		} catch (error) {
+			console.error('Failed to reset chat in IndexedDB:', error);
+
 			// Fallback to memory-only reset
 			const welcomeMessage: Message = {
 				id: '1',

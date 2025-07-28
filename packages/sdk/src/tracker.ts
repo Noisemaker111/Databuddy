@@ -21,9 +21,7 @@ export function isTrackerAvailable(): boolean {
  * Get the Databuddy tracker instance
  */
 export function getTracker(): DatabuddyTracker | null {
-	if (typeof window === 'undefined') {
-		return null;
-	}
+	if (typeof window === 'undefined') return null;
 	return window.databuddy || null;
 }
 
@@ -47,7 +45,7 @@ export const track: TrackFunction = async <T extends EventName>(
 
 	try {
 		await tracker(eventName, properties as any);
-	} catch (_error) {}
+	} catch (error) {}
 };
 /**
  * Clear the current session
@@ -65,7 +63,7 @@ export function clear(): void {
 
 	try {
 		tracker();
-	} catch (_error) {}
+	} catch (error) {}
 }
 
 /**
@@ -84,7 +82,7 @@ export function flush(): void {
 
 	try {
 		tracker();
-	} catch (_error) {}
+	} catch (error) {}
 }
 
 /**

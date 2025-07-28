@@ -2,10 +2,13 @@
 
 import {
 	ArrowRightIcon,
+	BuildingsIcon,
 	CalendarIcon,
 	CheckIcon,
 	GearIcon,
+	PlusIcon,
 	TrashIcon,
+	UsersIcon,
 } from '@phosphor-icons/react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -69,7 +72,7 @@ export function OrganizationsTab({
 		setDeletingId(organizationId);
 		try {
 			deleteOrganization(organizationId);
-		} catch (_error) {
+		} catch (error) {
 			toast.error('Failed to delete organization');
 		} finally {
 			setDeletingId(null);

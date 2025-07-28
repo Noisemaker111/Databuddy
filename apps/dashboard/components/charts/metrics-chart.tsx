@@ -35,9 +35,7 @@ const CustomTooltip = ({
 	}>;
 	label?: string;
 }) => {
-	if (!(active && payload && payload.length)) {
-		return null;
-	}
+	if (!(active && payload && payload.length)) return null;
 
 	return (
 		<div className="min-w-[200px] rounded-xl border border-border/50 bg-card p-4 shadow-2xl backdrop-blur-md">
@@ -51,9 +49,7 @@ const CustomTooltip = ({
 					const metric = METRICS.find(
 						(m) => m.label === entry.name || m.key === entry.name
 					);
-					if (!metric) {
-						return null;
-					}
+					if (!metric) return null;
 
 					const Icon = metric.icon;
 					const displayValue = metric.formatValue
@@ -109,12 +105,8 @@ export function MetricsChart({
 	const [hoveredMetric, setHoveredMetric] = useState<string | null>(null);
 
 	const valueFormatter = useCallback((value: number): string => {
-		if (value >= 1_000_000) {
-			return `${(value / 1_000_000).toFixed(1)}M`;
-		}
-		if (value >= 1000) {
-			return `${(value / 1000).toFixed(1)}k`;
-		}
+		if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+		if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
 		return value.toString();
 	}, []);
 

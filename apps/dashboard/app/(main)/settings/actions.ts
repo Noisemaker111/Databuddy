@@ -43,7 +43,8 @@ export async function setPassword(formData: FormData) {
 		}
 
 		return { success: true, message: 'Password updated successfully.' };
-	} catch (_error) {
+	} catch (error) {
+		console.error(error);
 		return {
 			success: false,
 			message: 'An error occurred while setting your password.',

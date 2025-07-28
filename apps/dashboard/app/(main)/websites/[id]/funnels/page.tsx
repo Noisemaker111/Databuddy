@@ -159,7 +159,8 @@ export default function FunnelsPage() {
 				promises.push(refetchAnalytics(), refetchReferrerAnalytics());
 			}
 			await Promise.all(promises);
-		} catch (_error) {
+		} catch (error) {
+			console.error('Failed to refresh funnel data:', error);
 		} finally {
 			setIsRefreshing(false);
 		}
@@ -176,7 +177,9 @@ export default function FunnelsPage() {
 			await createFunnel(data);
 			setIsDialogOpen(false);
 			setEditingFunnel(null);
-		} catch (_error) {}
+		} catch (error) {
+			console.error('Failed to create funnel:', error);
+		}
 	};
 
 	const handleUpdateFunnel = async (funnel: Funnel) => {
@@ -192,7 +195,9 @@ export default function FunnelsPage() {
 			});
 			setIsDialogOpen(false);
 			setEditingFunnel(null);
-		} catch (_error) {}
+		} catch (error) {
+			console.error('Failed to update funnel:', error);
+		}
 	};
 
 	const handleDeleteFunnel = async (funnelId: string) => {
@@ -202,7 +207,9 @@ export default function FunnelsPage() {
 				setExpandedFunnelId(null);
 			}
 			setDeletingFunnelId(null);
-		} catch (_error) {}
+		} catch (error) {
+			console.error('Failed to delete funnel:', error);
+		}
 	};
 
 	const handleToggleFunnel = (funnelId: string) => {

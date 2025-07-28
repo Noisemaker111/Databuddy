@@ -26,7 +26,7 @@ export const Navbar = () => {
 						{/* Desktop Navigation */}
 						<div className="hidden md:block">
 							<ul className="flex items-center divide-x divide-border/30">
-								{navMenu.map((menu, _i) => (
+								{navMenu.map((menu, i) => (
 									<NavLink
 										external={menu.external}
 										href={menu.path}

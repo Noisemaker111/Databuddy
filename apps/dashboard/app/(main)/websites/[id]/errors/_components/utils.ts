@@ -2,25 +2,19 @@ import { format, isValid, parseISO } from 'date-fns';
 
 // Helper function to safely parse dates
 export const safeDateParse = (dateString: string): Date => {
-	if (!dateString) {
-		return new Date();
-	}
+	if (!dateString) return new Date();
 
 	let date = parseISO(dateString);
-	if (isValid(date)) {
-		return date;
-	}
+	if (isValid(date)) return date;
 
 	const isoString = dateString.replace(' ', 'T');
 	date = parseISO(isoString);
-	if (isValid(date)) {
-		return date;
-	}
+	if (isValid(date)) return date;
 
 	date = new Date(dateString);
-	if (isValid(date)) {
-		return date;
-	}
+	if (isValid(date)) return date;
+
+	console.warn('Failed to parse date:', dateString);
 	return new Date();
 };
 
@@ -31,7 +25,8 @@ export const safeFormatDate = (
 	try {
 		const date = safeDateParse(dateString);
 		return format(date, formatString);
-	} catch (_error) {
+	} catch (error) {
+		console.warn('Failed to format date:', dateString, error);
 		return dateString;
 	}
 };

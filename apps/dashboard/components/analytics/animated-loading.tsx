@@ -3,6 +3,7 @@
 import {
 	ActivitySquare,
 	ArrowRight,
+	Database,
 	Loader2,
 	Server,
 	Users,
@@ -188,7 +189,7 @@ export function AnimatedLoading({
 				{/* Processing details */}
 				<div className="w-full">
 					<div className="flex flex-col space-y-3 text-sm">
-						{[...new Array(4)].map((_, i) => {
+						{[...Array(4)].map((_, i) => {
 							const isActive = progress > i * 25;
 							const isPrevious = progress > (i + 1) * 25;
 

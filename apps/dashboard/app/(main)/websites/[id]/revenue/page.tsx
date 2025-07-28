@@ -66,7 +66,7 @@ const PageHeaderSkeleton = () => (
 		</div>
 
 		<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-			{[...new Array(4)].map((_, i) => (
+			{[...Array(4)].map((_, i) => (
 				<div
 					className="overflow-hidden rounded-lg border bg-card"
 					key={`${i + 1}-metrics-skeleton`}
@@ -89,7 +89,7 @@ const PageHeaderSkeleton = () => (
 
 const RevenueMetricsSkeleton = () => (
 	<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-		{[...new Array(4)].map((_, i) => (
+		{[...Array(4)].map((_, i) => (
 			<div
 				className="overflow-hidden rounded-lg border bg-card"
 				key={`${i + 1}-metrics-skeleton`}
@@ -141,7 +141,8 @@ export default function WebsiteRevenuePage() {
 		setIsRefreshing(true);
 		try {
 			await Promise.all([refetch(), revenueConfig.refetch?.()]);
-		} catch (_error) {
+		} catch (error) {
+			console.error('Failed to refresh revenue data:', error);
 		} finally {
 			setIsRefreshing(false);
 		}
@@ -330,7 +331,7 @@ export default function WebsiteRevenuePage() {
 							<Suspense
 								fallback={
 									<div className="space-y-3">
-										{[...new Array(5)].map((_, i) => (
+										{[...Array(5)].map((_, i) => (
 											<div
 												className="flex items-center justify-between rounded-lg border p-3"
 												key={`${i + 1}-item`}

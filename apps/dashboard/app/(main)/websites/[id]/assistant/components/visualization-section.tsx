@@ -47,7 +47,13 @@ import {
 } from '@/components/ui/chart';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { messagesAtom, websiteDataAtom } from '@/stores/jotai/assistantAtoms';
+import {
+	currentMessageAtom,
+	dateRangeAtom,
+	messagesAtom,
+	websiteDataAtom,
+	websiteIdAtom,
+} from '@/stores/jotai/assistantAtoms';
 import type { Message } from '../types/message';
 
 const CHART_COLORS = ['#2563eb', '#f97316', '#22c55e', '#ef4444', '#8b5cf6'];
@@ -926,7 +932,8 @@ function getReferrerDisplayName(referrer: string | unknown): string {
 		}
 
 		return baseHostname.charAt(0).toUpperCase() + baseHostname.slice(1);
-	} catch (_e) {
+	} catch (e) {
+		console.error(e);
 		return trimmedReferrer.charAt(0).toUpperCase() + trimmedReferrer.slice(1);
 	}
 }
@@ -1093,7 +1100,7 @@ const transformDataForMetricsChart = (
 						(a, b) =>
 							new Date(a[_timeCol]).getTime() - new Date(b[_timeCol]).getTime()
 					);
-				} catch (_e) {
+				} catch (e) {
 					/* ignore sort error for non-standard time keys */
 				}
 			}
