@@ -611,7 +611,7 @@ export function WebsiteOverviewTab({
 			const propertyCategories = [];
 			const propertyMap = new Map();
 
-			eventProperties.forEach((prop: any) => {
+			for (const prop of eventProperties) {
 				// Data is already pre-aggregated from API with percentages
 				const key = prop.property_key;
 				const value = prop.property_value;
@@ -629,10 +629,10 @@ export function WebsiteOverviewTab({
 
 				const valueMap = propertyMap.get(key);
 				valueMap.set(value, data);
-			});
+			}
 
 			// Convert to array format for display - use pre-computed percentages
-			propertyMap.forEach((valueMap, key) => {
+			for (const [key, valueMap] of propertyMap.entries()) {
 				const values = Array.from(valueMap.entries()).map(([value, data]) => ({
 					value,
 					count: data.count,
@@ -649,7 +649,7 @@ export function WebsiteOverviewTab({
 					total,
 					values: values.sort((a, b) => b.count - a.count),
 				});
-			});
+			}
 
 			return {
 				...event,
