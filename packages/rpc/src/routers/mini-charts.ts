@@ -4,14 +4,13 @@ import {
 	db,
 	eq,
 	inArray,
-	isNull,
 	member,
 	or,
 	websites,
 } from '@databuddy/db';
 import { createDrizzleCache, redis } from '@databuddy/redis';
 import type { ProcessedMiniChartData } from '@databuddy/shared';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 const drizzleCache = createDrizzleCache({ redis, namespace: 'mini-charts' });
@@ -25,6 +24,11 @@ interface MiniChartRow {
 	value: number;
 }
 
+const normalizeWebsiteIds = (ids: string[]): string[] => {
+	// Deduplicate, copy, and sort for stable cache keys and efficient queries
+	return Array.from(new Set(ids)).sort();
+};
+
 const getAuthorizedWebsiteIds = (
 	userId: string,
 	requestedIds: string[]
@@ -33,7 +37,7 @@ const getAuthorizedWebsiteIds = (
 		return Promise.resolve([]);
 	}
 
-	const authCacheKey = `auth:${userId}:${requestedIds.sort().join(',')}`;
+	const authCacheKey = `auth:${userId}:${[...requestedIds].sort().join(',')}`;
 
 	return drizzleCache.withCache({
 		key: authCacheKey,
@@ -47,15 +51,17 @@ const getAuthorizedWebsiteIds = (
 
 			const orgIds = userOrgs.map((m) => m.organizationId);
 
+			const orgFilter =
+				orgIds.length > 0
+					? inArray(websites.organizationId, orgIds)
+					: undefined;
+
 			const accessibleWebsites = await db.query.websites.findMany({
 				where: and(
 					inArray(websites.id, requestedIds),
-					or(
-						eq(websites.userId, userId),
-						orgIds.length > 0
-							? inArray(websites.organizationId, orgIds)
-							: isNull(websites.organizationId)
-					)
+					orgFilter
+						? or(eq(websites.userId, userId), orgFilter)
+						: eq(websites.userId, userId)
 				),
 				columns: {
 					id: true,
@@ -68,7 +74,7 @@ const getAuthorizedWebsiteIds = (
 };
 
 const calculateTrend = (data: { date: string; value: number }[]) => {
-	if (!data || data.length === 0) {
+	if (!data || data.length < 4) {
 		return null;
 	}
 
@@ -98,7 +104,8 @@ const calculateTrend = (data: { date: string; value: number }[]) => {
 const getBatchedMiniChartData = async (
 	websiteIds: string[]
 ): Promise<Record<string, ProcessedMiniChartData>> => {
-	if (websiteIds.length === 0) {
+	const uniqueIds = Array.from(new Set(websiteIds));
+	if (uniqueIds.length === 0) {
 		return {};
 	}
 
@@ -133,9 +140,11 @@ const getBatchedMiniChartData = async (
       date ASC
   `;
 
-	const queryResult = await chQuery<MiniChartRow>(query, { websiteIds });
+	const queryResult = await chQuery<MiniChartRow>(query, {
+		websiteIds: uniqueIds,
+	});
 
-	const rawData = websiteIds.reduce(
+	const rawData = uniqueIds.reduce(
 		(acc, id) => {
 			acc[id] = [];
 			return acc;
@@ -154,7 +163,7 @@ const getBatchedMiniChartData = async (
 
 	const result: Record<string, ProcessedMiniChartData> = {};
 
-	for (const websiteId of websiteIds) {
+	for (const websiteId of uniqueIds) {
 		const data = rawData[websiteId] || [];
 		const totalViews = data.reduce((sum, point) => sum + point.value, 0);
 		const trend = calculateTrend(data);
@@ -177,16 +186,19 @@ export const miniChartsRouter = createTRPCRouter({
 			})
 		)
 		.query(({ ctx, input }) => {
-			const cacheKey = `mini-charts:${ctx.user.id}:${input.websiteIds.sort().join(',')}`;
+			const normalizedIds = normalizeWebsiteIds(input.websiteIds);
+			const cacheKey = `mini-charts:${ctx.user.id}:${normalizedIds.join(',')}`;
 
 			return drizzleCache.withCache({
 				key: cacheKey,
 				ttl: CACHE_TTL,
 				tables: ['websites', 'member'],
-				queryFn: () => {
-					return getAuthorizedWebsiteIds(ctx.user.id, input.websiteIds).then(
-						(authorizedIds) => getBatchedMiniChartData(authorizedIds)
+				queryFn: async () => {
+					const authorizedIds = await getAuthorizedWebsiteIds(
+						ctx.user.id,
+						normalizedIds
 					);
+					return getBatchedMiniChartData(authorizedIds);
 				},
 			});
 		}),
