@@ -317,7 +317,7 @@ export const websitesRouter = createTRPCRouter({
 			const updatedWebsite = await ctx.db.transaction(async (tx) => {
 				const [website] = await tx
 					.update(websites)
-					.set({ name: input.name })
+					.set({ name: input.name, isPublic: input.isPublic })
 					.where(eq(websites.id, input.id))
 					.returning();
 

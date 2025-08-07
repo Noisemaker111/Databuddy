@@ -12,6 +12,7 @@ import {
 	GlobeIcon,
 	InfoIcon,
 	PencilIcon,
+	ShareIcon,
 	SlidersIcon,
 	TableIcon,
 	TrashIcon,
@@ -47,7 +48,7 @@ import {
 	TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { WebsiteDialog } from '@/components/website-dialog';
-import { useDeleteWebsite } from '@/hooks/use-websites';
+import { useDeleteWebsite, useUpdateWebsite } from '@/hooks/use-websites';
 import {
 	generateNpmCode,
 	generateNpmComponentCode,
@@ -75,8 +76,10 @@ export function WebsiteSettingsTab({
 	const [installMethod] = useState<'script' | 'npm'>('script');
 	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 	const [showEditDialog, setShowEditDialog] = useState(false);
+	const [isPublic, setIsPublic] = useState(websiteData.isPublic);
+	const updateWebsiteMutation = useUpdateWebsite();
 	const [activeTab, setActiveTab] = useState<
-		'tracking' | 'basic' | 'advanced' | 'optimization'
+		'tracking' | 'basic' | 'advanced' | 'optimization' | 'privacy'
 	>('tracking');
 	const [trackingOptions, setTrackingOptions] =
 		useState<TrackingOptions>(RECOMMENDED_DEFAULTS);
@@ -87,6 +90,23 @@ export function WebsiteSettingsTab({
 		setCopiedBlockId(blockId);
 		toast.success(message);
 		setTimeout(() => setCopiedBlockId(null), 2000);
+	};
+
+	const handleTogglePublic = () => {
+		const newIsPublic = !isPublic;
+		setIsPublic(newIsPublic);
+		toast.promise(
+			updateWebsiteMutation.mutateAsync({
+				id: websiteId,
+				isPublic: newIsPublic,
+				name: websiteData.name,
+			}),
+			{
+				loading: 'Updating privacy settings...',
+				success: 'Privacy settings updated!',
+				error: 'Failed to update settings.',
+			}
+		);
 	};
 
 	const handleToggleOption = (option: keyof TrackingOptions) => {
@@ -164,6 +184,14 @@ export function WebsiteSettingsTab({
 								<OptimizationTab
 									setTrackingOptions={setTrackingOptions}
 									trackingOptions={trackingOptions}
+								/>
+							)}
+
+							{activeTab === 'privacy' && (
+								<PrivacyTab
+									isPublic={isPublic}
+									onTogglePublic={handleTogglePublic}
+									websiteId={websiteId}
 								/>
 							)}
 
@@ -327,7 +355,7 @@ function SettingsNavigation({
 }: {
 	activeTab: string;
 	setActiveTab: (
-		tab: 'tracking' | 'basic' | 'advanced' | 'optimization'
+		tab: 'tracking' | 'basic' | 'advanced' | 'optimization' | 'privacy'
 	) => void;
 	onDeleteClick: () => void;
 	trackingOptions: TrackingOptions;
@@ -432,6 +460,17 @@ function SettingsNavigation({
 							>
 								{optimizationConfigured ? 'Custom' : 'Default'}
 							</Badge>
+						</Button>
+
+						<Button
+							className="h-10 w-full justify-between gap-2 transition-all duration-200"
+							onClick={() => setActiveTab('privacy')}
+							variant={activeTab === 'privacy' ? 'default' : 'ghost'}
+						>
+							<div className="flex items-center gap-2">
+								<ShareIcon className="h-4 w-4" />
+								<span>Sharing</span>
+							</div>
 						</Button>
 
 						<div className="border-t pt-4">
@@ -1447,5 +1486,77 @@ function DeleteWebsiteDialog({
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>
+	);
+}
+
+function PrivacyTab({
+	isPublic,
+	onTogglePublic,
+	websiteId,
+}: {
+	isPublic: boolean;
+	onTogglePublic: () => void;
+	websiteId: string;
+}) {
+	const shareableLink = `${window.location.origin}/demo/${websiteId}`;
+
+	const handleCopyLink = () => {
+		navigator.clipboard.writeText(shareableLink);
+		toast.success('Shareable link copied to clipboard!');
+	};
+
+	return (
+		<div className="space-y-4">
+			<div className="flex flex-col space-y-1.5">
+				<h3 className="font-semibold text-lg">Sharing & Privacy</h3>
+				<p className="text-muted-foreground text-sm">
+					Manage your website's public visibility and shareable link.
+				</p>
+			</div>
+			<div className="rounded border p-4">
+				<div className="flex items-start justify-between">
+					<div className="space-y-1">
+						<Label className="font-medium" htmlFor="public-access">
+							Public Access
+						</Label>
+						<p className="text-muted-foreground text-xs">
+							Allow anyone with the link to view your website's dashboard.
+						</p>
+					</div>
+					<Switch
+						checked={isPublic}
+						id="public-access"
+						onCheckedChange={onTogglePublic}
+					/>
+				</div>
+
+				{isPublic && (
+					<div className="mt-4 space-y-2 border-t pt-4">
+						<Label htmlFor="shareable-link">Shareable Link</Label>
+						<div className="flex items-center gap-2">
+							<input
+								className="flex-grow rounded border bg-background px-3 py-1.5 text-sm"
+								id="shareable-link"
+								readOnly
+								type="text"
+								value={shareableLink}
+							/>
+							<Button
+								className="h-8 gap-1.5 px-3 text-xs"
+								onClick={handleCopyLink}
+								size="sm"
+								variant="outline"
+							>
+								<ClipboardIcon className="h-3.5 w-3.5" />
+								Copy
+							</Button>
+						</div>
+						<p className="text-muted-foreground text-xs">
+							Anyone with this link can view the analytics for this website.
+						</p>
+					</div>
+				)}
+			</div>
+		</div>
 	);
 }
