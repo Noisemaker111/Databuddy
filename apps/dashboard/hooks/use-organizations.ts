@@ -61,7 +61,7 @@ const createMutation = <TData, TVariables>(
 
 export function useOrganizations() {
 	const {
-		data,
+		data: organizationsData,
 		error: organizationsError,
 		isPending: isOrganizationsPending,
 	} = authClient.useListOrganizations();
@@ -71,19 +71,21 @@ export function useOrganizations() {
 		isPending: isActiveOrganizationPending,
 	} = authClient.useActiveOrganization();
 
-	const organizations = data || [];
+	const organizations = organizationsData || [];
 
 	const createOrganizationMutation = useMutation(
 		createMutation(
-			async (data: CreateOrganizationData) => {
-				const { data: result, error } = await authClient.organization.create({
-					name: data.name,
-					slug: data.slug || data.name.toLowerCase().replace(/\s+/g, '-'),
-					logo: data.logo,
-					metadata: data.metadata,
-				});
-				if (error) {
-					throw new Error(error.message || 'Failed to create organization');
+			async (orgInput: CreateOrganizationData) => {
+				const { data: result, error: apiError } =
+					await authClient.organization.create({
+						name: orgInput.name,
+						slug:
+							orgInput.slug || orgInput.name.toLowerCase().replace(/\s+/g, '-'),
+						logo: orgInput.logo,
+						metadata: orgInput.metadata,
+					});
+				if (apiError) {
+					throw new Error(apiError.message || 'Failed to create organization');
 				}
 				return result;
 			},
@@ -96,7 +98,7 @@ export function useOrganizations() {
 		createMutation(
 			async ({
 				organizationId,
-				data,
+				data: updateData,
 			}: {
 				organizationId?: string;
 				data: UpdateOrganizationData;
@@ -104,17 +106,18 @@ export function useOrganizations() {
 				if (!organizationId) {
 					throw new Error('Organization ID is required');
 				}
-				const { data: result, error } = await authClient.organization.update({
-					organizationId,
-					data: {
-						name: data.name,
-						slug: data.slug,
-						logo: data.logo,
-						metadata: data.metadata,
-					},
-				});
-				if (error) {
-					throw new Error(error.message || 'Failed to update organization');
+				const { data: result, error: apiError } =
+					await authClient.organization.update({
+						organizationId,
+						data: {
+							name: updateData.name,
+							slug: updateData.slug,
+							logo: updateData.logo,
+							metadata: updateData.metadata,
+						},
+					});
+				if (apiError) {
+					throw new Error(apiError.message || 'Failed to update organization');
 				}
 				return result;
 			},
@@ -167,11 +170,12 @@ export function useOrganizations() {
 	const deleteOrganizationMutation = useMutation(
 		createMutation(
 			async (organizationId: string) => {
-				const { data: result, error } = await authClient.organization.delete({
-					organizationId,
-				});
-				if (error) {
-					throw new Error(error.message || 'Failed to delete organization');
+				const { data: result, error: apiError } =
+					await authClient.organization.delete({
+						organizationId,
+					});
+				if (apiError) {
+					throw new Error(apiError.message || 'Failed to delete organization');
 				}
 				return result;
 			},
@@ -183,25 +187,27 @@ export function useOrganizations() {
 	const setActiveOrganizationMutation = useMutation({
 		mutationFn: async (organizationId: string | null) => {
 			if (organizationId === null) {
-				const { data: result, error } = await authClient.organization.setActive(
-					{
+				const { data: setActiveData, error: apiError } =
+					await authClient.organization.setActive({
 						organizationId: null,
-					}
-				);
-				if (error) {
+					});
+				if (apiError) {
 					throw new Error(
-						error.message || 'Failed to unset active organization'
+						apiError.message || 'Failed to unset active organization'
 					);
 				}
-				return result;
+				return setActiveData;
 			}
-			const { data: result, error } = await authClient.organization.setActive({
-				organizationId,
-			});
-			if (error) {
-				throw new Error(error.message || 'Failed to set active organization');
+			const { data: setActiveData2, error: apiError2 } =
+				await authClient.organization.setActive({
+					organizationId,
+				});
+			if (apiError2) {
+				throw new Error(
+					apiError2.message || 'Failed to set active organization'
+				);
 			}
-			return result;
+			return setActiveData2;
 		},
 		onSuccess: () => {
 			toast.success('Workspace updated');
@@ -223,8 +229,11 @@ export function useOrganizations() {
 
 		createOrganization: createOrganizationMutation.mutate,
 		updateOrganization: updateOrganizationMutation.mutate,
+		updateOrganizationAsync: updateOrganizationMutation.mutateAsync,
 		deleteOrganization: deleteOrganizationMutation.mutate,
+		deleteOrganizationAsync: deleteOrganizationMutation.mutateAsync,
 		setActiveOrganization: setActiveOrganizationMutation.mutate,
+		setActiveOrganizationAsync: setActiveOrganizationMutation.mutateAsync,
 		uploadOrganizationLogo: uploadOrganizationLogoMutation.mutate,
 
 		isCreatingOrganization: createOrganizationMutation.isPending,
@@ -246,15 +255,14 @@ export function useOrganizationMembers(organizationId: string) {
 	} = useQuery({
 		queryKey: QUERY_KEYS.organizationMembers(organizationId),
 		queryFn: async () => {
-			const { data, error } = await authClient.organization.getFullOrganization(
-				{
+			const { data: fullOrgData, error: apiError } =
+				await authClient.organization.getFullOrganization({
 					query: { organizationId },
-				}
-			);
-			if (error) {
-				throw new Error(error.message || 'Failed to fetch members');
+				});
+			if (apiError) {
+				throw new Error(apiError.message || 'Failed to fetch members');
 			}
-			return data?.members || [];
+			return fullOrgData?.members || [];
 		},
 		enabled: !!organizationId,
 	});
@@ -268,15 +276,15 @@ export function useOrganizationMembers(organizationId: string) {
 	const inviteMemberMutation = useMutation(
 		createMutation(
 			async (data: InviteMemberData) => {
-				const { data: result, error } =
+				const { data: result, error: apiError } =
 					await authClient.organization.inviteMember({
 						email: data.email,
 						role: data.role,
 						organizationId: data.organizationId,
 						resend: data.resend,
 					});
-				if (error) {
-					throw new Error(error.message || 'Failed to invite member');
+				if (apiError) {
+					throw new Error(apiError.message || 'Failed to invite member');
 				}
 				return result;
 			},
@@ -294,14 +302,14 @@ export function useOrganizationMembers(organizationId: string) {
 	const updateMemberMutation = useMutation(
 		createMutation(
 			async (data: UpdateMemberData) => {
-				const { data: result, error } =
+				const { data: result, error: apiError } =
 					await authClient.organization.updateMemberRole({
 						memberId: data.memberId,
 						role: data.role,
 						organizationId: data.organizationId,
 					});
-				if (error) {
-					throw new Error(error.message || 'Failed to update member role');
+				if (apiError) {
+					throw new Error(apiError.message || 'Failed to update member role');
 				}
 				return result;
 			},
@@ -314,13 +322,13 @@ export function useOrganizationMembers(organizationId: string) {
 	const removeMemberMutation = useMutation(
 		createMutation(
 			async (memberIdOrEmail: string) => {
-				const { data: result, error } =
+				const { data: result, error: apiError } =
 					await authClient.organization.removeMember({
 						memberIdOrEmail,
 						organizationId,
 					});
-				if (error) {
-					throw new Error(error.message || 'Failed to remove member');
+				if (apiError) {
+					throw new Error(apiError.message || 'Failed to remove member');
 				}
 				return result;
 			},
@@ -358,11 +366,12 @@ export function useOrganizationInvitations(organizationId: string) {
 	} = useQuery({
 		queryKey: QUERY_KEYS.organizationInvitations(organizationId),
 		queryFn: async () => {
-			const { data, error } = await authClient.organization.listInvitations({
-				query: { organizationId },
-			});
-			if (error) {
-				throw new Error(error.message || 'Failed to fetch invitations');
+			const { data, error: apiError } =
+				await authClient.organization.listInvitations({
+					query: { organizationId },
+				});
+			if (apiError) {
+				throw new Error(apiError.message || 'Failed to fetch invitations');
 			}
 			return data || [];
 		},
@@ -372,12 +381,12 @@ export function useOrganizationInvitations(organizationId: string) {
 	const cancelInvitationMutation = useMutation(
 		createMutation(
 			async (invitationId: string) => {
-				const { data: result, error } =
+				const { data: result, error: apiError } =
 					await authClient.organization.cancelInvitation({
 						invitationId,
 					});
-				if (error) {
-					throw new Error(error.message || 'Failed to cancel invitation');
+				if (apiError) {
+					throw new Error(apiError.message || 'Failed to cancel invitation');
 				}
 				return result;
 			},
@@ -414,9 +423,10 @@ export function useUserInvitations() {
 	} = useQuery({
 		queryKey: QUERY_KEYS.userInvitations,
 		queryFn: async () => {
-			const { data, error } = await authClient.organization.listInvitations();
-			if (error) {
-				throw new Error(error.message || 'Failed to fetch user invitations');
+			const { data, error: apiError } =
+				await authClient.organization.listInvitations();
+			if (apiError) {
+				throw new Error(apiError.message || 'Failed to fetch user invitations');
 			}
 			return data || [];
 		},
@@ -429,12 +439,12 @@ export function useUserInvitations() {
 	const acceptInvitationMutation = useMutation(
 		createMutation(
 			async (invitationId: string) => {
-				const { data: result, error } =
+				const { data: result, error: apiError } =
 					await authClient.organization.acceptInvitation({
 						invitationId,
 					});
-				if (error) {
-					throw new Error(error.message || 'Failed to accept invitation');
+				if (apiError) {
+					throw new Error(apiError.message || 'Failed to accept invitation');
 				}
 				return result;
 			},
@@ -447,12 +457,12 @@ export function useUserInvitations() {
 	const rejectInvitationMutation = useMutation(
 		createMutation(
 			async (invitationId: string) => {
-				const { data: result, error } =
+				const { data: result, error: apiError } =
 					await authClient.organization.rejectInvitation({
 						invitationId,
 					});
-				if (error) {
-					throw new Error(error.message || 'Failed to reject invitation');
+				if (apiError) {
+					throw new Error(apiError.message || 'Failed to reject invitation');
 				}
 				return result;
 			},
