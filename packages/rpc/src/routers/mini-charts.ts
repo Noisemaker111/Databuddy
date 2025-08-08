@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
 	and,
 	chQuery,
@@ -17,6 +18,9 @@ const drizzleCache = createDrizzleCache({ redis, namespace: 'mini-charts' });
 
 const CACHE_TTL = 300;
 const AUTH_CACHE_TTL = 60;
+const DEFAULT_DAYS = 7;
+const MIN_DAYS = 3;
+const MAX_DAYS = 30;
 
 interface MiniChartRow {
 	websiteId: string;
@@ -102,7 +106,8 @@ const calculateTrend = (data: { date: string; value: number }[]) => {
 };
 
 const getBatchedMiniChartData = async (
-	websiteIds: string[]
+	websiteIds: string[],
+	days: number
 ): Promise<Record<string, ProcessedMiniChartData>> => {
 	const uniqueIds = Array.from(new Set(websiteIds));
 	if (uniqueIds.length === 0) {
@@ -112,7 +117,7 @@ const getBatchedMiniChartData = async (
 	const query = `
     WITH
       date_range AS (
-        SELECT arrayJoin(arrayMap(d -> toDate(today()) - d, range(7))) AS date
+        SELECT arrayJoin(arrayMap(d -> toDate(today()) - d, range({days:UInt16}))) AS date
       ),
       daily_pageviews AS (
         SELECT
@@ -122,7 +127,7 @@ const getBatchedMiniChartData = async (
         FROM analytics.events
         WHERE
           client_id IN {websiteIds:Array(String)}
-          AND toDate(time) >= (today() - 6)
+          AND toDate(time) >= (today() - {daysMinusOne:UInt16})
         GROUP BY client_id, event_date
       )
     SELECT
@@ -142,6 +147,8 @@ const getBatchedMiniChartData = async (
 
 	const queryResult = await chQuery<MiniChartRow>(query, {
 		websiteIds: uniqueIds,
+		days,
+		daysMinusOne: days - 1,
 	});
 
 	const rawData = uniqueIds.reduce(
@@ -182,12 +189,20 @@ export const miniChartsRouter = createTRPCRouter({
 	getMiniCharts: protectedProcedure
 		.input(
 			z.object({
-				websiteIds: z.array(z.string()),
+				websiteIds: z.array(z.string().min(1).max(64)).min(1).max(5000),
+				days: z.number().int().optional(),
 			})
 		)
 		.query(({ ctx, input }) => {
 			const normalizedIds = normalizeWebsiteIds(input.websiteIds);
-			const cacheKey = `mini-charts:${ctx.user.id}:${normalizedIds.join(',')}`;
+			const requestedDays = input.days ?? DEFAULT_DAYS;
+			const clampedDays = Math.max(MIN_DAYS, Math.min(MAX_DAYS, requestedDays));
+
+			const idsHash = createHash('sha1')
+				.update(normalizedIds.join(','))
+				.digest('base64url')
+				.slice(0, 16);
+			const cacheKey = `mini-charts:${ctx.user.id}:d${clampedDays}:${idsHash}`;
 
 			return drizzleCache.withCache({
 				key: cacheKey,
@@ -198,7 +213,7 @@ export const miniChartsRouter = createTRPCRouter({
 						ctx.user.id,
 						normalizedIds
 					);
-					return getBatchedMiniChartData(authorizedIds);
+					return getBatchedMiniChartData(authorizedIds, clampedDays);
 				},
 			});
 		}),
