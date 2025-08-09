@@ -340,12 +340,6 @@ html {
 
 /* Mobile performance optimizations */
 @media (max-width: 767px) {
-  /* Reduce animation complexity on mobile */
-  * {
-    animation-duration: 0.3s !important;
-    transition-duration: 0.3s !important;
-  }
-
   /* Optimize images */
   img {
     image-rendering: optimizeSpeed;
@@ -353,11 +347,11 @@ html {
 
   /* Reduce blur effects on mobile for performance */
   .backdrop-blur-sm {
-    backdrop-filter: blur(2px) !important;
+    backdrop-filter: blur(2px);
   }
 
   .backdrop-blur-md {
-    backdrop-filter: blur(4px) !important;
+    backdrop-filter: blur(4px);
   }
 }
 
@@ -373,11 +367,11 @@ html {
 
   /* Remove hover effects on touch devices */
   .hover\:scale-105:hover {
-    transform: none !important;
+    transform: none;
   }
 
   .hover\:shadow-lg:hover {
-    box-shadow: none !important;
+    box-shadow: none;
   }
 }
 

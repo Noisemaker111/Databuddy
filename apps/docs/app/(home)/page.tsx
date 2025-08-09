@@ -45,7 +45,6 @@ export default function HomePage() {
 			{/* Trusted By Section */}
 			<Section
 				className="border-border border-t border-b bg-background/50"
-				customPaddings
 				id="trust"
 			>
 				<div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -68,7 +67,7 @@ export default function HomePage() {
 			>
 				<div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
 					{/* Description Section */}
-					<Section customPaddings id="description">
+					<Section className="pt-10 sm:pt-12" customPaddings id="description">
 						<Description />
 					</Section>
 

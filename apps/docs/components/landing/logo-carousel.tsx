@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
 
+const RE_WWW_PREFIX = /^www\./;
+
 interface Logo {
 	id: number;
 	name: string;
@@ -29,7 +31,7 @@ function LogoColumn({ logos, columnIndex, currentTime }: LogoColumnProps) {
 	const getHostnameFromUrl = (url: string): string => {
 		try {
 			const u = new URL(url);
-			return u.hostname.replace(/^www\./, '');
+			return u.hostname.replace(RE_WWW_PREFIX, '');
 		} catch {
 			return '';
 		}
@@ -44,7 +46,7 @@ function LogoColumn({ logos, columnIndex, currentTime }: LogoColumnProps) {
 	return (
 		<motion.div
 			animate={{ opacity: 1, y: 0 }}
-			className="relative w-24 overflow-hidden border-r md:h-24 md:w-72"
+			className="relative h-16 w-40 overflow-hidden border-r sm:h-20 md:h-24 md:w-64 lg:w-72"
 			initial={{ opacity: 0, y: 20 }}
 			transition={{
 				delay: columnIndex * 0.1,
@@ -85,7 +87,9 @@ function LogoColumn({ logos, columnIndex, currentTime }: LogoColumnProps) {
 							width={24}
 						/>
 					) : null}
-					<h1 className="font-bold text-2xl">{currentLogo.name}</h1>
+					<h1 className="truncate font-bold text-base sm:text-xl md:text-2xl">
+						{currentLogo.name}
+					</h1>
 				</motion.div>
 			</AnimatePresence>
 		</motion.div>
@@ -102,8 +106,8 @@ export function LogoCarousel({ columns = 2, logos }: LogoCarouselProps) {
 	const [time, setTime] = useState(0);
 
 	const distributeLogos = useCallback(
-		(logos: Logo[]) => {
-			const shuffled = [...logos].sort(() => Math.random() - 0.5);
+		(logoList: Logo[]) => {
+			const shuffled = [...logoList].sort(() => Math.random() - 0.5);
 			const result: Logo[][] = Array.from({ length: columns }, () => []);
 
 			shuffled.forEach((logo, index) => {

@@ -29,13 +29,13 @@ export default function Hero() {
 				<div className="grid grid-cols-1 items-center gap-8 pt-16 pb-8 lg:grid-cols-2 lg:gap-12 lg:pt-20 lg:pb-12 xl:gap-16">
 					{/* Text Content */}
 					<div className="order-2 flex flex-col gap-6 lg:order-1 lg:gap-8">
-						<h1 className="font-semibold text-4xl leading-none tracking-tight sm:text-5xl md:text-6xl lg:text-7xl xl:text-[72px]">
+						<h1 className="font-semibold text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl xl:text-[72px]">
 							Privacy <span className="text-muted-foreground">first</span>
 							<br />
 							Analytics for <span className="text-muted-foreground">devs</span>
 						</h1>
 
-						<p className="max-w-lg font-medium text-muted-foreground text-sm leading-relaxed tracking-tight sm:text-base lg:text-lg">
+						<p className="max-w-prose font-medium text-muted-foreground text-sm leading-relaxed tracking-tight sm:text-base lg:text-lg">
 							Track users, not identities. Get fast, accurate insights with zero
 							cookies and 100% GDPR compliance.
 						</p>

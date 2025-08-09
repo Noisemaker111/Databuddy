@@ -5,6 +5,12 @@
 import { XLogoIcon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import type { ReactElement } from 'react';
+import {
+	Marquee,
+	MarqueeContent,
+	MarqueeFade,
+	MarqueeItem,
+} from '@/components/ui/kibo-ui/marquee';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 const testimonials = [
@@ -194,77 +200,54 @@ function SlidingTestimonials({
 	testimonials: typeof testimonials;
 	reverse?: boolean;
 }): ReactElement {
-	const duplicatedTestimonials = new Array(15).fill(rowTestimonials).flat();
-
 	return (
-		<div className="group relative flex gap-5 overflow-hidden">
-			<div
-				className="flex shrink-0 gap-5 group-hover:[animation-play-state:paused]"
-				style={{
-					animation: reverse
-						? 'slide-right 300s linear infinite'
-						: 'slide-left 300s linear infinite',
-				}}
+		<Marquee className="relative">
+			<MarqueeFade side="left" />
+			<MarqueeFade side="right" />
+			<MarqueeContent
+				direction={reverse ? 'right' : 'left'}
+				gradient={false}
+				pauseOnClick
+				pauseOnHover
+				speed={30}
 			>
-				{duplicatedTestimonials.map((testimonial) => (
-					<TestimonialCard
-						key={`${testimonial.name}-${testimonial.profession}`}
-						testimonial={testimonial}
-					/>
+				{rowTestimonials.map((t) => (
+					<MarqueeItem key={`${t.name}-${t.profession}${reverse ? '-r' : ''}`}>
+						<TestimonialCard testimonial={t} />
+					</MarqueeItem>
 				))}
-			</div>
-		</div>
+			</MarqueeContent>
+		</Marquee>
 	);
 }
 
 export default function Testimonials(): ReactElement {
 	return (
-		<>
-			<style>{`
-				@keyframes slide-left {
-					from { transform: translateX(0%); }
-					to { transform: translateX(-50%); }
-				}
-				@keyframes slide-right {
-					from { transform: translateX(-50%); }
-					to { transform: translateX(0%); }
-				}
-			`}</style>
-
-			<div className="relative w-full">
-				{/* Header Section */}
-				<div className="mb-8 px-4 text-center sm:px-6 lg:mb-12 lg:px-8">
-					<h2 className="mb-4 font-medium text-2xl leading-tight sm:text-3xl lg:text-4xl xl:text-5xl">
-						What developers are saying
-					</h2>
-					<p className="mx-auto max-w-2xl text-muted-foreground text-sm sm:text-base lg:text-lg">
-						Join thousands of developers who trust Databuddy for their analytics
-						needs
-					</p>
-				</div>
-
-				{/* Testimonials Slider */}
-				<div
-					className="flex flex-col gap-3 px-4 sm:gap-4 sm:px-0 lg:gap-5"
-					style={{
-						maskImage:
-							'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)',
-					}}
-				>
-					<SlidingTestimonials
-						testimonials={testimonials.slice(
-							0,
-							Math.floor(testimonials.length / 2)
-						)}
-					/>
-					<SlidingTestimonials
-						reverse
-						testimonials={testimonials.slice(
-							Math.floor(testimonials.length / 2)
-						)}
-					/>
-				</div>
+		<div className="relative w-full">
+			{/* Header Section */}
+			<div className="mb-8 px-4 text-center sm:px-6 lg:mb-12 lg:px-8">
+				<h2 className="mb-4 font-medium text-2xl leading-tight sm:text-3xl lg:text-4xl xl:text-5xl">
+					What developers are saying
+				</h2>
+				<p className="mx-auto max-w-2xl text-muted-foreground text-sm sm:text-base lg:text-lg">
+					Join thousands of developers who trust Databuddy for their analytics
+					needs
+				</p>
 			</div>
-		</>
+
+			{/* Testimonials Marquee */}
+			<div className="flex flex-col gap-4 px-4 sm:px-0 lg:gap-5">
+				<SlidingTestimonials
+					testimonials={testimonials.slice(
+						0,
+						Math.floor(testimonials.length / 2)
+					)}
+				/>
+				<SlidingTestimonials
+					reverse
+					testimonials={testimonials.slice(Math.floor(testimonials.length / 2))}
+				/>
+			</div>
+		</div>
 	);
 }

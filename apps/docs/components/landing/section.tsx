@@ -24,10 +24,10 @@ const Section = ({
 			{children}
 
 			{/* Left border line - hidden on mobile, visible on larger screens */}
-			<div className="pointer-events-none absolute top-0 left-4 hidden h-[calc(100%_+_30px)] w-[0.0625rem] bg-stone-200 sm:left-6 lg:left-16 lg:block xl:left-16 dark:bg-border" />
+			<div className="pointer-events-none absolute top-0 left-4 hidden h-[calc(100%_+_30px)] w-px bg-stone-200 sm:left-6 lg:left-16 lg:block xl:left-16 dark:bg-border" />
 
 			{/* Right border line - hidden on mobile, visible on larger screens */}
-			<div className="pointer-events-none absolute top-0 right-4 hidden h-[calc(100%_+_30px)] w-[0.0625rem] bg-stone-200 sm:right-6 lg:right-14 lg:block xl:right-14 dark:bg-border" />
+			<div className="pointer-events-none absolute top-0 right-4 hidden h-[calc(100%_+_30px)] w-px bg-stone-200 sm:right-6 lg:right-14 lg:block xl:right-14 dark:bg-border" />
 
 			{crosses && <SectionSvg crossesOffset={crossesOffset} />}
 		</div>

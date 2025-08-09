@@ -8,7 +8,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 		<HomeLayout {...baseOptions}>
 			<div className="flex min-h-screen flex-col font-manrope">
 				<Navbar />
-				<main className="overflow-hidden">{children}</main>
+				<main>{children}</main>
 			</div>
 		</HomeLayout>
 	);

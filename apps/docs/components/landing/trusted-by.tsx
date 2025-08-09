@@ -97,7 +97,7 @@ import { LogoCarousel } from './logo-carousel';
 
 export const TrustedBy = () => {
 	return (
-		<div className="relative flex h-full w-full flex-col items-center overflow-hidden lg:flex-row">
+		<div className="relative flex h-full w-full flex-col items-center overflow-hidden pt-6 sm:pt-8 lg:flex-row">
 			{/* Mobile Layout */}
 			<div className="block w-full space-y-8 text-center lg:hidden">
 				<h2 className="mx-auto max-w-xs font-medium text-foreground text-xl leading-tight sm:text-2xl">
@@ -110,7 +110,7 @@ export const TrustedBy = () => {
 
 			{/* Desktop Layout */}
 			<div className="hidden w-full items-center lg:flex">
-				<div className="flex-shrink-0 pr-16 md:pr-20 xl:pr-24">
+				<div className="flex h-24 flex-shrink-0 items-center pr-16 md:pr-20 xl:pr-24">
 					<h2 className="max-w-xs font-medium text-foreground text-xl leading-tight xl:text-2xl">
 						Trusted by developers around the world
 					</h2>
