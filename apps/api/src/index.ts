@@ -1,7 +1,9 @@
 import './polyfills/compression';
+import { auth } from '@databuddy/auth';
 import { appRouter, createTRPCContext } from '@databuddy/rpc';
 import cors from '@elysiajs/cors';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
+import { autumnHandler } from 'autumn-js/elysia';
 import { Elysia } from 'elysia';
 import { logger } from './lib/logger';
 import { assistant } from './routes/assistant';
@@ -18,6 +20,23 @@ const app = new Elysia()
 					? ['http://localhost:3000']
 					: []),
 			],
+		})
+	)
+	.use(
+		autumnHandler({
+			identify: async ({ request }) => {
+				const session = await auth.api.getSession({
+					headers: request.headers,
+				});
+
+				return {
+					customerId: session?.user.id,
+					customerData: {
+						name: session?.user.name,
+						email: session?.user.email,
+					},
+				};
+			},
 		})
 	)
 
