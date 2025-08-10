@@ -1,4 +1,4 @@
-import { auth } from '@databuddy/auth';
+import { auth, type User } from '@databuddy/auth';
 import { Elysia } from 'elysia';
 import type { StreamingUpdate } from '../agent';
 import {
@@ -21,15 +21,11 @@ async function* createErrorResponse(
 export const assistant = new Elysia({ prefix: '/v1/assistant' })
 	.use(createRateLimitMiddleware({ type: 'expensive' }))
 	.derive(async ({ request }) => {
-		const session = await auth.api.getSession({
-			headers: request.headers,
-		});
-
+		const session = await auth.api.getSession({ headers: request.headers });
 		if (!session?.user) {
 			throw new Error('Unauthorized');
 		}
-
-		return { user: session.user, session };
+		return { user: session.user as User, session };
 	})
 	.post(
 		'/stream',

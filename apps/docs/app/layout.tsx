@@ -98,19 +98,19 @@ export default function Layout({ children }: { children: ReactNode }) {
 			lang="en"
 			suppressHydrationWarning
 		>
+			<Script
+				async
+				data-client-id="OXmNQsViBT-FOS_wZCTHc"
+				data-track-attributes={true}
+				data-track-errors={true}
+				data-track-outgoing-links={true}
+				data-track-web-vitals={true}
+				src="https://cdn.databuddy.cc/databuddy.js"
+				strategy="afterInteractive"
+			/>
 			<Head>
 				<link href="https://icons.duckduckgo.com" rel="preconnect" />
 				<link href="https://icons.duckduckgo.com" rel="dns-prefetch" />
-				<Script
-					async
-					data-client-id="OXmNQsViBT-FOS_wZCTHc"
-					data-track-attributes={true}
-					data-track-errors={true}
-					data-track-outgoing-links={true}
-					data-track-web-vitals={true}
-					src="https://cdn.databuddy.cc/databuddy.js"
-					strategy="afterInteractive"
-				/>
 			</Head>
 			<body>
 				<ThemeProvider attribute="class" defaultTheme="system" enableSystem>

@@ -6,6 +6,7 @@ import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { autumnHandler } from 'autumn-js/elysia';
 import { Elysia } from 'elysia';
 import { logger } from './lib/logger';
+import { createAuthMiddleware } from './middleware/auth';
 import { assistant } from './routes/assistant';
 import { health } from './routes/health';
 import { query } from './routes/query';
@@ -22,6 +23,7 @@ const app = new Elysia()
 			],
 		})
 	)
+	.use(createAuthMiddleware())
 	.use(
 		autumnHandler({
 			identify: async ({ request }) => {
