@@ -10,6 +10,13 @@ import ContributorsHero from './contributors-hero';
 import PunchCardHeatmap from './punch-card-heatmap';
 import ReleasesTimeline from './releases-timeline';
 
+const statsCache: {
+	commitActivity?: ProcessedCommitActivity[];
+	codeFrequency?: ProcessedCodeFrequency[];
+	punchCard?: ProcessedPunchCard[];
+	lastUpdated?: number;
+} = {};
+
 export const metadata: Metadata = {
 	title: 'Contributors | Databuddy',
 	description:
@@ -179,7 +186,7 @@ async function fetchCommitActivity(
 		if (response.ok) {
 			const data = await response.json();
 			if (Array.isArray(data) && data.length > 0) {
-				return data
+				const processedData = data
 					.filter(
 						(week: unknown): week is GitHubCommitActivity =>
 							week !== null &&
@@ -194,6 +201,10 @@ async function fetchCommitActivity(
 						commits: week.total,
 						date: new Date(week.week * 1000),
 					}));
+
+				statsCache.commitActivity = processedData;
+				statsCache.lastUpdated = Date.now();
+				return processedData;
 			}
 		} else {
 			console.warn(
@@ -203,7 +214,8 @@ async function fetchCommitActivity(
 	} catch (error) {
 		console.error('Failed to fetch commit activity:', error);
 	}
-	return [];
+
+	return statsCache.commitActivity || [];
 }
 
 async function fetchCodeFrequency(
@@ -218,7 +230,7 @@ async function fetchCodeFrequency(
 		if (response.ok) {
 			const data = await response.json();
 			if (Array.isArray(data) && data.length > 0) {
-				return data
+				const processedData = data
 					.filter((week: unknown) => Array.isArray(week) && week.length === 3)
 					.map((week: GitHubCodeFrequency) => ({
 						week: new Date(week[0] * 1000).toISOString().split('T')[0],
@@ -226,6 +238,11 @@ async function fetchCodeFrequency(
 						deletions: Math.abs(week[2]), // Make deletions positive for display
 						date: new Date(week[0] * 1000),
 					}));
+
+				// Cache the successful result
+				statsCache.codeFrequency = processedData;
+				statsCache.lastUpdated = Date.now();
+				return processedData;
 			}
 		} else {
 			console.warn(`GitHub API returned ${response.status} for code frequency`);
@@ -233,7 +250,8 @@ async function fetchCodeFrequency(
 	} catch (error) {
 		console.error('Failed to fetch code frequency:', error);
 	}
-	return [];
+
+	return statsCache.codeFrequency || [];
 }
 
 async function fetchPunchCard(
@@ -249,7 +267,7 @@ async function fetchPunchCard(
 			const data = await response.json();
 			if (Array.isArray(data) && data.length > 0) {
 				const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-				return data
+				const processedData = data
 					.filter((item: unknown) => Array.isArray(item) && item.length === 3)
 					.map((item: GitHubPunchCard) => ({
 						day: item[0],
@@ -257,6 +275,11 @@ async function fetchPunchCard(
 						commits: item[2],
 						dayName: dayNames[item[0]] || 'Unknown',
 					}));
+
+				// Cache the successful result
+				statsCache.punchCard = processedData;
+				statsCache.lastUpdated = Date.now();
+				return processedData;
 			}
 		} else {
 			console.warn(`GitHub API returned ${response.status} for punch card`);
@@ -264,7 +287,9 @@ async function fetchPunchCard(
 	} catch (error) {
 		console.error('Failed to fetch punch card:', error);
 	}
-	return [];
+
+	// Return cached data if available, otherwise empty array
+	return statsCache.punchCard || [];
 }
 
 async function fetchReleases(
