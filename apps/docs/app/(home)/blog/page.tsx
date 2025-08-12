@@ -169,7 +169,8 @@ function BlogPostCard({ post }: { post: Post }) {
 }
 
 export default async function BlogPage() {
-	const { posts } = await getPosts();
+	const result = await getPosts();
+	const posts = 'error' in result ? [] : result.posts;
 	const sortedPosts = [...posts].sort(
 		(a, b) =>
 			new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()

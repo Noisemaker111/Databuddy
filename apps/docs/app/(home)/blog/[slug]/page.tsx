@@ -21,10 +21,17 @@ const WORD_SPLIT_REGEX = /\s+/;
 export const revalidate = 300;
 
 export async function generateStaticParams() {
-	const { posts } = await getPosts();
-	return posts.map((post) => ({
-		slug: post.slug,
-	}));
+	try {
+		const result = await getPosts();
+		if ('error' in result) {
+			return [];
+		}
+		return result.posts.map((post) => ({
+			slug: post.slug,
+		}));
+	} catch {
+		return [];
+	}
 }
 
 interface PageProps {
@@ -39,7 +46,7 @@ export async function generateMetadata({
 
 	try {
 		const data = await getSinglePost(slug);
-		if (!data?.post) {
+		if ('error' in data || !data?.post) {
 			return { title: 'Not Found | Databuddy' };
 		}
 
