@@ -1,9 +1,9 @@
 'use client';
 
-import { filterOptions, type DynamicQueryFilter } from '@databuddy/shared';
+import { type DynamicQueryFilter, filterOptions } from '@databuddy/shared';
 import { ArrowClockwiseIcon, WarningIcon, XIcon } from '@phosphor-icons/react';
 import { useQueryClient } from '@tanstack/react-query';
-import { format, subDays, subHours } from 'date-fns';
+import dayjs from 'dayjs';
 import { useAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -16,8 +16,9 @@ import { DateRangePicker } from '@/components/date-range-picker';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { operatorOptions, useFilters } from '@/hooks/use-filters';
+import { useTrackingSetup } from '@/hooks/use-tracking-setup';
 import { useWebsite } from '@/hooks/use-websites';
-import { trpc } from '@/lib/trpc';
 import {
 	dateRangeAtom,
 	formattedDateRangeAtom,
@@ -25,16 +26,15 @@ import {
 	timeGranularityAtom,
 	timezoneAtom,
 } from '@/stores/jotai/filterAtoms';
-import { operatorOptions, useFilters } from '@/hooks/use-filters';
+import {
+	AddFilterForm,
+	getOperatorShorthand,
+} from './_components/utils/add-filters';
 import type {
 	FullTabProps,
 	WebsiteDataTabProps,
 } from './_components/utils/types';
 import { EmptyState } from './_components/utils/ui-components';
-import {
-	AddFilterForm,
-	getOperatorShorthand,
-} from './_components/utils/add-filters';
 
 type TabId =
 	| 'overview'
@@ -130,8 +130,10 @@ function WebsiteDetailsPage() {
 		(range: (typeof quickRanges)[0]) => {
 			const now = new Date();
 			const start = range.hours
-				? subHours(now, range.hours)
-				: subDays(now, range.days || 7);
+				? dayjs(now).subtract(range.hours, 'hour').toDate()
+				: dayjs(now)
+						.subtract(range.days || 7, 'day')
+						.toDate();
 			setDateRangeAction({ startDate: start, endDate: now });
 		},
 		[setDateRangeAction]
@@ -163,17 +165,7 @@ function WebsiteDetailsPage() {
 		refetch: refetchWebsiteData,
 	} = useWebsite(id as string);
 
-	const { data: trackingSetupData, isLoading: isTrackingSetupLoading } =
-		trpc.websites.isTrackingSetup.useQuery(
-			{ websiteId: id as string },
-			{ enabled: !!id }
-		);
-	const isTrackingSetup = useMemo(() => {
-		if (!data || isTrackingSetupLoading) {
-			return null;
-		}
-		return trackingSetupData?.tracking_setup ?? false;
-	}, [data, isTrackingSetupLoading, trackingSetupData?.tracking_setup]);
+	const { isTrackingSetup } = useTrackingSetup(id as string);
 
 	useEffect(() => {
 		if (isTrackingSetup === false && activeTab === 'overview') {
@@ -336,16 +328,18 @@ function WebsiteDetailsPage() {
 							{quickRanges.map((range) => {
 								const now = new Date();
 								const start = range.hours
-									? subHours(now, range.hours)
-									: subDays(now, range.days || 7);
+									? dayjs(now).subtract(range.hours, 'hour').toDate()
+									: dayjs(now)
+											.subtract(range.days || 7, 'day')
+											.toDate();
 								const dayPickerCurrentRange = dayPickerSelectedRange;
 								const isActive =
 									dayPickerCurrentRange?.from &&
 									dayPickerCurrentRange?.to &&
-									format(dayPickerCurrentRange.from, 'yyyy-MM-dd') ===
-										format(start, 'yyyy-MM-dd') &&
-									format(dayPickerCurrentRange.to, 'yyyy-MM-dd') ===
-										format(now, 'yyyy-MM-dd');
+									dayjs(dayPickerCurrentRange.from).format('YYYY-MM-DD') ===
+										dayjs(start).format('YYYY-MM-DD') &&
+									dayjs(dayPickerCurrentRange.to).format('YYYY-MM-DD') ===
+										dayjs(now).format('YYYY-MM-DD');
 
 								return (
 									<Button
