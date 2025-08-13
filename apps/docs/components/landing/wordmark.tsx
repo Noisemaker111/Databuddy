@@ -149,8 +149,8 @@ export function MagicSVG({
 		animatedY.set(-gradientSize * 2);
 	}, [gradientSize, animatedX, animatedY]);
 
-	const gradientId = `magic-gradient-${Math.random().toString(36).substr(2, 9)}`;
-	const maskId = `magic-mask-${Math.random().toString(36).substr(2, 9)}`;
+	const gradientId = 'magic-gradient-wordmark';
+	const maskId = 'magic-mask-wordmark';
 
 	return (
 		<motion.svg
@@ -212,11 +212,14 @@ export function MagicSVG({
 							childType !== 'mask' &&
 							childType !== 'clipPath'
 						) {
-							return React.cloneElement(child as React.ReactElement<any>, {
-								stroke: strokeColor,
-								strokeWidth,
-								fill,
-							});
+							return React.cloneElement(
+								child as React.ReactElement<React.SVGProps<SVGElement>>,
+								{
+									stroke: strokeColor,
+									strokeWidth,
+									fill,
+								}
+							);
 						}
 					}
 					return null;
@@ -232,11 +235,14 @@ export function MagicSVG({
 							childType !== 'mask' &&
 							childType !== 'clipPath'
 						) {
-							return React.cloneElement(child as React.ReactElement<any>, {
-								stroke: `url(#${gradientId})`,
-								strokeWidth: strokeWidth + 1,
-								fill,
-							});
+							return React.cloneElement(
+								child as React.ReactElement<React.SVGProps<SVGElement>>,
+								{
+									stroke: `url(#${gradientId})`,
+									strokeWidth: strokeWidth + 1,
+									fill,
+								}
+							);
 						}
 					}
 					return null;
