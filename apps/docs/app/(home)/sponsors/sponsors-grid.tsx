@@ -99,26 +99,20 @@ export default function SponsorsGrid({ sponsors }: SponsorsGridProps) {
 		);
 	}
 
-	const sponsorsByTier = sponsors.reduce(
-		(acc, sponsor) => {
-			if (!acc[sponsor.tier]) {
-				if (sponsor.disabled) {
-					return acc;
+	const sponsorsByTier = sponsors
+		.filter((sponsor) => !sponsor.disabled)
+		.reduce(
+			(acc, sponsor) => {
+				if (!acc[sponsor.tier]) {
+					acc[sponsor.tier] = [];
 				}
-				acc[sponsor.tier] = [];
-			}
-			acc[sponsor.tier].push(sponsor);
-			return acc;
-		},
-		{} as Record<string, Sponsor[]>
-	);
+				acc[sponsor.tier].push(sponsor);
+				return acc;
+			},
+			{} as Record<string, Sponsor[]>
+		);
 
-	const tierOrder: Array<keyof typeof sponsorsByTier> = [
-		'platinum',
-		'gold',
-		'silver',
-		'bronze',
-	];
+	const tierOrder = ['platinum', 'gold', 'silver', 'bronze'] as const;
 
 	return (
 		<div>
@@ -141,14 +135,14 @@ export default function SponsorsGrid({ sponsors }: SponsorsGridProps) {
 						return null;
 					}
 
-					const tierLabels = {
+					const tierLabels: Record<typeof tier, string> = {
 						platinum: 'Platinum Sponsors',
 						gold: 'Gold Sponsors',
 						silver: 'Silver Sponsors',
 						bronze: 'Bronze Sponsors',
 					};
 
-					const gridCols = {
+					const gridCols: Record<typeof tier, string> = {
 						platinum: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2',
 						gold: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
 						silver: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',

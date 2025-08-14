@@ -29,10 +29,11 @@ export const sponsors: Sponsor[] = [
 	},
 ];
 
-// Calculate sponsor statistics
+const activeSponsors = sponsors.filter((s) => !s.disabled);
+
 export const sponsorStats = {
-	totalSponsors: sponsors.length,
-	featuredSponsors: sponsors.filter(
+	totalSponsors: activeSponsors.length,
+	featuredSponsors: activeSponsors.filter(
 		(s) => s.tier === 'platinum' || s.tier === 'gold'
 	).length,
 };
