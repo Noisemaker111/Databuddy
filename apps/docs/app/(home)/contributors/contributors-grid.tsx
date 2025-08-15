@@ -22,7 +22,7 @@ function ContributorCard({ contributor }: { contributor: Contributor }) {
 		<Link
 			className="group block"
 			href={contributor.html_url}
-			rel="noopener noreferrer"
+			rel="noopener noreferrer nofollow"
 			target="_blank"
 		>
 			<div className="relative h-full rounded border border-border bg-card/50 backdrop-blur-sm transition-all duration-300 hover:border-border/80 hover:bg-card/70 hover:shadow-lg">
