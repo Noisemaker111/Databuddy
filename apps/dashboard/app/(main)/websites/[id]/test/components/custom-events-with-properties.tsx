@@ -15,46 +15,6 @@ interface CustomEventsWithPropertiesProps {
 	websiteId: string;
 }
 
-// Mock data to simulate the query response with properties
-const mockCustomEventsData = [
-	{
-		name: 'navbar-nav-click',
-		total_events: 2711,
-		unique_users: 1299,
-		unique_sessions: 1858,
-		last_occurrence: '2025-07-31 08:30:55.050',
-		first_occurrence: '2025-07-01 01:49:57.205',
-		unique_pages: 15,
-		events_with_properties: 2650,
-		percentage: 88.48,
-		all_properties: [
-			'{"navItem":"assistant","navType":"website","navSection":"website-nav","isExternal":"false"}',
-			'{"navItem":"pricing","navType":"website","navSection":"website-nav","isExternal":"false"}',
-			'{"navItem":"docs","navType":"website","navSection":"website-nav","isExternal":"false"}',
-			'{"navItem":"assistant","navType":"website","navSection":"website-nav","isExternal":"false"}',
-			'{"navItem":"blog","navType":"website","navSection":"website-nav","isExternal":"false"}',
-			'{"navItem":"github","navType":"external","navSection":"website-nav","isExternal":"true"}',
-		],
-	},
-	{
-		name: 'button-click',
-		total_events: 1205,
-		unique_users: 892,
-		unique_sessions: 1045,
-		last_occurrence: '2025-07-31 07:15:22.123',
-		first_occurrence: '2025-07-01 02:30:15.456',
-		unique_pages: 8,
-		events_with_properties: 1180,
-		percentage: 39.35,
-		all_properties: [
-			'{"buttonType":"primary","action":"signup","location":"hero"}',
-			'{"buttonType":"secondary","action":"learn-more","location":"features"}',
-			'{"buttonType":"primary","action":"signup","location":"pricing"}',
-			'{"buttonType":"ghost","action":"close","location":"modal"}',
-		],
-	},
-];
-
 function processPropertiesData(allProperties: string[], totalEvents: number) {
 	const propertyMap = new Map<string, Map<string, number>>();
 

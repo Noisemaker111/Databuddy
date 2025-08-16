@@ -69,7 +69,12 @@ interface MinimalTableProps<TData extends RowData, TValue> {
 }
 
 // Helper function to get percentage value from row data
-function getRowPercentage(row: any): number {
+function getRowPercentage(row: {
+	marketShare?: string;
+	percentage?: string;
+	percent?: string;
+	share?: string;
+}): number {
 	// Try to find percentage in common property names
 	if (row.marketShare !== undefined) {
 		return Number.parseFloat(row.marketShare) || 0;
@@ -415,7 +420,11 @@ export function MinimalTable<TData extends RowData, TValue>({
 														}
 														className={cn(
 															'h-9 bg-muted/20 px-3 font-semibold text-muted-foreground text-xs backdrop-blur-sm',
-															(header.column.columnDef.meta as any)?.className,
+															(
+																header.column.columnDef.meta as {
+																	className?: string;
+																}
+															)?.className,
 															header.column.getCanSort()
 																? 'group cursor-pointer select-none transition-all duration-200 hover:bg-muted/30 hover:text-foreground'
 																: 'select-none'
@@ -469,7 +478,14 @@ export function MinimalTable<TData extends RowData, TValue>({
 													: undefined;
 											const hasSubRows = subRows && subRows.length > 0;
 											const isExpanded = expandedRows.has(row.id);
-											const percentage = getRowPercentage(row.original);
+											const percentage = getRowPercentage(
+												row.original as {
+													marketShare?: string;
+													percentage?: string;
+													percent?: string;
+													share?: string;
+												}
+											);
 											const gradient = getPercentageGradient(percentage);
 
 											return (
@@ -553,7 +569,11 @@ export function MinimalTable<TData extends RowData, TValue>({
 																	'px-3 py-2.5 font-medium text-foreground/90 text-sm',
 																	cellIndex === 0 &&
 																		'font-semibold text-foreground',
-																	(cell.column.columnDef.meta as any)?.className
+																	(
+																		cell.column.columnDef.meta as {
+																			className?: string;
+																		}
+																	)?.className
 																)}
 																key={cell.id}
 																style={{
@@ -638,13 +658,18 @@ export function MinimalTable<TData extends RowData, TValue>({
 																					{cellIndex === 0 ? (
 																						<span className="text-xs">
 																							↳{' '}
-																							{(subRow as any)[
-																								cell.column.id
-																							] || ''}
+																							{(
+																								subRow as {
+																									[key: string]: string;
+																								}
+																							)[cell.column.id] || ''}
 																						</span>
 																					) : (
-																						(subRow as any)[cell.column.id] ||
-																						''
+																						(
+																							subRow as {
+																								[key: string]: string;
+																							}
+																						)[cell.column.id] || ''
 																					)}
 																				</div>
 																			</TableCell>

@@ -1,9 +1,9 @@
-import { TRPCError } from '@trpc/server';
-import { z } from 'zod';
-import { and, asc, desc, eq } from 'drizzle-orm';
-import { db, assistantConversations, assistantMessages } from '@databuddy/db';
-import { createTRPCRouter, protectedProcedure } from '../trpc';
+import { assistantConversations, assistantMessages, db } from '@databuddy/db';
 import { createId } from '@databuddy/shared';
+import { TRPCError } from '@trpc/server';
+import { and, asc, desc, eq } from 'drizzle-orm';
+import { z } from 'zod';
+import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const assistantRouter = createTRPCRouter({
 	// Save a conversation (creates conversation + message)
@@ -139,7 +139,7 @@ export const assistantRouter = createTRPCRouter({
 						? and(
 								eq(assistantConversations.userId, ctx.user.id),
 								eq(assistantConversations.websiteId, input.websiteId)
-						  )
+							)
 						: eq(assistantConversations.userId, ctx.user.id)
 				)
 				.orderBy(desc(assistantConversations.updatedAt))
@@ -231,11 +231,12 @@ export const assistantRouter = createTRPCRouter({
 
 			// Add comment if provided
 			if (input.comment) {
-				const existingComments = (message.feedbackComments as Array<{
-					userId: string;
-					comment: string;
-					timestamp: string;
-				}>) || [];
+				const existingComments =
+					(message.feedbackComments as Array<{
+						userId: string;
+						comment: string;
+						timestamp: string;
+					}>) || [];
 				updates.feedbackComments = [
 					...existingComments,
 					{
@@ -281,7 +282,7 @@ export const assistantRouter = createTRPCRouter({
 		.mutation(async ({ ctx, input }) => {
 			await db
 				.update(assistantConversations)
-				.set({ 
+				.set({
 					title: input.title,
 					updatedAt: new Date().toISOString(),
 				})
