@@ -91,7 +91,7 @@ export function WebsiteSettingsTab({
 	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 	const [showEditDialog, setShowEditDialog] = useState(false);
 	// Data export hook
-	const { exportData, isExporting } = useDataExport({
+	const dataExportMutation = useDataExport({
 		websiteId,
 		websiteName: websiteData?.name || undefined,
 	});

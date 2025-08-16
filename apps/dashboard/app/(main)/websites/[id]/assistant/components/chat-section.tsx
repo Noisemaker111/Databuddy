@@ -113,17 +113,12 @@ export default function ChatSection() {
 		}
 	}, [isLoading]);
 
-	useEffect(() => {
-		if (bottomRef.current) {
-			bottomRef.current.scrollIntoView({ behavior: 'auto' });
-		}
-	}, []);
-
+	// Auto-scroll to bottom when messages change
 	useEffect(() => {
 		if (bottomRef.current) {
 			bottomRef.current.scrollIntoView({ behavior: 'smooth' });
 		}
-	}, []);
+	}, [messages.length]);
 
 	const hasMessages = messages.length > 1;
 
