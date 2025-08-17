@@ -128,10 +128,21 @@ export const contents: SidebarSection[] = [
 				href: '/docs/dashboard',
 				icon: MonitorIcon,
 			},
+		],
+	},
+	{
+		title: 'Comparisons',
+		Icon: ChartLineIcon,
+		list: [
 			{
-				title: 'Comparisons',
-				href: '/docs/comparisons',
-				icon: ChartLineIcon,
+				title: 'Databuddy vs Google Analytics',
+				href: '/docs/comparisons/databuddy-vs-google-analytics',
+				icon: TrendUpIcon,
+			},
+			{
+				title: 'Best Analytics Tools 2024',
+				href: '/docs/comparisons/best-analytics-tools-2024',
+				icon: ChartBarIcon,
 			},
 		],
 	},
