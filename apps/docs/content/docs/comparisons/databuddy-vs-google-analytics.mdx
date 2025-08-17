@@ -4,8 +4,6 @@ description: "Detailed comparison between Databuddy and Google Analytics. Learn 
 icon: "BarChart3"
 ---
 
-import { CodeBlock } from "@/components/docs";
-
 Choosing the right analytics platform is crucial for your business. This comprehensive comparison will help you understand the key differences between Databuddy and Google Analytics to make an informed decision.
 
 ## Quick Comparison Table
@@ -117,14 +115,13 @@ Choosing the right analytics platform is crucial for your business. This compreh
 
 ### Databuddy Setup
 
-<CodeBlock 
-  language="html"
-  filename="Simple one-line setup"
-  code={`<script
+```html
+<!-- Simple one-line setup -->
+<script
   src="https://cdn.databuddy.cc/sdk.js"
   data-client-id="your-client-id"
-></script>`}
-/>
+></script>
+```
 
 **Setup time:** 2-5 minutes
 
@@ -134,10 +131,8 @@ Choosing the right analytics platform is crucial for your business. This compreh
 
 ### Google Analytics Setup
 
-<CodeBlock 
-  language="html"
-  filename="Google Analytics 4 setup"
-  code={`<!-- Google Analytics 4 setup -->
+```html
+<!-- Google Analytics 4 setup -->
 <script
   async
   src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"
@@ -149,8 +144,8 @@ Choosing the right analytics platform is crucial for your business. This compreh
   }
   gtag("js", new Date());
   gtag("config", "GA_MEASUREMENT_ID");
-</script>`}
-/>
+</script>
+```
 
 **Setup time:** 30+ minutes
 
