@@ -1,79 +1,81 @@
 import { createHash } from 'node:crypto';
 import type { City } from '@maxmind/geoip2-node';
-import {
-	AddressNotFoundError,
-	BadMethodCallError,
-	Reader,
-} from '@maxmind/geoip2-node';
-import { logger } from '../lib/logger';
+import { AddressNotFoundError, Reader } from '@maxmind/geoip2-node';
+
+// import { logger } from '../lib/logger';
+const logger = console;
 
 interface GeoIPReader extends Reader {
 	city(ip: string): City;
 }
 
-const CDN_URL = 'https://cdn.databuddy.cc/GeoLite2-City.mmdb';
+const IPV4_URL = process.env.IPV4_URL;
+const IPV6_URL = process.env.IPV6_URL;
 
-let reader: GeoIPReader | null = null;
+const CDN_URLS = {
+	ipv4: IPV4_URL,
+	ipv6: IPV6_URL,
+} as const;
+
+let ipv4Reader: GeoIPReader | null = null;
+let ipv6Reader: GeoIPReader | null = null;
 let isLoading = false;
-let loadPromise: Promise<void> | null = null;
-let loadError: Error | null = null;
 
-async function loadDatabaseFromCdn(): Promise<Buffer> {
-	try {
-		const response = await fetch(CDN_URL);
-		if (!response.ok) {
-			throw new Error(
-				`Failed to fetch database from CDN: ${response.status} ${response.statusText}`
-			);
-		}
+// Initialize databases on module load
+loadDatabases().catch((error) => {
+	logger.error('Failed to initialize GeoIP databases on startup:', { error });
+});
 
-		const arrayBuffer = await response.arrayBuffer();
-		const dbBuffer = Buffer.from(arrayBuffer);
-
-		if (dbBuffer.length < 1_000_000) {
-			throw new Error(
-				`Database file seems too small: ${dbBuffer.length} bytes`
-			);
-		}
-
-		return dbBuffer;
-	} catch (error) {
-		logger.error('Failed to load database from CDN:', { error });
-		throw error;
-	}
-}
-
-function loadDatabase() {
-	if (loadError) {
-		throw loadError;
-	}
-
-	if (isLoading && loadPromise) {
-		return loadPromise;
-	}
-
-	if (reader) {
+async function loadDatabases() {
+	if (isLoading || (ipv4Reader && ipv6Reader)) {
+		logger.info('GeoIP databases already loaded or loading');
 		return;
 	}
 
+	logger.info('Starting to load GeoIP databases...');
 	isLoading = true;
-	loadPromise = (async () => {
-		try {
-			const dbBuffer = await loadDatabaseFromCdn();
 
-			await new Promise((resolve) => setTimeout(resolve, 100));
+	try {
+		logger.info('Fetching IPv4 and IPv6 databases from CDN...');
+		const [ipv4Response, ipv6Response] = await Promise.all([
+			fetch(CDN_URLS.ipv4 || ''),
+			fetch(CDN_URLS.ipv6 || ''),
+		]);
 
-			reader = Reader.openBuffer(dbBuffer) as GeoIPReader;
-		} catch (error) {
-			logger.error('Failed to load GeoIP database:', { error });
-			loadError = error as Error;
-			reader = null;
-		} finally {
-			isLoading = false;
+		if (!ipv4Response.ok) {
+			throw new Error(
+				`IPv4 database fetch failed: ${ipv4Response.status} ${ipv4Response.statusText}`
+			);
 		}
-	})();
+		if (!ipv6Response.ok) {
+			throw new Error(
+				`IPv6 database fetch failed: ${ipv6Response.status} ${ipv6Response.statusText}`
+			);
+		}
 
-	return loadPromise;
+		logger.info('Converting database responses to buffers...');
+		const [ipv4Buffer, ipv6Buffer] = await Promise.all([
+			ipv4Response.arrayBuffer(),
+			ipv6Response.arrayBuffer(),
+		]);
+
+		logger.info(
+			`Database sizes - IPv4: ${ipv4Buffer.byteLength} bytes, IPv6: ${ipv6Buffer.byteLength} bytes`
+		);
+
+		logger.info('Opening database readers...');
+		ipv4Reader = Reader.openBuffer(Buffer.from(ipv4Buffer)) as GeoIPReader;
+		ipv6Reader = Reader.openBuffer(Buffer.from(ipv6Buffer)) as GeoIPReader;
+
+		logger.info('GeoIP databases loaded successfully');
+	} catch (error) {
+		logger.error('Failed to load GeoIP databases:', {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
+	} finally {
+		isLoading = false;
+	}
 }
 
 const ignore = ['127.0.0.1', '::1'];
@@ -83,67 +85,79 @@ const ipv4Regex =
 
 const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
-function isValidIp(ip: string): boolean {
+function getIpType(ip: string): 'ipv4' | 'ipv6' | null {
 	if (!ip) {
-		return false;
+		return null;
 	}
 
 	if (ipv4Regex.test(ip)) {
-		return true;
+		return 'ipv4';
 	}
 
 	if (ipv6Regex.test(ip)) {
-		return true;
+		return 'ipv6';
 	}
 
-	return false;
+	return null;
 }
 
 export async function getGeoLocation(ip: string) {
-	if (!ip || ignore.includes(ip) || !isValidIp(ip)) {
+	if (!ip || ignore.includes(ip)) {
+		logger.debug('IP ignored or empty', { ip, ignored: ignore.includes(ip) });
 		return { country: undefined, region: undefined, city: undefined };
 	}
 
-	if (!(reader || isLoading || loadError)) {
-		try {
-			await loadDatabase();
-		} catch (error) {
-			logger.error('Failed to load database for IP lookup:', { error });
-			return { country: undefined, region: undefined, city: undefined };
-		}
+	const ipType = getIpType(ip);
+	if (!ipType) {
+		logger.warn('Invalid IP format', { ip });
+		return { country: undefined, region: undefined, city: undefined };
 	}
 
+	logger.debug('Processing IP lookup', { ip, type: ipType });
+
+	await loadDatabases();
+
+	const reader = ipType === 'ipv4' ? ipv4Reader : ipv6Reader;
 	if (!reader) {
+		logger.error('Database reader not available', {
+			ip,
+			type: ipType,
+			hasIpv4Reader: !!ipv4Reader,
+			hasIpv6Reader: !!ipv6Reader,
+		});
 		return { country: undefined, region: undefined, city: undefined };
 	}
 
 	try {
 		const response = reader.city(ip);
-
-		// Extract region and city data
 		const region = response.subdivisions?.[0]?.names?.en;
 		const city = response.city?.names?.en;
+		const country = response.country?.names?.en;
+
+		logger.debug('IP lookup successful', {
+			ip,
+			type: ipType,
+			country,
+			region,
+			city,
+		});
 
 		return {
-			country: response.country?.names?.en,
+			country,
 			region,
 			city,
 		};
 	} catch (error) {
-		// Handle AddressNotFoundError specifically (IP not in database)
 		if (error instanceof AddressNotFoundError) {
+			logger.debug('IP not found in database', { ip, type: ipType });
 			return { country: undefined, region: undefined, city: undefined };
 		}
-
-		// Handle BadMethodCallError (wrong database type)
-		if (error instanceof BadMethodCallError) {
-			logger.error(
-				'Database type mismatch - using city() method with ipinfo database'
-			);
-			return { country: undefined, region: undefined, city: undefined };
-		}
-
-		logger.error('Error looking up IP:', { ip, error });
+		logger.error('Error looking up IP:', {
+			ip,
+			type: ipType,
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
 		return { country: undefined, region: undefined, city: undefined };
 	}
 }
