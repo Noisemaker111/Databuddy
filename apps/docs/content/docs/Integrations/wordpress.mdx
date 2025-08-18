@@ -3,8 +3,6 @@ title: WordPress
 description: Add privacy-first analytics to your WordPress site
 ---
 
-import { CodeBlock } from "@/components/docs";
-
 Add Databuddy's privacy-first analytics to your WordPress site without slowing it down. No cookies, fully GDPR compliant, and 247x smaller than Google Analytics.
 
 ## Installation Methods
@@ -30,16 +28,14 @@ If you prefer manual installation:
 3. Select **header.php**
 4. Add your script before the closing `</head>` tag:
 
-<CodeBlock 
-  language="html"
-  filename="header.php"
-  code={`<script
+```html
+<script
   src="https://cdn.databuddy.cc/databuddy.js"
   data-site-id="YOUR_SITE_ID"
   async
 ></script>
-</head>`}
-/>
+</head>
+```
 
 ### Method 3: Using a Plugin (Insert Headers and Footers)
 

@@ -2,8 +2,6 @@
 title: React
 description: Integrate privacy-first analytics in your React application
 ---
-
-import { CodeBlock } from "@/components/docs";
   
 Add Databuddy's privacy-first analytics to your React application with TypeScript support and modern best practices.
 
@@ -11,17 +9,15 @@ Add Databuddy's privacy-first analytics to your React application with TypeScrip
 
 Install the Databuddy SDK:
 
-<CodeBlock 
-  language="bash"
-  code="npm install @databuddy/sdk"
-/>
+```bash
+npm install @databuddy/sdk
+```
 
 or with yarn:
 
-<CodeBlock 
-  language="bash"
-  code="yarn add @databuddy/sdk"
-/>
+```bash
+yarn add @databuddy/sdk
+```
 
 ## Basic Setup
 
@@ -29,10 +25,9 @@ or with yarn:
 
 Add the `<Databuddy />` component to inject the tracking script:
 
-<CodeBlock 
-  language="tsx"
-  filename="App.tsx"
-  code={`import { Databuddy } from '@databuddy/sdk';
+```tsx
+// App.tsx
+import { Databuddy } from '@databuddy/sdk';
 
 function App() {
   return (
@@ -47,8 +42,8 @@ function App() {
   );
 }
 
-export default App;`}
-/>
+export default App;
+```
 
 ### 2. Track Page Views
 
