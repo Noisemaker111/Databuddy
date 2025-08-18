@@ -1,11 +1,16 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/app/util/constants';
 import { getPosts } from '@/lib/blog-query';
+import { getAllCompetitorSlugs } from '@/lib/comparison-config';
 import { source } from '@/lib/source';
 
 const priorityRules = [
 	{ pattern: '/docs', priority: 1.0 },
-	{ pattern: '/comparisons/databuddy-vs-google-analytics', priority: 0.95 },
+	{ pattern: '/compare', priority: 0.9 },
+	{ pattern: '/compare/plausible', priority: 0.85 },
+	{ pattern: '/compare/google-analytics', priority: 0.85 },
+	{ pattern: '/compare/fathom', priority: 0.85 },
+
 	{ pattern: '/getting-started', priority: 0.9 },
 	{ pattern: '/sdk', priority: 0.9 },
 	{ pattern: '/compliance/gdpr', priority: 0.85 },
@@ -97,6 +102,7 @@ export async function generateSitemapEntries(): Promise<MetadataRoute.Sitemap> {
 			'/sponsors',
 			'/terms',
 			'/ambassadors',
+			'/compare',
 		];
 		entries.push(
 			...staticPages.map((page) => ({
@@ -135,6 +141,15 @@ export async function generateSitemapEntries(): Promise<MetadataRoute.Sitemap> {
 				priority: 0.8,
 			});
 		}
+
+		const competitorSlugs = getAllCompetitorSlugs();
+		const comparisonEntries = competitorSlugs.map((slug) => ({
+			url: `${SITE_URL}/compare/${slug}`,
+			lastModified,
+			changeFrequency: 'monthly' as const,
+			priority: getPriority(`/compare/${slug}`),
+		}));
+		entries.push(...comparisonEntries);
 	} catch (error) {
 		console.warn('Sitemap generation failed, using minimal fallback:', error);
 		// Minimal fallback - just the main docs page

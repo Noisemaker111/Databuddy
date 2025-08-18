@@ -80,6 +80,14 @@ export function DocsFooter() {
 							<li>
 								<a
 									className="text-muted-foreground hover:text-foreground"
+									href="/compare"
+								>
+									Compare
+								</a>
+							</li>
+							<li>
+								<a
+									className="text-muted-foreground hover:text-foreground"
 									href="/pricing"
 								>
 									Pricing
