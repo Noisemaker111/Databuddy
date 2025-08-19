@@ -55,11 +55,11 @@ export function CategorySidebar({
 	const activeCategory = selectedCategory || defaultCategory;
 
 	return (
-		<div className="fixed inset-y-0 left-0 z-40 w-12 border-r bg-sidebar-primary border-sidebar-border">
+		<div className="fixed inset-y-0 left-0 z-40 w-12 border-sidebar-border border-r bg-sidebar-primary">
 			<div className="flex h-full flex-col">
 				{/* Logo */}
 				<div className="flex h-12 items-center justify-center border-sidebar-border border-b">
-					<Link 
+					<Link
 						className="relative flex-shrink-0 transition-opacity hover:opacity-80"
 						href="/websites"
 					>
@@ -78,13 +78,14 @@ export function CategorySidebar({
 					const isActive = activeCategory === category.id;
 
 					return (
-						<Tooltip key={category.id}>
+						<Tooltip delayDuration={500} key={category.id}>
 							<TooltipTrigger asChild>
 								<button
 									className={cn(
 										'flex items-center justify-center px-3 py-2.5 transition-colors hover:bg-sidebar-accent/50',
 										'focus:outline-none',
-										isActive && 'bg-sidebar-accent text-sidebar-accent-foreground'
+										isActive &&
+											'bg-sidebar-accent text-sidebar-accent-foreground'
 									)}
 									onClick={() => onCategoryChange?.(category.id)}
 									type="button"
@@ -92,7 +93,9 @@ export function CategorySidebar({
 									<Icon
 										className={cn(
 											'h-5 w-5 transition-colors',
-											isActive ? 'text-sidebar-ring' : 'text-sidebar-primary-foreground/70'
+											isActive
+												? 'text-sidebar-ring'
+												: 'text-sidebar-primary-foreground/70'
 										)}
 										weight={isActive ? 'fill' : 'duotone'}
 									/>
