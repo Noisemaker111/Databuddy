@@ -83,7 +83,7 @@ export function CategorySidebar({
 								<button
 									className={cn(
 										'flex items-center justify-center px-3 py-2.5 transition-colors hover:bg-sidebar-accent/50',
-										'focus:outline-none focus:ring-2 focus:ring-sidebar-ring/50',
+										'focus:outline-none',
 										isActive && 'bg-sidebar-accent text-sidebar-accent-foreground'
 									)}
 									onClick={() => onCategoryChange?.(category.id)}
