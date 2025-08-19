@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@databuddy/sdk?style=flat-square)](https://www.npmjs.com/package/@databuddy/sdk)
 [![License](https://img.shields.io/npm/l/@databuddy/sdk?style=flat-square)](./LICENSE)
-[![Docs](https://img.shields.io/badge/docs-databuddy.cc-blue?style=flat-square)](https://docs.databuddy.cc)
+[![Docs](https://img.shields.io/badge/docs-databuddy.cc-blue?style=flat-square)](https://www.databuddy.cc/docs)
 
 > **The easiest, privacy-first way to add analytics to your web app.**
 
@@ -120,7 +120,7 @@ A: In your [Databuddy dashboard](https://app.databuddy.cc).
 
 ## 📚 Documentation & Support
 
-- [Databuddy Docs](https://docs.databuddy.cc)
+- [Databuddy Docs](https://www.databuddy.cc/docs)
 - [Dashboard](https://app.databuddy.cc)
 - [Contact Support](https://www.databuddy.cc/contact)
 

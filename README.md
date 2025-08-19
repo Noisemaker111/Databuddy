@@ -217,7 +217,7 @@ See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 
 ## 💬 Support
 
-- [Documentation](https://docs.databuddy.cc)
+- [Documentation](https://www.databuddy.cc/docs)
 - [Discord](https://discord.gg/JTk7a38tCZ)
 - [Twitter](https://twitter.com/databuddyps)
 - [GitHub Issues](https://github.com/databuddy/databuddy/issues)

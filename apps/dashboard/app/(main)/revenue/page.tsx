@@ -130,7 +130,7 @@ export default function RevenuePage() {
 									</Button>
 									<Button asChild size="sm" variant="outline">
 										<Link
-											href="https://docs.databuddy.cc/docs/Integrations/stripe"
+											href="https://www.databuddy.cc/docs/Integrations/stripe"
 											rel="noopener noreferrer"
 											target="_blank"
 										>
