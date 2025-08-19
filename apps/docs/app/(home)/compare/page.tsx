@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { SciFiButton } from '@/components/landing/scifi-btn';
 import Section from '@/components/landing/section';
 import { Spotlight } from '@/components/landing/spotlight';
+import { StructuredData } from '@/components/structured-data';
 import { Badge } from '@/components/ui/badge';
 import { competitors } from '@/lib/comparison-config';
 
@@ -166,8 +167,20 @@ function CompetitorCard({
 export default function ComparePage() {
 	const competitorEntries = Object.entries(competitors);
 
+	const title = 'Analytics Platform Comparisons | Databuddy';
+	const description =
+		'Compare Databuddy with other analytics platforms. See why developers choose privacy-first analytics with better performance and data ownership.';
+	const url = 'https://www.databuddy.cc/compare';
+
 	return (
 		<div className="overflow-hidden">
+			<StructuredData
+				page={{
+					title,
+					description,
+					url,
+				}}
+			/>
 			<Spotlight transform="translateX(-60%) translateY(-50%)" />
 
 			{/* Navigation */}

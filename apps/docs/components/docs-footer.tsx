@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FaDiscord, FaGithub, FaXTwitter } from 'react-icons/fa6';
 import { IoMdMail } from 'react-icons/io';
 import { SciFiButton } from './landing/scifi-btn';
@@ -64,12 +65,12 @@ export function DocsFooter() {
 								</a>
 							</li>
 							<li>
-								<a
+								<Link
 									className="text-muted-foreground hover:text-foreground"
 									href="/docs/integrations"
 								>
 									Integrations
-								</a>
+								</Link>
 							</li>
 						</ul>
 					</div>
@@ -78,30 +79,30 @@ export function DocsFooter() {
 						<h3 className="font-semibold text-base sm:text-lg">Product</h3>
 						<ul className="space-y-2 text-sm sm:text-base">
 							<li>
-								<a
+								<Link
 									className="text-muted-foreground hover:text-foreground"
 									href="/compare"
 								>
 									Compare
-								</a>
+								</Link>
 							</li>
 							<li>
-								<a
+								<Link
 									className="text-muted-foreground hover:text-foreground"
 									href="/pricing"
 								>
 									Pricing
-								</a>
+								</Link>
 							</li>
 							<li>
-								<a
+								<Link
 									className="text-muted-foreground hover:text-foreground"
-									href="https://app.databuddy.cc"
+									href="https://app.databuddy.cc/login"
 									rel="noopener"
 									target="_blank"
 								>
 									Dashboard
-								</a>
+								</Link>
 							</li>
 							<li>
 								<a
@@ -118,30 +119,30 @@ export function DocsFooter() {
 						<h3 className="font-semibold text-base sm:text-lg">Company</h3>
 						<ul className="space-y-2 text-sm sm:text-base">
 							<li>
-								<a
+								<Link
 									className="text-muted-foreground hover:text-foreground"
 									href="/blog"
 								>
 									Blog
-								</a>
+								</Link>
 							</li>
 							<li>
-								<a
+								<Link
 									className="text-muted-foreground hover:text-foreground"
 									href="/contributors"
 								>
 									Contributors
-								</a>
+								</Link>
 							</li>
 							<li>
-								<a
+								<Link
 									className="text-muted-foreground hover:text-foreground"
 									href="https://github.com/databuddy-analytics"
 									rel="noopener"
 									target="_blank"
 								>
 									Open Source
-								</a>
+								</Link>
 							</li>
 						</ul>
 					</div>
@@ -150,16 +151,16 @@ export function DocsFooter() {
 						<h3 className="font-semibold text-base sm:text-lg">Contact</h3>
 						<ul className="space-y-3 text-sm sm:text-base">
 							<li>
-								<a
+								<Link
 									className="group flex items-center gap-3 text-muted-foreground hover:text-foreground"
 									href="mailto:support@databuddy.cc"
 								>
 									<IoMdMail className="h-5 w-5 shrink-0" />
 									support@databuddy.cc
-								</a>
+								</Link>
 							</li>
 							<li>
-								<a
+								<Link
 									className="group flex items-center gap-3 text-muted-foreground hover:text-foreground"
 									href="https://discord.gg/JTk7a38tCZ"
 									rel="noopener"
@@ -167,28 +168,28 @@ export function DocsFooter() {
 								>
 									<FaDiscord className="h-5 w-5" />
 									Discord
-								</a>
+								</Link>
 							</li>
 							<li>
-								<a
+								<Link
 									className="group flex items-center gap-3 text-muted-foreground hover:text-foreground"
-									href="https://github.com/databuddy-analytics"
+									href="https://github.com/databuddy-analytics/Databuddy"
 									rel="noopener"
 									target="_blank"
 								>
 									<FaGithub className="h-5 w-5" />
 									GitHub
-								</a>
+								</Link>
 							</li>
 							<li>
-								<a
+								<Link
 									className="group flex items-center gap-3 text-muted-foreground hover:text-foreground"
 									href="https://x.com/trydatabuddy"
 									rel="noopener"
 									target="_blank"
 								>
 									<FaXTwitter className="h-5 w-5" />X
-								</a>
+								</Link>
 							</li>
 						</ul>
 					</div>
@@ -197,19 +198,19 @@ export function DocsFooter() {
 				{/* Legal Links Row */}
 				<div className="mt-6">
 					<div className="flex flex-wrap items-center gap-4">
-						<a
+						<Link
 							className="text-muted-foreground/70 text-xs hover:text-muted-foreground sm:text-sm"
 							href="/privacy"
 						>
 							Privacy Policy
-						</a>
+						</Link>
 						<span className="text-muted-foreground/50 text-xs">•</span>
-						<a
+						<Link
 							className="text-muted-foreground/70 text-xs hover:text-muted-foreground sm:text-sm"
 							href="/terms"
 						>
 							Terms of Service
-						</a>
+						</Link>
 					</div>
 				</div>
 

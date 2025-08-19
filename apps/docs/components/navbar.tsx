@@ -196,7 +196,7 @@ export const navMenu = [
 	},
 	{
 		name: 'Dashboard',
-		path: 'https://app.databuddy.cc',
+		path: 'https://app.databuddy.cc/login',
 		external: true,
 	},
 ];

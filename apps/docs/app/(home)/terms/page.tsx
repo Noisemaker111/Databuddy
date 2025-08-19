@@ -15,8 +15,15 @@ const url = 'https://www.databuddy.cc/terms';
 
 export const metadata: Metadata = {
 	title,
+	description:
+		"Clear and fair terms that govern your use of Databuddy's analytics platform. We believe in transparency and straightforward language.",
+	alternates: {
+		canonical: url,
+	},
 	openGraph: {
 		title,
+		description:
+			"Clear and fair terms that govern your use of Databuddy's analytics platform. We believe in transparency and straightforward language.",
 		url,
 	},
 };
@@ -101,8 +108,8 @@ export default function TermsPage() {
 						<p className="mb-4">
 							Welcome to Databuddy ("we," "our," or "us"). These Terms of
 							Service govern your access to and use of our privacy-first
-							analytics platform available at databuddy.cc and our related
-							services.
+							analytics platform available at https://app.databuddy.cc and our
+							related services.
 						</p>
 						<p className="mb-4">
 							By accessing or using our Service, you agree to be bound by these
@@ -137,7 +144,8 @@ export default function TermsPage() {
 								Service
 							</li>
 							<li>
-								<strong>Website:</strong> The Databuddy website at databuddy.cc
+								<strong>Website:</strong> The Databuddy website at
+								https://app.databuddy.cc
 							</li>
 							<li>
 								<strong>Content:</strong> Any data, text, or information you
@@ -402,7 +410,7 @@ export default function TermsPage() {
 									<strong>Support:</strong> support@databuddy.cc
 								</li>
 								<li>
-									<strong>Website:</strong> databuddy.cc/contact
+									<strong>Website:</strong> www.databuddy.cc/contact
 								</li>
 							</ul>
 						</div>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Footer } from '@/components/footer';
 import Section from '@/components/landing/section';
 import { Spotlight } from '@/components/landing/spotlight';
+import { StructuredData } from '@/components/structured-data';
 import { calculateRoadmapStats, roadmapItems } from './roadmap-data';
 import RoadmapHero from './roadmap-hero';
 import RoadmapStatsComponent from './roadmap-stats';
@@ -11,13 +12,34 @@ export const metadata: Metadata = {
 	title: 'Roadmap | Databuddy',
 	description:
 		"Discover what we're building next. Our transparent roadmap shows upcoming features, current progress, and completed milestones.",
+	alternates: {
+		canonical: 'https://www.databuddy.cc/roadmap',
+	},
+	openGraph: {
+		title: 'Roadmap | Databuddy',
+		description:
+			"Discover what we're building next. Our transparent roadmap shows upcoming features, current progress, and completed milestones.",
+		url: 'https://www.databuddy.cc/roadmap',
+	},
 };
 
 export default function RoadmapPage() {
 	const stats = calculateRoadmapStats();
 
+	const title = 'Roadmap | Databuddy';
+	const description =
+		"Discover what we're building next. Our transparent roadmap shows upcoming features, current progress, and completed milestones.";
+	const url = 'https://www.databuddy.cc/roadmap';
+
 	return (
 		<div className="overflow-hidden">
+			<StructuredData
+				page={{
+					title,
+					description,
+					url,
+				}}
+			/>
 			<Spotlight transform="translateX(-60%) translateY(-50%)" />
 
 			{/* Hero Section */}

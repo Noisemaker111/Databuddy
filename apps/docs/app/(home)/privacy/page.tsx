@@ -17,6 +17,9 @@ const url = 'https://www.databuddy.cc/privacy';
 export const metadata: Metadata = {
 	title,
 	description,
+	alternates: {
+		canonical: url,
+	},
 	openGraph: {
 		title,
 		description,

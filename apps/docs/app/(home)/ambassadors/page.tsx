@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Footer } from '@/components/footer';
 import Section from '@/components/landing/section';
 import { Spotlight } from '@/components/landing/spotlight';
+import { StructuredData } from '@/components/structured-data';
 import AmbassadorForm from './ambassador-form';
 import AmbassadorHero from './ambassador-hero';
 import AmbassadorRewards from './ambassador-rewards';
@@ -10,11 +11,32 @@ export const metadata: Metadata = {
 	title: 'Become an Ambassador | Databuddy',
 	description:
 		'Join the Databuddy Ambassador Program and help us build the future of privacy-first analytics',
+	alternates: {
+		canonical: 'https://www.databuddy.cc/ambassadors',
+	},
+	openGraph: {
+		title: 'Become an Ambassador | Databuddy',
+		description:
+			'Join the Databuddy Ambassador Program and help us build the future of privacy-first analytics',
+		url: 'https://www.databuddy.cc/ambassadors',
+	},
 };
 
 export default function AmbassadorsPage() {
+	const title = 'Become an Ambassador | Databuddy';
+	const description =
+		'Join the Databuddy Ambassador Program and help us build the future of privacy-first analytics';
+	const url = 'https://www.databuddy.cc/ambassadors';
+
 	return (
 		<div className="overflow-hidden">
+			<StructuredData
+				page={{
+					title,
+					description,
+					url,
+				}}
+			/>
 			<Spotlight transform="translateX(-60%) translateY(-50%)" />
 
 			{/* Hero Section */}

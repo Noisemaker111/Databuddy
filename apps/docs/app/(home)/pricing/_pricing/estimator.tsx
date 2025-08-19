@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { SciFiButton } from '@/components/landing/scifi-btn';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -138,13 +139,13 @@ export function Estimator({
 							</div>
 							<div className="mt-4 flex justify-end">
 								<SciFiButton asChild>
-									<a
+									<Link
 										href="https://app.databuddy.cc/login"
 										rel="noopener noreferrer"
 										target="_blank"
 									>
 										GET STARTED
-									</a>
+									</Link>
 								</SciFiButton>
 							</div>
 						</div>

@@ -10,7 +10,7 @@ const ctaItems = [
 		title: 'Get started',
 		description:
 			'Drop your site in and see what your users are doing in seconds',
-		href: 'https://app.databuddy.cc',
+		href: 'https://app.databuddy.cc/login',
 		primary: true,
 	},
 	{
@@ -112,17 +112,17 @@ export default function CTA() {
 							</div>
 
 							<div className="flex flex-col items-center gap-4 sm:flex-row">
-								<a
+								<Link
 									className="inline-flex transform items-center justify-center rounded-xl bg-primary px-8 py-4 font-semibold text-base text-primary-foreground shadow-lg transition-all duration-200 hover:scale-105 hover:bg-primary/90 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
 									data-button-type="primary-cta"
 									data-destination="register"
 									data-section="cta"
 									data-track="cta-get-started-click"
-									href="https://app.databuddy.cc"
+									href="https://app.databuddy.cc/login"
 								>
 									Get started
 									<ArrowRight className="ml-2 h-4 w-4" />
-								</a>
+								</Link>
 							</div>
 
 							<div className="flex items-center gap-8 text-muted-foreground text-sm opacity-60">

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Footer } from '@/components/footer';
 import Section from '@/components/landing/section';
 import { Spotlight } from '@/components/landing/spotlight';
+import { StructuredData } from '@/components/structured-data';
 import HonorableMentions from './honorable-mentions';
 import { honorableMentions, sponsorStats, sponsors } from './sponsors-data';
 import SponsorsGrid from './sponsors-grid';
@@ -11,11 +12,32 @@ export const metadata: Metadata = {
 	title: 'Sponsors | Databuddy',
 	description:
 		'Support Databuddy and help us build the future of privacy-first analytics',
+	alternates: {
+		canonical: 'https://www.databuddy.cc/sponsors',
+	},
+	openGraph: {
+		title: 'Sponsors | Databuddy',
+		description:
+			'Support Databuddy and help us build the future of privacy-first analytics',
+		url: 'https://www.databuddy.cc/sponsors',
+	},
 };
 
 export default function SponsorsPage() {
+	const title = 'Sponsors | Databuddy';
+	const description =
+		'Support Databuddy and help us build the future of privacy-first analytics';
+	const url = 'https://www.databuddy.cc/sponsors';
+
 	return (
 		<div className="overflow-hidden">
+			<StructuredData
+				page={{
+					title,
+					description,
+					url,
+				}}
+			/>
 			<Spotlight transform="translateX(-60%) translateY(-50%)" />
 
 			{/* Hero Section */}

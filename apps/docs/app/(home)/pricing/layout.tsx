@@ -1,21 +1,33 @@
 import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
-import { RAW_PLANS } from '@/app/(home)/pricing/data';
 import { StructuredData } from '@/components/structured-data';
-
-const title =
-	'Databuddy Pricing — Free tier, fair overage, scale to 100M events';
-const url = 'https://www.databuddy.cc/pricing';
+import { RAW_PLANS } from './data';
 
 export const metadata: Metadata = {
-	title,
+	title: 'Databuddy Pricing — Free tier, fair overage, scale to 100M events',
+	description:
+		'Simple, transparent pricing for privacy-first analytics. Start free with 10K events/month, then pay only for what you use with fair tiered overage.',
+	alternates: {
+		canonical: 'https://www.databuddy.cc/pricing',
+	},
 	openGraph: {
-		title,
-		url,
+		title: 'Databuddy Pricing — Free tier, fair overage, scale to 100M events',
+		description:
+			'Simple, transparent pricing for privacy-first analytics. Start free with 10K events/month, then pay only for what you use with fair tiered overage.',
+		url: 'https://www.databuddy.cc/pricing',
 	},
 };
 
-export default function Layout({ children }: { children: ReactNode }) {
+const title =
+	'Databuddy Pricing — Free tier, fair overage, scale to 100M events';
+const description =
+	'Simple, transparent pricing for privacy-first analytics. Start free with 10K events/month, then pay only for what you use with fair tiered overage.';
+const url = 'https://www.databuddy.cc/pricing';
+
+export default function PricingLayout({
+	children,
+}: {
+	children: React.ReactNode;
+}) {
 	return (
 		<>
 			<StructuredData
@@ -28,11 +40,8 @@ export default function Layout({ children }: { children: ReactNode }) {
 				]}
 				page={{
 					title,
-					description:
-						'Databuddy offers a free tier with fair overage pricing. Scale your analytics to 100M events without compromising on privacy or performance.',
+					description,
 					url,
-					datePublished: new Date('2025-06-03').toISOString(),
-					dateModified: new Date('2025-06-03').toISOString(),
 				}}
 			/>
 			{children}

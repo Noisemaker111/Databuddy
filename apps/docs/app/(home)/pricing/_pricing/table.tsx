@@ -1,4 +1,5 @@
 import { CheckIcon, XIcon } from '@phosphor-icons/react';
+import Link from 'next/link';
 import { SciFiButton } from '@/components/landing/scifi-btn';
 import type { NormalizedPlan } from './types';
 
@@ -215,13 +216,13 @@ export function PlansComparisonTable({ plans }: Props) {
 									key={`cta-${p.id}`}
 								>
 									<SciFiButton asChild>
-										<a
+										<Link
 											href="https://app.databuddy.cc/login"
 											rel="noopener noreferrer"
 											target="_blank"
 										>
 											GET STARTED
-										</a>
+										</Link>
 									</SciFiButton>
 								</td>
 							))}

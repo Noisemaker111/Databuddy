@@ -11,6 +11,7 @@ import { Footer } from '@/components/footer';
 import { SciFiButton } from '@/components/landing/scifi-btn';
 import Section from '@/components/landing/section';
 import { Spotlight } from '@/components/landing/spotlight';
+import { StructuredData } from '@/components/structured-data';
 import { getPosts } from '@/lib/blog-query';
 import type { Post } from '@/types/post';
 
@@ -23,6 +24,15 @@ export const metadata: Metadata = {
 	title: 'Blog | Databuddy',
 	description:
 		'Insights, updates, and guides on privacy-first analytics, GDPR compliance, and modern web development.',
+	alternates: {
+		canonical: 'https://www.databuddy.cc/blog',
+	},
+	openGraph: {
+		title: 'Blog | Databuddy',
+		description:
+			'Insights, updates, and guides on privacy-first analytics, GDPR compliance, and modern web development.',
+		url: 'https://www.databuddy.cc/blog',
+	},
 };
 
 function BlogPostCard({ post }: { post: Post }) {
@@ -176,8 +186,20 @@ export default async function BlogPage() {
 			new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
 	);
 
+	const title = 'Blog | Databuddy';
+	const description =
+		'Insights, updates, and guides on privacy-first analytics, GDPR compliance, and modern web development.';
+	const url = 'https://www.databuddy.cc/blog';
+
 	return (
 		<div className="overflow-hidden">
+			<StructuredData
+				page={{
+					title,
+					description,
+					url,
+				}}
+			/>
 			<Spotlight transform="translateX(-60%) translateY(-50%)" />
 
 			{/* Hero Section */}

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { SciFiButton } from '@/components/landing/scifi-btn';
 import Section from '@/components/landing/section';
 import { Spotlight } from '@/components/landing/spotlight';
+import { StructuredData } from '@/components/structured-data';
 import { Badge } from '@/components/ui/badge';
 import type {
 	ComparisonFeature,
@@ -298,7 +299,7 @@ export default async function ComparisonPage({ params }: PageProps) {
 		notFound();
 	}
 
-	const { competitor, features, hero } = data;
+	const { competitor, features, hero, seo } = data;
 
 	// Features in priority order
 	const sortedFeatures = features;
@@ -310,6 +311,13 @@ export default async function ComparisonPage({ params }: PageProps) {
 
 	return (
 		<div className="overflow-hidden">
+			<StructuredData
+				page={{
+					title: seo.title,
+					description: seo.description,
+					url: `https://www.databuddy.cc/compare/${slug}`,
+				}}
+			/>
 			<Spotlight transform="translateX(-60%) translateY(-50%)" />
 
 			{/* Navigation */}

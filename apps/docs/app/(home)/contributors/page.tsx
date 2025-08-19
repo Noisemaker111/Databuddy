@@ -3,6 +3,7 @@ import { cache } from 'react';
 import { Footer } from '@/components/footer';
 import Section from '@/components/landing/section';
 import { Spotlight } from '@/components/landing/spotlight';
+import { StructuredData } from '@/components/structured-data';
 import ActivityStats from './activity-stats';
 import CodeChurnChart from './code-churn-chart';
 import CommitActivityChart from './commit-activity-chart';
@@ -22,6 +23,15 @@ export const metadata: Metadata = {
 	title: 'Contributors | Databuddy',
 	description:
 		'Meet the amazing developers building the future of privacy-first analytics',
+	alternates: {
+		canonical: 'https://www.databuddy.cc/contributors',
+	},
+	openGraph: {
+		title: 'Contributors | Databuddy',
+		description:
+			'Meet the amazing developers building the future of privacy-first analytics',
+		url: 'https://www.databuddy.cc/contributors',
+	},
 };
 
 // GitHub API interfaces
@@ -450,8 +460,20 @@ async function fetchGitHubData() {
 export default async function ContributorsPage() {
 	const data = await fetchGitHubData();
 
+	const title = 'Contributors | Databuddy';
+	const description =
+		'Meet the amazing developers building the future of privacy-first analytics';
+	const url = 'https://www.databuddy.cc/contributors';
+
 	return (
 		<div className="overflow-hidden">
+			<StructuredData
+				page={{
+					title,
+					description,
+					url,
+				}}
+			/>
 			<Spotlight transform="translateX(-60%) translateY(-50%)" />
 
 			{/* Hero Section */}

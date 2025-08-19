@@ -12,7 +12,7 @@ export const baseOptions: BaseLayoutProps = {
 	links: [
 		{
 			text: 'Dashboard',
-			url: 'https://app.databuddy.cc',
+			url: 'https://app.databuddy.cc/login',
 			external: true,
 			icon: <MdSpaceDashboard />,
 		},
