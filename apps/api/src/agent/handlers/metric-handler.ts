@@ -46,24 +46,73 @@ function extractMetricValue(
 	return valueKey ? firstRow[valueKey] : defaultValue;
 }
 
+function generateTextResponseWithActualValue(
+	textResponse: string | undefined,
+	actualValue: unknown,
+	metricLabel: string | undefined
+): string {
+	if (!textResponse) {
+		const formattedValue =
+			typeof actualValue === 'number'
+				? actualValue.toLocaleString()
+				: actualValue;
+		return `${metricLabel || 'Result'}: ${String(formattedValue)}`;
+	}
+
+	// If we have a number value, try to replace any number in the text response
+	if (typeof actualValue === 'number') {
+		// Round to reasonable precision for display
+		const roundedValue = Math.round(actualValue * 100) / 100;
+		const formattedValue = roundedValue.toLocaleString();
+
+		// Replace any standalone numbers (with optional decimals) with the actual value
+		// This pattern matches numbers but avoids replacing numbers within words
+		const numberPattern = /\b\d+(?:\.\d+)?\b/g;
+
+		// Check if the text contains numbers that might be the AI's estimate
+		const numbersInText = textResponse.match(numberPattern);
+		if (numbersInText && numbersInText.length > 0) {
+			// Replace only the first number found with our actual value
+			// This assumes the main metric is the first number in the sentence
+			let hasReplaced = false;
+			return textResponse.replace(numberPattern, (match) => {
+				if (!hasReplaced) {
+					hasReplaced = true;
+					return formattedValue;
+				}
+				return match; // Keep other numbers unchanged
+			});
+		}
+	}
+
+	// If no number replacement needed, return original text
+	return textResponse;
+}
+
 function sendMetricResponse(
 	parsedAiJson: z.infer<typeof AIResponseJsonSchema>,
 	metricValue: unknown
 ): StreamingUpdate {
-	const formattedValue =
-		typeof metricValue === 'number'
-			? metricValue.toLocaleString()
-			: metricValue;
+	const textResponse = generateTextResponseWithActualValue(
+		parsedAiJson.text_response,
+		metricValue,
+		parsedAiJson.metric_label
+	);
+
+	const typedMetricValue =
+		typeof metricValue === 'string' ||
+		typeof metricValue === 'number' ||
+		metricValue === undefined
+			? metricValue
+			: String(metricValue);
 
 	return {
 		type: 'complete',
-		content:
-			parsedAiJson.text_response ||
-			`${parsedAiJson.metric_label || 'Result'}: ${formattedValue}`,
+		content: textResponse,
 		data: {
 			hasVisualization: false,
 			responseType: 'metric',
-			metricValue,
+			metricValue: typedMetricValue,
 			metricLabel: parsedAiJson.metric_label,
 		},
 	};

@@ -26,7 +26,8 @@ export default function WebsiteLayout({ children }: WebsiteLayoutProps) {
 		dynamicQueryFiltersAtom
 	);
 
-	const isAssistantPage = pathname.includes('/assistant');
+	const isAssistantPage =
+		pathname.includes('/assistant') || pathname.includes('/map');
 
 	const handleRefresh = async () => {
 		setIsRefreshing(true);
