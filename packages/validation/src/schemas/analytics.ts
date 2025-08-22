@@ -111,29 +111,10 @@ export const analyticsEventSchema = z.object({
 		.max(VALIDATION_LIMITS.INTERACTION_COUNT_MAX)
 		.nullable()
 		.optional(),
-	exit_intent: z
-		.number()
-		.int()
-		.max(VALIDATION_LIMITS.EXIT_INTENT_MAX)
-		.nullable()
-		.optional(),
 	page_count: z
 		.number()
 		.int()
 		.max(VALIDATION_LIMITS.PAGE_COUNT_MAX)
-		.nullable()
-		.optional(),
-	is_bounce: z
-		.number()
-		.int()
-		.max(VALIDATION_LIMITS.IS_BOUNCE_MAX)
-		.nullable()
-		.optional(),
-	has_exit_intent: z.boolean().nullable().optional(),
-	page_size: z
-		.number()
-		.int()
-		.max(VALIDATION_LIMITS.PAGE_SIZE_MAX)
 		.nullable()
 		.optional(),
 	utm_source: z
@@ -177,16 +158,6 @@ export const analyticsEventSchema = z.object({
 		.nullable()
 		.optional(),
 	ttfb: z.number().max(VALIDATION_LIMITS.PERFORMANCE_MAX).nullable().optional(),
-	connection_time: z
-		.number()
-		.max(VALIDATION_LIMITS.PERFORMANCE_MAX)
-		.nullable()
-		.optional(),
-	request_time: z
-		.number()
-		.max(VALIDATION_LIMITS.PERFORMANCE_MAX)
-		.nullable()
-		.optional(),
 	render_time: z
 		.number()
 		.max(VALIDATION_LIMITS.PERFORMANCE_MAX)
@@ -202,11 +173,6 @@ export const analyticsEventSchema = z.object({
 		.max(VALIDATION_LIMITS.PERFORMANCE_MAX)
 		.nullable()
 		.optional(),
-	fcp: z.number().max(VALIDATION_LIMITS.PERFORMANCE_MAX).nullable().optional(),
-	lcp: z.number().max(VALIDATION_LIMITS.PERFORMANCE_MAX).nullable().optional(),
-	cls: z.number().max(VALIDATION_LIMITS.CLS_MAX).nullable().optional(),
-	fid: z.number().max(VALIDATION_LIMITS.FID_MAX).nullable().optional(),
-	inp: z.number().max(VALIDATION_LIMITS.INP_MAX).nullable().optional(),
 	href: z.string().max(VALIDATION_LIMITS.PATH_MAX_LENGTH).nullable().optional(),
 	text: z.string().max(VALIDATION_LIMITS.TEXT_MAX_LENGTH).nullable().optional(),
 	value: z

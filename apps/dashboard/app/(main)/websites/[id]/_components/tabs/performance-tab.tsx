@@ -365,7 +365,6 @@ export function WebsitePerformanceTab({
 					pages: [],
 					allPages: [],
 					countries: [],
-					devices: [],
 					browsers: [],
 					operating_systems: [],
 					regions: [],
@@ -394,7 +393,6 @@ export function WebsitePerformanceTab({
 			pages: filteredPages,
 			allPages,
 			countries: data.performance_by_country || [],
-			devices: data.performance_by_device || [],
 			browsers: data.performance_by_browser || [],
 			operating_systems: data.performance_by_os || [],
 			regions: data.performance_by_region || [],
@@ -495,16 +493,6 @@ export function WebsitePerformanceTab({
 				}),
 			},
 			{
-				id: 'devices',
-				label: 'Device Types',
-				data: processedData.devices,
-				iconRenderer: getDeviceIcon,
-				getFilter: (row: any) => ({
-					field: 'device_type',
-					value: row.name,
-				}),
-			},
-			{
 				id: 'browsers',
 				label: 'Browsers',
 				data: processedData.browsers,
@@ -539,9 +527,6 @@ export function WebsitePerformanceTab({
 						avg_ttfb: number;
 						avg_dom_ready_time: number;
 						avg_render_time: number;
-						avg_fcp: number;
-						avg_lcp: number;
-						avg_cls: number;
 						country_code: string;
 					},
 					i: number
@@ -552,9 +537,6 @@ export function WebsitePerformanceTab({
 					avg_ttfb: item.avg_ttfb,
 					avg_dom_ready_time: item.avg_dom_ready_time,
 					avg_render_time: item.avg_render_time,
-					avg_fcp: item.avg_fcp,
-					avg_lcp: item.avg_lcp,
-					avg_cls: item.avg_cls,
 					country_code: item.country_code,
 					_uniqueKey: `${config.id}-${i}`,
 				})

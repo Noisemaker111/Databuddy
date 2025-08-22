@@ -92,13 +92,6 @@ CREATE TABLE IF NOT EXISTS ${ANALYTICS_DATABASE}.events (
   
   value Nullable(String),
   
-  error_message Nullable(String),
-  error_filename Nullable(String),
-  error_lineno Nullable(Int32),
-  error_colno Nullable(Int32),
-  error_stack Nullable(String),
-  error_type Nullable(String),
-  
   properties String,
   
   created_at DateTime64(3, 'UTC')
@@ -518,11 +511,7 @@ export interface AnalyticsEvent {
 	time_on_page?: number;
 	scroll_depth?: number;
 	interaction_count?: number;
-	exit_intent: number;
 	page_count: number;
-	is_bounce: number;
-	has_exit_intent?: number;
-	page_size?: number;
 
 	// UTM parameters
 	utm_source?: string;
@@ -537,17 +526,9 @@ export interface AnalyticsEvent {
 	dom_interactive?: number;
 	ttfb?: number;
 	connection_time?: number;
-	request_time?: number;
 	render_time?: number;
 	redirect_time?: number;
 	domain_lookup_time?: number;
-
-	// Web Vitals
-	fcp?: number;
-	lcp?: number;
-	cls?: number;
-	fid?: number;
-	inp?: number;
 
 	// Link tracking
 	href?: string;
@@ -555,14 +536,6 @@ export interface AnalyticsEvent {
 
 	// Custom event value
 	value?: string;
-
-	// Error tracking
-	error_message?: string;
-	error_filename?: string;
-	error_lineno?: number;
-	error_colno?: number;
-	error_stack?: string;
-	error_type?: string;
 
 	// Legacy properties
 	properties: string;
