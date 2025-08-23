@@ -3,6 +3,7 @@ import {
 	BugIcon,
 	BuildingsIcon,
 	ChartBarIcon,
+	ChartLineIcon,
 	ClockIcon,
 	CreditCardIcon,
 	CurrencyDollarIcon,
@@ -17,10 +18,12 @@ import {
 	KeyIcon,
 	MapPinIcon,
 	PlayIcon,
+	PlugIcon,
 	RabbitIcon,
 	RoadHorizonIcon,
 	ShieldIcon,
 	SpeakerHighIcon,
+	TableIcon,
 	TargetIcon,
 	TestTubeIcon,
 	UserCircleIcon,
@@ -234,6 +237,44 @@ export const billingNavigation: NavigationSection[] = [
 	},
 ];
 
+// Function to create dynamic databases navigation
+export const createDatabasesNavigation = (
+	databases: Array<{ id: string; name: string; type: string }>
+): NavigationSection[] => [
+	{
+		title: 'Database Monitoring',
+		icon: HandEyeIcon,
+		items: [
+			{
+				name: 'All Connections',
+				icon: HouseIcon,
+				href: '/observability/database',
+				rootLevel: true,
+				highlight: true,
+			},
+			...(databases.length > 0
+				? databases.map((database) => ({
+						name: database.name,
+						icon: DatabaseIcon,
+						href: `/observability/database/${database.id}`,
+						rootLevel: true,
+						highlight: true,
+						type: database.type,
+					}))
+				: [
+						{
+							name: 'Add Your First Database',
+							icon: DatabaseIcon,
+							href: '/observability/database',
+							rootLevel: true,
+							highlight: true,
+							disabled: true,
+						},
+					]),
+		],
+	},
+];
+
 export const observabilityNavigation: NavigationSection[] = [
 	{
 		title: 'Database Monitoring',
@@ -244,6 +285,35 @@ export const observabilityNavigation: NavigationSection[] = [
 				icon: DatabaseIcon,
 				href: '/observability/database',
 				rootLevel: true,
+			},
+		],
+	},
+];
+
+export const databaseNavigation: NavigationSection[] = [
+	{
+		title: 'Database Monitoring',
+		icon: HandEyeIcon,
+		items: [
+			{ name: 'Overview', icon: EyeIcon, href: '' },
+			{ name: 'Performance', icon: ChartLineIcon, href: '/performance' },
+			{ name: 'Queries', icon: DatabaseIcon, href: '/queries' },
+			{ name: 'Tables', icon: TableIcon, href: '/tables' },
+		],
+	},
+	{
+		title: 'Configuration',
+		icon: GearIcon,
+		items: [
+			{
+				name: 'Connection Settings',
+				icon: PlugIcon,
+				href: '/settings',
+			},
+			{
+				name: 'Monitoring Config',
+				icon: HandEyeIcon,
+				href: '/monitoring',
 			},
 		],
 	},
@@ -357,6 +427,20 @@ export const categoryConfig = {
 			analytics: websiteNavigation, // All analytics sections in one category
 		},
 	},
+	database: {
+		categories: [
+			{
+				id: 'monitoring',
+				name: 'Monitoring',
+				icon: HandEyeIcon,
+				production: false,
+			},
+		],
+		defaultCategory: 'monitoring',
+		navigationMap: {
+			monitoring: databaseNavigation, // All database sections in one category
+		},
+	},
 	demo: {
 		categories: [
 			{ id: 'demo', name: 'Demo', icon: TestTubeIcon, production: true },
@@ -371,6 +455,13 @@ export const categoryConfig = {
 export const getContextConfig = (pathname: string) => {
 	if (pathname.startsWith('/websites/')) {
 		return categoryConfig.website;
+	}
+	if (
+		pathname.startsWith('/observability/database/') &&
+		pathname !== '/observability/database' &&
+		pathname !== '/observability/database/'
+	) {
+		return categoryConfig.database;
 	}
 	if (pathname.startsWith('/demo/')) {
 		return categoryConfig.demo;
@@ -422,6 +513,31 @@ export const createLoadingWebsitesNavigation = (): NavigationSection[] => [
 	},
 ];
 
+// Function to create loading navigation for databases
+export const createLoadingDatabasesNavigation = (): NavigationSection[] => [
+	{
+		title: 'Database Monitoring',
+		icon: HandEyeIcon,
+		items: [
+			{
+				name: 'All Connections',
+				icon: HouseIcon,
+				href: '/observability/database',
+				rootLevel: true,
+				highlight: true,
+			},
+			{
+				name: 'Loading databases...',
+				icon: DatabaseIcon,
+				href: '/observability/database',
+				rootLevel: true,
+				highlight: true,
+				disabled: true,
+			},
+		],
+	},
+];
+
 export const getNavigationWithWebsites = (
 	pathname: string,
 	websites: Array<{ id: string; name: string | null; domain: string }> = [],
@@ -437,6 +553,28 @@ export const getNavigationWithWebsites = (
 				websites: isLoading
 					? createLoadingWebsitesNavigation()
 					: createWebsitesNavigation(websites),
+			},
+		};
+	}
+
+	return config;
+};
+
+export const getNavigationWithDatabases = (
+	pathname: string,
+	databases: Array<{ id: string; name: string; type: string }> = [],
+	isLoading = false
+) => {
+	const config = getContextConfig(pathname);
+
+	if (config === categoryConfig.main) {
+		return {
+			...config,
+			navigationMap: {
+				...config.navigationMap,
+				observability: isLoading
+					? createLoadingDatabasesNavigation()
+					: createDatabasesNavigation(databases),
 			},
 		};
 	}

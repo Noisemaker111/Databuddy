@@ -10,10 +10,12 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useDbConnections } from '@/hooks/use-db-connections';
 import { useWebsites } from '@/hooks/use-websites';
 import { cn } from '@/lib/utils';
 import {
 	getDefaultCategory,
+	getNavigationWithDatabases,
 	getNavigationWithWebsites,
 } from './navigation-config';
 
@@ -28,16 +30,25 @@ export function MobileCategorySelector({
 }: MobileCategorySelectorProps) {
 	const pathname = usePathname();
 	const { websites, isLoading: isLoadingWebsites } = useWebsites();
+	const { connections: databases, isLoading: isLoadingDatabases } =
+		useDbConnections();
 
 	const { categories, defaultCategory } = useMemo(() => {
-		const config = getNavigationWithWebsites(
+		let config = getNavigationWithWebsites(
 			pathname,
 			websites,
 			isLoadingWebsites
 		);
+
+		config = getNavigationWithDatabases(
+			pathname,
+			databases,
+			isLoadingDatabases
+		);
+
 		const defaultCat = getDefaultCategory(pathname);
 		return { categories: config.categories, defaultCategory: defaultCat };
-	}, [pathname, websites, isLoadingWebsites]);
+	}, [pathname, websites, isLoadingWebsites, databases, isLoadingDatabases]);
 
 	const activeCategory = selectedCategory || defaultCategory;
 	const currentCategory = categories.find((cat) => cat.id === activeCategory);

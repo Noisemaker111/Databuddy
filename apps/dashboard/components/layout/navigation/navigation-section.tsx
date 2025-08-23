@@ -65,6 +65,18 @@ const checkWebsiteMatch = (
 	return pathname === fullPath;
 };
 
+const checkDatabaseMatch = (
+	item: NavigationSectionType['items'][0],
+	pathname: string,
+	currentDatabaseId: string | null | undefined
+) => {
+	const fullPath = buildFullPath(
+		`/observability/database/${currentDatabaseId}`,
+		item.href
+	);
+	return pathname === fullPath;
+};
+
 const getPathInfo = (
 	item: NavigationSectionType['items'][0],
 	pathname: string,
@@ -81,6 +93,14 @@ const getPathInfo = (
 
 	if (pathname.startsWith('/demo')) {
 		return { isActive: checkDemoMatch(item, pathname, currentWebsiteId) };
+	}
+
+	if (
+		pathname.startsWith('/observability/database/') &&
+		pathname !== '/observability/database' &&
+		pathname !== '/observability/database/'
+	) {
+		return { isActive: checkDatabaseMatch(item, pathname, currentWebsiteId) };
 	}
 
 	return { isActive: checkWebsiteMatch(item, pathname, currentWebsiteId) };
@@ -116,7 +136,10 @@ export const NavigationSection = memo(function NavigationSectionComponent({
 				onClick={() => toggleAccordion(title, true)}
 				type="button"
 			>
-				<Icon className="size-5 flex-shrink-0 text-sidebar-ring" weight="fill" />
+				<Icon
+					className="size-5 flex-shrink-0 text-sidebar-ring"
+					weight="fill"
+				/>
 				<span className="flex-1 text-sm">{title}</span>
 				<motion.div
 					animate={{ rotate: isExpanded ? 180 : 0 }}
@@ -130,7 +153,9 @@ export const NavigationSection = memo(function NavigationSectionComponent({
 				</motion.div>
 			</button>
 
-			<MotionConfig transition={{ duration: 0.2, type: 'tween', ease: 'easeOut' }}>
+			<MotionConfig
+				transition={{ duration: 0.2, type: 'tween', ease: 'easeOut' }}
+			>
 				<AnimatePresence initial={false}>
 					{isExpanded && (
 						<motion.div

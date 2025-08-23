@@ -7,13 +7,16 @@ import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useDbConnections } from '@/hooks/use-db-connections';
 import { useAccordionStates } from '@/hooks/use-persistent-state';
 import { useWebsites } from '@/hooks/use-websites';
 import { cn } from '@/lib/utils';
 import { CategorySidebar } from './category-sidebar';
+import { DatabaseHeader } from './navigation/database-header';
 import { MobileCategorySelector } from './navigation/mobile-category-selector';
 import {
 	getDefaultCategory,
+	getNavigationWithDatabases,
 	getNavigationWithWebsites,
 } from './navigation/navigation-config';
 import { NavigationSection } from './navigation/navigation-section';
@@ -33,6 +36,8 @@ export function Sidebar() {
 	const [isMobileOpen, setIsMobileOpen] = useState(false);
 	const [selectedCategory, setSelectedCategory] = useState<string>();
 	const { websites, isLoading: isLoadingWebsites } = useWebsites();
+	const { connections: databases, isLoading: isLoadingDatabases } =
+		useDbConnections();
 	const accordionStates = useAccordionStates();
 	const sidebarRef = useRef<HTMLDivElement>(null);
 	const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -40,14 +45,26 @@ export function Sidebar() {
 	const isDemo = pathname.startsWith('/demo');
 	const isSandbox = pathname.startsWith('/sandbox');
 	const isWebsite = pathname.startsWith('/websites/');
+	const isDatabase =
+		pathname.startsWith('/observability/database/') &&
+		pathname !== '/observability/database' &&
+		pathname !== '/observability/database/';
 
 	const websiteId = useMemo(() => {
 		return isDemo || isWebsite ? pathname.split('/')[2] : null;
 	}, [isDemo, isWebsite, pathname]);
 
+	const databaseId = useMemo(() => {
+		return isDatabase ? pathname.split('/')[3] : null;
+	}, [isDatabase, pathname]);
+
 	const currentWebsite = useMemo(() => {
 		return websiteId ? websites?.find((site) => site.id === websiteId) : null;
 	}, [websiteId, websites]);
+
+	const currentDatabase = useMemo(() => {
+		return databaseId ? databases?.find((db) => db.id === databaseId) : null;
+	}, [databaseId, databases]);
 
 	const closeSidebar = useCallback(() => {
 		setIsMobileOpen(false);
@@ -67,11 +84,20 @@ export function Sidebar() {
 	}, [isMobileOpen, closeSidebar, openSidebar]);
 
 	const getNavigationConfig = useMemo((): NavigationConfig => {
-		const contextConfig = getNavigationWithWebsites(
+		// First apply websites navigation if applicable
+		let contextConfig = getNavigationWithWebsites(
 			pathname,
 			websites,
 			isLoadingWebsites
 		);
+
+		// Then apply databases navigation if applicable
+		contextConfig = getNavigationWithDatabases(
+			pathname,
+			databases,
+			isLoadingDatabases
+		);
+
 		const defaultCat = getDefaultCategory(pathname);
 		const activeCat = selectedCategory || defaultCat;
 
@@ -95,6 +121,9 @@ export function Sidebar() {
 				<OrganizationSelector />
 			);
 			currentId = websiteId;
+		} else if (isDatabase) {
+			headerComponent = <DatabaseHeader database={currentDatabase} />;
+			currentId = databaseId;
 		} else if (isSandbox) {
 			headerComponent = <SandboxHeader />;
 			currentId = 'sandbox';
@@ -113,11 +142,16 @@ export function Sidebar() {
 		selectedCategory,
 		isWebsite,
 		isDemo,
+		isDatabase,
 		isSandbox,
 		websiteId,
+		databaseId,
 		currentWebsite,
+		currentDatabase,
 		websites,
+		databases,
 		isLoadingWebsites,
+		isLoadingDatabases,
 	]);
 
 	useEffect(() => {
@@ -208,7 +242,7 @@ export function Sidebar() {
 				aria-hidden={!isMobileOpen}
 				className={cn(
 					'fixed inset-y-0 z-40 w-72 bg-sidebar',
-					'border-r border-sidebar-border transition-transform duration-200 ease-out',
+					'border-sidebar-border border-r transition-transform duration-200 ease-out',
 					'left-0 md:left-12',
 					'pt-12 md:pt-0',
 					'md:translate-x-0',

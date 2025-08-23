@@ -12,10 +12,12 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useDbConnections } from '@/hooks/use-db-connections';
 import { useWebsites } from '@/hooks/use-websites';
 import { cn } from '@/lib/utils';
 import {
 	getDefaultCategory,
+	getNavigationWithDatabases,
 	getNavigationWithWebsites,
 } from './navigation/navigation-config';
 import { SignOutButton } from './sign-out-button';
@@ -40,17 +42,25 @@ export function CategorySidebar({
 }: CategorySidebarProps) {
 	const pathname = usePathname();
 	const { websites, isLoading: isLoadingWebsites } = useWebsites();
+	const { connections: databases, isLoading: isLoadingDatabases } =
+		useDbConnections();
 	const [helpOpen, setHelpOpen] = useState(false);
 
 	const { categories, defaultCategory } = useMemo(() => {
-		const config = getNavigationWithWebsites(
+		let config = getNavigationWithWebsites(
 			pathname,
 			websites,
 			isLoadingWebsites
 		);
+
+		config = getNavigationWithDatabases(
+			pathname,
+			databases,
+			isLoadingDatabases
+		);
+
 		const defaultCat = getDefaultCategory(pathname);
 
-		// Filter out observability category in production
 		const filteredCategories = config.categories.filter((category) => {
 			if (category.production === false) {
 				return (
@@ -62,7 +72,7 @@ export function CategorySidebar({
 		});
 
 		return { categories: filteredCategories, defaultCategory: defaultCat };
-	}, [pathname, websites, isLoadingWebsites]);
+	}, [pathname, websites, isLoadingWebsites, databases, isLoadingDatabases]);
 
 	const activeCategory = selectedCategory || defaultCategory;
 
