@@ -9,17 +9,14 @@ import { BrowserIcon, OSIcon } from '@/components/icon';
 import { Badge } from '@/components/ui/badge';
 import { ErrorDetailModal } from './error-detail-modal';
 import { getErrorTypeIcon } from './error-icons';
-import { categorizeError, getSeverityColor, safeFormatDate } from './utils';
+import { formatDate, getErrorCategory, getSeverityColor } from './utils';
 
-interface RecentErrorsTableProps {
+interface Props {
 	recentErrors: ErrorEvent[];
 	isLoading: boolean;
 }
 
-export const RecentErrorsTable = ({
-	recentErrors,
-	isLoading,
-}: RecentErrorsTableProps) => {
+export const RecentErrorsTable = ({ recentErrors, isLoading }: Props) => {
 	const [selectedError, setSelectedError] = useState<ErrorEvent | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -36,7 +33,7 @@ export const RecentErrorsTable = ({
 			cell: (info: any) => {
 				const message = info.getValue() as string;
 				const row = info.row.original as ErrorEvent;
-				const { type, severity } = categorizeError(message);
+				const { type, severity } = getErrorCategory(message);
 
 				return (
 					<div className="flex max-w-md flex-col gap-2">
@@ -149,7 +146,7 @@ export const RecentErrorsTable = ({
 				const time = info.getValue() as string;
 				return (
 					<span className="font-mono text-sm">
-						{safeFormatDate(time, 'MMM d, HH:mm')}
+						{formatDate(time, 'MMM d, YYYY HH:mm')}
 					</span>
 				);
 			},

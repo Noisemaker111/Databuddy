@@ -16,14 +16,14 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from '@/components/ui/sheet';
-import { categorizeError, getSeverityColor, safeFormatDate } from './utils';
+import { formatDate, getErrorCategory, getSeverityColor } from './utils';
 
-interface InfoRowProps {
+interface InfoProps {
 	label: string;
 	value: string;
 }
 
-const InfoRow: React.FC<InfoRowProps> = ({ label, value }) => (
+const InfoRow: React.FC<InfoProps> = ({ label, value }) => (
 	<div className="space-y-2">
 		<span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
 			{label}
@@ -34,13 +34,13 @@ const InfoRow: React.FC<InfoRowProps> = ({ label, value }) => (
 	</div>
 );
 
-interface IconRowProps {
+interface IconProps {
 	label: string;
 	value?: string;
 	icon?: React.ReactNode;
 }
 
-const IconRow: React.FC<IconRowProps> = ({ label, value, icon }) => (
+const IconRow: React.FC<IconProps> = ({ label, value, icon }) => (
 	<div className="space-y-2">
 		<span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
 			{label}
@@ -88,7 +88,7 @@ export const ErrorDetailModal = ({
 		}
 	};
 
-	const { type, severity } = categorizeError(error.message);
+	const { type, severity } = getErrorCategory(error.message);
 
 	return (
 		<Sheet onOpenChange={onClose} open={isOpen}>
@@ -108,7 +108,7 @@ export const ErrorDetailModal = ({
 								<div className="flex items-center gap-2">
 									<Badge className={getSeverityColor(severity)}>{type}</Badge>
 									<span className="text-muted-foreground text-sm">
-										{safeFormatDate(error.timestamp, 'MMM d, yyyy HH:mm:ss')}
+										{formatDate(error.timestamp, 'MMM d, YYYY HH:mm:ss')}
 									</span>
 								</div>
 							</div>
@@ -188,7 +188,7 @@ export const ErrorDetailModal = ({
 									</span>
 									<div className="rounded border bg-muted/20 p-3">
 										<span className="font-mono text-sm">
-											{safeFormatDate(error.timestamp, 'MMM d, yyyy HH:mm:ss')}
+											{formatDate(error.timestamp, 'MMM d, YYYY HH:mm:ss')}
 										</span>
 									</div>
 								</div>
@@ -264,7 +264,7 @@ Context:
 - Page URL: ${error.path}
 - Session ID: ${error.session_id}
 - User ID: ${error.anonymous_id}
-- Timestamp: ${safeFormatDate(error.timestamp, 'MMM d, yyyy HH:mm:ss')}
+- Timestamp: ${formatDate(error.timestamp, 'MMM d, YYYY HH:mm:ss')}
 - Browser: ${error.browser_name}
 - OS: ${error.os_name}
 - Device: ${error.device_type || '—'}

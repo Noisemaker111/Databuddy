@@ -1,38 +1,37 @@
 import type { ErrorCategory } from '@databuddy/shared';
 import dayjs from 'dayjs';
 
-// Helper function to safely parse dates
-export const safeDateParse = (dateString: string): Date => {
+export const parseDate = (dateString: string): Date => {
 	if (!dateString) {
 		return new Date();
 	}
 
-	let dayjsDate = dayjs(dateString);
-	if (dayjsDate.isValid()) {
-		return dayjsDate.toDate();
+	let date = dayjs(dateString);
+	if (date.isValid()) {
+		return date.toDate();
 	}
 
 	const isoString = dateString.replace(' ', 'T');
-	dayjsDate = dayjs(isoString);
-	if (dayjsDate.isValid()) {
-		return dayjsDate.toDate();
+	date = dayjs(isoString);
+	if (date.isValid()) {
+		return date.toDate();
 	}
 
-	dayjsDate = dayjs(new Date(dateString));
-	if (dayjsDate.isValid()) {
-		return dayjsDate.toDate();
+	date = dayjs(new Date(dateString));
+	if (date.isValid()) {
+		return date.toDate();
 	}
 
 	console.warn('Failed to parse date:', dateString);
 	return new Date();
 };
 
-export const safeFormatDate = (
+export const formatDate = (
 	dateString: string,
 	formatString: string
 ): string => {
 	try {
-		const date = safeDateParse(dateString);
+		const date = parseDate(dateString);
 		return dayjs(date).format(formatString);
 	} catch (error) {
 		console.warn('Failed to format date:', dateString, error);
@@ -40,19 +39,14 @@ export const safeFormatDate = (
 	}
 };
 
-// Helper function to categorize errors
-export const categorizeError = (errorMessage: string): ErrorCategory => {
+export const getErrorCategory = (errorMessage: string): ErrorCategory => {
 	if (!errorMessage) {
 		return { type: 'Unknown Error', category: 'Other', severity: 'low' };
 	}
 
 	const message = errorMessage.toLowerCase();
 
-	if (
-		message.includes('react error #185') ||
-		message.includes('react error #418') ||
-		message.includes('react error #419')
-	) {
+	if (message.includes('react error')) {
 		return { type: 'React Error', category: 'React', severity: 'high' };
 	}
 	if (message.includes('script error')) {
@@ -78,15 +72,13 @@ export const categorizeError = (errorMessage: string): ErrorCategory => {
 	return { type: 'Unknown Error', category: 'Other', severity: 'low' };
 };
 
-export const getSeverityColor = (severity: 'high' | 'medium' | 'low') => {
-	switch (severity) {
-		case 'high':
-			return 'bg-red-100 text-red-800 border-red-200';
-		case 'medium':
-			return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-		case 'low':
-			return 'bg-blue-100 text-blue-800 border-blue-200';
-		default:
-			return 'bg-gray-100 text-gray-800 border-gray-200';
-	}
+export const getSeverityColor = (
+	severity: 'high' | 'medium' | 'low'
+): string => {
+	const colors = {
+		high: 'bg-red-100 text-red-800 border-red-200',
+		medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+		low: 'bg-blue-100 text-blue-800 border-blue-200',
+	};
+	return colors[severity] || 'bg-gray-100 text-gray-800 border-gray-200';
 };

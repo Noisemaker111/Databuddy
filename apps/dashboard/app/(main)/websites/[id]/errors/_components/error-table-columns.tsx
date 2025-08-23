@@ -8,7 +8,7 @@ import { CountryFlag } from '@/components/analytics/icons/CountryFlag';
 import { BrowserIcon, OSIcon } from '@/components/icon';
 import { Badge } from '@/components/ui/badge';
 import { getErrorTypeIcon } from './error-icons';
-import { categorizeError, getSeverityColor, safeFormatDate } from './utils';
+import { formatDate, getErrorCategory, getSeverityColor } from './utils';
 
 type CellInfo<T = unknown> = {
 	getValue: () => T;
@@ -104,7 +104,7 @@ export const createErrorTypeColumn = () => ({
 			);
 		}
 
-		const { type, severity } = categorizeError(message);
+		const { type, severity } = getErrorCategory(message);
 		return (
 			<div className="flex flex-col gap-1">
 				<div className="flex items-center gap-2">
@@ -162,7 +162,7 @@ export const createErrorTypeColumns = () => [
 		header: 'Last Occurrence',
 		cell: (info: CellInfo<string>) => {
 			const lastSeen = info.getValue();
-			const formatted = safeFormatDate(lastSeen, 'MMM d, HH:mm');
+			const formatted = formatDate(lastSeen, 'MMM d, YYYY HH:mm');
 			const now = new Date();
 			const lastSeenDate = new Date(lastSeen);
 			const diffHours = Math.floor(

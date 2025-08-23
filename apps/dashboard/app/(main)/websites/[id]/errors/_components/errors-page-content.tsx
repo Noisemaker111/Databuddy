@@ -15,7 +15,7 @@ import { ErrorSummaryStats } from './error-summary-stats';
 import { ErrorTrendsChart } from './error-trends-chart';
 import { RecentErrorsTable } from './recent-errors-table';
 import { TopErrorCard } from './top-error-card';
-import { safeFormatDate } from './utils';
+import { formatDate } from './utils';
 
 interface ErrorsPageContentProps {
 	params: Promise<{ id: string }>;
@@ -81,7 +81,7 @@ export const ErrorsPageContent = ({ params }: ErrorsPageContentProps) => {
 	const topError = (errorTypes as Record<string, unknown>[])[0] || null;
 	const errorChartData = (errorTrends as Record<string, unknown>[]).map(
 		(point: Record<string, unknown>) => ({
-			date: safeFormatDate(point.date as string, 'MMM d'),
+			date: formatDate(point.date as string, 'MMM d, YYYY'),
 			'Total Errors': (point.errors as number) || 0,
 			'Affected Users': (point.users as number) || 0,
 		})
