@@ -50,6 +50,7 @@ export function CategorySidebar({
 		);
 		const defaultCat = getDefaultCategory(pathname);
 
+		// Filter out observability category in production
 		const filteredCategories = config.categories.filter((category) => {
 			if (category.production === false) {
 				return (

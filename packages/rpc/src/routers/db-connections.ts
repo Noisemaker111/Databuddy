@@ -3,10 +3,18 @@ import { and, dbConnections, eq, isNull } from '@databuddy/db';
 import { TRPCError } from '@trpc/server';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
-import { createReadonlyUser, testConnection } from '../database';
+import {
+	createReadonlyUser,
+	getDatabaseStats,
+	getTableStats,
+	testConnection,
+} from '../database';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 import { authorizeDbConnectionAccess } from '../utils/auth';
-import { encryptConnectionUrl } from '../utils/encryption';
+import {
+	decryptConnectionUrl,
+	encryptConnectionUrl,
+} from '../utils/encryption';
 
 const createDbConnectionSchema = z.object({
 	name: z.string().min(1, 'Name is required'),
@@ -231,5 +239,47 @@ export const dbConnectionsRouter = createTRPCRouter({
 			}
 
 			return { success: true };
+		}),
+
+	getDatabaseStats: protectedProcedure
+		.input(z.object({ id: z.string() }))
+		.query(async ({ ctx, input }) => {
+			const connection = await authorizeDbConnectionAccess(
+				ctx,
+				input.id,
+				'read'
+			);
+
+			try {
+				const decryptedUrl = decryptConnectionUrl(connection.url);
+				const stats = await getDatabaseStats(decryptedUrl);
+				return stats;
+			} catch (error) {
+				throw new TRPCError({
+					code: 'INTERNAL_SERVER_ERROR',
+					message: `Failed to get database stats: ${error.message}`,
+				});
+			}
+		}),
+
+	getTableStats: protectedProcedure
+		.input(z.object({ id: z.string() }))
+		.query(async ({ ctx, input }) => {
+			const connection = await authorizeDbConnectionAccess(
+				ctx,
+				input.id,
+				'read'
+			);
+
+			try {
+				const decryptedUrl = decryptConnectionUrl(connection.url);
+				const stats = await getTableStats(decryptedUrl);
+				return stats;
+			} catch (error) {
+				throw new TRPCError({
+					code: 'INTERNAL_SERVER_ERROR',
+					message: `Failed to get table stats: ${error.message}`,
+				});
+			}
 		}),
 });

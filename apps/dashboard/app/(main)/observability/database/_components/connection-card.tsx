@@ -6,6 +6,7 @@ import {
 	PencilSimpleIcon,
 	TrashIcon,
 } from '@phosphor-icons/react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -20,6 +21,7 @@ interface DatabaseConnection {
 	name: string;
 	type: string;
 	userId: string;
+	organizationId?: string;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -35,6 +37,8 @@ export function ConnectionCard({
 	onEdit,
 	onDelete,
 }: ConnectionCardProps) {
+	const router = useRouter();
+
 	const getDatabaseIcon = (type: string) => {
 		switch (type.toLowerCase()) {
 			case 'postgres':
@@ -51,8 +55,19 @@ export function ConnectionCard({
 		}
 	};
 
+	const handleCardClick = () => {
+		router.push(`/observability/database/${connection.id}`);
+	};
+
+	const handleDropdownClick = (e: React.MouseEvent) => {
+		e.stopPropagation(); // Prevent card click when dropdown is clicked
+	};
+
 	return (
-		<Card className="rounded transition-all duration-200 hover:shadow-md">
+		<Card
+			className="cursor-pointer rounded transition-all duration-200 hover:shadow-md"
+			onClick={handleCardClick}
+		>
 			<CardContent className="p-6">
 				<div className="flex items-start justify-between">
 					<div className="flex-1">
@@ -77,7 +92,7 @@ export function ConnectionCard({
 					</div>
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button size="sm" variant="ghost">
+							<Button onClick={handleDropdownClick} size="sm" variant="ghost">
 								<DotsThreeIcon className="h-4 w-4" />
 							</Button>
 						</DropdownMenuTrigger>

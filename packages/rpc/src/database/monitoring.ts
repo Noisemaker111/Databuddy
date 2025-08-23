@@ -145,14 +145,14 @@ export async function getTableStats(
 			`
 			SELECT 
 				schemaname as schema_name,
-				tablename as table_name,
+				relname as table_name,
 				n_tup_ins + n_tup_upd + n_tup_del as row_count,
-				pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as total_size,
-				pg_size_pretty(pg_indexes_size(schemaname||'.'||tablename)) as index_size,
+				pg_size_pretty(pg_total_relation_size(quote_ident(schemaname)||'.'||quote_ident(relname))) as total_size,
+				pg_size_pretty(pg_indexes_size(quote_ident(schemaname)||'.'||quote_ident(relname))) as index_size,
 				last_vacuum,
 				last_analyze
 			FROM pg_stat_user_tables 
-			ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+			ORDER BY pg_total_relation_size(quote_ident(schemaname)||'.'||quote_ident(relname)) DESC
 			LIMIT $1
 		`,
 			[limit]
