@@ -4,8 +4,8 @@ import {
 	GlobeIcon,
 	LightningIcon,
 	SparkleIcon,
-	WarningIcon,
 } from '@phosphor-icons/react';
+import Image from 'next/image';
 import {
 	getBrowserIcon,
 	getDeviceTypeIcon,
@@ -31,13 +31,12 @@ export const getBrowserIconComponent = (browser: string) => {
 	const iconPath = getBrowserIcon(browser);
 	return (
 		<div className="flex h-4 w-4 items-center justify-center">
-			<img
+			<Image
 				alt={browser}
 				className="h-4 w-4 object-contain"
-				onError={(e) => {
-					(e.target as HTMLImageElement).style.display = 'none';
-				}}
+				height={16}
 				src={iconPath}
+				width={16}
 			/>
 		</div>
 	);
@@ -46,13 +45,12 @@ export const getBrowserIconComponent = (browser: string) => {
 export const getOSIconComponent = (os: string) => {
 	const iconPath = getOSIcon(os);
 	return (
-		<img
+		<Image
 			alt={os}
 			className="h-4 w-4 object-contain"
-			onError={(e) => {
-				(e.target as HTMLImageElement).style.display = 'none';
-			}}
+			height={16}
 			src={iconPath}
+			width={16}
 		/>
 	);
 };
@@ -67,31 +65,20 @@ export const getCountryFlag = (country: string) => {
 	}
 
 	return (
-		<img
+		<Image
 			alt={`${country} flag`}
 			className="h-4 w-6"
-			height={20}
+			height={16}
 			src={`https://flagcdn.com/w40/${country.toLowerCase()}.png`}
-			width={20}
+			width={24}
 		/>
 	);
 };
 
 export const getEventIconAndColor = (
 	eventName: string,
-	hasError: boolean,
 	hasProperties: boolean
 ) => {
-	if (hasError) {
-		return {
-			icon: <WarningIcon className="h-4 w-4" />,
-			color: 'text-destructive',
-			bgColor: 'bg-destructive/10',
-			borderColor: 'border-destructive/20',
-			badgeColor: 'bg-destructive/10 text-destructive border-destructive/20',
-		};
-	}
-
 	if (hasProperties) {
 		return {
 			icon: <SparkleIcon className="h-4 w-4" />,
@@ -166,7 +153,7 @@ export const getDisplayPath = (path: string) => {
 	return cleanPath;
 };
 
-export const formatPropertyValue = (value: any): string => {
+export const formatPropertyValue = (value: unknown): string => {
 	if (value === null || value === undefined) {
 		return 'null';
 	}

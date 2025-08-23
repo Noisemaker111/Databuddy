@@ -1,5 +1,6 @@
 'use client';
 
+import type { Session, SessionsListProps } from '@databuddy/shared';
 import { SpinnerIcon, UserIcon } from '@phosphor-icons/react';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -12,50 +13,6 @@ import {
 	getSessionPageAtom,
 } from '@/stores/jotai/sessionAtoms';
 import { SessionRow } from './session-row';
-
-// Transform ClickHouse tuple events to objects
-function transformSessionEvents(events: unknown[]): Record<string, unknown>[] {
-	return events
-		.map((tuple: unknown) => {
-			if (!Array.isArray(tuple) || tuple.length < 7) {
-				return null;
-			}
-
-			const [
-				id,
-				time,
-				event_name,
-				path,
-				error_message,
-				error_type,
-				properties,
-			] = tuple;
-
-			let propertiesObj = {};
-			if (properties) {
-				try {
-					propertiesObj = JSON.parse(properties as string);
-				} catch {
-					// Keep empty object if parsing fails
-				}
-			}
-
-			return {
-				event_id: id,
-				time,
-				event_name,
-				path,
-				error_message,
-				error_type,
-				properties: propertiesObj,
-			};
-		})
-		.filter(Boolean) as Record<string, unknown>[];
-}
-
-interface SessionsListProps {
-	websiteId: string;
-}
 
 export function SessionsList({ websiteId }: SessionsListProps) {
 	const { dateRange } = useDateFilters();
@@ -83,41 +40,23 @@ export function SessionsList({ websiteId }: SessionsListProps) {
 		}
 	);
 
-	// State to accumulate sessions across pages
-	const [allSessions, setAllSessions] = useState<Record<string, unknown>[]>([]);
+	const [allSessions, setAllSessions] = useState<Session[]>([]);
 
-	// Transform and accumulate sessions
+	// Accumulate sessions directly from API
 	useEffect(() => {
 		if (!data?.session_list) {
 			return;
 		}
 
-		const rawSessions = (data.session_list as unknown[]) || [];
-		const transformedSessions = rawSessions.map((session: unknown) => {
-			const sessionData = session as Record<string, unknown>;
-			const events = Array.isArray(sessionData.events)
-				? transformSessionEvents(sessionData.events)
-				: [];
-
-			return {
-				...sessionData,
-				events,
-				session_name: sessionData.session_id
-					? `Session ${String(sessionData.session_id).slice(-8)}`
-					: 'Unknown Session',
-			};
-		});
+		const sessions = (data.session_list as Session[]) || [];
 
 		if (page === 1) {
-			setAllSessions(transformedSessions);
+			setAllSessions(sessions);
 		} else {
 			setAllSessions((prev) => {
-				const existingIds = new Set(
-					prev.map((s) => (s as Record<string, unknown>).session_id)
-				);
-				const newSessions = transformedSessions.filter(
-					(session) =>
-						!existingIds.has((session as Record<string, unknown>).session_id)
+				const existingIds = new Set(prev.map((session) => session.session_id));
+				const newSessions = sessions.filter(
+					(session) => !existingIds.has(session.session_id)
 				);
 				return [...prev, ...newSessions];
 			});
@@ -125,7 +64,7 @@ export function SessionsList({ websiteId }: SessionsListProps) {
 	}, [data, page]);
 
 	const hasNextPage = useMemo(() => {
-		const currentPageData = (data?.session_list as unknown[]) || [];
+		const currentPageData = (data?.session_list as Session[]) || [];
 		return currentPageData.length === 50;
 	}, [data]);
 
@@ -223,18 +162,15 @@ export function SessionsList({ websiteId }: SessionsListProps) {
 		<Card>
 			<CardContent className="p-0">
 				<div className="divide-y divide-border">
-					{allSessions.map((session, index) => {
-						const sessionData = session as Record<string, unknown>;
-						return (
-							<SessionRow
-								index={index}
-								isExpanded={expandedSessionId === sessionData.session_id}
-								key={sessionData.session_id as string}
-								onToggle={toggleSession}
-								session={session}
-							/>
-						);
-					})}
+					{allSessions.map((session, index) => (
+						<SessionRow
+							index={index}
+							isExpanded={expandedSessionId === session.session_id}
+							key={session.session_id}
+							onToggle={toggleSession}
+							session={session}
+						/>
+					))}
 				</div>
 
 				{/* Infinite scroll trigger */}

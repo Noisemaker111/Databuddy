@@ -6,7 +6,6 @@ import {
 	CaretRightIcon,
 	EyeIcon,
 	SparkleIcon,
-	WarningIcon,
 } from '@phosphor-icons/react';
 import lazy from 'next/dynamic';
 import React, { useCallback } from 'react';
@@ -32,6 +31,13 @@ const SessionEventTimeline = lazy(
 	}
 );
 
+import type {
+	RawSessionEventTuple,
+	Session,
+	SessionEvent,
+	SessionReferrer,
+	SessionRowProps,
+} from '@databuddy/shared';
 import {
 	getBrowserIconComponent,
 	getCountryFlag,
@@ -39,21 +45,46 @@ import {
 	getOSIconComponent,
 } from './session-utils';
 
-interface SessionRowProps {
-	session: any;
-	index: number;
-	isExpanded: boolean;
-	onToggle: (sessionId: string) => void;
+// Transform ClickHouse tuple events to objects
+function transformSessionEvents(
+	events: RawSessionEventTuple[]
+): SessionEvent[] {
+	return events
+		.map((tuple) => {
+			if (!Array.isArray(tuple) || tuple.length < 5) {
+				return null;
+			}
+
+			const [event_id, time, event_name, path, properties] = tuple;
+
+			let propertiesObj: Record<string, unknown> = {};
+			if (properties) {
+				try {
+					propertiesObj = JSON.parse(properties);
+				} catch {
+					// Keep empty object if parsing fails
+				}
+			}
+
+			return {
+				event_id,
+				time,
+				event_name,
+				path,
+				properties: propertiesObj,
+			};
+		})
+		.filter((event): event is SessionEvent => event !== null);
 }
 
-function getReferrerInfo(session: any) {
+function getReferrerInfo(session: Session): SessionReferrer {
 	if (session.referrer_parsed) {
 		return {
 			name:
 				session.referrer_parsed.name ||
 				session.referrer_parsed.domain ||
 				'Unknown',
-			domain: session.referrer_parsed.domain,
+			domain: session.referrer_parsed.domain || null,
 		};
 	}
 
@@ -84,19 +115,19 @@ function SessionRowInternal({
 	isExpanded,
 	onToggle,
 }: SessionRowProps) {
-	const errorCount =
-		session.events?.filter((event: any) => event.event_name === 'error')
-			.length || 0;
+	const events =
+		Array.isArray(session.events) &&
+		session.events.length > 0 &&
+		Array.isArray(session.events[0])
+			? transformSessionEvents(session.events as RawSessionEventTuple[])
+			: (session.events as SessionEvent[]);
+
 	const customEventCount =
-		session.events?.filter(
-			(event: any) =>
-				![
-					'screen_view',
-					'page_exit',
-					'error',
-					'web_vitals',
-					'link_out',
-				].includes(event.event_name)
+		events?.filter(
+			(event) =>
+				!['screen_view', 'page_exit', 'web_vitals', 'link_out'].includes(
+					event.event_name
+				)
 		).length || 0;
 	const referrerInfo = getReferrerInfo(session);
 
@@ -122,23 +153,19 @@ function SessionRowInternal({
 							</div>
 						</div>
 						<div className="flex flex-shrink-0 items-center gap-2">
-							{getCountryFlag(session.country_code || session.country || '')}
-							{getDeviceIcon(session.device || session.device_type || '')}
-							{getBrowserIconComponent(
-								session.browser || session.browser_name || ''
-							)}
-							{getOSIconComponent(session.os_name || '')}
+							{getCountryFlag(session.country_code)}
+							{getDeviceIcon(session.device_type)}
+							{getBrowserIconComponent(session.browser_name)}
+							{getOSIconComponent(session.os_name)}
 						</div>
 
 						<div className="min-w-0 flex-1">
 							<div className="truncate font-semibold text-base text-foreground">
 								{session.session_name ||
-									`Session ${session.session_id?.slice(-8)}`}
+									`Session ${session.session_id.slice(-8)}`}
 							</div>
 							<div className="flex items-center gap-2 text-muted-foreground text-sm">
-								<span>
-									{session.browser || session.browser_name || 'Unknown'}
-								</span>
+								<span>{session.browser_name || 'Unknown'}</span>
 								<span className="text-muted-foreground/60">•</span>
 								<span>
 									{session.country_name || session.country || 'Unknown'}
@@ -177,7 +204,7 @@ function SessionRowInternal({
 								<span>Pages</span>
 							</div>
 							<span className="font-semibold text-foreground text-sm">
-								{session.page_views || 1}
+								{session.page_views}
 							</span>
 						</div>
 
@@ -188,31 +215,9 @@ function SessionRowInternal({
 									className="px-2 py-1 font-semibold text-xs"
 									variant="outline"
 								>
-									{session.events?.length || 0}
+									{events.length}
 								</Badge>
 							</div>
-						</div>
-
-						<div className="flex items-center gap-2">
-							{/* {customEventCount > 0 && (
-                <div className="flex flex-col items-center gap-1">
-                  <div className="font-medium text-violet-600 text-xs">Custom</div>
-                  <Badge className="border-0 bg-gradient-to-r from-violet-500 to-purple-500 font-semibold text-white text-xs">
-                    <SparkleIcon className="mr-1 h-3 w-3" />
-                    {customEventCount}
-                  </Badge>
-                </div>
-              )} */}
-
-							{errorCount > 0 && (
-								<div className="flex flex-col items-center gap-1">
-									<div className="font-medium text-red-600 text-xs">Errors</div>
-									<Badge className="border-0 bg-gradient-to-r from-red-500 to-red-600 font-semibold text-white text-xs">
-										<WarningIcon className="mr-1 h-3 w-3" />
-										{errorCount}
-									</Badge>
-								</div>
-							)}
 						</div>
 					</div>
 				</div>
@@ -226,7 +231,7 @@ function SessionRowInternal({
 								Page Views
 							</span>
 							<div className="font-bold text-foreground text-lg">
-								{session.page_views || 1}
+								{session.page_views}
 							</div>
 						</div>
 						<div className="text-center">
@@ -278,7 +283,7 @@ function SessionRowInternal({
 							<div className="flex items-center gap-3">
 								<div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2">
 									<span className="font-bold text-slate-800 text-sm">
-										{session.events?.length || 0}
+										{events.length}
 									</span>
 									<span className="text-slate-600 text-xs">total events</span>
 								</div>
@@ -291,19 +296,10 @@ function SessionRowInternal({
 										<span className="text-violet-600 text-xs">custom</span>
 									</div>
 								)}
-								{errorCount > 0 && (
-									<div className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-100 to-red-100 px-3 py-2">
-										<WarningIcon className="h-4 w-4 text-red-600" />
-										<span className="font-bold text-red-800 text-sm">
-											{errorCount}
-										</span>
-										<span className="text-red-600 text-xs">errors</span>
-									</div>
-								)}
 							</div>
 						</div>
 
-						<SessionEventTimeline events={session.events || []} />
+						<SessionEventTimeline events={events} />
 					</div>
 				</div>
 			</CollapsibleContent>

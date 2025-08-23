@@ -14,7 +14,7 @@ export const SessionsBuilders: Record<string, SimpleQueryConfig> = {
 		where: ["event_name = 'screen_view'"],
 		timeField: 'time',
 		customizable: true,
-	},
+	} satisfies SimpleQueryConfig,
 
 	session_duration_distribution: {
 		table: Analytics.events,
@@ -35,7 +35,7 @@ export const SessionsBuilders: Record<string, SimpleQueryConfig> = {
 		orderBy: 'sessions DESC',
 		timeField: 'time',
 		customizable: true,
-	},
+	} satisfies SimpleQueryConfig,
 
 	sessions_by_device: {
 		table: Analytics.events,
@@ -50,7 +50,7 @@ export const SessionsBuilders: Record<string, SimpleQueryConfig> = {
 		orderBy: 'sessions DESC',
 		timeField: 'time',
 		customizable: true,
-	},
+	} satisfies SimpleQueryConfig,
 
 	sessions_by_browser: {
 		table: Analytics.events,
@@ -66,7 +66,7 @@ export const SessionsBuilders: Record<string, SimpleQueryConfig> = {
 		limit: 100,
 		timeField: 'time',
 		customizable: true,
-	},
+	} satisfies SimpleQueryConfig,
 
 	sessions_time_series: {
 		table: Analytics.events,
@@ -81,7 +81,7 @@ export const SessionsBuilders: Record<string, SimpleQueryConfig> = {
 		orderBy: 'date ASC',
 		timeField: 'time',
 		customizable: true,
-	},
+	} satisfies SimpleQueryConfig,
 
 	session_flow: {
 		table: Analytics.events,
@@ -96,7 +96,7 @@ export const SessionsBuilders: Record<string, SimpleQueryConfig> = {
 		limit: 100,
 		timeField: 'time',
 		customizable: true,
-	},
+	} satisfies SimpleQueryConfig,
 
 	session_list: {
 		customSql: (
@@ -105,8 +105,8 @@ export const SessionsBuilders: Record<string, SimpleQueryConfig> = {
 			endDate: string,
 			_filters?: unknown[],
 			_granularity?: unknown,
-			limit?: number,
-			offset?: number,
+			limit = 25,
+			offset = 0,
 			_timezone?: string,
 			filterConditions?: string[],
 			filterParams?: Record<string, Filter['value']>
@@ -122,7 +122,6 @@ export const SessionsBuilders: Record<string, SimpleQueryConfig> = {
         MAX(time) as last_visit,
         countIf(event_name = 'screen_view') as page_views,
         any(anonymous_id) as visitor_id,
-        any(user_agent) as user_agent,
         any(country) as country,
         any(referrer) as referrer,
         any(device_type) as device_type,
@@ -167,7 +166,6 @@ export const SessionsBuilders: Record<string, SimpleQueryConfig> = {
       sl.last_visit,
       sl.page_views,
       sl.visitor_id,
-      sl.user_agent,
       sl.country,
       sl.referrer,
       sl.device_type,
@@ -183,8 +181,8 @@ export const SessionsBuilders: Record<string, SimpleQueryConfig> = {
 					websiteId,
 					startDate,
 					endDate: `${endDate} 23:59:59`,
-					limit: limit || 25,
-					offset: offset || 0,
+					limit,
+					offset,
 					...filterParams,
 				},
 			};
@@ -206,11 +204,10 @@ export const SessionsBuilders: Record<string, SimpleQueryConfig> = {
 			'device_type',
 			'browser_name',
 			'country',
-			'user_agent',
 		],
 		where: ['session_id = ?'],
 		orderBy: 'time ASC',
 		timeField: 'time',
 		customizable: true,
-	},
+	} satisfies SimpleQueryConfig,
 };
