@@ -483,6 +483,52 @@
 				finalProperties = { value: properties };
 			}
 
+			const customEvent = {
+				type: 'custom',
+				eventId: generateUUIDv4(),
+				name: eventName,
+				anonymousId: this.anonymousId,
+				sessionId: this.sessionId,
+				timestamp: Date.now(),
+				properties: finalProperties,
+			};
+
+			if (this.options.enableBatching) {
+				return this.send(customEvent);
+			}
+
+			try {
+				const beaconResult = await this.sendBeacon(customEvent);
+				if (beaconResult) {
+					return beaconResult;
+				}
+			} catch (_e) {}
+
+			return this.send(customEvent);
+		}
+
+		async _trackSystemEvent(eventName, properties) {
+			if (this.options.disabled || this.isLikelyBot) {
+				return;
+			}
+
+			if (this.options.samplingRate < 1.0) {
+				const samplingValue = Math.random();
+
+				if (samplingValue > this.options.samplingRate) {
+					return { sampled: false };
+				}
+			}
+
+			let finalProperties;
+			if (properties === undefined || properties === null) {
+				finalProperties = {};
+			} else if (typeof properties === 'object') {
+				finalProperties = properties;
+			} else {
+				finalProperties = { value: properties };
+			}
+
 			// Collect base context data
 			const baseContext = this.getBaseContext();
 
@@ -970,44 +1016,6 @@
 			};
 		}
 
-		trackCustomEvent(eventName, properties = {}) {
-			if (this.isServer()) {
-				return;
-			}
-
-			let finalProperties;
-			if (properties === undefined || properties === null) {
-				finalProperties = {};
-			} else if (typeof properties === 'object') {
-				finalProperties = properties;
-			} else {
-				finalProperties = { value: properties };
-			}
-
-			const customEvent = {
-				type: 'custom',
-				eventId: generateUUIDv4(),
-				name: eventName,
-				anonymousId: this.anonymousId,
-				sessionId: this.sessionId,
-				timestamp: Date.now(),
-				properties: finalProperties,
-			};
-
-			if (this.options.enableBatching) {
-				return this.send(customEvent);
-			}
-
-			try {
-				const beaconResult = this.sendBeacon(customEvent);
-				if (beaconResult) {
-					return beaconResult;
-				}
-			} catch (_e) {}
-
-			return this.send(customEvent);
-		}
-
 		async trackOutgoingLink(linkData) {
 			if (this.isServer()) {
 				return;
@@ -1373,7 +1381,7 @@
 					...(n ?? {}),
 				};
 
-				this.track('screen_view', pageData);
+				this._trackSystemEvent('screen_view', pageData);
 			}
 		}
 	};
@@ -1398,7 +1406,7 @@
 					clear: () => {},
 					flush: () => {},
 					setGlobalProperties: () => {},
-					trackCustomEvent: () => {},
+
 					trackOutgoingLink: () => {},
 					options: { disabled: true },
 				};
@@ -1409,7 +1417,7 @@
 					clear: () => {},
 					flush: () => {},
 					setGlobalProperties: () => {},
-					trackCustomEvent: () => {},
+
 					trackOutgoingLink: () => {},
 				};
 
@@ -1562,14 +1570,13 @@
 			});
 
 			window.db = {
-				track: (...args) => window.databuddy?.trackCustomEvent(...args),
+				track: (...args) => window.databuddy?.track(...args),
 				screenView: (...args) => window.databuddy?.screenView(...args),
 				clear: () => window.databuddy?.clear(),
 				flush: () => window.databuddy?.flush(),
 				setGlobalProperties: (...args) =>
 					window.databuddy?.setGlobalProperties(...args),
-				trackCustomEvent: (...args) =>
-					window.databuddy?.trackCustomEvent(...args),
+
 				trackOutgoingLink: (...args) =>
 					window.databuddy?.trackOutgoingLink(...args),
 			};
@@ -1608,7 +1615,6 @@
 				const noop = () => {};
 				window.databuddy.track = noop;
 				window.databuddy.screenView = noop;
-				window.databuddy.trackCustomEvent = noop;
 				window.databuddy.trackOutgoingLink = noop;
 				window.databuddy.clear = noop;
 				window.databuddy.flush = noop;
@@ -1619,7 +1625,6 @@
 				const noop = () => {};
 				window.db.track = noop;
 				window.db.screenView = noop;
-				window.db.trackCustomEvent = noop;
 				window.db.trackOutgoingLink = noop;
 				window.db.clear = noop;
 				window.db.flush = noop;

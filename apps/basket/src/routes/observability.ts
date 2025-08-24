@@ -97,7 +97,7 @@ async function insertObservabilityEvent(
 }
 
 const app = new Elysia()
-	.post('/', async ({ body }: { body: ObservabilityEvent }) => {
+	.post('/track', async ({ body }: { body: ObservabilityEvent }) => {
 		const parseResult = observabilityEventSchema.safeParse(body);
 		if (!parseResult.success) {
 			logger.error('Invalid observability event schema', {
@@ -125,7 +125,7 @@ const app = new Elysia()
 			};
 		}
 	})
-	.post('/batch', async ({ body }: { body: ObservabilityEvent[] }) => {
+	.post('/track/batch', async ({ body }: { body: ObservabilityEvent[] }) => {
 		if (!Array.isArray(body)) {
 			return {
 				status: 'error',

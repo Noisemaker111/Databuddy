@@ -33,6 +33,7 @@ export const VALIDATION_LIMITS = {
 	TIMEZONE_MAX_LENGTH: 64,
 	PATH_MAX_LENGTH: 2048,
 	TEXT_MAX_LENGTH: 2048,
+	EVENT_ID_MAX_LENGTH: 512,
 } as const;
 
 export const SAFE_HEADERS = new Set([
