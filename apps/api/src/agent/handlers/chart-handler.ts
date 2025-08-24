@@ -40,12 +40,15 @@ export async function handleChartResponse(
 	try {
 		const queryResult = await executeQuery(parsedAiJson.sql);
 
+		const content =
+			parsedAiJson.text_response ||
+			(queryResult.data.length > 0
+				? `Found ${queryResult.data.length} data points for your analysis. The chart below shows the data patterns and trends.`
+				: getRandomMessage(noDataMessages));
+
 		return {
 			type: 'complete',
-			content:
-				queryResult.data.length > 0
-					? `Found ${queryResult.data.length} data points. Displaying as a ${parsedAiJson.chart_type ? parsedAiJson.chart_type.replace(/_/g, ' ') : 'chart'}.`
-					: getRandomMessage(noDataMessages),
+			content,
 			data: {
 				hasVisualization: queryResult.data.length > 0,
 				chartType: parsedAiJson.chart_type || 'bar',
