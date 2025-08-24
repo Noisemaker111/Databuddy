@@ -2,6 +2,8 @@ import crypto, { createHash, randomUUID } from 'node:crypto';
 import {
 	type AnalyticsEvent,
 	type BlockedTraffic,
+	type CustomEvent,
+	type CustomOutgoingLink,
 	clickHouse,
 	type ErrorEvent,
 	type WebVitalsEvent,
@@ -13,7 +15,9 @@ import { getWebsiteByIdV2, isValidOrigin } from '../hooks/auth';
 import { logger } from '../lib/logger';
 import {
 	analyticsEventSchema,
+	customEventSchema,
 	errorEventSchema,
+	outgoingLinkSchema,
 	webVitalsEventSchema,
 } from '../utils/event-schema';
 import { extractIpFromRequest, getGeo } from '../utils/ip-geo';
@@ -281,6 +285,104 @@ async function insertWebVitals(
 		});
 	} catch (err) {
 		logger.error('Failed to insert web vitals event', {
+			error: err as Error,
+			eventId,
+		});
+		throw err;
+	}
+}
+
+async function insertCustomEvent(
+	customData: any,
+	clientId: string,
+	userAgent: string,
+	ip: string
+): Promise<void> {
+	const eventId = sanitizeString(
+		customData.eventId,
+		VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH
+	);
+	if (await checkDuplicate(eventId, 'custom')) {
+		return;
+	}
+
+	const now = Date.now();
+
+	const customEvent: CustomEvent = {
+		id: randomUUID(),
+		client_id: clientId,
+		event_name: sanitizeString(
+			customData.name,
+			VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH
+		),
+		anonymous_id: sanitizeString(
+			customData.anonymousId,
+			VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH
+		),
+		session_id: validateSessionId(customData.sessionId),
+		properties: customData.properties
+			? JSON.stringify(customData.properties)
+			: '{}',
+		timestamp:
+			typeof customData.timestamp === 'number' ? customData.timestamp : now,
+	};
+
+	try {
+		await clickHouse.insert({
+			table: 'analytics.custom_events',
+			values: [customEvent],
+			format: 'JSONEachRow',
+		});
+	} catch (err) {
+		logger.error('Failed to insert custom event', {
+			error: err as Error,
+			eventId,
+		});
+		throw err;
+	}
+}
+
+async function insertOutgoingLink(
+	linkData: any,
+	clientId: string,
+	userAgent: string,
+	ip: string
+): Promise<void> {
+	const eventId = sanitizeString(
+		linkData.eventId,
+		VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH
+	);
+	if (await checkDuplicate(eventId, 'outgoing_link')) {
+		return;
+	}
+
+	const now = Date.now();
+
+	const outgoingLinkEvent: CustomOutgoingLink = {
+		id: randomUUID(),
+		client_id: clientId,
+		anonymous_id: sanitizeString(
+			linkData.anonymousId,
+			VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH
+		),
+		session_id: validateSessionId(linkData.sessionId),
+		href: sanitizeString(linkData.href, VALIDATION_LIMITS.PATH_MAX_LENGTH),
+		text: sanitizeString(linkData.text, VALIDATION_LIMITS.TEXT_MAX_LENGTH),
+		properties: linkData.properties
+			? JSON.stringify(linkData.properties)
+			: '{}',
+		timestamp:
+			typeof linkData.timestamp === 'number' ? linkData.timestamp : now,
+	};
+
+	try {
+		await clickHouse.insert({
+			table: 'analytics.outgoing_links',
+			values: [outgoingLinkEvent],
+			format: 'JSONEachRow',
+		});
+	} catch (err) {
+		logger.error('Failed to insert outgoing link event', {
 			error: err as Error,
 			eventId,
 		});
@@ -649,6 +751,62 @@ const app = new Elysia()
 				return { status: 'success', type: 'web_vitals' };
 			}
 
+			if (eventType === 'custom') {
+				const parseResult = customEventSchema.safeParse(body);
+				if (!parseResult.success) {
+					console.error(
+						'Blocked event schema errors:',
+						parseResult.error.issues,
+						'Payload:',
+						body
+					);
+					await logBlockedTraffic(
+						request,
+						body,
+						query,
+						'invalid_schema',
+						'Schema Validation',
+						undefined,
+						clientId
+					);
+					return {
+						status: 'error',
+						message: 'Invalid event schema',
+						errors: parseResult.error.issues,
+					};
+				}
+				insertCustomEvent(body, clientId, userAgent, ip);
+				return { status: 'success', type: 'custom' };
+			}
+
+			if (eventType === 'outgoing_link') {
+				const parseResult = outgoingLinkSchema.safeParse(body);
+				if (!parseResult.success) {
+					console.error(
+						'Blocked event schema errors:',
+						parseResult.error.issues,
+						'Payload:',
+						body
+					);
+					await logBlockedTraffic(
+						request,
+						body,
+						query,
+						'invalid_schema',
+						'Schema Validation',
+						undefined,
+						clientId
+					);
+					return {
+						status: 'error',
+						message: 'Invalid event schema',
+						errors: parseResult.error.issues,
+					};
+				}
+				insertOutgoingLink(body, clientId, userAgent, ip);
+				return { status: 'success', type: 'outgoing_link' };
+			}
+
 			return { status: 'error', message: 'Unknown event type' };
 		}
 	)
@@ -808,6 +966,90 @@ const app = new Elysia()
 							status: 'success',
 							type: 'web_vitals',
 							eventId: event.payload?.eventId,
+						};
+					} catch (error) {
+						return {
+							status: 'error',
+							message: 'Processing failed',
+							eventType,
+							error: String(error),
+						};
+					}
+				}
+				if (eventType === 'custom') {
+					const parseResult = customEventSchema.safeParse(event);
+					if (!parseResult.success) {
+						console.error(
+							'Blocked event schema errors:',
+							parseResult.error.issues,
+							'Payload:',
+							event
+						);
+						await logBlockedTraffic(
+							request,
+							event,
+							query,
+							'invalid_schema',
+							'Schema Validation',
+							undefined,
+							clientId
+						);
+						return {
+							status: 'error',
+							message: 'Invalid event schema',
+							eventType,
+							errors: parseResult.error.issues,
+							eventId: event.eventId,
+						};
+					}
+					try {
+						await insertCustomEvent(event, clientId, userAgent, ip);
+						return {
+							status: 'success',
+							type: 'custom',
+							eventId: event.eventId,
+						};
+					} catch (error) {
+						return {
+							status: 'error',
+							message: 'Processing failed',
+							eventType,
+							error: String(error),
+						};
+					}
+				}
+				if (eventType === 'outgoing_link') {
+					const parseResult = outgoingLinkSchema.safeParse(event);
+					if (!parseResult.success) {
+						console.error(
+							'Blocked event schema errors:',
+							parseResult.error.issues,
+							'Payload:',
+							event
+						);
+						await logBlockedTraffic(
+							request,
+							event,
+							query,
+							'invalid_schema',
+							'Schema Validation',
+							undefined,
+							clientId
+						);
+						return {
+							status: 'error',
+							message: 'Invalid event schema',
+							eventType,
+							errors: parseResult.error.issues,
+							eventId: event.eventId,
+						};
+					}
+					try {
+						await insertOutgoingLink(event, clientId, userAgent, ip);
+						return {
+							status: 'success',
+							type: 'outgoing_link',
+							eventId: event.eventId,
 						};
 					} catch (error) {
 						return {

@@ -31,6 +31,8 @@ export const VALIDATION_LIMITS = {
 	UTM_MAX_LENGTH: 512,
 	LANGUAGE_MAX_LENGTH: 35, // RFC 5646 max length
 	TIMEZONE_MAX_LENGTH: 64,
+	PATH_MAX_LENGTH: 2048,
+	TEXT_MAX_LENGTH: 2048,
 } as const;
 
 export const SAFE_HEADERS = new Set([

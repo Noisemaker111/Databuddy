@@ -984,7 +984,58 @@
 				finalProperties = { value: properties };
 			}
 
-			this.track(eventName, finalProperties);
+			const customEvent = {
+				type: 'custom',
+				eventId: generateUUIDv4(),
+				name: eventName,
+				anonymousId: this.anonymousId,
+				sessionId: this.sessionId,
+				timestamp: Date.now(),
+				properties: finalProperties,
+			};
+
+			if (this.options.enableBatching) {
+				return this.send(customEvent);
+			}
+
+			try {
+				const beaconResult = this.sendBeacon(customEvent);
+				if (beaconResult) {
+					return beaconResult;
+				}
+			} catch (_e) {}
+
+			return this.send(customEvent);
+		}
+
+		async trackOutgoingLink(linkData) {
+			if (this.isServer()) {
+				return;
+			}
+
+			const outgoingLinkEvent = {
+				type: 'outgoing_link',
+				eventId: generateUUIDv4(),
+				anonymousId: this.anonymousId,
+				sessionId: this.sessionId,
+				timestamp: Date.now(),
+				href: linkData.href,
+				text: linkData.text || null,
+				properties: linkData.properties || {},
+			};
+
+			if (this.options.enableBatching) {
+				return this.send(outgoingLinkEvent);
+			}
+
+			try {
+				const beaconResult = await this.sendBeacon(outgoingLinkEvent);
+				if (beaconResult) {
+					return beaconResult;
+				}
+			} catch (_e) {}
+
+			return this.send(outgoingLinkEvent);
 		}
 
 		getBaseContext() {
@@ -1201,7 +1252,7 @@
 								const isOutgoing = url.origin !== window.location.origin;
 
 								if (isOutgoing) {
-									this.track('link_out', {
+									this.trackOutgoingLink({
 										href: n,
 										text:
 											i.innerText ||
@@ -1348,6 +1399,7 @@
 					flush: () => {},
 					setGlobalProperties: () => {},
 					trackCustomEvent: () => {},
+					trackOutgoingLink: () => {},
 					options: { disabled: true },
 				};
 
@@ -1358,6 +1410,7 @@
 					flush: () => {},
 					setGlobalProperties: () => {},
 					trackCustomEvent: () => {},
+					trackOutgoingLink: () => {},
 				};
 
 				return;
@@ -1509,7 +1562,7 @@
 			});
 
 			window.db = {
-				track: (...args) => window.databuddy?.track(...args),
+				track: (...args) => window.databuddy?.trackCustomEvent(...args),
 				screenView: (...args) => window.databuddy?.screenView(...args),
 				clear: () => window.databuddy?.clear(),
 				flush: () => window.databuddy?.flush(),
@@ -1517,6 +1570,8 @@
 					window.databuddy?.setGlobalProperties(...args),
 				trackCustomEvent: (...args) =>
 					window.databuddy?.trackCustomEvent(...args),
+				trackOutgoingLink: (...args) =>
+					window.databuddy?.trackOutgoingLink(...args),
 			};
 		}
 
@@ -1554,6 +1609,7 @@
 				window.databuddy.track = noop;
 				window.databuddy.screenView = noop;
 				window.databuddy.trackCustomEvent = noop;
+				window.databuddy.trackOutgoingLink = noop;
 				window.databuddy.clear = noop;
 				window.databuddy.flush = noop;
 				window.databuddy.setGlobalProperties = noop;
@@ -1564,6 +1620,7 @@
 				window.db.track = noop;
 				window.db.screenView = noop;
 				window.db.trackCustomEvent = noop;
+				window.db.trackOutgoingLink = noop;
 				window.db.clear = noop;
 				window.db.flush = noop;
 				window.db.setGlobalProperties = noop;

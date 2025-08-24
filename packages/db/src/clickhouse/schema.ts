@@ -55,16 +55,12 @@ CREATE TABLE IF NOT EXISTS ${ANALYTICS_DATABASE}.events (
   
   connection_type Nullable(String),
   rtt Nullable(Int16),
-  downlink Nullable(Float32), -- New field
+  downlink Nullable(Float32),
   
   time_on_page Nullable(Float32),
   scroll_depth Nullable(Float32),
   interaction_count Nullable(Int16),
-  exit_intent UInt8,
   page_count UInt8 DEFAULT 1,
-  is_bounce UInt8 DEFAULT 1,
-  has_exit_intent Nullable(UInt8), -- New field
-  page_size Nullable(Int32),
   
   utm_source Nullable(String),
   utm_medium Nullable(String),
@@ -74,19 +70,13 @@ CREATE TABLE IF NOT EXISTS ${ANALYTICS_DATABASE}.events (
   
   load_time Nullable(Int32),
   dom_ready_time Nullable(Int32),
-  dom_interactive Nullable(Int32), -- New field
+  dom_interactive Nullable(Int32),
   ttfb Nullable(Int32),
   connection_time Nullable(Int32),
   request_time Nullable(Int32),
   render_time Nullable(Int32),
-  redirect_time Nullable(Int32), -- New field
-  domain_lookup_time Nullable(Int32), -- New field
-  
-  fcp Nullable(Int32),
-  lcp Nullable(Int32),
-  cls Nullable(Float32),
-  fid Nullable(Int32), -- New field
-  inp Nullable(Int32), -- New field
+  redirect_time Nullable(Int32),
+  domain_lookup_time Nullable(Int32),
   
   href Nullable(String),
   text Nullable(String),
@@ -350,6 +340,41 @@ ORDER BY (service, environment, category, level, start_time)
 SETTINGS index_granularity = 8192
 `;
 
+// Custom events table with minimal essential fields
+const CREATE_CUSTOM_EVENTS_TABLE = `
+CREATE TABLE IF NOT EXISTS ${ANALYTICS_DATABASE}.custom_events (
+  id UUID,
+  client_id String,
+  event_name String,
+  anonymous_id String,
+  session_id String,
+  properties String,
+  
+  timestamp DateTime64(3, 'UTC') DEFAULT now()
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(timestamp)
+ORDER BY (client_id, timestamp, id)
+SETTINGS index_granularity = 8192
+`;
+
+// Custom outgoing links table with minimal essential fields
+const CREATE_CUSTOM_OUTGOING_LINKS_TABLE = `
+CREATE TABLE IF NOT EXISTS ${ANALYTICS_DATABASE}.outgoing_links (
+  id UUID,
+  client_id String,
+  anonymous_id String,
+  session_id String,
+  href String,
+  text Nullable(String),
+  properties String,
+  
+  timestamp DateTime64(3, 'UTC') DEFAULT now()
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(timestamp)
+ORDER BY (client_id, timestamp, id)
+SETTINGS index_granularity = 8192
+`;
+
 export interface ErrorEvent {
 	id: string;
 	client_id: string;
@@ -527,6 +552,27 @@ export interface ObservabilityEvent {
 	events: JSON;
 }
 
+export interface CustomEvent {
+	id: string;
+	client_id: string;
+	event_name: string;
+	anonymous_id: string;
+	session_id: string;
+	properties: string;
+	timestamp: number;
+}
+
+export interface CustomOutgoingLink {
+	id: string;
+	client_id: string;
+	anonymous_id: string;
+	session_id: string;
+	href: string;
+	text?: string;
+	properties: string;
+	timestamp: number;
+}
+
 // TypeScript interface that matches the ClickHouse schema
 export interface AnalyticsEvent {
 	// Core identification
@@ -643,6 +689,8 @@ export async function initClickHouseSchema() {
 			{ name: 'stripe_refunds', query: CREATE_STRIPE_REFUNDS_TABLE },
 			{ name: 'blocked_traffic', query: CREATE_BLOCKED_TRAFFIC_TABLE },
 			{ name: 'email_events', query: CREATE_EMAIL_EVENTS_TABLE },
+			{ name: 'custom_events', query: CREATE_CUSTOM_EVENTS_TABLE },
+			{ name: 'outgoing_links', query: CREATE_CUSTOM_OUTGOING_LINKS_TABLE },
 			{
 				name: 'observability_events',
 				query: CREATE_OBSERVABILITY_EVENTS_TABLE,
