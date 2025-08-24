@@ -1,5 +1,6 @@
 import { ArrowSquareOutIcon } from '@phosphor-icons/react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import { FaviconImage } from '@/components/analytics/favicon-image';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,8 @@ export function NavigationItem({
 	domain,
 	disabled,
 }: NavigationItemProps) {
+	const pathname = usePathname();
+
 	const fullPath = useMemo(() => {
 		if (isRootLevel) {
 			return href;
@@ -33,8 +36,20 @@ export function NavigationItem({
 		if (currentWebsiteId === 'sandbox') {
 			return href === '' ? '/sandbox' : `/sandbox${href}`;
 		}
+
+		// Check if we're on a database page
+		if (
+			pathname.startsWith('/observability/database/') &&
+			pathname !== '/observability/database' &&
+			pathname !== '/observability/database/'
+		) {
+			return href === ''
+				? `/observability/database/${currentWebsiteId}`
+				: `/observability/database/${currentWebsiteId}${href}`;
+		}
+
 		return `/websites/${currentWebsiteId}${href}`;
-	}, [href, isRootLevel, currentWebsiteId]);
+	}, [href, isRootLevel, currentWebsiteId, pathname]);
 
 	const LinkComponent = isExternal ? 'a' : Link;
 
