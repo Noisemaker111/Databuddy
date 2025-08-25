@@ -2,6 +2,7 @@
 
 import { LightningIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { DataTable } from '@/components/analytics/data-table';
 import { MetricsChart } from '@/components/charts/metrics-chart';
 import type { ChartDataRow } from '@/components/charts/metrics-constants';
 
@@ -14,6 +15,19 @@ interface WebVitalsChartProps {
 	data: WebVitalsData[];
 	isLoading: boolean;
 	isRefreshing: boolean;
+	webVitalsTabs?: Array<{
+		id: string;
+		label: string;
+		data: { name: string; [key: string]: unknown }[];
+		columns: {
+			id: string;
+			header: string;
+			accessorKey: string;
+			cell?: unknown;
+		}[];
+		getFilter: (row: { name: string }) => { field: string; value: string };
+	}>;
+	onAddFilter?: (field: string, value: string) => void;
 }
 
 const WEB_VITALS_METRICS = [
@@ -58,12 +72,12 @@ export function WebVitalsChart({
 	data,
 	isLoading,
 	isRefreshing,
+	webVitalsTabs,
+	onAddFilter,
 }: WebVitalsChartProps) {
 	const [selectedMetric, setSelectedMetric] = useState<string>('lcp');
 
-	if (!data?.length) {
-		return null;
-	}
+	const hasData = data?.length > 0;
 
 	const latestData = data.at(-1);
 
@@ -71,17 +85,19 @@ export function WebVitalsChart({
 		setSelectedMetric(metricKey);
 	};
 
-	const chartData = data.map((item) => {
-		const result: Record<string, unknown> = { date: item.date };
-		// Add all percentiles for the selected metric
-		result[`avg_${selectedMetric}`] = item[`avg_${selectedMetric}`];
-		result[`p50_${selectedMetric}`] = item[`p50_${selectedMetric}`];
-		result[`p75_${selectedMetric}`] = item[`p75_${selectedMetric}`];
-		result[`p90_${selectedMetric}`] = item[`p90_${selectedMetric}`];
-		result[`p95_${selectedMetric}`] = item[`p95_${selectedMetric}`];
-		result[`p99_${selectedMetric}`] = item[`p99_${selectedMetric}`];
-		return result;
-	});
+	const chartData = hasData
+		? data.map((item) => {
+				const result: Record<string, unknown> = { date: item.date };
+				// Add all percentiles for the selected metric
+				result[`avg_${selectedMetric}`] = item[`avg_${selectedMetric}`];
+				result[`p50_${selectedMetric}`] = item[`p50_${selectedMetric}`];
+				result[`p75_${selectedMetric}`] = item[`p75_${selectedMetric}`];
+				result[`p90_${selectedMetric}`] = item[`p90_${selectedMetric}`];
+				result[`p95_${selectedMetric}`] = item[`p95_${selectedMetric}`];
+				result[`p99_${selectedMetric}`] = item[`p99_${selectedMetric}`];
+				return result;
+			})
+		: [];
 
 	return (
 		<div className="rounded border bg-muted/20 p-4">
@@ -106,9 +122,9 @@ export function WebVitalsChart({
 				<div className="grid grid-cols-2 gap-3 md:grid-cols-4">
 					{WEB_VITALS_METRICS.map((metric) => {
 						const isSelected = selectedMetric === metric.key;
-						const p95Value = latestData?.[`p95_${metric.key}`] as
-							| number
-							| undefined;
+						const p95Value = hasData
+							? (latestData?.[`p95_${metric.key}`] as number | undefined)
+							: undefined;
 						const status = p95Value ? getStatus(p95Value, metric) : null;
 
 						return (
@@ -118,6 +134,7 @@ export function WebVitalsChart({
 										? 'border-primary bg-primary/10 shadow-sm ring-1 ring-primary/20'
 										: 'border-border hover:border-primary/50 hover:bg-muted/50'
 								}`}
+								disabled={isLoading}
 								key={metric.key}
 								onClick={() => {
 									selectMetric(metric.key);
@@ -135,7 +152,12 @@ export function WebVitalsChart({
 										<div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
 									)}
 								</div>
-								{p95Value && (
+								{isLoading ? (
+									<div className="animate-pulse">
+										<div className="mb-1 h-6 rounded bg-muted" />
+										<div className="h-4 w-16 rounded bg-muted" />
+									</div>
+								) : p95Value ? (
 									<div>
 										<div className="font-mono font-semibold text-base">
 											{Math.round(p95Value)}ms
@@ -146,6 +168,8 @@ export function WebVitalsChart({
 											</div>
 										)}
 									</div>
+								) : (
+									<div className="text-muted-foreground text-sm">No data</div>
 								)}
 							</button>
 						);
@@ -153,13 +177,37 @@ export function WebVitalsChart({
 				</div>
 
 				{/* Chart */}
-				<MetricsChart
-					data={chartData as ChartDataRow[]}
-					description={`${WEB_VITALS_METRICS.find((m) => m.key === selectedMetric)?.desc || 'Performance metric'} showing percentile distributions over time`}
-					height={400}
-					isLoading={isLoading || isRefreshing}
-					title={`${WEB_VITALS_METRICS.find((m) => m.key === selectedMetric)?.label || 'Core Web Vitals'} Performance`}
-				/>
+				{hasData || isLoading ? (
+					<MetricsChart
+						data={chartData as ChartDataRow[]}
+						description={`${WEB_VITALS_METRICS.find((m) => m.key === selectedMetric)?.desc || 'Performance metric'} showing percentile distributions over time`}
+						height={400}
+						isLoading={isLoading || isRefreshing}
+						title={`${WEB_VITALS_METRICS.find((m) => m.key === selectedMetric)?.label || 'Core Web Vitals'} Performance`}
+					/>
+				) : (
+					<div className="flex items-center justify-center rounded border bg-muted/10 py-12">
+						<div className="text-center">
+							<p className="text-muted-foreground text-sm">
+								No Web Vitals data available for the selected period.
+							</p>
+						</div>
+					</div>
+				)}
+
+				{/* Web Vitals Data Table */}
+				{webVitalsTabs && webVitalsTabs.length > 0 && onAddFilter && (
+					<div className="mt-6">
+						<DataTable
+							description="Core Web Vitals metrics (LCP, FCP, FID, INP) across pages, locations, devices, and browsers"
+							isLoading={isLoading || isRefreshing}
+							minHeight={400}
+							onAddFilter={onAddFilter}
+							tabs={webVitalsTabs}
+							title="Web Vitals Analysis"
+						/>
+					</div>
+				)}
 			</div>
 		</div>
 	);
