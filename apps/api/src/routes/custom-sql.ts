@@ -39,6 +39,9 @@ const ALLOWED_OPERATIONS = [
 	'UNION ALL',
 	'JSONExtract',
 	'JSONExtractString',
+	'JSONExtractInt',
+	'JSONExtractFloat',
+	'JSONExtractBool',
 	'JSONExtractRaw',
 	'CASE',
 	'WHEN',
@@ -141,6 +144,29 @@ const TABLE_PATTERN = /(?:FROM|JOIN)\s+([a-zA-Z_][a-zA-Z0-9_]*)/gi;
 const SUBQUERY_PATTERN = /\(SELECT.*?\)/gi;
 
 const QuerySecurityValidator = {
+	transformPropertiesSyntax(query: string): string {
+		// Match properties.X patterns and convert to JSONExtract calls
+		const propertiesPattern =
+			/\bproperties\.([a-zA-Z_][a-zA-Z0-9_]*(?::(string|int|float|bool|raw))?)\b/gi;
+
+		return query.replace(propertiesPattern, (_match, propertyWithType) => {
+			const [propertyName, type] = propertyWithType.split(':');
+
+			switch (type) {
+				case 'int':
+					return `JSONExtractInt(properties, '${propertyName}')`;
+				case 'float':
+					return `JSONExtractFloat(properties, '${propertyName}')`;
+				case 'bool':
+					return `JSONExtractBool(properties, '${propertyName}')`;
+				case 'raw':
+					return `JSONExtractRaw(properties, '${propertyName}')`;
+				default:
+					return `JSONExtractString(properties, '${propertyName}')`;
+			}
+		});
+	},
+
 	normalizeSQL(query: string): string {
 		return query
 			.replace(/\/\*[\s\S]*?\*\//g, '')
@@ -188,7 +214,7 @@ const QuerySecurityValidator = {
 		}
 	},
 
-	validateQueryStructure(normalizedQuery: string): void {
+	validateQueryStart(normalizedQuery: string): void {
 		const startsWithSelect = normalizedQuery.startsWith('SELECT');
 		const startsWithWith = normalizedQuery.startsWith('WITH');
 		const hasValidStart = startsWithSelect || startsWithWith;
@@ -198,7 +224,9 @@ const QuerySecurityValidator = {
 				'INVALID_QUERY_START'
 			);
 		}
+	},
 
+	validateQueryComplexity(normalizedQuery: string): void {
 		const selectMatches = normalizedQuery.match(/SELECT/g);
 		const selectCount = selectMatches ? selectMatches.length : 0;
 		if (selectCount > 3) {
@@ -214,7 +242,9 @@ const QuerySecurityValidator = {
 				'UNION_NOT_ALLOWED'
 			);
 		}
+	},
 
+	validateQuerySyntax(normalizedQuery: string): void {
 		if (normalizedQuery.includes('/*') || normalizedQuery.includes('--')) {
 			throw new SQLValidationError(
 				'Comments are not allowed in queries',
@@ -229,6 +259,15 @@ const QuerySecurityValidator = {
 			);
 		}
 
+		if (normalizedQuery.includes('\\') || normalizedQuery.includes('%')) {
+			throw new SQLValidationError(
+				'Escape sequences and URL encoding not allowed',
+				'ENCODING_NOT_ALLOWED'
+			);
+		}
+	},
+
+	validateParenthesesBalance(normalizedQuery: string): void {
 		let parenCount = 0;
 		for (const char of normalizedQuery) {
 			if (char === '(') {
@@ -250,13 +289,13 @@ const QuerySecurityValidator = {
 				'INVALID_SYNTAX'
 			);
 		}
+	},
 
-		if (normalizedQuery.includes('\\') || normalizedQuery.includes('%')) {
-			throw new SQLValidationError(
-				'Escape sequences and URL encoding not allowed',
-				'ENCODING_NOT_ALLOWED'
-			);
-		}
+	validateQueryStructure(normalizedQuery: string): void {
+		this.validateQueryStart(normalizedQuery);
+		this.validateQueryComplexity(normalizedQuery);
+		this.validateQuerySyntax(normalizedQuery);
+		this.validateParenthesesBalance(normalizedQuery);
 	},
 
 	validateClientAccess(query: string, clientId: string): string {
@@ -362,13 +401,21 @@ const QuerySecurityValidator = {
 
 		QuerySecurityValidator.validateAgainstAttackVectors(query);
 
-		const normalizedQuery = QuerySecurityValidator.normalizeSQL(query);
+		// Transform properties.X syntax to JSONExtract calls before validation
+		const transformedQuery =
+			QuerySecurityValidator.transformPropertiesSyntax(query);
+
+		const normalizedQuery =
+			QuerySecurityValidator.normalizeSQL(transformedQuery);
 
 		QuerySecurityValidator.validateForbiddenOperations(normalizedQuery);
 		QuerySecurityValidator.validateQueryStructure(normalizedQuery);
 		QuerySecurityValidator.validateAllowedTables(normalizedQuery);
 
-		return QuerySecurityValidator.validateClientAccess(query, clientId);
+		return QuerySecurityValidator.validateClientAccess(
+			transformedQuery,
+			clientId
+		);
 	},
 };
 
@@ -529,6 +576,19 @@ export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
 					clientIdParameter: '{clientId:String}',
 					required: 'All queries must use parameterized client filtering',
 				},
+				propertiesSyntax: {
+					description:
+						'Automatic JSONExtract transformation from properties.X syntax',
+					syntax: 'properties.property_name[:type]',
+					supportedTypes: ['string', 'int', 'float', 'bool', 'raw'],
+					examples: [
+						'properties.browser_name',
+						'properties.user_id:int',
+						'properties.is_active:bool',
+						'properties.metadata:raw',
+					],
+					defaultType: 'string (JSONExtractString)',
+				},
 			},
 		};
 	})
@@ -540,11 +600,11 @@ export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
 					name: 'Monthly Events Count',
 					description: 'Get monthly event counts for your client',
 					query: `
-						SELECT 
+						SELECT
 							toStartOfMonth(time) as month_start,
 							count() as event_count
-						FROM analytics.events 
-						WHERE 
+						FROM analytics.events
+						WHERE
 							time >= now() - INTERVAL 6 MONTH
 						GROUP BY month_start
 						ORDER BY month_start DESC
@@ -554,12 +614,12 @@ export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
 					name: 'Top Pages by Views',
 					description: 'Get most popular pages',
 					query: `
-						SELECT 
+						SELECT
 							path,
 							count() as page_views,
 							uniq(session_id) as unique_sessions
-						FROM analytics.events 
-						WHERE 
+						FROM analytics.events
+						WHERE
 							time >= now() - INTERVAL 30 DAY
 							AND event_name = 'page_view'
 						GROUP BY path
@@ -568,30 +628,51 @@ export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
 					`.trim(),
 				},
 				{
-					name: 'Browser Analytics',
-					description: 'Analyze browser usage',
+					name: 'Browser Analytics (with properties.X syntax)',
+					description: 'Analyze browser usage using properties.X syntax',
 					query: `
-						SELECT 
-							browser_name,
+						SELECT
+							properties.browser_name,
 							count() as events,
 							uniq(anonymous_id) as unique_users
-						FROM analytics.events 
-						WHERE 
+						FROM analytics.events
+						WHERE
 							time >= now() - INTERVAL 7 DAY
-							AND browser_name IS NOT NULL
-						GROUP BY browser_name
+							AND properties.browser_name IS NOT NULL
+						GROUP BY properties.browser_name
 						ORDER BY events DESC
+					`.trim(),
+				},
+				{
+					name: 'User Analytics with Typed Properties',
+					description: 'Analyze user behavior with typed property extraction',
+					query: `
+						SELECT
+							properties.user_id:int as user_id,
+							properties.is_premium:bool as is_premium,
+							properties.session_duration:float as session_duration,
+							count() as total_events
+						FROM analytics.events
+						WHERE
+							time >= now() - INTERVAL 30 DAY
+							AND properties.user_id:int IS NOT NULL
+						GROUP BY
+							properties.user_id:int,
+							properties.is_premium:bool,
+							properties.session_duration:float
+						ORDER BY total_events DESC
+						LIMIT 20
 					`.trim(),
 				},
 				{
 					name: 'Error Events Analysis',
 					description: 'Analyze error events',
 					query: `
-						SELECT 
+						SELECT
 							url,
 							count() as error_count
-						FROM analytics.errors 
-						WHERE 
+						FROM analytics.errors
+						WHERE
 							time >= now() - INTERVAL 7 DAY
 						GROUP BY url
 						ORDER BY error_count DESC

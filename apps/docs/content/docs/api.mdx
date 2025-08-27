@@ -168,6 +168,10 @@ Compile a query to see the generated SQL without executing it.
 
 ## Custom SQL API
 
+<Callout type="info">
+  **New Feature!** 🚀 Use `properties.X` syntax for easy JSON property extraction. Write `properties.browser_name` instead of `JSONExtractString(properties, 'browser_name')`. Supports type annotations like `properties.user_id:int`, `properties.is_active:bool`.
+</Callout>
+
 ### Execute Custom SQL Queries
 
 Execute custom SQL queries directly against your ClickHouse analytics database with enterprise-grade security.
@@ -183,7 +187,7 @@ Execute custom SQL queries directly against your ClickHouse analytics database w
 
 **Request:**
 
-<CodeBlock 
+<CodeBlock
   language="json"
   code={`{
   "query": "SELECT count() as events FROM analytics.events WHERE time >= now() - INTERVAL 7 DAY",
@@ -191,6 +195,16 @@ Execute custom SQL queries directly against your ClickHouse analytics database w
   "parameters": {
     "customParam": "value"
   }
+}`}
+/>
+
+**Example with Properties.X Syntax:**
+
+<CodeBlock
+  language="json"
+  code={`{
+  "query": "SELECT properties.browser_name, properties.user_id:int, count() as events FROM analytics.events WHERE properties.browser_name IS NOT NULL GROUP BY properties.browser_name, properties.user_id:int ORDER BY events DESC LIMIT 10",
+  "clientId": "your-client-id"
 }`}
 />
 
@@ -210,6 +224,24 @@ Execute custom SQL queries directly against your ClickHouse analytics database w
 - `analytics.custom_events` - Custom event tracking data
 - `analytics.web_vitals` - Core Web Vitals performance metrics
 
+**Properties.X Syntax Helper:**
+Databuddy provides a convenient syntax helper that automatically converts `properties.X` notation to ClickHouse `JSONExtract` functions:
+
+```sql
+-- Instead of writing:
+SELECT JSONExtractString(properties, 'browser_name') FROM analytics.events
+
+-- You can simply write:
+SELECT properties.browser_name FROM analytics.events
+```
+
+**Supported Type Annotations:**
+- `properties.property_name` → `JSONExtractString(properties, 'property_name')` (default)
+- `properties.user_id:int` → `JSONExtractInt(properties, 'user_id')`
+- `properties.is_active:bool` → `JSONExtractBool(properties, 'is_active')`
+- `properties.score:float` → `JSONExtractFloat(properties, 'score')`
+- `properties.metadata:raw` → `JSONExtractRaw(properties, 'metadata')`
+
 **Security Features:**
 - Automatic client isolation (queries are wrapped with client filtering)
 - SQL injection prevention with parameterized queries
@@ -219,6 +251,7 @@ Execute custom SQL queries directly against your ClickHouse analytics database w
 - Comments and multiple statements not allowed
 - Balanced parentheses validation
 - Escape sequence and URL encoding prevention
+- Properties.X syntax automatically transformed to secure JSONExtract calls
 
 **Response:**
 
@@ -265,7 +298,7 @@ Get information about allowed tables, operations, and security constraints.
       "analytics.web_vitals"
     ],
     "allowedOperations": [
-      "SELECT", "WITH", "FROM", "WHERE", "GROUP BY", "ORDER BY", "HAVING", "LIMIT", "OFFSET", "JOIN", "LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "UNION", "UNION ALL", "CASE", "WHEN", "THEN", "ELSE", "END", "AS", "AND", "OR", "NOT", "IN", "EXISTS", "BETWEEN", "LIKE", "ILIKE"
+      "SELECT", "WITH", "FROM", "WHERE", "GROUP BY", "ORDER BY", "HAVING", "LIMIT", "OFFSET", "JOIN", "LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "UNION", "UNION ALL", "JSONExtract", "JSONExtractString", "JSONExtractInt", "JSONExtractFloat", "JSONExtractBool", "JSONExtractRaw", "CASE", "WHEN", "THEN", "ELSE", "END", "AS", "AND", "OR", "NOT", "IN", "EXISTS", "BETWEEN", "LIKE", "ILIKE"
     ],
     "forbiddenOperations": [
       "INSERT", "UPDATE", "DELETE", "DROP", "CREATE", "ALTER", "TRUNCATE", "REPLACE", "MERGE", "CALL", "EXEC", "EXECUTE", "DECLARE", "SET", "USE", "SHOW", "DESCRIBE", "EXPLAIN", "ANALYZE", "OPTIMIZE", "REPAIR", "LOCK", "UNLOCK", "GRANT", "REVOKE", "COMMIT", "ROLLBACK", "SAVEPOINT", "RELEASE", "START TRANSACTION", "BEGIN", "INFORMATION_SCHEMA", "SYSTEM", "ADMIN", "SUPER", "FILE", "PROCESS", "RELOAD", "SHUTDOWN", "REFERENCES", "INDEX", "TRIGGER", "EVENT", "ROUTINE"
@@ -275,6 +308,18 @@ Get information about allowed tables, operations, and security constraints.
     "parameterization": {
       "clientIdParameter": "{clientId:String}",
       "required": "All queries must use parameterized client filtering"
+    },
+    "propertiesSyntax": {
+      "description": "Automatic JSONExtract transformation from properties.X syntax",
+      "syntax": "properties.property_name[:type]",
+      "supportedTypes": ["string", "int", "float", "bool", "raw"],
+      "examples": [
+        "properties.browser_name",
+        "properties.user_id:int",
+        "properties.is_active:bool",
+        "properties.metadata:raw"
+      ],
+      "defaultType": "string (JSONExtractString)"
     }
   }
 }`}
@@ -291,7 +336,7 @@ Get example queries to help you get started with custom SQL.
 
 **Response:**
 
-<CodeBlock 
+<CodeBlock
   language="json"
   code={`{
   "success": true,
@@ -302,14 +347,19 @@ Get example queries to help you get started with custom SQL.
       "query": "SELECT toStartOfMonth(time) as month_start, count() as event_count FROM analytics.events WHERE time >= now() - INTERVAL 6 MONTH GROUP BY month_start ORDER BY month_start DESC"
     },
     {
-      "name": "Top Pages by Views", 
+      "name": "Top Pages by Views",
       "description": "Get most popular pages",
       "query": "SELECT path, count() as page_views, uniq(session_id) as unique_sessions FROM analytics.events WHERE time >= now() - INTERVAL 30 DAY AND event_name = 'page_view' GROUP BY path ORDER BY page_views DESC LIMIT 10"
     },
     {
-      "name": "Browser Analytics",
-      "description": "Analyze browser usage",
-      "query": "SELECT browser_name, count() as events, uniq(anonymous_id) as unique_users FROM analytics.events WHERE time >= now() - INTERVAL 7 DAY AND browser_name IS NOT NULL GROUP BY browser_name ORDER BY events DESC"
+      "name": "Browser Analytics (with properties.X syntax)",
+      "description": "Analyze browser usage using properties.X syntax",
+      "query": "SELECT properties.browser_name, count() as events, uniq(anonymous_id) as unique_users FROM analytics.events WHERE time >= now() - INTERVAL 7 DAY AND properties.browser_name IS NOT NULL GROUP BY properties.browser_name ORDER BY events DESC"
+    },
+    {
+      "name": "User Analytics with Typed Properties",
+      "description": "Analyze user behavior with typed property extraction",
+      "query": "SELECT properties.user_id:int as user_id, properties.is_premium:bool as is_premium, properties.session_duration:float as session_duration, count() as total_events FROM analytics.events WHERE time >= now() - INTERVAL 30 DAY AND properties.user_id:int IS NOT NULL GROUP BY properties.user_id:int, properties.is_premium:bool, properties.session_duration:float ORDER BY total_events DESC LIMIT 20"
     },
     {
       "name": "Error Events Analysis",
