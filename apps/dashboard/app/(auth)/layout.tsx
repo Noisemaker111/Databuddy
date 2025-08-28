@@ -1,5 +1,5 @@
 import { auth } from '@databuddy/auth';
-import { ChevronLeft, Loader2 } from 'lucide-react';
+import { CaretLeftIcon, SpinnerIcon } from '@phosphor-icons/react';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -30,7 +30,7 @@ export default async function AuthLayout({
 						className="group scale-100 cursor-pointer border-white/10 bg-white/20 text-white transition-all duration-200 hover:scale-105 hover:bg-white/20"
 						variant="outline"
 					>
-						<ChevronLeft className="h-4 w-4 transition-all duration-200 group-hover:translate-x-[-4px]" />
+						<CaretLeftIcon className="h-4 w-4 transition-all duration-200 group-hover:translate-x-[-4px]" />
 						Back
 					</Button>
 				</Link>
@@ -47,16 +47,16 @@ export default async function AuthLayout({
 				</div>
 			</div>
 			<div className="flex w-full flex-col overflow-auto bg-background md:w-1/2">
-				<div className="flex justify-center p-6 pt-8 md:justify-start md:p-8 md:pt-12">
+				<div className="flex justify-center p-6 pt-8 md:p-8 md:pt-20">
 					<Logo />
 				</div>
 
-				<div className="flex flex-1 items-center justify-center p-6 pt-0 md:p-8">
+				<div className="flex flex-1 items-center justify-center md:p-8 md:pt-0">
 					<div className="w-full max-w-md">
 						<Suspense
 							fallback={
 								<div className="flex h-40 items-center justify-center">
-									<Loader2 className="h-8 w-8 animate-spin text-primary" />
+									<SpinnerIcon className="h-8 w-8 animate-spin text-primary" />
 								</div>
 							}
 						>
