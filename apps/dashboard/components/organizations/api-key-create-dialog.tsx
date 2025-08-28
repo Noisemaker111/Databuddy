@@ -72,6 +72,16 @@ const ALL_SCOPES: { value: ApiScope; label: string; description: string }[] = [
 		description: 'Send events and modify data',
 	},
 	{
+		value: 'read:analytics',
+		label: 'Read Analytics',
+		description: 'Access analytics data and custom SQL queries',
+	},
+	{
+		value: 'write:custom-sql',
+		label: 'Custom SQL Queries',
+		description: 'Execute custom SQL queries against analytics database',
+	},
+	{
 		value: 'read:experiments',
 		label: 'Read Experiments',
 		description: 'View A/B tests and feature flags',
@@ -80,6 +90,16 @@ const ALL_SCOPES: { value: ApiScope; label: string; description: string }[] = [
 		value: 'track:events',
 		label: 'Track Events',
 		description: 'Send tracking events to analytics',
+	},
+	{
+		value: 'read:export',
+		label: 'Export Data',
+		description: 'Export analytics data in various formats',
+	},
+	{
+		value: 'write:otel',
+		label: 'OpenTelemetry',
+		description: 'Send OpenTelemetry data and traces',
 	},
 	{
 		value: 'admin:apikeys',

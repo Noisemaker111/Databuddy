@@ -1,10 +1,6 @@
 import { chQueryWithMeta, TABLE_NAMES } from '@databuddy/db';
 import { Elysia, t } from 'elysia';
-import {
-	type ApiKeyRow,
-	getApiKeyFromHeader,
-	hasWebsiteScope,
-} from '../lib/api-key';
+import { getApiKeyFromHeader, hasWebsiteScope } from '../lib/api-key';
 
 // SQL Query validation schema
 const CustomSQLRequestSchema = t.Object({
@@ -57,6 +53,21 @@ const ALLOWED_OPERATIONS = [
 	'BETWEEN',
 	'LIKE',
 	'ILIKE',
+	// Add common ClickHouse functions
+	'COUNT',
+	'SUM',
+	'AVG',
+	'MIN',
+	'MAX',
+	'UNIQ',
+	'DISTINCT',
+	'NOW',
+	'TODAY',
+	'INTERVAL',
+	'TODATE',
+	'TOSTARTOFMONTH',
+	'TOSTARTOFWEEK',
+	'TOSTARTOFDAY',
 ];
 
 const FORBIDDEN_OPERATIONS = [
@@ -77,8 +88,7 @@ const FORBIDDEN_OPERATIONS = [
 	'USE',
 	'SHOW',
 	'DESCRIBE',
-	'EXPLAIN',
-	'ANALYZE',
+	// Remove EXPLAIN and ANALYZE - they're useful for query optimization
 	'OPTIMIZE',
 	'REPAIR',
 	'LOCK',
@@ -140,8 +150,10 @@ class SQLValidationError extends Error {
 	}
 }
 
-const TABLE_PATTERN = /(?:FROM|JOIN)\s+([a-zA-Z_][a-zA-Z0-9_]*)/gi;
-const SUBQUERY_PATTERN = /\(SELECT.*?\)/gi;
+const TABLE_PATTERN = /(?:FROM|JOIN)\s+([a-zA-Z_][a-zA-Z0-9_.]*)/gi;
+const WHERE_PATTERN = /\bWHERE\b/i;
+const END_CLAUSE_PATTERN = /\b(GROUP\s+BY|ORDER\s+BY|LIMIT|HAVING)\b/i;
+const CLAUSE_PATTERN = /\b(GROUP\s+BY|ORDER\s+BY|LIMIT|HAVING)\b/i;
 
 const QuerySecurityValidator = {
 	transformPropertiesSyntax(query: string): string {
@@ -178,7 +190,9 @@ const QuerySecurityValidator = {
 
 	validateForbiddenOperations(normalizedQuery: string): void {
 		for (const operation of FORBIDDEN_OPERATIONS) {
-			if (normalizedQuery.includes(operation)) {
+			// Use word boundaries to match whole words only, not substrings
+			const regex = new RegExp(`\\b${operation}\\b`, 'i');
+			if (regex.test(normalizedQuery)) {
 				throw new SQLValidationError(
 					`Forbidden operation detected: ${operation}`,
 					'FORBIDDEN_OPERATION'
@@ -205,7 +219,16 @@ const QuerySecurityValidator = {
 				continue;
 			}
 
-			if (!ALLOWED_TABLES.includes(tableName)) {
+			const isAllowed = ALLOWED_TABLES.some((allowedTable) => {
+				const allowedLower = allowedTable.toLowerCase();
+				return (
+					tableName === allowedLower ||
+					tableName === allowedLower.split('.').pop() ||
+					allowedLower.endsWith(`.${tableName}`)
+				);
+			});
+
+			if (!isAllowed) {
 				throw new SQLValidationError(
 					`Access to table '${tableName}' is not allowed`,
 					'FORBIDDEN_TABLE'
@@ -227,19 +250,22 @@ const QuerySecurityValidator = {
 	},
 
 	validateQueryComplexity(normalizedQuery: string): void {
-		const selectMatches = normalizedQuery.match(/SELECT/g);
+		const selectMatches = normalizedQuery.match(/\bSELECT\b/g);
 		const selectCount = selectMatches ? selectMatches.length : 0;
-		if (selectCount > 3) {
+		if (selectCount > 5) {
 			throw new SQLValidationError(
-				'Query complexity too high (max 3 SELECT statements allowed)',
+				'Query complexity too high (max 5 SELECT statements allowed)',
 				'QUERY_TOO_COMPLEX'
 			);
 		}
 
-		if (normalizedQuery.includes('UNION')) {
+		// Allow UNION for legitimate analytics queries
+		const unionMatches = normalizedQuery.match(/\bUNION\b/g);
+		const unionCount = unionMatches ? unionMatches.length : 0;
+		if (unionCount > 2) {
 			throw new SQLValidationError(
-				'UNION operations are not allowed',
-				'UNION_NOT_ALLOWED'
+				'Too many UNION operations (max 2 allowed)',
+				'UNION_LIMIT_EXCEEDED'
 			);
 		}
 	},
@@ -298,7 +324,7 @@ const QuerySecurityValidator = {
 		this.validateParenthesesBalance(normalizedQuery);
 	},
 
-	validateClientAccess(query: string, clientId: string): string {
+	validateClientId(clientId: string): void {
 		if (!clientId || typeof clientId !== 'string') {
 			throw new SQLValidationError('Invalid client ID', 'INVALID_CLIENT_ID');
 		}
@@ -309,10 +335,10 @@ const QuerySecurityValidator = {
 				'INVALID_CLIENT_ID'
 			);
 		}
+	},
 
+	validateNoDirectClientIdReference(query: string): void {
 		const normalizedQuery = query.trim().toUpperCase();
-
-		// Check if query tries to reference client_id directly (security risk)
 		if (
 			normalizedQuery.includes('CLIENT_ID') &&
 			!normalizedQuery.includes('{CLIENTID:STRING}')
@@ -322,37 +348,80 @@ const QuerySecurityValidator = {
 				'CLIENT_REFERENCE_FORBIDDEN'
 			);
 		}
+	},
 
-		// Prevent subquery bypasses
-		const subqueries = normalizedQuery.match(SUBQUERY_PATTERN) || [];
-		for (const subquery of subqueries) {
-			if (!subquery.includes('CLIENT_ID = {CLIENTID:STRING}')) {
-				throw new SQLValidationError(
-					'All subqueries must include client filtering using {clientId:String}',
-					'SUBQUERY_BYPASS_ATTEMPT'
-				);
-			}
-		}
+	injectClientIdFilter(query: string): string {
+		const normalizedQuery = query.trim().toUpperCase();
 
-		// Use parameterized approach for maximum security
 		if (normalizedQuery.startsWith('SELECT')) {
-			return `SELECT * FROM (${query}) AS filtered_query WHERE client_id = {clientId:String}`;
+			return this.injectClientIdIntoSelect(query);
 		}
 
 		if (normalizedQuery.startsWith('WITH')) {
-			if (!normalizedQuery.includes('CLIENT_ID = {CLIENTID:STRING}')) {
-				throw new SQLValidationError(
-					'WITH queries must include client filtering using {clientId:String}',
-					'WITH_QUERY_REQUIRES_CLIENT_FILTER'
-				);
-			}
-			return query;
+			return this.handleWithQuery(query);
 		}
 
 		throw new SQLValidationError(
 			'Unsupported query structure',
 			'UNSUPPORTED_QUERY'
 		);
+	},
+
+	injectClientIdIntoSelect(query: string): string {
+		const whereMatch = query.match(WHERE_PATTERN);
+
+		if (whereMatch) {
+			return this.addToExistingWhere(query, whereMatch);
+		}
+
+		return this.addNewWhere(query);
+	},
+
+	addToExistingWhere(query: string, whereMatch: RegExpMatchArray): string {
+		const whereIndex = (whereMatch.index ?? 0) + whereMatch[0].length;
+		const afterWhere = query.substring(whereIndex);
+		const endClauseMatch = afterWhere.match(END_CLAUSE_PATTERN);
+
+		if (endClauseMatch) {
+			const whereCondition = afterWhere.substring(0, endClauseMatch.index ?? 0);
+			const remainingClauses = afterWhere.substring(endClauseMatch.index ?? 0);
+			const beforeWhere = query.substring(0, whereIndex);
+
+			return `${beforeWhere} client_id = {clientId:String} AND (${whereCondition.trim()}) ${remainingClauses}`;
+		}
+
+		const beforeWhere = query.substring(0, whereIndex);
+		return `${beforeWhere} client_id = {clientId:String} AND (${afterWhere.trim()})`;
+	},
+
+	addNewWhere(query: string): string {
+		const clauseMatch = query.match(CLAUSE_PATTERN);
+
+		if (clauseMatch) {
+			const clauseIndex = clauseMatch.index ?? 0;
+			const beforeClause = query.substring(0, clauseIndex);
+			const afterClause = query.substring(clauseIndex);
+			return `${beforeClause} WHERE client_id = {clientId:String} ${afterClause}`;
+		}
+
+		return `${query} WHERE client_id = {clientId:String}`;
+	},
+
+	handleWithQuery(query: string): string {
+		const normalizedQuery = query.trim().toUpperCase();
+		if (!normalizedQuery.includes('CLIENT_ID = {CLIENTID:STRING}')) {
+			throw new SQLValidationError(
+				'WITH queries must include client filtering using WHERE client_id = {clientId:String}',
+				'WITH_QUERY_REQUIRES_CLIENT_FILTER'
+			);
+		}
+		return query;
+	},
+
+	validateClientAccess(query: string, clientId: string): string {
+		this.validateClientId(clientId);
+		this.validateNoDirectClientIdReference(query);
+		return this.injectClientIdFilter(query);
 	},
 
 	validateAgainstAttackVectors(query: string): void {
@@ -431,9 +500,6 @@ async function executeClickHouseQuery(
 	parameters: Record<string, unknown> = {}
 ): Promise<ClickHouseQueryResult> {
 	try {
-		console.log('Executing ClickHouse query:', query);
-		console.log('With parameters:', parameters);
-
 		const result = await chQueryWithMeta(query, parameters);
 
 		return {
@@ -450,72 +516,59 @@ async function executeClickHouseQuery(
 	}
 }
 
-function customSQLAuth() {
-	return new Elysia()
-		.onBeforeHandle(async ({ request, set }) => {
-			const apiKey = await getApiKeyFromHeader(request.headers);
-
-			if (!apiKey) {
-				set.status = 401;
-				return {
-					success: false,
-					error: 'API key required for custom SQL access',
-					code: 'AUTH_REQUIRED',
-				};
-			}
-
-			// Check for the dedicated custom SQL scope instead of admin scope
-			const hasCustomSQLScope = apiKey.scopes.includes('write:custom-sql');
-			const hasGlobalScope =
-				apiKey.scopes.includes('read:data') ||
-				apiKey.scopes.includes('read:analytics');
-
-			if (!(hasCustomSQLScope || hasGlobalScope)) {
-				set.status = 403;
-				return {
-					success: false,
-					error:
-						'API key must have write:custom-sql or read:analytics scope for custom SQL access',
-					code: 'INSUFFICIENT_SCOPE',
-				};
-			}
-
-			return;
-		})
-		.derive(async ({ request }) => {
-			const apiKey = await getApiKeyFromHeader(request.headers);
-			return {
-				apiKey: apiKey as ApiKeyRow,
-			};
-		});
-}
-
 export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
-	.use(customSQLAuth())
 	.post(
 		'/execute',
 		async ({
 			body,
-			apiKey,
+			request,
 			set,
 		}: {
 			body: CustomSQLRequestType;
-			apiKey: ApiKeyRow;
+			request: Request;
 			set: { status: number };
 		}) => {
+			// Get API key directly from request headers
+			const apiKey = await getApiKeyFromHeader(request.headers);
 			try {
-				const hasAccess = await hasWebsiteScope(
-					apiKey,
-					body.clientId,
-					'read:data'
-				);
-				if (!hasAccess) {
+				if (!apiKey) {
+					set.status = 401;
+					return {
+						success: false,
+						error: 'API key required for custom SQL access',
+						code: 'AUTH_REQUIRED',
+					};
+				}
+
+				const hasCustomSQLScope = apiKey.scopes.includes('write:custom-sql');
+				const hasGlobalScope =
+					apiKey.scopes.includes('read:data') ||
+					apiKey.scopes.includes('read:analytics');
+
+				if (!(hasCustomSQLScope || hasGlobalScope)) {
 					set.status = 403;
 					return {
 						success: false,
-						error: `API key does not have access to client ID: ${body.clientId}`,
-						code: 'CLIENT_ACCESS_DENIED',
+						error:
+							'API key must have write:custom-sql or read:analytics scope for custom SQL access',
+						code: 'INSUFFICIENT_SCOPE',
 					};
+				}
+
+				if (!hasCustomSQLScope) {
+					const hasAccess = await hasWebsiteScope(
+						apiKey,
+						body.clientId,
+						'read:data'
+					);
+					if (!hasAccess) {
+						set.status = 403;
+						return {
+							success: false,
+							error: `API key does not have access to client ID: ${body.clientId}`,
+							code: 'CLIENT_ACCESS_DENIED',
+						};
+					}
 				}
 
 				const secureQuery = QuerySecurityValidator.validateAndSecureQuery(
@@ -676,12 +729,12 @@ export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
 					description: 'Analyze error events',
 					query: `
 						SELECT
-							url,
+							path,
 							count() as error_count
 						FROM analytics.errors
 						WHERE
-							time >= now() - INTERVAL 7 DAY
-						GROUP BY url
+							timestamp >= now() - INTERVAL 7 DAY
+						GROUP BY path
 						ORDER BY error_count DESC
 						LIMIT 10
 					`.trim(),

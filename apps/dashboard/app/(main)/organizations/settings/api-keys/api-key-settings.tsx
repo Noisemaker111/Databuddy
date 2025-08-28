@@ -39,6 +39,7 @@ export function ApiKeySettings({ organization }: ApiKeySettingsProps) {
 			<ApiKeyCreateDialog
 				onOpenChange={setShowCreateApiKeyDialog}
 				open={showCreateApiKeyDialog}
+				organizationId={organization.id}
 			/>
 			<ApiKeyDetailDialog
 				keyId={apiKeyId}

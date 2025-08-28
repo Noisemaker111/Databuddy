@@ -203,7 +203,7 @@ Execute custom SQL queries directly against your ClickHouse analytics database w
 <CodeBlock
   language="json"
   code={`{
-  "query": "SELECT properties.browser_name, properties.user_id:int, count() as events FROM analytics.events WHERE properties.browser_name IS NOT NULL GROUP BY properties.browser_name, properties.user_id:int ORDER BY events DESC LIMIT 10",
+  "query": "SELECT properties.browser_name AS browser_name, properties.user_id:int AS user_id, count() as events FROM analytics.custom_events WHERE properties.browser_name IS NOT NULL GROUP BY properties.browser_name, properties.user_id:int ORDER BY events DESC LIMIT 10",
   "clientId": "your-client-id"
 }`}
 />
@@ -229,11 +229,15 @@ Databuddy provides a convenient syntax helper that automatically converts `prope
 
 ```sql
 -- Instead of writing:
-SELECT JSONExtractString(properties, 'browser_name') FROM analytics.events
+SELECT JSONExtractString(properties, 'browser_name') AS browser_name FROM analytics.events
 
 -- You can simply write:
-SELECT properties.browser_name FROM analytics.events
+SELECT properties.browser_name AS browser_name FROM analytics.events
 ```
+
+<Callout type="warning">
+  **Important:** Always use `AS` aliases when selecting properties to get clean column names in your response. Without aliases, you'll get ugly column names like `"JSONExtractString(properties, 'browser_name')"` instead of `"browser_name"`.
+</Callout>
 
 **Supported Type Annotations:**
 - `properties.property_name` → `JSONExtractString(properties, 'property_name')` (default)
@@ -243,14 +247,14 @@ SELECT properties.browser_name FROM analytics.events
 - `properties.metadata:raw` → `JSONExtractRaw(properties, 'metadata')`
 
 **Security Features:**
-- Automatic client isolation (queries are wrapped with client filtering)
+- **Automatic client isolation** - All queries automatically filtered by your API key's client access
+- **Smart WHERE injection** - Client filtering added to your queries without breaking syntax
 - SQL injection prevention with parameterized queries
-- Query complexity limits (max 3 SELECT statements, 5000 characters)
+- Query complexity limits (max 5 SELECT statements, 2 UNION operations, 5000 characters)
 - Forbidden operations blocked (INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, etc.)
 - Attack pattern detection for known injection techniques
 - Comments and multiple statements not allowed
 - Balanced parentheses validation
-- Escape sequence and URL encoding prevention
 - Properties.X syntax automatically transformed to secure JSONExtract calls
 
 **Response:**
@@ -304,7 +308,8 @@ Get information about allowed tables, operations, and security constraints.
       "INSERT", "UPDATE", "DELETE", "DROP", "CREATE", "ALTER", "TRUNCATE", "REPLACE", "MERGE", "CALL", "EXEC", "EXECUTE", "DECLARE", "SET", "USE", "SHOW", "DESCRIBE", "EXPLAIN", "ANALYZE", "OPTIMIZE", "REPAIR", "LOCK", "UNLOCK", "GRANT", "REVOKE", "COMMIT", "ROLLBACK", "SAVEPOINT", "RELEASE", "START TRANSACTION", "BEGIN", "INFORMATION_SCHEMA", "SYSTEM", "ADMIN", "SUPER", "FILE", "PROCESS", "RELOAD", "SHUTDOWN", "REFERENCES", "INDEX", "TRIGGER", "EVENT", "ROUTINE"
     ],
     "maxQueryLength": 5000,
-    "maxNestedSelects": 3,
+    "maxNestedSelects": 5,
+    "maxUnionOperations": 2,
     "parameterization": {
       "clientIdParameter": "{clientId:String}",
       "required": "All queries must use parameterized client filtering"

@@ -6,7 +6,7 @@ interface CustomEventData {
 	anonymousId?: string;
 	sessionId?: string;
 	timestamp?: number;
-	properties?: Record<string, any>;
+	properties?: JSON;
 }
 
 export async function sendCustomEvent(data: CustomEventData) {
@@ -82,6 +82,49 @@ export async function sendBatchCustomEvents(
 		return result;
 	} catch (error) {
 		console.error('Failed to send batch custom events:', error);
+		throw error;
+	}
+}
+
+export async function executeCustomSQL(data: {
+	clientId: string;
+	apiKey: string;
+	query: string;
+}) {
+	try {
+		const payload = {
+			query: data.query,
+			clientId: data.clientId,
+		};
+
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+		};
+
+		if (data.apiKey) {
+			headers['x-api-key'] = data.apiKey;
+		}
+
+		const response = await fetch(
+			'http://localhost:3001/v1/custom-sql/execute',
+			{
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+			}
+		);
+
+		const result = await response.json();
+
+		if (!response.ok) {
+			throw new Error(
+				result.message || `HTTP ${response.status}: ${response.statusText}`
+			);
+		}
+
+		return result;
+	} catch (error) {
+		console.error('Failed to execute custom SQL:', error);
 		throw error;
 	}
 }

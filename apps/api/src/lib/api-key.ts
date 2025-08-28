@@ -108,11 +108,16 @@ export function isApiKeyPresent(headers: Headers): boolean {
 }
 
 export async function resolveEffectiveScopesForWebsite(
-	key: ApiKeyRow,
+	key: ApiKeyRow | null,
 	websiteId: string
 ): Promise<Set<ApiScope>> {
+	if (!key) {
+		logger.debug('Cannot resolve scopes for null API key', { websiteId });
+		return new Set();
+	}
+
 	const effective = new Set<ApiScope>();
-	for (const s of key.scopes) {
+	for (const s of key.scopes || []) {
 		effective.add(s as ApiScope);
 	}
 
@@ -133,7 +138,7 @@ export async function resolveEffectiveScopesForWebsite(
 		apikeyId: key.id,
 		websiteId,
 		effectiveScopes: Array.from(effective),
-		globalScopes: key.scopes,
+		globalScopes: key.scopes || [],
 		accessEntriesCount: entries.length,
 	});
 
@@ -141,10 +146,18 @@ export async function resolveEffectiveScopesForWebsite(
 }
 
 export async function hasWebsiteScope(
-	key: ApiKeyRow,
+	key: ApiKeyRow | null,
 	websiteId: string,
 	required: ApiScope
 ): Promise<boolean> {
+	if (!key) {
+		logger.debug('Scope check failed: null API key', {
+			websiteId,
+			requiredScope: required,
+		});
+		return false;
+	}
+
 	if ((key.scopes || []).includes(required)) {
 		logger.debug('Scope check passed via global scope', {
 			apikeyId: key.id,

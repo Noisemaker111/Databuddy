@@ -58,7 +58,7 @@ async function executeDynamicQuery(
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-Api-Key': 'dbdy_poCMquJqsqUc6ktNvMsnvKZO7RyS1TlCpY2yo1EvW8trFLBa', // this is a public readonly key
+				'X-Api-Key': process.env.DATABUDDY_API_KEY as string,
 			},
 			body: JSON.stringify(requestBody),
 		});

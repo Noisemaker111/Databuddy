@@ -3,13 +3,32 @@ export type ApiScope =
 	| 'write:data'
 	| 'read:experiments'
 	| 'track:events'
-	| 'admin:apikeys';
+	| 'admin:apikeys'
+	// New scopes for core use cases
+	| 'read:analytics'
+	| 'write:custom-sql'
+	| 'read:export'
+	| 'write:otel'
+	// Administrative scopes
+	| 'admin:users'
+	| 'admin:organizations'
+	| 'admin:websites'
+	// Rate limiting and usage scopes
+	| 'rate:standard'
+	| 'rate:premium'
+	| 'rate:enterprise';
 
 export type ApiResourceType =
 	| 'global'
 	| 'website'
 	| 'ab_experiment'
-	| 'feature_flag';
+	| 'feature_flag'
+	// New resource types for data categories
+	| 'analytics_data'
+	| 'error_data'
+	| 'web_vitals'
+	| 'custom_events'
+	| 'export_data';
 
 export interface ApiKeyAccessEntry {
 	resourceType: ApiResourceType;

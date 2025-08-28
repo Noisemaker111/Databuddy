@@ -130,8 +130,12 @@ function ResourceAccessDisplay({ access }: { access: ApiKeyDetail['access'] }) {
 									[
 										'read:data',
 										'write:data',
+										'read:analytics',
+										'write:custom-sql',
 										'read:experiments',
 										'track:events',
+										'read:export',
+										'write:otel',
 										'admin:apikeys',
 									] as ApiScope[]
 								).map((s) => (
