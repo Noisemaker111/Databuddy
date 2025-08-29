@@ -17,7 +17,6 @@ export const assistant = new Elysia({ prefix: '/v1/assistant' })
 
 		return {
 			user: session?.user ?? null,
-			s,
 		};
 	})
 	.onBeforeHandle(({ user }) => {

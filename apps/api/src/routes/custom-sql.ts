@@ -1,7 +1,8 @@
 import { chQueryWithMeta, TABLE_NAMES } from '@databuddy/db';
 import { Elysia, t } from 'elysia';
 import { getApiKeyFromHeader, hasWebsiteScope } from '../lib/api-key';
-import { createCustomRateLimitMiddleware } from '../middleware/rate-limit';
+
+//
 
 const CustomSQLRequestSchema = t.Object({
 	query: t.String({ minLength: 1, maxLength: 5000 }),
@@ -182,24 +183,43 @@ const CLAUSE_PATTERN = /\b(GROUP\s+BY|ORDER\s+BY|LIMIT|HAVING)\b/i;
 
 const QuerySecurityValidator = {
 	transformPropertiesSyntax(query: string): string {
-		const propertiesPattern =
-			/\bproperties\.([a-zA-Z_][a-zA-Z0-9_]*(?::(string|int|float|bool|raw))?)\b/gi;
+		// Simplified: All JSON properties are extracted as strings since JSON stores everything as strings
+		const propertiesPattern = /\bproperties\.([a-zA-Z_][a-zA-Z0-9_]*)\b/gi;
 
-		return query.replace(propertiesPattern, (_match, propertyWithType) => {
-			const [propertyName, type] = propertyWithType.split(':');
+		return query.replace(propertiesPattern, (_match, propertyName) => {
+			return `JSONExtractString(properties, '${propertyName}')`;
+		});
+	},
 
-			switch (type) {
-				case 'int':
-					return `JSONExtractInt(properties, '${propertyName}')`;
-				case 'float':
-					return `JSONExtractFloat(properties, '${propertyName}')`;
-				case 'bool':
-					return `JSONExtractBool(properties, '${propertyName}')`;
-				case 'raw':
-					return `JSONExtractRaw(properties, '${propertyName}')`;
-				default:
-					return `JSONExtractString(properties, '${propertyName}')`;
+	transformTemplateLiterals(query: string): string {
+		let transformedQuery = query.replace(
+			/'?\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}'?/gi,
+			(_match, paramName) => {
+				return `{${paramName}:String}`;
 			}
+		);
+
+		transformedQuery = transformedQuery.replace(
+			/\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/gi,
+			(_match, paramName) => {
+				return `{${paramName}:String}`;
+			}
+		);
+
+		return transformedQuery;
+	},
+
+	// Automatically add :String to parameterized queries for simplicity
+	transformParameterSyntax(query: string): string {
+		// Match {paramName} but not {paramName:Type}
+		const paramPattern = /\{([a-zA-Z_][a-zA-Z0-9_]*)\}/gi;
+
+		return query.replace(paramPattern, (match, paramName) => {
+			// Don't transform if it already has a type specification
+			if (query.includes(`{${paramName}:`)) {
+				return match; // Keep original if type is already specified
+			}
+			return `{${paramName}:String}`;
 		});
 	},
 
@@ -214,7 +234,6 @@ const QuerySecurityValidator = {
 
 	validateForbiddenOperations(normalizedQuery: string): void {
 		for (const operation of FORBIDDEN_OPERATIONS) {
-			// Use word boundaries to match whole words only, not substrings
 			const regex = new RegExp(`\\b${operation}\\b`, 'i');
 			if (regex.test(normalizedQuery)) {
 				throw new SQLValidationError(
@@ -477,36 +496,62 @@ const QuerySecurityValidator = {
 	},
 
 	validateAndSecureQuery(query: string, clientId: string): string {
-		if (!query || typeof query !== 'string') {
-			throw new SQLValidationError(
-				'Query must be a non-empty string',
-				'INVALID_INPUT'
+		try {
+			if (!query || typeof query !== 'string') {
+				throw new SQLValidationError(
+					'Query must be a non-empty string',
+					'INVALID_INPUT'
+				);
+			}
+
+			if (query.length > 5000) {
+				throw new SQLValidationError(
+					'Query too long (max 5,000 characters)',
+					'QUERY_TOO_LONG'
+				);
+			}
+
+			QuerySecurityValidator.validateAgainstAttackVectors(query);
+
+			// Apply transformations in order
+			let transformedQuery =
+				QuerySecurityValidator.transformTemplateLiterals(query);
+			transformedQuery =
+				QuerySecurityValidator.transformPropertiesSyntax(transformedQuery);
+			transformedQuery =
+				QuerySecurityValidator.transformParameterSyntax(transformedQuery);
+
+			const normalizedQuery =
+				QuerySecurityValidator.normalizeSQL(transformedQuery);
+
+			QuerySecurityValidator.validateForbiddenOperations(normalizedQuery);
+			QuerySecurityValidator.validateQueryStructure(normalizedQuery);
+			QuerySecurityValidator.validateAllowedTables(normalizedQuery);
+
+			return QuerySecurityValidator.validateClientAccess(
+				transformedQuery,
+				clientId
 			);
+		} catch (error) {
+			if (error instanceof SQLValidationError) {
+				console.error('SQL Query Validation Failed:', {
+					code: error.code,
+					message: error.message,
+					clientId,
+					originalQuery:
+						query.length > 500 ? `${query.substring(0, 500)}...` : query,
+					timestamp: new Date().toISOString(),
+				});
+				throw error;
+			}
+			console.error('Unexpected validation error:', {
+				error: error instanceof Error ? error.message : 'Unknown error',
+				stack: error instanceof Error ? error.stack : undefined,
+				clientId,
+				timestamp: new Date().toISOString(),
+			});
+			throw error;
 		}
-
-		if (query.length > 5000) {
-			throw new SQLValidationError(
-				'Query too long (max 5,000 characters)',
-				'QUERY_TOO_LONG'
-			);
-		}
-
-		QuerySecurityValidator.validateAgainstAttackVectors(query);
-
-		const transformedQuery =
-			QuerySecurityValidator.transformPropertiesSyntax(query);
-
-		const normalizedQuery =
-			QuerySecurityValidator.normalizeSQL(transformedQuery);
-
-		QuerySecurityValidator.validateForbiddenOperations(normalizedQuery);
-		QuerySecurityValidator.validateQueryStructure(normalizedQuery);
-		QuerySecurityValidator.validateAllowedTables(normalizedQuery);
-
-		return QuerySecurityValidator.validateClientAccess(
-			transformedQuery,
-			clientId
-		);
 	},
 };
 
@@ -531,10 +576,298 @@ async function executeClickHouseQuery(
 			rows_read: result.statistics?.rows_read || undefined,
 		};
 	} catch (error) {
+		console.error('ClickHouse Query Execution Error:', {
+			error: error instanceof Error ? error.message : 'Unknown error',
+			stack: error instanceof Error ? error.stack : undefined,
+			query: query.length > 1000 ? `${query.substring(0, 1000)}...` : query,
+			parameters: JSON.stringify(parameters),
+			timestamp: new Date().toISOString(),
+		});
 		throw new Error(
 			`ClickHouse query failed: ${error instanceof Error ? error.message : 'Unknown error'}`
 		);
 	}
+}
+
+// Helper functions to reduce complexity
+async function validateAPIKeyAndPermissions(
+	apiKey: unknown,
+	clientId: string,
+	request: Request
+) {
+	if (!apiKey) {
+		console.error('Custom SQL Auth Error:', {
+			code: 'AUTH_REQUIRED',
+			error: 'API key required for custom SQL access',
+			clientId,
+			ip:
+				request.headers.get('x-forwarded-for') ||
+				request.headers.get('x-real-ip') ||
+				'unknown',
+			userAgent: request.headers.get('user-agent'),
+			timestamp: new Date().toISOString(),
+		});
+		return {
+			status: 401,
+			response: {
+				success: false,
+				error: 'API key required for custom SQL access',
+				code: 'AUTH_REQUIRED',
+			},
+		};
+	}
+
+	// Type guard for apiKey
+	if (
+		typeof apiKey !== 'object' ||
+		!apiKey ||
+		!('scopes' in apiKey) ||
+		!('id' in apiKey)
+	) {
+		console.error('Invalid API key structure');
+		return {
+			status: 401,
+			response: {
+				success: false,
+				error: 'Invalid API key',
+				code: 'INVALID_API_KEY',
+			},
+		};
+	}
+
+	const apiKeyObj = apiKey as { scopes: string[]; id: string };
+	const hasCustomSQLScope = apiKeyObj.scopes.includes('write:custom-sql');
+	const hasGlobalScope =
+		apiKeyObj.scopes.includes('read:data') ||
+		apiKeyObj.scopes.includes('read:analytics');
+
+	if (!(hasCustomSQLScope || hasGlobalScope)) {
+		console.error('Custom SQL Authorization Error:', {
+			code: 'INSUFFICIENT_SCOPE',
+			error:
+				'API key must have write:custom-sql or read:analytics scope for custom SQL access',
+			clientId,
+			apiKeyId: apiKeyObj.id,
+			scopes: apiKeyObj.scopes,
+			ip:
+				request.headers.get('x-forwarded-for') ||
+				request.headers.get('x-real-ip') ||
+				'unknown',
+			timestamp: new Date().toISOString(),
+		});
+		return {
+			status: 403,
+			response: {
+				success: false,
+				error:
+					'API key must have write:custom-sql or read:analytics scope for custom SQL access',
+				code: 'INSUFFICIENT_SCOPE',
+			},
+		};
+	}
+
+	if (!hasCustomSQLScope) {
+		const hasAccess = await hasWebsiteScope(
+			apiKey as never,
+			clientId,
+			'read:data'
+		);
+		if (!hasAccess) {
+			console.error('Custom SQL Client Access Error:', {
+				code: 'CLIENT_ACCESS_DENIED',
+				error: `API key does not have access to client ID: ${clientId}`,
+				clientId,
+				apiKeyId: apiKeyObj.id,
+				scopes: apiKeyObj.scopes,
+				ip:
+					request.headers.get('x-forwarded-for') ||
+					request.headers.get('x-real-ip') ||
+					'unknown',
+				timestamp: new Date().toISOString(),
+			});
+			return {
+				status: 403,
+				response: {
+					success: false,
+					error: `API key does not have access to client ID: ${clientId}`,
+					code: 'CLIENT_ACCESS_DENIED',
+				},
+			};
+		}
+	}
+
+	return { status: 200, response: null };
+}
+
+function parseClickHouseError(errorMessage: string): {
+	error: string;
+	suggestion?: string;
+	code: string;
+} {
+	// Column not found errors
+	if (errorMessage.includes('Unknown expression or function identifier')) {
+		const columnMatch = errorMessage.match(
+			/Unknown expression or function identifier `(\w+)`/
+		);
+		if (columnMatch) {
+			const column = columnMatch[1];
+			let suggestion = '';
+
+			if (column === 'name') {
+				suggestion =
+					"Did you mean 'event_name'? Custom events use 'event_name' as the column name.";
+			} else if (column === 'event') {
+				suggestion =
+					"Did you mean 'event_name'? Use 'event_name' to filter by event type.";
+			} else if (column === 'user_id') {
+				suggestion =
+					"Did you mean 'anonymous_id'? Use 'anonymous_id' for user identification.";
+			} else if (
+				column === 'created_at' ||
+				column === 'created' ||
+				column === 'date'
+			) {
+				suggestion =
+					"Did you mean 'timestamp'? Use 'timestamp' for date/time filtering.";
+			} else {
+				suggestion = `Column '${column}' not found. Available columns: event_name, anonymous_id, session_id, timestamp, properties, client_id`;
+			}
+
+			return {
+				error: `Unknown column: ${column}`,
+				suggestion,
+				code: 'UNKNOWN_COLUMN',
+			};
+		}
+	}
+
+	// Table not found errors
+	if (
+		errorMessage.includes('Table') &&
+		errorMessage.includes('does not exist')
+	) {
+		const tableMatch = errorMessage.match(
+			/Table\s+[\w.]*\.(\w+)\s+does not exist/
+		);
+		if (tableMatch) {
+			const table = tableMatch[1];
+			return {
+				error: `Table '${table}' not found`,
+				suggestion:
+					'Available tables: analytics.custom_events, analytics.events, analytics.errors, analytics.sessions',
+				code: 'UNKNOWN_TABLE',
+			};
+		}
+	}
+
+	// Syntax errors
+	if (errorMessage.includes('Syntax error')) {
+		return {
+			error: 'SQL syntax error',
+			suggestion:
+				'Check your SQL syntax. Make sure all parentheses, quotes, and keywords are correct.',
+			code: 'SYNTAX_ERROR',
+		};
+	}
+
+	// Property extraction errors
+	if (
+		errorMessage.includes('properties.') &&
+		errorMessage.includes('JSONExtractString')
+	) {
+		return {
+			error: 'Property extraction error',
+			suggestion:
+				'Use properties.propertyName syntax for JSON properties. All properties are extracted as strings.',
+			code: 'PROPERTY_ERROR',
+		};
+	}
+
+	// Parameter errors
+	if (
+		errorMessage.includes('Substitution') &&
+		errorMessage.includes('is not set')
+	) {
+		const paramMatch = errorMessage.match(/Substitution `(\w+)` is not set/);
+		if (paramMatch) {
+			const param = paramMatch[1];
+			return {
+				error: `Missing parameter: ${param}`,
+				suggestion: `Make sure to include '${param}' in your parameters JSON object.`,
+				code: 'MISSING_PARAMETER',
+			};
+		}
+	}
+
+	// Default case - return the original error but cleaned up
+	const cleanError = errorMessage.replace(/\s+/g, ' ').substring(0, 200);
+	return {
+		error: cleanError,
+		code: 'QUERY_ERROR',
+	};
+}
+
+function handleQueryExecutionError(
+	error: unknown,
+	body: { clientId: string; query: string },
+	apiKey: unknown
+) {
+	if (error instanceof SQLValidationError) {
+		console.error('SQL Validation Error:', {
+			code: error.code,
+			message: error.message,
+			clientId: body.clientId,
+			originalQuery: body.query,
+			apiKeyId:
+				apiKey && typeof apiKey === 'object' && 'id' in apiKey
+					? (apiKey as { id: string }).id
+					: null,
+			timestamp: new Date().toISOString(),
+		});
+		return {
+			status: 400,
+			response: {
+				success: false,
+				error: error.message,
+				code: error.code,
+			},
+		};
+	}
+
+	console.error('Custom SQL Execution Error:', {
+		error: error instanceof Error ? error.message : 'Unknown error',
+		stack: error instanceof Error ? error.stack : undefined,
+		clientId: body.clientId,
+		originalQuery: body.query,
+		apiKeyId:
+			apiKey && typeof apiKey === 'object' && 'id' in apiKey
+				? (apiKey as { id: string }).id
+				: null,
+		timestamp: new Date().toISOString(),
+	});
+
+	// Parse ClickHouse errors for better user feedback
+	if (error instanceof Error) {
+		const parsedError = parseClickHouseError(error.message);
+		return {
+			status: 400,
+			response: {
+				success: false,
+				error: parsedError.error,
+				suggestion: parsedError.suggestion,
+				code: parsedError.code,
+			},
+		};
+	}
+
+	return {
+		status: 500,
+		response: {
+			success: false,
+			error: 'Unknown query execution error occurred.',
+			code: 'EXECUTION_ERROR',
+		},
+	};
 }
 
 export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
@@ -581,44 +914,15 @@ export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
 			const apiKey = await getApiKeyFromHeader(request.headers);
 
 			try {
-				if (!apiKey) {
-					set.status = 401;
-					return {
-						success: false,
-						error: 'API key required for custom SQL access',
-						code: 'AUTH_REQUIRED',
-					};
-				}
-
-				const hasCustomSQLScope = apiKey.scopes.includes('write:custom-sql');
-				const hasGlobalScope =
-					apiKey.scopes.includes('read:data') ||
-					apiKey.scopes.includes('read:analytics');
-
-				if (!(hasCustomSQLScope || hasGlobalScope)) {
-					set.status = 403;
-					return {
-						success: false,
-						error:
-							'API key must have write:custom-sql or read:analytics scope for custom SQL access',
-						code: 'INSUFFICIENT_SCOPE',
-					};
-				}
-
-				if (!hasCustomSQLScope) {
-					const hasAccess = await hasWebsiteScope(
-						apiKey,
-						body.clientId,
-						'read:data'
-					);
-					if (!hasAccess) {
-						set.status = 403;
-						return {
-							success: false,
-							error: `API key does not have access to client ID: ${body.clientId}`,
-							code: 'CLIENT_ACCESS_DENIED',
-						};
-					}
+				// Validate API key and permissions
+				const authResult = await validateAPIKeyAndPermissions(
+					apiKey,
+					body.clientId,
+					request
+				);
+				if (authResult.status !== 200) {
+					set.status = authResult.status;
+					return authResult.response;
 				}
 
 				const secureQuery = QuerySecurityValidator.validateAndSecureQuery(
@@ -648,22 +952,9 @@ export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
 					},
 				};
 			} catch (error) {
-				if (error instanceof SQLValidationError) {
-					set.status = 400;
-					return {
-						success: false,
-						error: error.message,
-						code: error.code,
-					};
-				}
-
-				set.status = 500;
-				return {
-					success: false,
-					error:
-						'Query execution failed. Please check your query syntax and try again.',
-					code: 'EXECUTION_ERROR',
-				};
+				const errorResult = handleQueryExecutionError(error, body, apiKey);
+				set.status = errorResult.status;
+				return errorResult.response;
 			}
 		},
 		{
@@ -682,19 +973,29 @@ export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
 				parameterization: {
 					clientIdParameter: '{clientId:String}',
 					required: 'All queries must use parameterized client filtering',
+					supportedSyntax: [
+						'Template literals: $[paramName] converted to {paramName:String}',
+						'Simple parameters: {paramName} converted to {paramName:String}',
+						'Typed parameters: {paramName:Type} (unchanged)',
+					],
+					examples: [
+						'$[workspaceId] becomes {workspaceId:String}',
+						'{cutoffTimestamp} becomes {cutoffTimestamp:String}',
+						'{userId:Int32} remains {userId:Int32} (unchanged)',
+					],
 				},
 				propertiesSyntax: {
 					description:
-						'Automatic JSONExtract transformation from properties.X syntax',
-					syntax: 'properties.property_name[:type]',
-					supportedTypes: ['string', 'int', 'float', 'bool', 'raw'],
+						'Automatic JSONExtract transformation from properties.X syntax - all properties extracted as strings',
+					syntax: 'properties.property_name',
+					note: 'All JSON properties are extracted as strings since JSON stores values as strings',
 					examples: [
 						'properties.browser_name',
-						'properties.user_id:int',
-						'properties.is_active:bool',
-						'properties.metadata:raw',
+						'properties.user_id',
+						"properties.is_active = 'true'",
+						"properties.count = '42'",
 					],
-					defaultType: 'string (JSONExtractString)',
+					extraction: "JSONExtractString(properties, 'property_name')",
 				},
 			},
 		};
@@ -718,6 +1019,25 @@ export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
 					`.trim(),
 				},
 				{
+					name: 'Monthly API Requests with Simplified Syntax',
+					description:
+						'Example using simplified parameter syntax - {paramName} auto-converts to {paramName:String}. Also supports $[paramName] template literals.',
+					query: `
+						SELECT 
+							toStartOfMonth(timestamp) as month_start,
+							countIf(properties.success = 'true') as success,
+							count() as total_requests
+						FROM analytics.custom_events
+						WHERE 
+							name = 'api_request'
+							AND properties.workspaceId = {workspaceId}
+							AND timestamp >= toDateTime({cutoffTimestamp})
+						GROUP BY month_start
+						ORDER BY month_start DESC
+						LIMIT 24
+					`.trim(),
+				},
+				{
 					name: 'Top Pages by Views',
 					description: 'Get most popular pages',
 					query: `
@@ -735,8 +1055,9 @@ export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
 					`.trim(),
 				},
 				{
-					name: 'Browser Analytics (with properties.X syntax)',
-					description: 'Analyze browser usage using properties.X syntax',
+					name: 'Browser Analytics (simplified properties syntax)',
+					description:
+						'Analyze browser usage using simplified properties.X syntax',
 					query: `
 						SELECT
 							properties.browser_name,
@@ -745,28 +1066,30 @@ export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
 						FROM analytics.events
 						WHERE
 							time >= now() - INTERVAL 7 DAY
-							AND properties.browser_name IS NOT NULL
+							AND properties.browser_name != ''
 						GROUP BY properties.browser_name
 						ORDER BY events DESC
 					`.trim(),
 				},
 				{
-					name: 'User Analytics with Typed Properties',
-					description: 'Analyze user behavior with typed property extraction',
+					name: 'User Analytics (simplified properties)',
+					description:
+						'Analyze user behavior using simplified properties - all extracted as strings',
 					query: `
 						SELECT
-							properties.user_id:int as user_id,
-							properties.is_premium:bool as is_premium,
-							properties.session_duration:float as session_duration,
+							properties.user_id as user_id,
+							properties.is_premium as is_premium,
+							properties.session_duration as session_duration,
 							count() as total_events
 						FROM analytics.events
 						WHERE
 							time >= now() - INTERVAL 30 DAY
-							AND properties.user_id:int IS NOT NULL
+							AND properties.user_id != ''
+							AND properties.is_premium = 'true'
 						GROUP BY
-							properties.user_id:int,
-							properties.is_premium:bool,
-							properties.session_duration:float
+							properties.user_id,
+							properties.is_premium,
+							properties.session_duration
 						ORDER BY total_events DESC
 						LIMIT 20
 					`.trim(),
