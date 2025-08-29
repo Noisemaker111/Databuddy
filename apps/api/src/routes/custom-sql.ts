@@ -3,7 +3,6 @@ import { Elysia, t } from 'elysia';
 import { getApiKeyFromHeader, hasWebsiteScope } from '../lib/api-key';
 import { createCustomRateLimitMiddleware } from '../middleware/rate-limit';
 
-// SQL Query validation schema
 const CustomSQLRequestSchema = t.Object({
 	query: t.String({ minLength: 1, maxLength: 5000 }),
 	clientId: t.String({ minLength: 1 }),
@@ -54,7 +53,6 @@ const ALLOWED_OPERATIONS = [
 	'BETWEEN',
 	'LIKE',
 	'ILIKE',
-	// Add common ClickHouse functions
 	'COUNT',
 	'SUM',
 	'AVG',
@@ -89,7 +87,6 @@ const FORBIDDEN_OPERATIONS = [
 	'USE',
 	'SHOW',
 	'DESCRIBE',
-	// Remove EXPLAIN and ANALYZE - they're useful for query optimization
 	'OPTIMIZE',
 	'REPAIR',
 	'LOCK',
@@ -115,7 +112,6 @@ const FORBIDDEN_OPERATIONS = [
 	'TRIGGER',
 	'EVENT',
 	'ROUTINE',
-	// ClickHouse-specific dangerous functions
 	'HOSTNAME',
 	'FQDN',
 	'VERSION',
@@ -146,12 +142,10 @@ const FORBIDDEN_PATTERNS = [
 	/\bINTO\s+(?:OUTFILE|DUMPFILE)\b/gi,
 	/\bEXTRACTVALUE\s*\(/gi,
 	/\bUPDATEXML\s*\(/gi,
-	// ClickHouse system table access patterns
 	/\bFROM\s+system\./gi,
 	/\bJOIN\s+system\./gi,
 	/\binformation_schema\./gi,
 	/\bdefault\./gi,
-	// Dangerous ClickHouse functions
 	/\burl\s*\(/gi,
 	/\bfile\s*\(/gi,
 	/\bs3\s*\(/gi,
@@ -188,7 +182,6 @@ const CLAUSE_PATTERN = /\b(GROUP\s+BY|ORDER\s+BY|LIMIT|HAVING)\b/i;
 
 const QuerySecurityValidator = {
 	transformPropertiesSyntax(query: string): string {
-		// Match properties.X patterns and convert to JSONExtract calls
 		const propertiesPattern =
 			/\bproperties\.([a-zA-Z_][a-zA-Z0-9_]*(?::(string|int|float|bool|raw))?)\b/gi;
 
@@ -290,7 +283,6 @@ const QuerySecurityValidator = {
 			);
 		}
 
-		// Allow UNION for legitimate analytics queries
 		const unionMatches = normalizedQuery.match(/\bUNION\b/g);
 		const unionCount = unionMatches ? unionMatches.length : 0;
 		if (unionCount > 2) {
@@ -501,7 +493,6 @@ const QuerySecurityValidator = {
 
 		QuerySecurityValidator.validateAgainstAttackVectors(query);
 
-		// Transform properties.X syntax to JSONExtract calls before validation
 		const transformedQuery =
 			QuerySecurityValidator.transformPropertiesSyntax(query);
 
@@ -587,7 +578,6 @@ export const customSQL = new Elysia({ prefix: '/v1/custom-sql' })
 				ip: string;
 			};
 		}) => {
-			// Get API key directly from request headers
 			const apiKey = await getApiKeyFromHeader(request.headers);
 
 			try {

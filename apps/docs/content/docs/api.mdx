@@ -235,7 +235,7 @@ SELECT JSONExtractString(properties, 'browser_name') AS browser_name FROM analyt
 SELECT properties.browser_name AS browser_name FROM analytics.events
 ```
 
-<Callout type="warning">
+<Callout type="warn">
   **Important:** Always use `AS` aliases when selecting properties to get clean column names in your response. Without aliases, you'll get ugly column names like `"JSONExtractString(properties, 'browser_name')"` instead of `"browser_name"`.
 </Callout>
 
