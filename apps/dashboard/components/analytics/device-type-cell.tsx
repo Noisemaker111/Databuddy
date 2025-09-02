@@ -21,7 +21,7 @@ const deviceTypeIconMap: Record<string, React.ElementType> = {
 };
 
 const deviceTypeColorMap: Record<string, string> = {
-	mobile: 'text-blue-500',
+	mobile: 'text-foreground',
 	tablet: 'text-teal-500',
 	laptop: 'text-purple-500',
 	desktop: 'text-green-500',

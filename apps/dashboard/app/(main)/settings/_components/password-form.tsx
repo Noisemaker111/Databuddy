@@ -210,7 +210,7 @@ export function PasswordForm() {
 														'text-yellow-600',
 													passwordStrength.score >= 70 &&
 														passwordStrength.score < 90 &&
-														'text-blue-600',
+														'text-foreground',
 													passwordStrength.score >= 90 && 'text-green-600'
 												)}
 											>

@@ -56,18 +56,15 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 
 	if (!errorChartData.length) {
 		return (
-			<div className="flex h-full items-center justify-center rounded border bg-muted/20 p-6 shadow-sm">
-				<div className="text-center">
+			<div className="flex h-full items-center justify-center rounded-lg border border-sidebar-border bg-sidebar/20 p-8 shadow-sm">
+				<div className="text-center max-w-md">
 					<BugIcon
-						className="mx-auto h-8 w-8 text-muted-foreground"
-						size={16}
+						className="mx-auto h-8 w-8 text-muted-foreground mb-4"
 						weight="duotone"
 					/>
-					<h3 className="mt-2 font-medium text-muted-foreground text-sm">
-						No error trend data
-					</h3>
-					<p className="mt-1 text-muted-foreground text-xs">
-						Not enough data to display a trend chart.
+					<h3 className="mb-2 font-semibold text-sm">No error trend data</h3>
+					<p className="text-muted-foreground text-xs leading-relaxed">
+						Not enough data to display a trend chart. Error trends will appear here when your website encounters errors.
 					</p>
 				</div>
 			</div>
@@ -75,8 +72,8 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 	}
 
 	return (
-		<div className="flex h-full flex-col rounded border shadow-sm">
-			<div className="flex items-center justify-between border-b p-4">
+		<div className="flex h-full flex-col rounded-lg border border-sidebar-border bg-sidebar/10 shadow-sm">
+			<div className="flex items-center justify-between border-b border-sidebar-border p-4">
 				<div>
 					<h3 className="font-semibold text-base">Error Trends</h3>
 					<p className="text-muted-foreground text-xs">
@@ -124,8 +121,8 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 									y1="0"
 									y2="1"
 								>
-									<stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
-									<stop offset="95%" stopColor="#ef4444" stopOpacity={0.05} />
+									<stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
+									<stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
 								</linearGradient>
 								<linearGradient
 									id="colorAffectedUsers"
@@ -134,8 +131,8 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 									y1="0"
 									y2="1"
 								>
-									<stop offset="5%" stopColor="#f59e0b" stopOpacity={0.25} />
-									<stop offset="95%" stopColor="#f59e0b" stopOpacity={0.05} />
+									<stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.25} />
+									<stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.05} />
 								</linearGradient>
 							</defs>
 							<CartesianGrid
@@ -184,7 +181,7 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 								fill="url(#colorTotalErrors)"
 								fillOpacity={1}
 								name="Total Errors"
-								stroke="#ef4444"
+								stroke="hsl(var(--primary))"
 								strokeWidth={2}
 								type="monotone"
 							/>
@@ -193,7 +190,7 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 								fill="url(#colorAffectedUsers)"
 								fillOpacity={1}
 								name="Affected Users"
-								stroke="#f59e0b"
+								stroke="hsl(var(--chart-2))"
 								strokeWidth={2}
 								type="monotone"
 							/>

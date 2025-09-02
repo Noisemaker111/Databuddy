@@ -38,10 +38,12 @@ export const RecentErrorsTable = ({ recentErrors, isLoading }: Props) => {
 				return (
 					<div className="flex max-w-md flex-col gap-2">
 						<div className="flex items-center gap-2">
-							{getErrorTypeIcon(type)}
+							<div className="flex h-5 w-5 items-center justify-center rounded bg-primary/10">
+								{getErrorTypeIcon(type)}
+							</div>
 							<Badge className={getSeverityColor(severity)}>{type}</Badge>
 							{row.stack && (
-								<Badge className="text-xs" variant="outline">
+								<Badge className="text-xs border-sidebar-border bg-sidebar/20" variant="outline">
 									Stack Available
 								</Badge>
 							)}

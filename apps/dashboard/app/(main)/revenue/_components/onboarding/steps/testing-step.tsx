@@ -48,7 +48,7 @@ export function TestingStep({
 					</div>
 
 					<div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/20">
-						<h4 className="mb-2 font-medium text-blue-900 dark:text-blue-100">
+						<h4 className="mb-2 font-medium text-foreground">
 							Integration Status
 						</h4>
 						<div className="space-y-2">
@@ -56,7 +56,7 @@ export function TestingStep({
 								<div className="h-2 w-2 rounded-full bg-yellow-500" />
 								<span>Waiting for test webhook...</span>
 							</div>
-							<p className="text-blue-800 text-xs dark:text-blue-200">
+							<p className="text-muted-foreground text-xs">
 								Create a test payment in Stripe to verify the integration
 							</p>
 						</div>

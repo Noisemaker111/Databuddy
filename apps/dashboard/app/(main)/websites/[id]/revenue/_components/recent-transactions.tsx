@@ -90,7 +90,7 @@ export function RecentTransactions({
 					<div className="flex items-center gap-3">
 						<div className="rounded-lg border border-blue-200 bg-blue-100 p-2.5 transition-transform duration-300 group-hover:scale-110 dark:border-blue-800 dark:bg-blue-900/20">
 							<CreditCardIcon
-								className="text-blue-600 dark:text-blue-400"
+								className="text-foreground"
 								size={20}
 								weight="duotone"
 							/>

@@ -130,7 +130,7 @@ export function PerformanceSummaryCard({
 
 			<div className="rounded border bg-background p-3">
 				<div className="mb-2 flex items-center gap-2">
-					<TrendUpIcon className="h-4 w-4 text-blue-500" />
+					<TrendUpIcon className="h-4 w-4 text-muted-foreground" />
 					<span className="font-medium text-muted-foreground text-sm">
 						Avg Load Time
 					</span>

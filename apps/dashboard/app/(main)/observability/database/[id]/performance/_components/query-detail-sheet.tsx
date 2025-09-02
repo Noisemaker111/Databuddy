@@ -83,7 +83,7 @@ export const QueryDetailSheet = ({
 		if (time < 50) {
 			return {
 				level: 'Good',
-				color: 'bg-blue-100 text-blue-800 border-blue-200',
+				color: 'bg-muted text-muted-foreground border-border',
 			};
 		}
 		if (time < 100) {
@@ -325,10 +325,10 @@ Resource Usage:
 										<div className="flex items-start gap-3">
 											<div className="mt-0.5 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
 											<div className="min-w-0">
-												<p className="font-medium text-blue-900 dark:text-blue-100">
+												<p className="font-medium text-foreground">
 													Low Cache Hit Rate
 												</p>
-												<p className="mt-1 text-blue-800 text-sm dark:text-blue-200">
+												<p className="mt-1 text-muted-foreground text-sm">
 													Consider increasing shared_buffers, optimizing data
 													access patterns, or reviewing query selectivity.
 												</p>

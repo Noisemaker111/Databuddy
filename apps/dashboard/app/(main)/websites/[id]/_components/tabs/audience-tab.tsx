@@ -108,7 +108,7 @@ const getConnectionIcon = (connection: string): React.ReactNode => {
 		return <WifiHighIcon className="h-4 w-4 text-green-500" />;
 	}
 	if (connectionLower.includes('4g')) {
-		return <DeviceMobileIcon className="h-4 w-4 text-blue-500" />;
+		return <DeviceMobileIcon className="h-4 w-4 text-foreground" />;
 	}
 	if (connectionLower.includes('5g')) {
 		return <DeviceMobileIcon className="h-4 w-4 text-purple-500" />;
@@ -120,10 +120,10 @@ const getConnectionIcon = (connection: string): React.ReactNode => {
 		return <DeviceMobileIcon className="h-4 w-4 text-orange-500" />;
 	}
 	if (connectionLower.includes('ethernet')) {
-		return <LaptopIcon className="h-4 w-4 text-blue-400" />;
+		return <LaptopIcon className="h-4 w-4 text-foreground" />;
 	}
 	if (connectionLower.includes('cellular')) {
-		return <DeviceMobileIcon className="h-4 w-4 text-blue-500" />;
+		return <DeviceMobileIcon className="h-4 w-4 text-foreground" />;
 	}
 	if (connectionLower.includes('offline')) {
 		return <WifiLowIcon className="h-4 w-4 text-red-500" />;
@@ -937,7 +937,7 @@ export function WebsiteAudienceTab({
 											if (width <= 480) {
 												deviceType = 'Mobile';
 												deviceIcon = (
-													<DeviceMobileIcon className="h-4 w-4 text-blue-500" />
+													<DeviceMobileIcon className="h-4 w-4 text-foreground" />
 												);
 											} else if (width <= 1024) {
 												deviceType = 'Tablet';

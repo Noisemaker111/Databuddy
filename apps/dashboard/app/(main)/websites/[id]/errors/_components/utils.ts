@@ -39,9 +39,9 @@ export const getSeverityColor = (
 	severity: 'high' | 'medium' | 'low'
 ): string => {
 	const colors = {
-		high: 'bg-red-100 text-red-800 border-red-200',
-		medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-		low: 'bg-blue-100 text-blue-800 border-blue-200',
+		high: 'bg-primary/10 text-primary border-primary/20',
+		medium: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
+		low: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
 	};
-	return colors[severity] || 'bg-gray-100 text-gray-800 border-gray-200';
+	return colors[severity] || 'bg-muted/10 text-muted-foreground border-muted/20';
 };

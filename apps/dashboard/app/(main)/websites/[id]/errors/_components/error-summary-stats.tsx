@@ -5,7 +5,7 @@ import {
 	WarningCircleIcon,
 } from '@phosphor-icons/react';
 import { StatCard } from '@/components/analytics/stat-card';
-import type { ErrorSummary } from './types';
+import type { ErrorSummary } from '@databuddy/shared';
 
 interface ErrorSummaryStatsProps {
 	errorSummary: ErrorSummary;
@@ -24,7 +24,7 @@ export const ErrorSummaryStats = ({
 				isLoading={isLoading}
 				title="Total Errors"
 				value={(errorSummary.totalErrors || 0).toLocaleString()}
-				variant="danger"
+				variant="info"
 			/>
 			<StatCard
 				description="Error sessions"
@@ -32,7 +32,7 @@ export const ErrorSummaryStats = ({
 				isLoading={isLoading}
 				title="Error Rate"
 				value={`${(errorSummary.errorRate || 0).toFixed(2)}%`}
-				variant="danger"
+				variant="info"
 			/>
 			<StatCard
 				description="Unique users with errors"
@@ -40,7 +40,7 @@ export const ErrorSummaryStats = ({
 				isLoading={isLoading}
 				title="Affected Users"
 				value={(errorSummary.affectedUsers || 0).toLocaleString()}
-				variant="warning"
+				variant="default"
 			/>
 			<StatCard
 				description="Unique sessions with errors"
@@ -48,7 +48,7 @@ export const ErrorSummaryStats = ({
 				isLoading={isLoading}
 				title="Affected Sessions"
 				value={(errorSummary.affectedSessions || 0).toLocaleString()}
-				variant="warning"
+				variant="default"
 			/>
 		</div>
 	);

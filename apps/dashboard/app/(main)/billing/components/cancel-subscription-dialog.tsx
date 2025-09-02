@@ -54,7 +54,7 @@ export function CancelSubscriptionDialog({
 					>
 						<div className="mb-2 flex items-center gap-3">
 							<div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-								<CalendarIcon className="text-blue-600" size={16} />
+								<CalendarIcon className="text-foreground" size={16} />
 							</div>
 							<div>
 								<div className="font-medium">Cancel at period end</div>

@@ -144,13 +144,13 @@ export function SessionsList({ websiteId }: SessionsListProps) {
 	// Empty state
 	if (!(allSessions.length || isLoading)) {
 		return (
-			<Card>
-				<CardContent className="flex items-center justify-center p-12">
-					<div className="text-center text-muted-foreground">
-						<UserIcon className="mx-auto mb-4 h-12 w-12 opacity-50" />
-						<p className="mb-2 font-medium text-lg">No sessions found</p>
-						<p className="text-sm">
-							Sessions will appear here once users visit your website
+			<Card className="border-sidebar-border bg-sidebar/20">
+				<CardContent className="flex items-center justify-center p-16">
+					<div className="text-center max-w-md">
+						<UserIcon className="h-12 w-12 text-muted-foreground mx-auto mb-6" weight="duotone" />
+						<h3 className="mb-3 font-semibold text-lg">No sessions found</h3>
+						<p className="text-muted-foreground text-sm leading-relaxed">
+							Sessions will appear here once users visit your website. Each session represents a unique visitor's journey through your site.
 						</p>
 					</div>
 				</CardContent>

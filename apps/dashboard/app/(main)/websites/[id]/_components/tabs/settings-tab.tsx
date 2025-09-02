@@ -499,7 +499,7 @@ function CodeBlock({ code, description, copied, onCopy }: CodeBlockProps) {
 			try {
 				const html = await codeToHtml(code, {
 					lang: getLanguage(code),
-					theme: 'github-dark',
+					theme: 'github-light',
 				});
 				setHighlightedCode(html);
 			} catch (error) {
@@ -531,21 +531,25 @@ function CodeBlock({ code, description, copied, onCopy }: CodeBlockProps) {
 			)}
 			<div className="relative">
 				<div
-					className="overflow-hidden rounded-lg border bg-[#0d1117] p-4 font-mono text-sm leading-relaxed"
+					className='overflow-hidden rounded-lg border border-sidebar-border bg-sidebar/40 p-6 text-sm leading-relaxed [&_pre]:!bg-transparent [&_code]:!bg-transparent [&_*]:!font-mono'
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: Shiki generates safe HTML
 					dangerouslySetInnerHTML={{ __html: highlightedCode }}
-					style={{ fontSize: '13px', lineHeight: '1.5' }}
+					style={{ 
+						fontSize: '14px', 
+						lineHeight: '1.6', 
+						fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+					}}
 				/>
 				<Button
-					className="absolute top-2 right-2 h-7 w-7 rounded bg-background/80 backdrop-blur-sm hover:bg-background/95"
+					className='absolute top-2 right-2 h-6 w-6 rounded hover:bg-background/50 border-0 shadow-none transition-colors duration-200'
 					onClick={onCopy}
 					size="icon"
 					variant="ghost"
 				>
 					{copied ? (
-						<CheckIcon className="h-3.5 w-3.5 text-green-500" />
+						<CheckIcon className="h-3.5 w-3.5 text-green-500" weight="bold" />
 					) : (
-						<ClipboardIcon className="h-3.5 w-3.5" />
+						<ClipboardIcon className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" weight="regular" />
 					)}
 				</Button>
 			</div>
@@ -561,25 +565,29 @@ function WebsiteInfoSection({
 	websiteId: string;
 }) {
 	return (
-		<div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-			<div className="space-y-2 rounded bg-muted/50 p-2">
-				<h4 className="flex items-center gap-1.5 font-medium text-xs">
-					<InfoIcon className="h-3 w-3 text-muted-foreground" />
+		<div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+			<div className="space-y-3 rounded-lg border border-sidebar-border bg-sidebar/30 p-4">
+				<h4 className="flex items-center gap-2 font-medium text-sm">
+					<div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
+						<InfoIcon className="h-3.5 w-3.5 text-primary" weight="duotone" />
+					</div>
 					Website Details
 				</h4>
-				<div className="space-y-1 text-xs">
-					<div className="flex flex-col sm:flex-row sm:justify-between">
+				<div className="space-y-2 text-sm">
+					<div className="flex items-center justify-between">
 						<span className="text-muted-foreground">Created</span>
-						<span className="sm:mt-0">
+						<span className="font-medium">
 							{new Date(websiteData.createdAt).toLocaleDateString()}
 						</span>
 					</div>
-					<div className="flex flex-col sm:flex-row sm:justify-between">
+					<div className="flex items-center justify-between">
 						<span className="text-muted-foreground">Website ID</span>
-						<div className="flex items-center gap-1 font-mono text-xs sm:mt-0">
-							{websiteId}
+						<div className="flex items-center gap-2">
+							<code className="rounded bg-muted/50 px-2 py-1 font-mono text-xs">
+								{websiteId}
+							</code>
 							<Button
-								className="h-4 w-4"
+								className="h-6 w-6 rounded hover:bg-background/50"
 								onClick={() => {
 									navigator.clipboard.writeText(websiteId);
 									toast.success(TOAST_MESSAGES.WEBSITE_ID_COPIED);
@@ -587,33 +595,33 @@ function WebsiteInfoSection({
 								size="icon"
 								variant="ghost"
 							>
-								<ClipboardIcon className="h-2.5 w-2.5" />
+								<ClipboardIcon className="h-3 w-3" weight="regular" />
 							</Button>
 						</div>
 					</div>
 				</div>
 			</div>
 
-			<div className="rounded border border-primary/10 bg-primary/5 p-2">
-				<div className="flex flex-col items-start gap-1">
-					<div className="flex items-center gap-1.5">
-						<div className="rounded-full bg-primary/10 p-1">
-							<CheckIcon className="h-3 w-3 text-primary" />
+			<div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+				<div className="flex flex-col gap-2">
+					<div className="flex items-center gap-2">
+						<div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15">
+							<CheckIcon className="h-3.5 w-3.5 text-primary" weight="duotone" />
 						</div>
-						<p className="font-medium text-xs">Ready to Track</p>
+						<h4 className="font-medium text-sm">Ready to Track</h4>
 					</div>
 
-					<div>
-						<p className="text-muted-foreground text-xs">
+					<div className="space-y-2">
+						<p className="text-muted-foreground text-sm">
 							Add the tracking code to your website to start collecting data.
 						</p>
 						<Button
-							className="-ml-1 h-5 px-0 text-primary text-xs"
+							className="h-6 px-0 text-primary text-xs hover:text-primary/80"
 							size="sm"
 							variant="link"
 						>
 							View Documentation
-							<ArrowRightIcon className="ml-0.5 h-2.5 w-2.5" />
+							<ArrowRightIcon className="ml-1 h-3 w-3" weight="regular" />
 						</Button>
 					</div>
 				</div>
@@ -858,33 +866,39 @@ function TrackingOptionCard({
 	const isEnabled = inverted ? !enabled : enabled;
 
 	return (
-		<div className="space-y-2 rounded border p-2">
-			<div className="flex items-start justify-between border-b pb-1">
-				<div className="space-y-0">
-					<div className="font-medium text-xs">{title}</div>
-					<div className="text-muted-foreground text-xs">{description}</div>
+		<div className="rounded-lg border border-sidebar-border bg-sidebar/20 p-4 transition-all duration-200 hover:bg-sidebar/30">
+			<div className="flex items-start justify-between pb-3">
+				<div className="space-y-1 min-w-0 flex-1 pr-3">
+					<div className="font-medium text-sm">{title}</div>
+					<div className="text-muted-foreground text-xs leading-relaxed">{description}</div>
 				</div>
 				<Switch checked={isEnabled} onCheckedChange={onToggle} />
 			</div>
 			{required && !isEnabled && (
-				<div className="rounded border border-red-200 bg-red-50 p-1 text-red-700 text-xs dark:border-red-800/20 dark:bg-red-950/20 dark:text-red-400">
-					<span className="flex items-center gap-0.5 font-medium">
-						<WarningCircleIcon className="h-2.5 w-2.5" />
-						Warning:
-					</span>
-					Disabling page views will prevent analytics from working. This option
-					is required.
+				<div className="mb-3 rounded-md border border-destructive/20 bg-destructive/5 p-3">
+					<div className="flex items-start gap-2">
+						<WarningCircleIcon className="h-4 w-4 flex-shrink-0 text-destructive mt-0.5" weight="duotone" />
+						<div>
+							<span className="font-medium text-destructive text-sm">Warning:</span>
+							<p className="text-destructive text-xs mt-1">
+								Disabling page views will prevent analytics from working. This option is required.
+							</p>
+						</div>
+					</div>
 				</div>
 			)}
-			<div className="text-muted-foreground text-xs">
-				Data collected:
-				<ul className="mt-0.5 list-disc space-y-0 pl-3">
-					{data.map((item: string) => (
-						<li className="text-xs" key={item}>
-							{item}
-						</li>
-					))}
-				</ul>
+			<div className="border-t border-sidebar-border pt-3">
+				<div className="text-muted-foreground text-xs">
+					<span className="font-medium">Data collected:</span>
+					<ul className="mt-2 space-y-1">
+						{data.map((item: string) => (
+							<li className="flex items-start gap-2 text-xs" key={item}>
+								<span className="text-primary mt-1 text-[8px]">●</span>
+								<span className="leading-relaxed">{item}</span>
+							</li>
+						))}
+					</ul>
+				</div>
 			</div>
 		</div>
 	);
@@ -933,16 +947,21 @@ function SamplingRateSection({
 	onSamplingRateChange: (rate: number) => void;
 }) {
 	return (
-		<div className="rounded border p-2">
-			<h4 className="mb-1 font-medium text-xs">Sampling Rate</h4>
-			<div className="space-y-2">
-				<div className="grid grid-cols-2 gap-4">
-					<div className="space-y-1">
-						<div className="flex justify-between">
-							<Label className="text-xs" htmlFor="sampling-rate">
+		<div className="rounded-lg border border-sidebar-border bg-sidebar/20 p-4">
+			<div className="flex items-center gap-2 mb-3">
+				<div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
+					<InfoIcon className="h-3.5 w-3.5 text-primary" weight="duotone" />
+				</div>
+				<h4 className="font-medium text-sm">Sampling Rate</h4>
+			</div>
+			<div className="space-y-4">
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+					<div className="space-y-3">
+						<div className="flex justify-between items-center">
+							<Label className="text-sm font-medium" htmlFor="sampling-rate">
 								Data Collection Rate
 							</Label>
-							<span className="font-medium text-xs">
+							<span className="font-semibold text-primary text-sm">
 								{Math.round(samplingRate * 100)}%
 							</span>
 						</div>
@@ -962,15 +981,16 @@ function SamplingRateSection({
 						</div>
 					</div>
 
-					<div className="space-y-1">
-						<p className="text-muted-foreground text-xs">
-							Sampling rate determines what percentage of your visitors will be
-							tracked. Lower rates reduce costs.
+					<div className="space-y-2">
+						<p className="text-muted-foreground text-sm leading-relaxed">
+							Sampling rate determines what percentage of your visitors will be tracked. Lower rates reduce costs.
 						</p>
-						<p className="flex items-center gap-0.5 text-muted-foreground text-xs">
-							<InfoIcon className="h-2.5 w-2.5" />
-							Recommended: 100% for low traffic, 10-50% for high traffic
-						</p>
+						<div className="rounded-md bg-primary/5 border border-primary/10 p-3">
+							<p className="flex items-start gap-2 text-muted-foreground text-xs">
+								<InfoIcon className="h-3.5 w-3.5 text-primary flex-shrink-0 mt-0.5" weight="duotone" />
+								<span><strong>Recommended:</strong> 100% for low traffic, 10-50% for high traffic</span>
+							</p>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -988,10 +1008,15 @@ function BatchingSection({
 	) => void;
 }) {
 	return (
-		<div className="rounded border p-2">
-			<h4 className="mb-1 font-medium text-xs">Batching</h4>
-			<div className="space-y-2">
-				<div className="flex items-center space-x-1">
+		<div className="rounded-lg border border-sidebar-border bg-sidebar/20 p-4">
+			<div className="flex items-center gap-2 mb-3">
+				<div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
+					<CodeIcon className="h-3.5 w-3.5 text-primary" weight="duotone" />
+				</div>
+				<h4 className="font-medium text-sm">Request Batching</h4>
+			</div>
+			<div className="space-y-4">
+				<div className="flex items-center space-x-3">
 					<Switch
 						checked={trackingOptions.enableBatching}
 						id="enable-batching"
@@ -1002,75 +1027,79 @@ function BatchingSection({
 							}))
 						}
 					/>
-					<Label className="text-xs" htmlFor="enable-batching">
-						Enable batching
+					<Label className="text-sm font-medium" htmlFor="enable-batching">
+						Enable request batching
 					</Label>
 				</div>
 
 				{trackingOptions.enableBatching && (
-					<div className="grid grid-cols-2 gap-2 pl-3">
-						<div className="space-y-1">
-							<Label className="text-xs" htmlFor="batch-size">
-								Batch Size
-							</Label>
-							<div className="flex items-center space-x-1">
-								<Button
-									className="h-5 w-5"
-									disabled={trackingOptions.batchSize <= 1}
-									onClick={() =>
+					<div className="space-y-4 pl-6 border-l-2 border-primary/20">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div className="space-y-2">
+								<Label className="text-sm font-medium" htmlFor="batch-size">
+									Batch Size
+								</Label>
+								<div className="flex items-center space-x-2">
+									<Button
+										className="h-8 w-8 rounded-md"
+										disabled={trackingOptions.batchSize <= 1}
+										onClick={() =>
+											setTrackingOptions((prev) => ({
+												...prev,
+												batchSize: Math.max(1, prev.batchSize - 1),
+											}))
+										}
+										size="icon"
+										variant="outline"
+									>
+										-
+									</Button>
+									<span className="w-8 text-center font-medium text-sm bg-muted rounded px-2 py-1">
+										{trackingOptions.batchSize}
+									</span>
+									<Button
+										className="h-8 w-8 rounded-md"
+										disabled={trackingOptions.batchSize >= 10}
+										onClick={() =>
+											setTrackingOptions((prev) => ({
+												...prev,
+												batchSize: Math.min(10, prev.batchSize + 1),
+											}))
+										}
+										size="icon"
+										variant="outline"
+									>
+										+
+									</Button>
+								</div>
+							</div>
+
+							<div className="space-y-2">
+								<Label className="text-sm font-medium" htmlFor="batch-timeout">
+									Batch Timeout (ms)
+								</Label>
+								<input
+									className="h-9 w-full rounded-md border border-sidebar-border bg-background px-3 py-2 text-sm"
+									id="batch-timeout"
+									max="5000"
+									min="100"
+									onChange={(e) =>
 										setTrackingOptions((prev) => ({
 											...prev,
-											batchSize: Math.max(1, prev.batchSize - 1),
+											batchTimeout: Number.parseInt(e.target.value, 10),
 										}))
 									}
-									size="icon"
-									variant="outline"
-								>
-									-
-								</Button>
-								<span className="w-6 text-center text-xs">
-									{trackingOptions.batchSize}
-								</span>
-								<Button
-									className="h-5 w-5"
-									disabled={trackingOptions.batchSize >= 10}
-									onClick={() =>
-										setTrackingOptions((prev) => ({
-											...prev,
-											batchSize: Math.min(10, prev.batchSize + 1),
-										}))
-									}
-									size="icon"
-									variant="outline"
-								>
-									+
-								</Button>
+									step="100"
+									type="number"
+									value={trackingOptions.batchTimeout}
+								/>
 							</div>
 						</div>
 
-						<div className="space-y-1">
-							<Label className="text-xs" htmlFor="batch-timeout">
-								Batch Timeout (ms)
-							</Label>
-							<input
-								className="h-6 w-full rounded border border-input bg-background px-2 py-0.5 text-xs"
-								id="batch-timeout"
-								max="5000"
-								min="100"
-								onChange={(e) =>
-									setTrackingOptions((prev) => ({
-										...prev,
-										batchTimeout: Number.parseInt(e.target.value, 10),
-									}))
-								}
-								step="100"
-								type="number"
-								value={trackingOptions.batchTimeout}
-							/>
-						</div>
-
-						<div className="col-span-2 text-muted-foreground text-xs">
-							Batching reduces requests to the server, improving performance.
+						<div className="rounded-md bg-primary/5 border border-primary/10 p-3">
+							<p className="text-muted-foreground text-xs leading-relaxed">
+								<strong>Batching</strong> groups multiple events into single requests, reducing server load and improving performance.
+							</p>
 						</div>
 					</div>
 				)}
@@ -1461,23 +1490,39 @@ function ExportTab({
 			</div>
 
 			{/* Export Info */}
-			<div className="rounded border border-blue-200 bg-blue-50 p-2 dark:border-blue-800/20 dark:bg-blue-950/20">
-				<div className="flex items-start gap-2">
-					<InfoIcon className="h-4 w-4 flex-shrink-0 text-blue-500" />
-					<div className="space-y-1">
-						<h4 className="font-medium text-blue-900 text-xs dark:text-blue-100">
+			<div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+				<div className="flex items-start gap-3">
+					<div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 flex-shrink-0">
+						<InfoIcon className="h-4 w-4 text-primary" weight="duotone" />
+					</div>
+					<div className="space-y-3">
+						<h4 className="font-medium text-sm">
 							What's included in your export?
 						</h4>
-						<ul className="list-disc space-y-0 pl-3 text-blue-800 text-xs dark:text-blue-200">
-							<li>Page views and user sessions</li>
-							<li>User interactions and events</li>
-							<li>Performance metrics and Web Vitals</li>
-							<li>Error logs and debugging data</li>
-							<li>Device, browser, and location data</li>
+						<ul className="space-y-2">
+							<li className="flex items-start gap-2 text-sm">
+								<span className="text-primary mt-1 text-[8px]">●</span>
+								<span>Page views and user sessions</span>
+							</li>
+							<li className="flex items-start gap-2 text-sm">
+								<span className="text-primary mt-1 text-[8px]">●</span>
+								<span>User interactions and events</span>
+							</li>
+							<li className="flex items-start gap-2 text-sm">
+								<span className="text-primary mt-1 text-[8px]">●</span>
+								<span>Performance metrics and Web Vitals</span>
+							</li>
+							<li className="flex items-start gap-2 text-sm">
+								<span className="text-primary mt-1 text-[8px]">●</span>
+								<span>Error logs and debugging data</span>
+							</li>
+							<li className="flex items-start gap-2 text-sm">
+								<span className="text-primary mt-1 text-[8px]">●</span>
+								<span>Device, browser, and location data</span>
+							</li>
 						</ul>
-						<p className="text-blue-700 text-xs dark:text-blue-300">
-							Data is exported as a ZIP file containing multiple files organized
-							by data type.
+						<p className="text-muted-foreground text-sm leading-relaxed">
+							Data is exported as a ZIP file containing multiple files organized by data type.
 						</p>
 					</div>
 				</div>

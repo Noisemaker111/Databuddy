@@ -56,7 +56,7 @@ export function EventLimitIndicator() {
 								</span>
 							)}
 							{data.balance > 0 && (
-								<span className="ml-2 text-blue-600">
+								<span className="ml-2 text-muted-foreground">
 									{data.balance} balance
 								</span>
 							)}

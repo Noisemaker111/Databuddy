@@ -78,7 +78,7 @@ export function AnimatedLoading({
 	};
 
 	const icons = {
-		sessions: <ActivitySquare className="h-8 w-8 text-blue-500" />,
+		sessions: <ActivitySquare className="h-8 w-8 text-muted-foreground" />,
 		profiles: <Users className="h-8 w-8 text-indigo-500" />,
 		errors: <Server className="h-8 w-8 text-red-500" />,
 	};

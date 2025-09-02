@@ -209,7 +209,7 @@ export function TimezonePreferences() {
 						<div className="flex items-center gap-3">
 							<div className="flex h-10 w-10 items-center justify-center rounded-full border border-blue-500/20 bg-gradient-to-br from-blue-500/20 to-blue-600/5">
 								<ClockIcon
-									className="h-5 w-5 text-blue-600"
+									className="h-5 w-5 text-foreground"
 									size={16}
 									weight="duotone"
 								/>

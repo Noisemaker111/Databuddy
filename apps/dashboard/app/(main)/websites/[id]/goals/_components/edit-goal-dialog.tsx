@@ -192,7 +192,7 @@ export function EditGoalDialog({
 	const getGoalIcon = (type: string) => {
 		switch (type) {
 			case 'PAGE_VIEW':
-				return <Eye className="text-blue-600" size={16} weight="duotone" />;
+				return <Eye className="text-foreground" size={16} weight="duotone" />;
 			case 'EVENT':
 				return (
 					<MouseMiddleClick
@@ -330,7 +330,7 @@ export function EditGoalDialog({
 										<SelectItem value="PAGE_VIEW">
 											<div className="flex items-center gap-2">
 												<Eye
-													className="text-blue-600"
+													className="text-foreground"
 													size={14}
 													weight="duotone"
 												/>

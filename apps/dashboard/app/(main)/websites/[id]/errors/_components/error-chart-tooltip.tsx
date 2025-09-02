@@ -5,20 +5,20 @@ export const ErrorChartTooltip = ({ active, payload, label }: any) => {
 	}
 
 	return (
-		<div className="rounded border border-border bg-background p-3 text-xs shadow-sm">
-			<p className="mb-2 font-semibold text-foreground">{label}</p>
-			<div className="space-y-1.5">
+		<div className="rounded-lg border border-sidebar-border bg-background/95 backdrop-blur-sm p-4 text-sm shadow-lg">
+			<p className="mb-3 font-semibold text-foreground">{label}</p>
+			<div className="space-y-2">
 				{payload.map((entry: any) => (
 					<div
-						className="flex items-center gap-2"
+						className="flex items-center gap-3"
 						key={`tooltip-${entry.dataKey}-${entry.value}`}
 					>
 						<div
-							className="h-2.5 w-2.5 rounded-full"
+							className="h-3 w-3 rounded-full"
 							style={{ backgroundColor: entry.color }}
 						/>
 						<span className="text-muted-foreground">{entry.name}:</span>
-						<span className="font-medium text-foreground">
+						<span className="font-semibold text-foreground">
 							{entry.value.toLocaleString()}
 						</span>
 					</div>

@@ -392,8 +392,8 @@ export default function PerformancePage({ params }: PerformancePageProps) {
 				q.query.includes('Query ID:')
 			) && (
 				<Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
-					<DatabaseIcon className="h-4 w-4 text-blue-600" />
-					<AlertDescription className="text-blue-800 dark:text-blue-200">
+					<DatabaseIcon className="h-4 w-4 text-muted-foreground" />
+					<AlertDescription className="text-muted-foreground">
 						<div className="space-y-2">
 							<div>
 								<strong>Limited Query Visibility:</strong> Query text is hidden

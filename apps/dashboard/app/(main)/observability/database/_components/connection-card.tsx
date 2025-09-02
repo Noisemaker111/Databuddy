@@ -43,7 +43,7 @@ export function ConnectionCard({
 		switch (type.toLowerCase()) {
 			case 'postgres':
 			case 'postgresql':
-				return <DatabaseIcon className="text-blue-600" weight="duotone" />;
+				return <DatabaseIcon className="text-foreground" weight="duotone" />;
 			case 'mysql':
 				return <DatabaseIcon className="text-orange-600" weight="duotone" />;
 			case 'sqlite':

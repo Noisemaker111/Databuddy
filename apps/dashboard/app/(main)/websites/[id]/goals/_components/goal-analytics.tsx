@@ -101,7 +101,7 @@ export function GoalAnalytics({
 						<div className="flex items-center gap-3">
 							<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/20">
 								<Users
-									className="text-blue-600 dark:text-blue-400"
+									className="text-foreground"
 									size={20}
 									weight="duotone"
 								/>

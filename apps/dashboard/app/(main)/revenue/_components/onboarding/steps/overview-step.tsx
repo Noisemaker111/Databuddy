@@ -11,13 +11,13 @@ export function OverviewStep({ onNext }: OverviewStepProps) {
 	return (
 		<div className="space-y-4">
 			<div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/20">
-				<h3 className="mb-2 font-medium text-blue-900 dark:text-blue-100">
+				<h3 className="mb-2 font-medium text-foreground">
 					What you'll get:
 				</h3>
-				<ul className="space-y-2 text-blue-800 text-sm dark:text-blue-200">
+				<ul className="space-y-2 text-muted-foreground text-sm">
 					<li className="flex items-center gap-2">
 						<CheckCircleIcon
-							className="h-4 w-4 text-blue-600 dark:text-blue-400"
+							className="h-4 w-4 text-foreground"
 							size={16}
 							weight="fill"
 						/>
@@ -25,7 +25,7 @@ export function OverviewStep({ onNext }: OverviewStepProps) {
 					</li>
 					<li className="flex items-center gap-2">
 						<CheckCircleIcon
-							className="h-4 w-4 text-blue-600 dark:text-blue-400"
+							className="h-4 w-4 text-foreground"
 							size={16}
 							weight="fill"
 						/>
@@ -33,7 +33,7 @@ export function OverviewStep({ onNext }: OverviewStepProps) {
 					</li>
 					<li className="flex items-center gap-2">
 						<CheckCircleIcon
-							className="h-4 w-4 text-blue-600 dark:text-blue-400"
+							className="h-4 w-4 text-foreground"
 							size={16}
 							weight="fill"
 						/>
@@ -41,7 +41,7 @@ export function OverviewStep({ onNext }: OverviewStepProps) {
 					</li>
 					<li className="flex items-center gap-2">
 						<CheckCircleIcon
-							className="h-4 w-4 text-blue-600 dark:text-blue-400"
+							className="h-4 w-4 text-foreground"
 							size={16}
 							weight="fill"
 						/>

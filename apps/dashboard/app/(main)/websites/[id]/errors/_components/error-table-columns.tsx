@@ -203,7 +203,7 @@ export const createDeviceColumn = () =>
 
 		const device = name.toLowerCase();
 		return device.includes('mobile') || device.includes('phone') ? (
-			<PhoneIcon className="h-4 w-4 text-blue-500" size={16} weight="duotone" />
+			<PhoneIcon className="h-4 w-4 text-foreground" size={16} weight="duotone" />
 		) : device.includes('tablet') ? (
 			<TableIcon
 				className="h-4 w-4 text-purple-500"

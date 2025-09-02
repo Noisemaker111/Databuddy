@@ -72,7 +72,7 @@ const CodeBlock = ({
 			try {
 				const html = await codeToHtml(code, {
 					lang: getLanguage(code),
-					theme: 'github-dark',
+					theme: 'github-light',
 				});
 				setHighlightedCode(html);
 			} catch (error) {
@@ -91,21 +91,25 @@ const CodeBlock = ({
 			)}
 			<div className="relative">
 				<div
-					className='overflow-hidden rounded-lg border bg-[#0d1117] p-6 font-mono text-sm leading-relaxed'
+					className='overflow-hidden rounded-lg border border-sidebar-border bg-sidebar/40 p-6 text-sm leading-relaxed [&_pre]:!bg-transparent [&_code]:!bg-transparent [&_*]:!font-mono'
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: Shiki generates safe HTML
 					dangerouslySetInnerHTML={{ __html: highlightedCode }}
-					style={{ fontSize: '14px', lineHeight: '1.6' }}
+					style={{ 
+						fontSize: '14px', 
+						lineHeight: '1.6', 
+						fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+					}}
 				/>
 				<Button
-					className='absolute top-3 right-3 h-8 w-8 rounded-md bg-background/80 backdrop-blur-sm hover:bg-background/95'
+					className='absolute top-2 right-2 h-6 w-6 rounded hover:bg-background/50 border-0 shadow-none transition-colors duration-200'
 					onClick={onCopy}
 					size="icon"
 					variant="ghost"
 				>
 					{copied ? (
-						<CheckIcon className="h-4 w-4 text-green-500" weight="duotone" />
+						<CheckIcon className="h-3.5 w-3.5 text-green-500" weight="bold" />
 					) : (
-						<ClipboardIcon className="h-4 w-4" weight="duotone" />
+						<ClipboardIcon className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" weight="regular" />
 					)}
 				</Button>
 			</div>
@@ -165,28 +169,29 @@ export function WebsiteTrackingSetupTab({ websiteId }: WebsiteDataTabProps) {
 	return (
 		<div className="space-y-4">
 			{/* Quick Setup Alert */}
-			<Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/20">
-				<CardHeader className="pb-3">
-					<div className="flex items-center justify-between">
-						<CardTitle className="flex items-center gap-2 text-base">
-							<WarningCircleIcon className="h-4 w-4" weight="duotone" />
-							Tracking Not Setup
-						</CardTitle>
-						<Button
-							aria-label="Refresh tracking status"
-							className="h-7 w-7"
-							onClick={handleRefresh}
-							size="icon"
-							variant="outline"
-						>
-							<ArrowClockwiseIcon className="h-3.5 w-3.5" weight="fill" />
-						</Button>
+			<Card className="border-primary/20 bg-primary/5 dark:border-primary/30 dark:bg-primary/10">
+				<div className="flex items-center justify-between p-4">
+					<div className="flex items-center gap-3">
+						<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 dark:bg-primary/20">
+							<WarningCircleIcon className="h-4 w-4 text-primary" weight="duotone" />
+						</div>
+						<div className="flex flex-col gap-0.5">
+							<span className="font-medium text-sm">Tracking Not Setup</span>
+							<span className="text-muted-foreground text-xs font-normal">
+								Install the tracking script to start collecting data
+							</span>
+						</div>
 					</div>
-					<CardDescription className="text-xs">
-						Install the tracking script to start collecting analytics data for
-						your website.
-					</CardDescription>
-				</CardHeader>
+					<Button
+						aria-label="Refresh tracking status"
+						className="h-7 w-7 rounded-md hover:bg-background/20 border-0 shadow-none hover:shadow-sm transition-all duration-200"
+						onClick={handleRefresh}
+						size="icon"
+						variant="ghost"
+					>
+						<ArrowClockwiseIcon className="h-3.5 w-3.5 text-primary/70 hover:text-primary" weight="fill" />
+					</Button>
+				</div>
 			</Card>
 
 			{/* Installation Instructions */}

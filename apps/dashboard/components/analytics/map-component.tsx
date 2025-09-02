@@ -497,7 +497,7 @@ export function MapComponent({
 					</div>
 					<div className="space-y-1">
 						<div>
-							<span className="font-bold text-blue-600 dark:text-blue-500">
+							<span className="font-bold text-foreground">
 								{tooltipContent.count.toLocaleString()}
 							</span>{' '}
 							<span className="text-muted-foreground">
@@ -506,7 +506,7 @@ export function MapComponent({
 						</div>
 						{mode === 'perCapita' && (
 							<div className="text-muted-foreground text-sm">
-								<span className="font-bold text-blue-600 dark:text-blue-500">
+								<span className="font-bold text-foreground">
 									{roundToTwo(tooltipContent.perCapita ?? 0)}
 								</span>{' '}
 								per million people

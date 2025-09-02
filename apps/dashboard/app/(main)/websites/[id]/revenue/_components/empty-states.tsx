@@ -57,16 +57,16 @@ export function NoRevenueData({ websiteName }: NoRevenueDataProps) {
 				<div className="flex flex-col items-center space-y-4 text-center">
 					<div className="rounded-full border border-blue-200 bg-blue-100 p-4 dark:border-blue-800 dark:bg-blue-900/20">
 						<CurrencyDollarIcon
-							className="h-8 w-8 text-blue-500"
+							className="h-8 w-8 text-muted-foreground"
 							size={32}
 							weight="duotone"
 						/>
 					</div>
 					<div>
-						<h3 className="font-semibold text-blue-900 text-lg dark:text-blue-100">
+						<h3 className="font-semibold text-foreground text-lg">
 							No Revenue Data
 						</h3>
-						<p className="mt-2 max-w-md text-blue-700 text-sm dark:text-blue-300">
+						<p className="mt-2 max-w-md text-muted-foreground text-sm">
 							No revenue has been recorded for {websiteName || 'this website'}{' '}
 							in the selected time period. Make sure your Stripe checkout
 							includes the correct client_id and session_id.

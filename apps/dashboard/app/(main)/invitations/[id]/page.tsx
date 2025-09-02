@@ -341,7 +341,7 @@ export default function AcceptInvitationPage() {
 						<div className="relative mb-8">
 							<div className="rounded-full border border-blue-500/20 bg-blue-500/10 p-8">
 								<CheckCircle
-									className="h-16 w-16 text-blue-600"
+									className="h-16 w-16 text-foreground"
 									weight="duotone"
 								/>
 							</div>
