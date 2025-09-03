@@ -33,6 +33,74 @@ const MapComponent = dynamic(
 	}
 );
 
+interface CountryData {
+	country: string;
+	country_code?: string;
+	visitors: number;
+	pageviews: number;
+}
+
+interface CountryRowProps {
+	country: CountryData;
+	totalVisitors: number;
+	onCountrySelect: (countryCode: string) => void;
+}
+
+function CountryRow({
+	country,
+	totalVisitors,
+	onCountrySelect,
+}: CountryRowProps) {
+	const percentage =
+		totalVisitors > 0 ? (country.visitors / totalVisitors) * 100 : 0;
+	const getColor = (pct: number) =>
+		pct >= 50
+			? ['rgba(34, 197, 94, 0.08)', 'rgba(34, 197, 94, 0.8)']
+			: pct >= 25
+				? ['rgba(59, 130, 246, 0.08)', 'rgba(59, 130, 246, 0.8)']
+				: pct >= 10
+					? ['rgba(245, 158, 11, 0.08)', 'rgba(245, 158, 11, 0.8)']
+					: ['rgba(107, 114, 128, 0.06)', 'rgba(107, 114, 128, 0.7)'];
+	const [bgColor, accentColor] = getColor(percentage);
+
+	return (
+		<button
+			className="flex w-full cursor-pointer items-center gap-2.5 px-1.5 py-1.5 text-left transition-all hover:opacity-80"
+			onClick={() =>
+				onCountrySelect(
+					country.country_code?.toUpperCase() || country.country.toUpperCase()
+				)
+			}
+			style={{
+				background: percentage > 0 ? bgColor : undefined,
+				boxShadow:
+					percentage > 0 ? `inset 2px 0 0 0 ${accentColor}` : undefined,
+			}}
+			type="button"
+		>
+			<div className="relative h-4 w-5 flex-shrink-0 overflow-hidden border border-border/20 shadow-sm">
+				<Image
+					alt={`${country.country} flag`}
+					className="object-cover"
+					fill
+					sizes="32p"
+					src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${country.country_code?.toUpperCase() || country.country.toUpperCase()}.svg`}
+				/>
+			</div>
+			<div className="min-w-0 flex-1">
+				<div className="flex items-center justify-between">
+					<div className="truncate font-medium text-xs">{country.country}</div>
+					<span className="ml-1 font-semibold text-primary text-xs">
+						{country.visitors > 999
+							? `${(country.visitors / 1000).toFixed(0)}k`
+							: country.visitors.toString()}
+					</span>
+				</div>
+			</div>
+		</button>
+	);
+}
+
 function WebsiteMapPage() {
 	const { id } = useParams<{ id: string }>();
 	const [mode] = useState<'total' | 'perCapita'>('total');
@@ -101,14 +169,14 @@ function WebsiteMapPage() {
 	}
 
 	return (
-		<div 
-			className="h-screen overflow-hidden" 
-			style={{ 
+		<div
+			className="h-screen overflow-hidden"
+			style={{
 				width: 'calc(100% + 3rem)',
 				marginTop: '-1.5rem',
 				marginLeft: '-1.5rem',
 				marginRight: '-1.5rem',
-				marginBottom: '-1.5rem'
+				marginBottom: '-1.5rem',
 			}}
 		>
 			<div className="relative h-full w-full">
@@ -124,85 +192,62 @@ function WebsiteMapPage() {
 
 				{/* Top 5 Countries Overlay */}
 				<div className="absolute top-2 right-2 z-20">
-					<Card className="border-sidebar-border bg-background/90 backdrop-blur-md shadow-xl w-60">
-						<CardHeader className="pb-2 pt-3 px-3">
-							<CardTitle className="flex items-center gap-1.5 text-xs font-medium">
-								<GlobeIcon className="h-3 w-3 text-primary" weight="duotone" />
-								Top 5 Countries
+					<Card className="w-56 max-w-[90vw] gap-0 border-sidebar-border bg-background/95 py-0 shadow-xl backdrop-blur-md sm:w-64">
+						<CardHeader className="px-3 pt-2.5 pb-2">
+							<CardTitle className="flex items-center gap-1.5 font-semibold text-xs">
+								<GlobeIcon
+									className="h-3.5 w-3.5 text-primary"
+									weight="duotone"
+								/>
+								Top Countries
 							</CardTitle>
 						</CardHeader>
-						<CardContent className="p-0 pb-1">
+						<CardContent className="p-0">
 							{isLoading ? (
 								<div className="space-y-1 px-3 pb-2">
 									{new Array(5).fill(0).map((_, i) => (
 										<div
-											className="flex items-center justify-between py-1"
+											className="flex items-center gap-2.5 py-1.5"
 											key={`country-skeleton-${i + 1}`}
 										>
-											<div className="flex items-center gap-1.5">
-												<Skeleton className="h-2.5 w-4 rounded" />
-												<Skeleton className="h-2.5 w-12" />
-											</div>
-											<Skeleton className="h-2.5 w-6" />
+											<Skeleton className="h-2.5 w-4" />
+											<Skeleton className="h-2.5 flex-1" />
+											<Skeleton className="h-2.5 w-8" />
 										</div>
 									))}
 								</div>
 							) : topCountries.length > 0 ? (
-								<div className="px-3 pb-2">
-									{topCountries.map((country) => {
-										const percentage =
-											totalVisitors > 0
-												? (country.visitors / totalVisitors) * 100
-												: 0;
-										return (
-											<button
-												className="flex w-full cursor-pointer items-center justify-between py-1.5 text-left transition-colors hover:bg-primary/5 rounded-sm"
-												key={country.country}
-												onClick={() =>
-													handleCountrySelect(
-														country.country_code?.toUpperCase() ||
-															country.country.toUpperCase()
-													)
-												}
-												type="button"
-											>
-												<div className="flex items-center gap-1.5 min-w-0 flex-1">
-													<div className="relative h-2.5 w-4 flex-shrink-0 overflow-hidden rounded shadow-sm">
-														<Image
-															alt={`${country.country} flag`}
-															className="object-cover"
-															fill
-															sizes="16px"
-															src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${country.country_code?.toUpperCase() || country.country.toUpperCase()}.svg`}
-														/>
-													</div>
-													<div className="min-w-0 flex-1">
-														<div className="truncate font-medium text-xs">
-															{country.country}
-														</div>
-													</div>
-												</div>
-												<div className="flex items-center gap-1.5 text-right">
-													<div className="text-muted-foreground text-xs">
-														{percentage.toFixed(0)}%
-													</div>
-													<div className="font-semibold text-xs min-w-0 text-primary">
-														{country.visitors > 999 ? `${(country.visitors / 1000).toFixed(0)}k` : country.visitors.toString()}
-													</div>
-												</div>
-											</button>
-										);
-									})}
+								<div className="space-y-0.5">
+									{topCountries.map((country) => (
+										<CountryRow
+											country={country}
+											key={country.country}
+											onCountrySelect={handleCountrySelect}
+											totalVisitors={totalVisitors}
+										/>
+									))}
+
+									{/* Total visitors summary */}
+									<div className="border-border/50 border-t px-2 pt-1.5 pb-1.5">
+										<div className="flex items-center justify-between text-xs">
+											<span className="text-muted-foreground">Total</span>
+											<span className="font-semibold text-primary">
+												{totalVisitors > 999
+													? `${(totalVisitors / 1000).toFixed(0)}k`
+													: totalVisitors.toLocaleString()}
+											</span>
+										</div>
+									</div>
 								</div>
 							) : (
-								<div className="flex flex-col items-center justify-center py-6 text-center px-3">
-									<div className="flex h-6 w-6 items-center justify-center rounded bg-muted/20 mb-1">
+								<div className="flex flex-col items-center justify-center px-3 py-6 text-center">
+									<div className="mb-1.5 flex h-6 w-6 items-center justify-center bg-muted/20">
 										<GlobeIcon
 											className="h-3 w-3 text-muted-foreground/50"
 											weight="duotone"
 										/>
 									</div>
-									<p className="text-muted-foreground text-xs">
+									<p className="font-medium text-muted-foreground text-xs">
 										No data
 									</p>
 								</div>
