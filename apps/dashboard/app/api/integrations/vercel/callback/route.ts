@@ -106,6 +106,7 @@ export async function GET(request: NextRequest) {
 		});
 
 		if (existingAccount) {
+			// Update existing account with new tokens and scope
 			await db
 				.update(account)
 				.set({
@@ -115,6 +116,7 @@ export async function GET(request: NextRequest) {
 				})
 				.where(eq(account.id, existingAccount.id));
 		} else {
+			// Create new account record
 			await db.insert(account).values({
 				id: randomUUID(),
 				accountId: userInfo.id,
@@ -128,7 +130,8 @@ export async function GET(request: NextRequest) {
 		}
 
 		const redirectUrl =
-			next || `${process.env.BETTER_AUTH_URL}/dashboard?vercel_integrated=true`;
+			next ||
+			`${process.env.BETTER_AUTH_URL}/settings?tab=integrations&vercel_integrated=true`;
 
 		return NextResponse.redirect(redirectUrl);
 	} catch (error) {
