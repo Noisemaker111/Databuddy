@@ -7,17 +7,12 @@ import {
 	WarningIcon,
 } from '@phosphor-icons/react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
 	type Integration,
@@ -232,16 +227,17 @@ export default function IntegrationsPage() {
 											<div className="pt-2">
 												{integration.connected ? (
 													<div className="flex gap-2">
-														<Button
-															className="flex-1"
-															onClick={() =>
-																(window.location.href = `/settings/integrations/${integration.id}`)
-															}
-															size="sm"
-															variant="outline"
+														<Link
+															href={`/settings/integrations/${integration.id}`}
 														>
-															Configure
-														</Button>
+															<Button
+																className="flex-1"
+																size="sm"
+																variant="outline"
+															>
+																Configure
+															</Button>
+														</Link>
 														<Button
 															className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 															disabled={disconnectMutation.isPending}
