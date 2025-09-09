@@ -6,8 +6,10 @@ import {
 	PlusIcon,
 } from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpc } from '@/lib/trpc';
 import type { Domain, Project } from './types';
@@ -54,11 +56,59 @@ export function ProjectRow({
 	onCreateWebsite,
 	onCreateMultipleWebsites,
 }: ProjectRowProps) {
+	const [selectedDomains, setSelectedDomains] = useState<Set<string>>(
+		new Set()
+	);
+
 	const { data: domainsData, isLoading: isLoadingDomains } =
 		trpc.vercel.getProjectDomains.useQuery(
 			{ projectId: project.id },
 			{ enabled: isExpanded }
 		);
+
+	// Filter out domains that redirect to other domains that already exist
+	const filteredDomains =
+		domainsData?.domains?.filter((domain) => {
+			if (!domain.redirect) {
+				return true;
+			}
+
+			// Check if the redirect target exists in the same domain list
+			const redirectTargetExists = domainsData.domains.some(
+				(otherDomain) =>
+					otherDomain.name === domain.redirect &&
+					otherDomain.name !== domain.name
+			);
+
+			return !redirectTargetExists;
+		}) || [];
+
+	const handleDomainSelection = (domainName: string, checked: boolean) => {
+		const newSelected = new Set(selectedDomains);
+		if (checked) {
+			newSelected.add(domainName);
+		} else {
+			newSelected.delete(domainName);
+		}
+		setSelectedDomains(newSelected);
+	};
+
+	const handleSelectAll = () => {
+		if (selectedDomains.size === filteredDomains.length) {
+			setSelectedDomains(new Set());
+		} else {
+			setSelectedDomains(new Set(filteredDomains.map((d) => d.name)));
+		}
+	};
+
+	const handleCreateSelected = () => {
+		const selectedDomainObjects = filteredDomains.filter((domain) =>
+			selectedDomains.has(domain.name)
+		);
+		if (selectedDomainObjects.length > 0) {
+			onCreateMultipleWebsites(project, selectedDomainObjects);
+		}
+	};
 
 	return (
 		<motion.div
@@ -180,44 +230,91 @@ export function ProjectRow({
 										<Skeleton className="h-6 w-16" />
 									</div>
 								</div>
-							) : domainsData?.domains?.length ? (
+							) : filteredDomains.length ? (
 								<div>
-									{domainsData.domains.length > 1 && (
+									{filteredDomains.length > 1 && (
 										<div className="border-border/20 border-b bg-muted/20 px-4 py-2">
 											<div className="flex items-center justify-between">
-												<div className="flex items-center text-muted-foreground text-xs">
-													<GlobeIcon className="mr-2 h-3 w-3" />
-													<span>
-														{domainsData.domains.length} domains found
-													</span>
+												<div className="flex items-center gap-3">
+													<div
+														className="flex cursor-pointer items-center gap-2"
+														onClick={handleSelectAll}
+													>
+														<Checkbox
+															checked={
+																selectedDomains.size ===
+																	filteredDomains.length &&
+																filteredDomains.length > 0
+															}
+															className="cursor-pointer"
+															onCheckedChange={handleSelectAll}
+														/>
+														<span className="text-muted-foreground text-xs">
+															Select All
+														</span>
+													</div>
+													<div className="flex items-center text-muted-foreground text-xs">
+														<GlobeIcon className="mr-2 h-3 w-3" />
+														<span>
+															{filteredDomains.length} domains found
+															{selectedDomains.size > 0 &&
+																` (${selectedDomains.size} selected)`}
+														</span>
+													</div>
 												</div>
-												<Button
-													className="h-6 text-xs"
-													onClick={(e) => {
-														e.stopPropagation();
-														onCreateMultipleWebsites(
-															project,
-															domainsData.domains
-														);
-													}}
-													size="sm"
-													variant="outline"
-												>
-													<PlusIcon className="mr-1 h-2 w-2" />
-													Create All
-												</Button>
+												<div className="flex gap-2">
+													{selectedDomains.size > 0 && (
+														<Button
+															className="h-6 text-xs"
+															onClick={(e) => {
+																e.stopPropagation();
+																handleCreateSelected();
+															}}
+															size="sm"
+															variant="default"
+														>
+															<PlusIcon className="mr-1 h-2 w-2" />
+															Integrate Selected ({selectedDomains.size})
+														</Button>
+													)}
+													<Button
+														className="h-6 text-xs"
+														onClick={(e) => {
+															e.stopPropagation();
+															onCreateMultipleWebsites(
+																project,
+																filteredDomains
+															);
+														}}
+														size="sm"
+														variant="outline"
+													>
+														<PlusIcon className="mr-1 h-2 w-2" />
+														Integrate All
+													</Button>
+												</div>
 											</div>
 										</div>
 									)}
 
-									{domainsData.domains.map((domain) => (
+									{filteredDomains.map((domain) => (
 										<div
 											className="border-border/20 border-b bg-muted/10 px-4 py-2 transition-colors hover:bg-muted/20"
 											key={domain.name}
 										>
 											<div className="flex items-center justify-between">
-												<div className="flex items-center">
-													<GlobeIcon className="mr-2 h-3 w-3 text-muted-foreground" />
+												<div className="flex items-center gap-3">
+													<Checkbox
+														checked={selectedDomains.has(domain.name)}
+														className="cursor-pointer"
+														onCheckedChange={(checked) =>
+															handleDomainSelection(
+																domain.name,
+																checked as boolean
+															)
+														}
+													/>
+													<GlobeIcon className="h-3 w-3 text-muted-foreground" />
 													<div className="flex flex-col">
 														<div className="flex items-center">
 															<span className="font-medium text-sm">
@@ -274,7 +371,7 @@ export function ProjectRow({
 													variant="outline"
 												>
 													<PlusIcon className="mr-1 h-2 w-2" />
-													Create
+													Integrate
 												</Button>
 											</div>
 										</div>

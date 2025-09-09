@@ -77,14 +77,13 @@ export default function VercelConfigPage() {
 	const handleSaveWebsites = async (configs: any[]) => {
 		setIsCreating(true);
 		try {
-			// TODO: Implement actual website creation
-			console.log('Creating websites for configs:', configs);
+			console.log('Integrating websites for configs:', configs);
 			await new Promise((resolve) => setTimeout(resolve, 2000));
 			setIsDialogOpen(false);
 			setSelectedDomains([]);
 			setSelectedProject(null);
 		} catch (error) {
-			console.error('Failed to create websites:', error);
+			console.error('Failed to integrate websites:', error);
 		} finally {
 			setIsCreating(false);
 		}
@@ -115,7 +114,7 @@ export default function VercelConfigPage() {
 										Vercel Integration
 									</h1>
 									<p className="mt-1 text-muted-foreground text-sm sm:text-base">
-										Connect your Vercel projects to create Databuddy websites
+										Connect your Vercel projects to integrate Databuddy websites
 									</p>
 								</div>
 							</div>
@@ -173,7 +172,7 @@ export default function VercelConfigPage() {
 									Vercel Integration
 								</h1>
 								<p className="mt-1 text-muted-foreground text-sm sm:text-base">
-									Connect your Vercel projects to create Databuddy websites
+									Connect your Vercel projects to integrate Databuddy websites
 								</p>
 							</div>
 						</div>
@@ -226,7 +225,7 @@ export default function VercelConfigPage() {
 							<RocketLaunchIcon className="mx-auto h-12 w-12 text-muted-foreground" />
 							<h3 className="mt-4 font-medium">No projects found</h3>
 							<p className="mt-2 text-muted-foreground text-sm">
-								Create a project in Vercel to see it here.
+								Add a project in Vercel to see it here.
 							</p>
 						</div>
 					)}

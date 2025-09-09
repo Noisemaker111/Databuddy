@@ -1,14 +1,13 @@
 import type { Domain } from './types';
 
 export const generateWebsiteName = (domainName: string) => {
-	const cleanDomain = domainName.replace(
-		/\.(com|org|net|io|co|dev|app|vercel\.app)$/,
-		''
-	);
-	return cleanDomain
-		.split('.')
-		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-		.join(' ');
+	// Return the domain name as-is for the default name
+	return domainName;
+};
+
+export const generateWebsitePlaceholder = (domainName: string) => {
+	// Return the domain name as placeholder
+	return domainName;
 };
 
 export const inferTargetFromDomain = (domain: Domain): string[] => {

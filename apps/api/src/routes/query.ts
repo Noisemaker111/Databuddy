@@ -1,5 +1,7 @@
+import { auth } from '@databuddy/auth';
 import { filterOptions } from '@databuddy/shared';
 import { Elysia, t } from 'elysia';
+import { getApiKeyFromHeader, isApiKeyPresent } from '../lib/api-key';
 import { getCachedWebsiteDomain, getWebsiteDomain } from '../lib/website-utils';
 // import { createRateLimitMiddleware } from '../middleware/rate-limit';
 import { websiteAuth } from '../middleware/website-auth';
@@ -22,36 +24,75 @@ interface QueryParams {
 	timezone?: string;
 }
 
+async function checkAuth(request: Request): Promise<Response | null> {
+	const apiKeyPresent = isApiKeyPresent(request.headers);
+	const apiKey = apiKeyPresent
+		? await getApiKeyFromHeader(request.headers)
+		: null;
+	const session = await auth.api.getSession({ headers: request.headers });
+	const sessionUser = session?.user ?? null;
+
+	if (sessionUser || apiKey) {
+		return null; // Auth passed
+	}
+
+	return new Response(
+		JSON.stringify({
+			success: false,
+			error: 'Authentication required',
+			code: 'AUTH_REQUIRED',
+		}),
+		{
+			status: 401,
+			headers: { 'Content-Type': 'application/json' },
+		}
+	);
+}
+
 export const query = new Elysia({ prefix: '/v1/query' })
 	// .use(createRateLimitMiddleware({ type: 'api' }))
 	.use(websiteAuth())
-	.get('/types', ({ query: params }: { query: { include_meta?: string } }) => {
-		const includeMeta = params.include_meta === 'true';
+	.get(
+		'/types',
+		async ({
+			query: params,
+			request,
+		}: {
+			query: { include_meta?: string };
+			request: Request;
+		}) => {
+			const authResult = await checkAuth(request);
+			if (authResult) {
+				return authResult;
+			}
 
-		const configs = Object.fromEntries(
-			Object.entries(QueryBuilders).map(([key, config]) => {
-				const baseConfig = {
-					allowedFilters:
-						config.allowedFilters ??
-						filterOptions.map((filter) => filter.value),
-					customizable: config.customizable,
-					defaultLimit: config.limit,
-				};
+			const includeMeta = params.include_meta === 'true';
 
-				if (includeMeta) {
-					return [key, { ...baseConfig, meta: config.meta }];
-				}
+			const configs = Object.fromEntries(
+				Object.entries(QueryBuilders).map(([key, config]) => {
+					const baseConfig = {
+						allowedFilters:
+							config.allowedFilters ??
+							filterOptions.map((filter) => filter.value),
+						customizable: config.customizable,
+						defaultLimit: config.limit,
+					};
 
-				return [key, baseConfig];
-			})
-		);
+					if (includeMeta) {
+						return [key, { ...baseConfig, meta: config.meta }];
+					}
 
-		return {
-			success: true,
-			types: Object.keys(QueryBuilders),
-			configs,
-		};
-	})
+					return [key, baseConfig];
+				})
+			);
+
+			return {
+				success: true,
+				types: Object.keys(QueryBuilders),
+				configs,
+			};
+		}
+	)
 
 	.post(
 		'/compile',

@@ -20,7 +20,11 @@ import {
 	SheetTitle,
 } from '@/components/ui/sheet';
 import type { Domain, Project } from './types';
-import { generateWebsiteName, inferTargetFromDomain } from './utils';
+import {
+	generateWebsiteName,
+	generateWebsitePlaceholder,
+	inferTargetFromDomain,
+} from './utils';
 
 interface WebsiteConfig {
 	domain: Domain;
@@ -52,7 +56,7 @@ export function CreateWebsiteDialog({
 		if (selectedDomains.length > 0) {
 			const configs = selectedDomains.map((domain) => ({
 				domain,
-				name: generateWebsiteName(domain.name),
+				name: '', // Start with empty name, will use placeholder
 				target: isMultipleMode
 					? inferTargetFromDomain(domain)
 					: (['production', 'preview', 'development'] as string[]),
@@ -65,7 +69,14 @@ export function CreateWebsiteDialog({
 		if (websiteConfigs.length === 0) {
 			return;
 		}
-		await onSave(websiteConfigs);
+
+		// Use domain name as default if name is empty
+		const configsWithDefaults = websiteConfigs.map((config) => ({
+			...config,
+			name: config.name.trim() || generateWebsiteName(config.domain.name),
+		}));
+
+		await onSave(configsWithDefaults);
 	};
 
 	const updateWebsiteConfig = useCallback(
@@ -87,7 +98,6 @@ export function CreateWebsiteDialog({
 	const isFormValid = useMemo(() => {
 		return (
 			websiteConfigs.length > 0 &&
-			websiteConfigs.every((config) => config.name.trim() !== '') &&
 			websiteConfigs.every((config) => config.target.length > 0)
 		);
 	}, [websiteConfigs]);
@@ -110,13 +120,13 @@ export function CreateWebsiteDialog({
 						<div>
 							<SheetTitle className="font-semibold text-foreground text-xl">
 								{isMultipleMode
-									? `Create ${websiteConfigs.length} Websites`
-									: 'Create Website'}
+									? `Integrate ${websiteConfigs.length} Websites`
+									: 'Integrate Website'}
 							</SheetTitle>
 							<SheetDescription className="mt-1 text-muted-foreground">
 								{isMultipleMode
-									? `Create websites for ${selectedProject?.name} and configure environment variables`
-									: `Create website for ${websiteConfigs[0]?.domain.name} and configure environment variables`}
+									? `Integrate websites for ${selectedProject?.name} and configure environment variables`
+									: `Integrate website for ${websiteConfigs[0]?.domain.name} and configure environment variables`}
 							</SheetDescription>
 						</div>
 					</div>
@@ -178,7 +188,7 @@ export function CreateWebsiteDialog({
 									onChange={(e) =>
 										updateWebsiteConfig(index, { name: e.target.value })
 									}
-									placeholder="Enter website name"
+									placeholder={generateWebsitePlaceholder(config.domain.name)}
 									value={config.name}
 								/>
 							</div>
@@ -268,7 +278,7 @@ export function CreateWebsiteDialog({
 							<li className="flex items-center gap-2">
 								<div className="h-1.5 w-1.5 rounded-full bg-primary/60" />
 								<span>
-									Create {websiteConfigs.length} website
+									Integrate {websiteConfigs.length} website
 									{websiteConfigs.length !== 1 ? 's' : ''} in Databuddy
 								</span>
 							</li>
@@ -306,11 +316,11 @@ export function CreateWebsiteDialog({
 							)}
 							<span className={isSaving ? 'ml-6' : ''}>
 								{isSaving ? (
-									'Creating...'
+									'Integrating...'
 								) : (
 									<>
 										<PlusIcon className="mr-2 h-4 w-4" />
-										Create {websiteConfigs.length} Website
+										Integrate {websiteConfigs.length} Website
 										{websiteConfigs.length !== 1 ? 's' : ''}
 									</>
 								)}
