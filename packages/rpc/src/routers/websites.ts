@@ -347,11 +347,7 @@ export const websitesRouter = createTRPCRouter({
 				}
 			);
 
-			await invalidateWebsiteCaches(
-				createdWebsite.id,
-				ctx.user.id,
-				'website created'
-			);
+			await invalidateWebsiteCaches(createdWebsite.id, ctx.user.id);
 
 			return createdWebsite;
 		}),
@@ -427,7 +423,7 @@ export const websitesRouter = createTRPCRouter({
 				});
 			}
 
-			await invalidateWebsiteCaches(input.id, ctx.user.id, 'website updated');
+			await invalidateWebsiteCaches(input.id, ctx.user.id);
 
 			return updatedWebsite;
 		}),
@@ -460,7 +456,7 @@ export const websitesRouter = createTRPCRouter({
 				}
 			);
 
-			await invalidateWebsiteCaches(input.id, ctx.user.id, 'privacy updated');
+			await invalidateWebsiteCaches(input.id, ctx.user.id);
 
 			return updatedWebsite;
 		}),
@@ -488,7 +484,7 @@ export const websitesRouter = createTRPCRouter({
 				}
 			);
 
-			await invalidateWebsiteCaches(input.id, ctx.user.id, 'website deleted');
+			await invalidateWebsiteCaches(input.id, ctx.user.id);
 
 			return { success: true };
 		}),
@@ -534,11 +530,7 @@ export const websitesRouter = createTRPCRouter({
 				}
 			);
 
-			await invalidateWebsiteCaches(
-				input.websiteId,
-				ctx.user.id,
-				'website transferred'
-			);
+			await invalidateWebsiteCaches(input.websiteId, ctx.user.id);
 
 			return transferredWebsite;
 		}),
@@ -549,11 +541,7 @@ export const websitesRouter = createTRPCRouter({
 			await authorizeWebsiteAccess(ctx, input.websiteId, 'update');
 
 			try {
-				await invalidateWebsiteCaches(
-					input.websiteId,
-					ctx.user.id,
-					'manual cache invalidation'
-				);
+				await invalidateWebsiteCaches(input.websiteId, ctx.user.id);
 
 				return { success: true };
 			} catch (error) {
