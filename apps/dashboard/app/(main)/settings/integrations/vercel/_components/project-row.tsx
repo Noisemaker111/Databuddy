@@ -1,3 +1,4 @@
+import { authClient } from '@databuddy/auth/client';
 import {
 	ArrowRightIcon,
 	CaretRightIcon,
@@ -7,7 +8,6 @@ import {
 	PlusIcon,
 	TrashIcon,
 	WarningIcon,
-	WrenchIcon,
 	XCircleIcon,
 } from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpc } from '@/lib/trpc';
-import type { Domain, Project } from './types';
+import type { Domain, Project, TriageAction } from './types';
 
 interface ProjectRowProps {
 	project: Project;
@@ -106,11 +106,7 @@ const TriageMenu = ({
 	domain: any;
 	triageIssueMutation: any;
 	onTriageAction: (
-		action:
-			| 'remove_orphaned'
-			| 'fix_domain_mismatch'
-			| 'remove_duplicates'
-			| 'create_missing_website',
+		action: TriageAction,
 		domainName: string,
 		envVarId?: string,
 		websiteId?: string
@@ -129,17 +125,6 @@ const TriageMenu = ({
 
 		if (
 			domainStatus.status === 'invalid' &&
-			domainStatus.issues[0]?.includes('Domain mismatch')
-		) {
-			actions.push({
-				label: 'Fix',
-				icon: WrenchIcon,
-				action: 'fix_domain_mismatch' as const,
-			});
-		}
-
-		if (
-			domainStatus.status === 'invalid' &&
 			domainStatus.issues[0]?.includes('Multiple')
 		) {
 			actions.push({
@@ -149,14 +134,11 @@ const TriageMenu = ({
 			});
 		}
 
-		if (
-			domainStatus.status === 'not_integrated' &&
-			domainStatus.issues[0]?.includes('Website exists')
-		) {
+		if (domainStatus.status === 'integrated') {
 			actions.push({
-				label: 'Create Website',
-				icon: PlusIcon,
-				action: 'create_missing_website' as const,
+				label: 'Unintegrate',
+				icon: TrashIcon,
+				action: 'unintegrate' as const,
 			});
 		}
 
@@ -214,11 +196,7 @@ const TriageMenu = ({
 							key={action.action}
 							onClick={() => {
 								onTriageAction(
-									action.action as
-										| 'remove_orphaned'
-										| 'fix_domain_mismatch'
-										| 'remove_duplicates'
-										| 'create_missing_website',
+									action.action,
 									domain.name,
 									domainStatus.envVarId,
 									domainStatus.websiteId
@@ -251,11 +229,7 @@ const DomainRow = ({
 	isIntegrated: boolean;
 	onSelectionChange: (domainName: string, checked: boolean) => void;
 	onTriageAction: (
-		action:
-			| 'remove_orphaned'
-			| 'fix_domain_mismatch'
-			| 'remove_duplicates'
-			| 'create_missing_website',
+		action: TriageAction,
 		domainName: string,
 		envVarId?: string,
 		websiteId?: string
@@ -377,6 +351,8 @@ export function ProjectRow({
 		new Set()
 	);
 
+	const { data: activeOrganization } = authClient.useActiveOrganization();
+
 	const { data: domainsData, isLoading: isLoadingDomains } =
 		trpc.vercel.getProjectDomains.useQuery(
 			{ projectId: project.id },
@@ -428,77 +404,45 @@ export function ProjectRow({
 		}
 	};
 
+	const unintegrateMutation = trpc.vercel.unintegrate.useMutation();
+
 	const handleTriageAction = async (
-		action:
-			| 'remove_orphaned'
-			| 'fix_domain_mismatch'
-			| 'remove_duplicates'
-			| 'create_missing_website',
+		action: TriageAction,
 		domainName: string,
 		envVarId?: string,
 		websiteId?: string
 	) => {
 		try {
-			await triageIssueMutation.mutateAsync({
-				projectId: project.id,
-				action,
-				domainName,
-				envVarId,
-				websiteId,
-			});
+			if (action === 'unintegrate') {
+				if (!envVarId) {
+					throw new Error(
+						'Environment variable ID is required for unintegrate action'
+					);
+				}
+				await unintegrateMutation.mutateAsync({
+					projectId: project.id,
+					domainName,
+					envVarId,
+					websiteId,
+					deleteWebsite: false, // Default to keeping the website
+					organizationId: activeOrganization?.id,
+				});
+			} else {
+				await triageIssueMutation.mutateAsync({
+					projectId: project.id,
+					action,
+					domainName,
+					envVarId,
+					websiteId,
+					organizationId: activeOrganization?.id,
+				});
+			}
 
 			// Refresh the projects data to show updated status
 			await utils.vercel.getProjects.invalidate();
 		} catch (error) {
 			// Error handling is done by the mutation
 		}
-	};
-
-	const getTriageActions = (domainStatus: any) => {
-		const actions = [];
-
-		if (domainStatus.status === 'orphaned') {
-			actions.push({
-				label: 'Remove',
-				icon: TrashIcon,
-				action: 'remove_orphaned' as const,
-			});
-		}
-
-		if (
-			domainStatus.status === 'invalid' &&
-			domainStatus.issues[0]?.includes('Domain mismatch')
-		) {
-			actions.push({
-				label: 'Fix',
-				icon: WrenchIcon,
-				action: 'fix_domain_mismatch' as const,
-			});
-		}
-
-		if (
-			domainStatus.status === 'invalid' &&
-			domainStatus.issues[0]?.includes('Multiple')
-		) {
-			actions.push({
-				label: 'Remove Duplicates',
-				icon: TrashIcon,
-				action: 'remove_duplicates' as const,
-			});
-		}
-
-		if (
-			domainStatus.status === 'not_integrated' &&
-			domainStatus.issues[0]?.includes('Website exists')
-		) {
-			actions.push({
-				label: 'Create Website',
-				icon: PlusIcon,
-				action: 'create_missing_website' as const,
-			});
-		}
-
-		return actions;
 	};
 
 	return (
@@ -579,16 +523,6 @@ export function ProjectRow({
 							</Badge>
 						) : (
 							<span className="text-muted-foreground">—</span>
-						)}
-					</div>
-
-					<div className="flex justify-center truncate">
-						{project.live ? (
-							<span className="text-blue-600">fix: meta</span>
-						) : (
-							<span className="text-muted-foreground">
-								No Production Deployment
-							</span>
 						)}
 					</div>
 

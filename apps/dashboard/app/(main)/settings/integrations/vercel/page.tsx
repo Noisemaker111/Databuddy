@@ -1,5 +1,6 @@
 'use client';
 
+import { authClient } from '@databuddy/auth/client';
 import { RocketLaunchIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
@@ -20,11 +21,21 @@ export default function VercelConfigPage() {
 	const [selectedDomains, setSelectedDomains] = useState<Domain[]>([]);
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+	const { data: activeOrganization, isPending: isLoadingOrganization } =
+		authClient.useActiveOrganization();
+
 	const {
 		data: projectsData,
 		isLoading: isLoadingProjects,
 		error: projectsError,
-	} = trpc.vercel.getProjects.useQuery({ limit: '20' });
+	} = trpc.vercel.getProjects.useQuery(
+		{
+			limit: '20',
+			includeIntegrationStatus: true,
+			organizationId: activeOrganization?.id,
+		},
+		{ enabled: !isLoadingOrganization }
+	);
 
 	const toggleProjectExpansion = (projectId: string) => {
 		setExpandedProjects((prev) => {
@@ -64,6 +75,7 @@ export default function VercelConfigPage() {
 					verified: config.domain.verified,
 					gitBranch: config.domain.gitBranch,
 				})),
+				organizationId: activeOrganization?.id,
 			});
 
 			if (result.success) {
@@ -127,7 +139,7 @@ export default function VercelConfigPage() {
 
 			<main className="flex-1 overflow-y-auto">
 				<div>
-					{isLoadingProjects ? (
+					{isLoadingProjects || isLoadingOrganization ? (
 						<LoadingSkeleton />
 					) : projectsError ? (
 						<ErrorState message="Failed to load projects" />

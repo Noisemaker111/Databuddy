@@ -284,6 +284,7 @@ export const websites = pgTable(
 		updatedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
 		deletedAt: timestamp({ precision: 3 }),
 		organizationId: text('organization_id'),
+		integrations: jsonb(),
 	},
 	(table) => [
 		uniqueIndex('websites_user_domain_unique')

@@ -137,7 +137,7 @@ export class WebsiteService {
 
 	async updateWebsite(
 		websiteId: string,
-		updates: { name?: string; domain?: string },
+		updates: { name?: string; domain?: string; integrations?: any },
 		userId: string,
 		organizationId?: string
 	) {
@@ -163,12 +163,16 @@ export class WebsiteService {
 			}
 		}
 
-		const updateData: { name?: string; domain?: string } = {};
+		const updateData: { name?: string; domain?: string; integrations?: any } =
+			{};
 		if (updates.name) {
 			updateData.name = updates.name;
 		}
 		if (updates.domain) {
 			updateData.domain = buildFullDomain(updates.domain);
+		}
+		if (updates.integrations !== undefined) {
+			updateData.integrations = updates.integrations;
 		}
 
 		const [updatedWebsite] = await this.db

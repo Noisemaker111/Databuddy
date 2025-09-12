@@ -19,14 +19,8 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from '@/components/ui/sheet';
-import type { Domain, Project } from './types';
+import type { Domain, Project, WebsiteConfig } from './types';
 import { generateWebsiteName, generateWebsitePlaceholder } from './utils';
-
-interface WebsiteConfig {
-	domain: Domain;
-	name: string;
-	target: string[];
-}
 
 interface CreateWebsiteDialogProps {
 	isOpen: boolean;
