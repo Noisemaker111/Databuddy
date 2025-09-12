@@ -26,7 +26,6 @@ export const commonEnvSchema = {
 	NODE_ENV: z.string().default('development'),
 	DATABASE_URL: z.string(),
 	REDIS_URL: z.string(),
-	CLICKHOUSE_URL: z.string(),
 } as const;
 
 /**
@@ -48,7 +47,6 @@ export const externalServiceEnvSchema = {
 	VERCEL_CLIENT_ID: z.string(),
 	VERCEL_CLIENT_SECRET: z.string(),
 	RESEND_API_KEY: z.string(),
-	AI_API_KEY: z.string(),
 } as const;
 
 /**
