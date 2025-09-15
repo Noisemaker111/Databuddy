@@ -15,24 +15,25 @@ const CACHE_DURATION = 60; // seconds
 // Schemas
 // ============================================================================
 
-const ruleConditionSchema = z.object({
-	field: z.string(),
+const userRuleSchema = z.object({
+	type: z.enum(['user_id', 'email', 'property', 'percentage']),
 	operator: z.enum([
 		'equals',
 		'contains',
-		'not_equals',
+		'starts_with',
+		'ends_with',
 		'in',
 		'not_in',
-		'greater_than',
-		'less_than',
+		'exists',
+		'not_exists',
 	]),
-	value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]),
-});
-
-const ruleSetSchema = z.object({
-	description: z.string().optional(),
-	conditions: z.array(ruleConditionSchema).default([]),
-	rolloutPercentage: z.number().min(0).max(100).default(100),
+	field: z.string().optional(), // For property rules
+	value: z.any().optional(),
+	values: z.array(z.any()).optional(), // For 'in' and 'not_in' operators
+	enabled: z.boolean(),
+	// Batch support
+	batch: z.boolean().default(false), // Whether this rule uses batch mode
+	batchValues: z.array(z.string()).optional(), // For batch user IDs, emails, etc.
 });
 
 const flagSchema = z.object({
@@ -50,7 +51,7 @@ const flagSchema = z.object({
 	status: z.enum(['active', 'inactive', 'archived']).default('active'),
 	defaultValue: z.any().default(false),
 	payload: z.any().optional(),
-	rules: z.array(ruleSetSchema).default([]),
+	rules: z.array(userRuleSchema).default([]),
 	persistAcrossAuth: z.boolean().default(false),
 	rolloutPercentage: z.number().min(0).max(100).default(0),
 });
@@ -74,7 +75,7 @@ const updateFlagSchema = z.object({
 	status: z.enum(['active', 'inactive', 'archived']).optional(),
 	defaultValue: z.any().optional(),
 	payload: z.any().optional(),
-	rules: z.array(ruleSetSchema).optional(),
+	rules: z.array(userRuleSchema).optional(),
 	persistAcrossAuth: z.boolean().optional(),
 	rolloutPercentage: z.number().min(0).max(100).optional(),
 });
@@ -107,6 +108,8 @@ const evaluateFlagSchema = z
 		websiteId: z.string().optional(),
 		organizationId: z.string().optional(),
 		userId: z.string().optional(),
+		email: z.string().optional(),
+		properties: z.record(z.string(), z.any()).optional(),
 		context: z.record(z.string(), z.any()).optional(),
 	})
 	.refine((data) => data.websiteId || data.organizationId, {
@@ -272,18 +275,18 @@ export const flagsRouter = createTRPCRouter({
 					.values({
 						id: flagId,
 						key: input.key,
-						name: input.name,
-						description: input.description,
+						name: input.name || null,
+						description: input.description || null,
 						type: input.type,
 						status: input.status,
 						defaultValue: input.defaultValue,
-						payload: input.payload,
-						rules: input.rules,
-						persistAcrossAuth: input.persistAcrossAuth,
-						rolloutPercentage: input.rolloutPercentage,
+						payload: input.payload || null,
+						rules: input.rules || [],
+						persistAcrossAuth: input.persistAcrossAuth ?? false,
+						rolloutPercentage: input.rolloutPercentage || 0,
 						websiteId: input.websiteId || null,
 						organizationId: input.organizationId || null,
-						userId: input.websiteId ? null : ctx.user.id, // User-scoped if no website/org
+						userId: input.websiteId ? null : ctx.user.id,
 						createdBy: ctx.user.id,
 					})
 					.returning();
@@ -545,7 +548,29 @@ export const flagsRouter = createTRPCRouter({
 					reason = 'BOOLEAN_FLAG';
 				}
 
-				// TODO: Implement advanced rule evaluation logic
+				// Check user targeting rules
+				if (flag.rules && Array.isArray(flag.rules) && flag.rules.length > 0) {
+					const userContext = {
+						userId: input.userId || ctx.user?.id,
+						email: input.email,
+						properties: input.properties || {},
+					};
+
+					const ruleResult = evaluateUserRules(
+						flag.rules as UserRule[],
+						userContext
+					);
+					if (ruleResult.matched) {
+						enabled = ruleResult.enabled;
+						value = ruleResult.enabled;
+						reason = 'USER_RULE_MATCH';
+					} else if (ruleResult.hasRules) {
+						// User didn't match any rules, use default behavior
+						enabled = Boolean(flag.defaultValue);
+						value = flag.defaultValue;
+						reason = 'USER_RULE_NO_MATCH';
+					}
+				}
 
 				return {
 					enabled,
@@ -592,4 +617,182 @@ function hashString(str: string): number {
 		hash &= hash; // Convert to 32-bit integer
 	}
 	return Math.abs(hash);
+}
+
+// User targeting rule evaluation
+interface UserContext {
+	userId?: string;
+	email?: string;
+	properties?: Record<string, any>;
+}
+
+interface UserRule {
+	type: 'user_id' | 'email' | 'property' | 'percentage';
+	operator:
+		| 'equals'
+		| 'contains'
+		| 'starts_with'
+		| 'ends_with'
+		| 'in'
+		| 'not_in'
+		| 'exists'
+		| 'not_exists';
+	field?: string; // For property rules
+	value?: any;
+	values?: any[]; // For 'in' and 'not_in' operators
+	enabled: boolean; // What to return if this rule matches
+	// Batch support
+	batch: boolean; // Whether this rule uses batch mode
+	batchValues?: string[]; // For batch user IDs, emails, etc.
+}
+
+interface RuleEvaluationResult {
+	matched: boolean;
+	enabled: boolean;
+	hasRules: boolean;
+}
+
+function evaluateUserRules(
+	rules: UserRule[],
+	userContext: UserContext
+): RuleEvaluationResult {
+	if (!rules || rules.length === 0) {
+		return { matched: false, enabled: false, hasRules: false };
+	}
+
+	// Evaluate rules in order - first match wins
+	for (const rule of rules) {
+		if (evaluateRule(rule, userContext)) {
+			return { matched: true, enabled: rule.enabled, hasRules: true };
+		}
+	}
+
+	return { matched: false, enabled: false, hasRules: true };
+}
+
+function evaluateRule(rule: UserRule, userContext: UserContext): boolean {
+	// Handle batch mode first
+	if (rule.batch && rule.batchValues?.length) {
+		switch (rule.type) {
+			case 'user_id': {
+				return userContext.userId
+					? rule.batchValues.includes(userContext.userId)
+					: false;
+			}
+			case 'email': {
+				return userContext.email
+					? rule.batchValues.includes(userContext.email)
+					: false;
+			}
+			case 'property': {
+				if (!rule.field) {
+					return false;
+				}
+				const propertyValue = userContext.properties?.[rule.field];
+				return propertyValue
+					? rule.batchValues.includes(String(propertyValue))
+					: false;
+			}
+			default: {
+				return false;
+			}
+		}
+	}
+
+	// Regular single-value evaluation
+	switch (rule.type) {
+		case 'user_id': {
+			return evaluateStringRule(userContext.userId, rule);
+		}
+
+		case 'email': {
+			return evaluateStringRule(userContext.email, rule);
+		}
+
+		case 'property': {
+			if (!rule.field) {
+				return false;
+			}
+			const propertyValue = userContext.properties?.[rule.field];
+			return evaluateValueRule(propertyValue, rule);
+		}
+
+		case 'percentage': {
+			if (typeof rule.value !== 'number') {
+				return false;
+			}
+			const userId = userContext.userId || userContext.email || 'anonymous';
+			const hash = hashString(`percentage:${userId}`);
+			const percentage = hash % 100;
+			return percentage < rule.value;
+		}
+
+		default: {
+			return false;
+		}
+	}
+}
+
+function evaluateStringRule(
+	value: string | undefined,
+	rule: UserRule
+): boolean {
+	if (!value) {
+		return false;
+	}
+
+	const { operator, value: ruleValue, values } = rule;
+	const stringValue = String(ruleValue);
+
+	switch (operator) {
+		case 'equals': {
+			return value === ruleValue;
+		}
+		case 'contains': {
+			return value.includes(stringValue);
+		}
+		case 'starts_with': {
+			return value.startsWith(stringValue);
+		}
+		case 'ends_with': {
+			return value.endsWith(stringValue);
+		}
+		case 'in': {
+			return Array.isArray(values) && values.includes(value);
+		}
+		case 'not_in': {
+			return Array.isArray(values) && !values.includes(value);
+		}
+		default: {
+			return false;
+		}
+	}
+}
+
+function evaluateValueRule(value: any, rule: UserRule): boolean {
+	const { operator, value: ruleValue, values } = rule;
+
+	switch (operator) {
+		case 'equals': {
+			return value === ruleValue;
+		}
+		case 'contains': {
+			return String(value).includes(String(ruleValue));
+		}
+		case 'in': {
+			return Array.isArray(values) && values.includes(value);
+		}
+		case 'not_in': {
+			return Array.isArray(values) && !values.includes(value);
+		}
+		case 'exists': {
+			return value !== undefined && value !== null;
+		}
+		case 'not_exists': {
+			return value === undefined || value === null;
+		}
+		default: {
+			return false;
+		}
+	}
 }

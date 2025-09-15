@@ -36,6 +36,27 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { trpc } from '@/lib/trpc';
 
+const userRuleSchema = z.object({
+	type: z.enum(['user_id', 'email', 'property', 'percentage']),
+	operator: z.enum([
+		'equals',
+		'contains',
+		'starts_with',
+		'ends_with',
+		'in',
+		'not_in',
+		'exists',
+		'not_exists',
+	]),
+	field: z.string().optional(), // For property rules
+	value: z.any().optional(),
+	values: z.array(z.any()).optional(), // For 'in' and 'not_in' operators
+	enabled: z.boolean(),
+	// Batch support
+	batch: z.boolean().default(false),
+	batchValues: z.array(z.string()).optional(),
+});
+
 const flagFormSchema = z.object({
 	key: z
 		.string()
@@ -56,6 +77,7 @@ const flagFormSchema = z.object({
 	defaultValue: z.boolean(),
 	payload: z.string().optional(),
 	rolloutPercentage: z.number().min(0).max(100),
+	rules: z.array(userRuleSchema).optional(),
 });
 
 type FlagFormData = z.infer<typeof flagFormSchema>;
@@ -89,6 +111,7 @@ export function FlagSheet({
 			defaultValue: false,
 			payload: '',
 			rolloutPercentage: 0,
+			rules: [],
 		},
 	});
 
@@ -118,6 +141,7 @@ export function FlagSheet({
 						? JSON.stringify(flagData.payload, null, 2)
 						: '',
 					rolloutPercentage: flagData.rolloutPercentage || 0,
+					rules: (flagData.rules as any[]) || [],
 				});
 				setShowPayload(hasPayload);
 				setSliderValue(flagData.rolloutPercentage || 0);
@@ -176,6 +200,7 @@ export function FlagSheet({
 							defaultValue: data.defaultValue,
 							payload,
 							rolloutPercentage: data.rolloutPercentage,
+							rules: data.rules || [],
 						}
 					: {
 							websiteId,
@@ -187,6 +212,7 @@ export function FlagSheet({
 							defaultValue: data.defaultValue,
 							payload,
 							rolloutPercentage: data.rolloutPercentage,
+							rules: data.rules || [],
 						};
 
 			await mutation.mutateAsync(mutationData as any);
@@ -567,6 +593,36 @@ export function FlagSheet({
 										</Button>
 									)}
 								</div>
+
+								{/* User Targeting Rules */}
+								<div className="slide-in-from-top-2 animate-in space-y-4 duration-300">
+									<div className="flex items-center justify-between">
+										<div>
+											<h3 className="font-medium text-foreground text-sm">
+												User Targeting
+											</h3>
+											<p className="text-muted-foreground text-xs">
+												Define rules to target specific users
+											</p>
+										</div>
+									</div>
+
+									<FormField
+										control={form.control}
+										name="rules"
+										render={({ field }) => (
+											<FormItem>
+												<FormControl>
+													<UserRulesBuilder
+														onChange={field.onChange}
+														rules={field.value || []}
+													/>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								</div>
 							</div>
 
 							<div className="flex justify-end gap-3 border-border/50 border-t pt-6">
@@ -602,5 +658,425 @@ export function FlagSheet({
 				</div>
 			</SheetContent>
 		</Sheet>
+	);
+}
+
+// User Rules Builder Component
+interface UserRule {
+	type: 'user_id' | 'email' | 'property' | 'percentage';
+	operator:
+		| 'equals'
+		| 'contains'
+		| 'starts_with'
+		| 'ends_with'
+		| 'in'
+		| 'not_in'
+		| 'exists'
+		| 'not_exists';
+	field?: string;
+	value?: any;
+	values?: any[];
+	enabled: boolean;
+	// Batch support
+	batch: boolean;
+	batchValues?: string[];
+}
+
+interface UserRulesBuilderProps {
+	rules: UserRule[];
+	onChange: (rules: UserRule[]) => void;
+}
+
+function UserRulesBuilder({ rules, onChange }: UserRulesBuilderProps) {
+	const [batchTextValues, setBatchTextValues] = useState<
+		Record<number, string>
+	>({});
+
+	const addRule = () => {
+		const newRule: UserRule = {
+			type: 'user_id',
+			operator: 'equals',
+			value: '',
+			enabled: true,
+			batch: false,
+		};
+		onChange([...rules, newRule]);
+	};
+
+	const canUseBatch = (rule: UserRule) => {
+		return (
+			rule.type !== 'percentage' &&
+			rule.operator !== 'exists' &&
+			rule.operator !== 'not_exists'
+		);
+	};
+
+	const updateRule = (index: number, updatedRule: Partial<UserRule>) => {
+		const newRules = [...rules];
+		newRules[index] = { ...newRules[index], ...updatedRule };
+		onChange(newRules);
+	};
+
+	const removeRule = (index: number) => {
+		// Clean up local state when removing a rule
+		setBatchTextValues((prev) => {
+			const newValues = { ...prev };
+			delete newValues[index];
+			// Shift indices down for rules after the removed one
+			const shiftedValues: Record<number, string> = {};
+			Object.entries(newValues).forEach(([key, value]) => {
+				const numKey = Number(key);
+				if (numKey > index) {
+					shiftedValues[numKey - 1] = value;
+				} else {
+					shiftedValues[numKey] = value;
+				}
+			});
+			return shiftedValues;
+		});
+		onChange(rules.filter((_, i) => i !== index));
+	};
+
+	const updateBatchText = (index: number, rawValue: string) => {
+		// Update local state for textarea display
+		setBatchTextValues((prev) => ({ ...prev, [index]: rawValue }));
+
+		// Process the value for the rule
+		const batchValues = rawValue
+			.split('\n')
+			.map((v) => v.trim())
+			.filter(Boolean);
+
+		updateRule(index, { batchValues });
+	};
+
+	useEffect(() => {
+		const initialValues: Record<number, string> = {};
+		rules.forEach((rule, index) => {
+			if (rule.batch && rule.batchValues?.length) {
+				initialValues[index] = rule.batchValues.join('\n');
+			}
+		});
+		if (Object.keys(initialValues).length > 0) {
+			setBatchTextValues((prev) => ({ ...prev, ...initialValues }));
+		}
+	}, [rules]);
+
+	if (rules.length === 0) {
+		return (
+			<div className="rounded border border-primary/30 border-dashed bg-primary/5 p-8 text-center">
+				<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+					<FlagIcon className="h-6 w-6 text-primary" weight="duotone" />
+				</div>
+				<h3 className="mb-2 font-medium text-sm">No targeting rules</h3>
+				<p className="mb-4 text-muted-foreground text-xs">
+					Add rules to target specific users, emails, or properties
+				</p>
+				<Button
+					className="rounded"
+					onClick={addRule}
+					size="sm"
+					type="button"
+					variant="outline"
+				>
+					<PlusIcon className="mr-2 h-4 w-4" size={16} />
+					Add First Rule
+				</Button>
+			</div>
+		);
+	}
+
+	return (
+		<div className="space-y-4">
+			{rules.map((rule, index) => {
+				const ruleId = `rule-${index}`;
+				const supportsBatch = canUseBatch(rule);
+
+				return (
+					<div className="rounded border bg-card p-4" key={index}>
+						{/* Rule Header */}
+						<div className="mb-4 flex items-center justify-between">
+							<div className="flex items-center gap-2">
+								<div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 font-medium text-primary text-xs">
+									{index + 1}
+								</div>
+								<span className="font-medium text-sm">
+									{rule.type === 'user_id' && 'User ID'}
+									{rule.type === 'email' && 'Email'}
+									{rule.type === 'property' && 'Property'}
+									{rule.type === 'percentage' && 'Percentage'}
+									{rule.batch && ' (Batch)'}
+								</span>
+							</div>
+							<Button
+								onClick={() => removeRule(index)}
+								size="sm"
+								type="button"
+								variant="ghost"
+							>
+								Remove
+							</Button>
+						</div>
+
+						{/* Rule Configuration */}
+						<div className="space-y-4">
+							{/* Target Type & Batch Toggle */}
+							<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+								<div>
+									<label
+										className="mb-1 block font-medium text-sm"
+										htmlFor={`${ruleId}-type`}
+									>
+										Target Type
+									</label>
+									<Select
+										onValueChange={(value) => {
+											const newType = value as UserRule['type'];
+											updateRule(index, {
+												type: newType,
+												batch: newType === 'percentage' ? false : rule.batch,
+												operator:
+													newType === 'percentage' ? 'equals' : rule.operator,
+											});
+										}}
+										value={rule.type}
+									>
+										<SelectTrigger id={`${ruleId}-type`}>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="user_id">User ID</SelectItem>
+											<SelectItem value="email">Email</SelectItem>
+											<SelectItem value="property">Custom Property</SelectItem>
+											<SelectItem value="percentage">
+												Percentage Rollout
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+
+								{supportsBatch && (
+									<div>
+										<label
+											className="mb-1 block font-medium text-sm"
+											htmlFor={`${ruleId}-batch-toggle`}
+										>
+											Mode
+										</label>
+										<div className="flex items-center gap-2 rounded border p-2">
+											<Switch
+												checked={rule.batch}
+												id={`${ruleId}-batch-toggle`}
+												onCheckedChange={(batch) =>
+													updateRule(index, { batch })
+												}
+											/>
+											<span className="font-medium text-sm">
+												{rule.batch ? 'Batch Mode' : 'Single Value'}
+											</span>
+										</div>
+									</div>
+								)}
+							</div>
+
+							{/* Property Field */}
+							{rule.type === 'property' && (
+								<div>
+									<label
+										className="mb-1 block font-medium text-sm"
+										htmlFor={`${ruleId}-field`}
+									>
+										Property Name
+									</label>
+									<Input
+										id={`${ruleId}-field`}
+										onChange={(e) =>
+											updateRule(index, { field: e.target.value })
+										}
+										placeholder="e.g. plan, role, country"
+										value={rule.field || ''}
+									/>
+								</div>
+							)}
+
+							{/* Condition & Value */}
+							{rule.type === 'percentage' ? (
+								<div>
+									<label
+										className="mb-1 block font-medium text-sm"
+										htmlFor={`${ruleId}-percentage`}
+									>
+										Percentage of Users
+									</label>
+									<div className="flex items-center gap-2">
+										<Input
+											id={`${ruleId}-percentage`}
+											max="100"
+											min="0"
+											onChange={(e) =>
+												updateRule(index, { value: Number(e.target.value) })
+											}
+											placeholder="50"
+											type="number"
+											value={rule.value || ''}
+										/>
+										<span className="font-medium text-sm">%</span>
+									</div>
+									<p className="mt-1 text-muted-foreground text-xs">
+										{rule.value || 0}% of users will match this rule
+									</p>
+								</div>
+							) : rule.batch ? (
+								<div>
+									<label
+										className="mb-1 block font-medium text-sm"
+										htmlFor={`${ruleId}-batch`}
+									>
+										{rule.type === 'user_id' && 'User IDs'}
+										{rule.type === 'email' && 'Email Addresses'}
+										{rule.type === 'property' && 'Property Values'}
+										{' (one per line)'}
+									</label>
+									<Textarea
+										id={`${ruleId}-batch`}
+										onChange={(e) => updateBatchText(index, e.target.value)}
+										placeholder={
+											rule.type === 'user_id'
+												? 'user_123\nuser_456\nuser_789'
+												: rule.type === 'email'
+													? 'user@example.com\nadmin@company.com\ntest@domain.org'
+													: 'premium\nenterprise\nvip'
+										}
+										rows={4}
+										value={
+											batchTextValues[index] ||
+											rule.batchValues?.join('\n') ||
+											''
+										}
+									/>
+									<p className="mt-1 text-muted-foreground text-xs">
+										{rule.batchValues?.length || 0} values entered
+									</p>
+								</div>
+							) : (
+								<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+									<div>
+										<label
+											className="mb-1 block font-medium text-sm"
+											htmlFor={`${ruleId}-operator`}
+										>
+											Condition
+										</label>
+										<Select
+											onValueChange={(value) =>
+												updateRule(index, { operator: value as any })
+											}
+											value={rule.operator}
+										>
+											<SelectTrigger id={`${ruleId}-operator`}>
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="equals">Equals</SelectItem>
+												<SelectItem value="contains">Contains</SelectItem>
+												<SelectItem value="starts_with">Starts with</SelectItem>
+												<SelectItem value="ends_with">Ends with</SelectItem>
+												<SelectItem value="in">Is one of</SelectItem>
+												<SelectItem value="not_in">Is not one of</SelectItem>
+												{rule.type === 'property' && (
+													<>
+														<SelectItem value="exists">Exists</SelectItem>
+														<SelectItem value="not_exists">
+															Does not exist
+														</SelectItem>
+													</>
+												)}
+											</SelectContent>
+										</Select>
+									</div>
+
+									{rule.operator !== 'exists' &&
+										rule.operator !== 'not_exists' && (
+											<div>
+												<label
+													className="mb-1 block font-medium text-sm"
+													htmlFor={`${ruleId}-value`}
+												>
+													{rule.operator === 'in' || rule.operator === 'not_in'
+														? 'Values (comma-separated)'
+														: 'Value'}
+												</label>
+												{rule.operator === 'in' ||
+												rule.operator === 'not_in' ? (
+													<Input
+														id={`${ruleId}-value`}
+														onChange={(e) => {
+															const values = e.target.value
+																.split(',')
+																.map((v) => v.trim())
+																.filter(Boolean);
+															updateRule(index, { values });
+														}}
+														placeholder="value1, value2, value3"
+														value={rule.values?.join(', ') || ''}
+													/>
+												) : (
+													<Input
+														id={`${ruleId}-value`}
+														onChange={(e) =>
+															updateRule(index, { value: e.target.value })
+														}
+														placeholder="Enter value"
+														value={rule.value || ''}
+													/>
+												)}
+											</div>
+										)}
+								</div>
+							)}
+
+							{/* Result */}
+							<div className="flex items-center justify-between rounded bg-muted/30 p-3">
+								<span className="font-medium text-sm">
+									When this rule matches:
+								</span>
+								<div className="flex items-center gap-2">
+									<span
+										className={
+											rule.enabled ? 'text-muted-foreground' : 'font-medium'
+										}
+									>
+										Disabled
+									</span>
+									<Switch
+										checked={rule.enabled}
+										onCheckedChange={(enabled) =>
+											updateRule(index, { enabled })
+										}
+									/>
+									<span
+										className={
+											rule.enabled ? 'font-medium' : 'text-muted-foreground'
+										}
+									>
+										Enabled
+									</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				);
+			})}
+
+			<Button
+				className="w-full rounded border-2 border-primary/30 border-dashed transition-all duration-300 hover:border-primary/50 hover:bg-primary/5"
+				onClick={addRule}
+				type="button"
+				variant="outline"
+			>
+				<PlusIcon className="mr-2 h-4 w-4" size={16} />
+				Add Another Rule
+			</Button>
+		</div>
 	);
 }

@@ -85,6 +85,14 @@ export const account = pgTable(
 			'btree',
 			table.userId.asc().nullsLast().op('text_ops')
 		),
+		index('accounts_accountId_idx').using(
+			'btree',
+			table.accountId.asc().nullsLast().op('text_ops')
+		),
+		index('accounts_providerId_idx').using(
+			'btree',
+			table.providerId.asc().nullsLast().op('text_ops')
+		),
 		uniqueIndex('accounts_provider_account_unique').using(
 			'btree',
 			table.providerId.asc().nullsLast().op('text_ops'),
@@ -122,10 +130,6 @@ export const session = pgTable(
 			'btree',
 			table.userId.asc().nullsLast().op('text_ops')
 		),
-		index('sessions_expiresAt_idx').using(
-			'btree',
-			table.expiresAt.asc().nullsLast()
-		),
 		foreignKey({
 			columns: [table.userId],
 			foreignColumns: [user.id],
@@ -156,6 +160,10 @@ export const invitation = pgTable(
 		index('invitations_organizationId_idx').using(
 			'btree',
 			table.organizationId.asc().nullsLast().op('text_ops')
+		),
+		index('invitations_teamId_idx').using(
+			'btree',
+			table.teamId.asc().nullsLast().op('text_ops')
 		),
 		foreignKey({
 			columns: [table.organizationId],
@@ -293,10 +301,6 @@ export const websites = pgTable(
 		uniqueIndex('websites_org_domain_unique')
 			.on(table.organizationId, table.domain)
 			.where(isNotNull(table.organizationId)),
-		index('websites_userId_idx').using(
-			'btree',
-			table.userId.asc().nullsLast().op('text_ops')
-		),
 		foreignKey({
 			columns: [table.userId],
 			foreignColumns: [user.id],
@@ -329,7 +333,13 @@ export const user = pgTable(
 		role: role().default('USER').notNull(),
 		twoFactorEnabled: boolean('two_factor_enabled'),
 	},
-	(table) => [unique('users_email_unique').on(table.email)]
+	(table) => [
+		unique('users_email_unique').on(table.email),
+		index('users_emailVerified_idx').using(
+			'btree',
+			table.emailVerified.asc().nullsLast()
+		),
+	]
 );
 
 export const userStripeConfig = pgTable(
@@ -380,10 +390,6 @@ export const funnelGoals = pgTable(
 		updatedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
 	},
 	(table) => [
-		index('funnel_goals_funnelId_idx').using(
-			'btree',
-			table.funnelId.asc().nullsLast().op('text_ops')
-		),
 		foreignKey({
 			columns: [table.funnelId],
 			foreignColumns: [funnelDefinitions.id],
@@ -410,10 +416,6 @@ export const funnelDefinitions = pgTable(
 		deletedAt: timestamp({ precision: 3 }),
 	},
 	(table) => [
-		index('funnel_definitions_createdBy_idx').using(
-			'btree',
-			table.createdBy.asc().nullsLast().op('text_ops')
-		),
 		index('funnel_definitions_websiteId_idx').using(
 			'btree',
 			table.websiteId.asc().nullsLast().op('text_ops')
@@ -452,23 +454,11 @@ export const goals = pgTable(
 		deletedAt: timestamp({ precision: 3 }),
 	},
 	(table) => [
-		index('goals_websiteId_idx').using(
-			'btree',
-			table.websiteId.asc().nullsLast().op('text_ops')
-		),
-		index('goals_createdBy_idx').using(
-			'btree',
-			table.createdBy.asc().nullsLast().op('text_ops')
-		),
 		index('goals_websiteId_deletedAt_createdAt_idx').using(
 			'btree',
 			table.websiteId.asc().nullsLast().op('text_ops'),
 			table.deletedAt.asc().nullsLast(),
 			table.createdAt.desc().nullsLast()
-		),
-		index('goals_deletedAt_idx').using(
-			'btree',
-			table.deletedAt.asc().nullsLast()
 		),
 		foreignKey({
 			columns: [table.websiteId],
@@ -497,6 +487,10 @@ export const team = pgTable(
 		updatedAt: timestamp('updated_at'),
 	},
 	(table) => [
+		index('team_organizationId_idx').using(
+			'btree',
+			table.organizationId.asc().nullsLast().op('text_ops')
+		),
 		foreignKey({
 			columns: [table.organizationId],
 			foreignColumns: [organization.id],
@@ -599,10 +593,6 @@ export const apikey = pgTable(
 			'btree',
 			table.prefix.asc().nullsLast().op('text_ops')
 		),
-		index('apikey_key_hash_idx').using(
-			'btree',
-			table.keyHash.asc().nullsLast().op('text_ops')
-		),
 		index('apikey_enabled_idx').using('btree', table.enabled.asc().nullsLast()),
 	]
 );
@@ -653,13 +643,7 @@ export const organization = pgTable(
 		createdAt: timestamp('created_at').notNull(),
 		metadata: text(),
 	},
-	(table) => [
-		unique('organizations_slug_unique').on(table.slug),
-		index('organizations_slug_idx').using(
-			'btree',
-			table.slug.asc().nullsLast().op('text_ops')
-		),
-	]
+	(table) => [unique('organizations_slug_unique').on(table.slug)]
 );
 
 export const abTestStatus = pgEnum('ab_test_status', [
@@ -696,10 +680,6 @@ export const abExperiments = pgTable(
 		index('ab_experiments_websiteId_idx').using(
 			'btree',
 			table.websiteId.asc().nullsLast()
-		),
-		index('ab_experiments_createdBy_idx').using(
-			'btree',
-			table.createdBy.asc().nullsLast()
 		),
 		index('ab_experiments_status_idx').using(
 			'btree',
@@ -766,6 +746,10 @@ export const abGoals = pgTable(
 		index('ab_goals_experimentId_idx').using(
 			'btree',
 			table.experimentId.asc().nullsLast()
+		),
+		index('ab_goals_type_idx').using(
+			'btree',
+			table.type.asc().nullsLast().op('text_ops')
 		),
 		foreignKey({
 			columns: [table.experimentId],
@@ -837,6 +821,10 @@ export const assistantMessages = pgTable(
 		index('assistant_messages_conversation_id_idx').using(
 			'btree',
 			table.conversationId.asc().nullsLast().op('text_ops')
+		),
+		index('assistant_messages_createdAt_idx').using(
+			'btree',
+			table.createdAt.asc().nullsLast()
 		),
 		foreignKey({
 			columns: [table.conversationId],
@@ -941,10 +929,6 @@ export const flags = pgTable(
 		index('flags_website_id_idx').using(
 			'btree',
 			table.websiteId.asc().nullsLast().op('text_ops')
-		),
-		index('flags_created_by_idx').using(
-			'btree',
-			table.createdBy.asc().nullsLast().op('text_ops')
 		),
 		foreignKey({
 			columns: [table.websiteId],
