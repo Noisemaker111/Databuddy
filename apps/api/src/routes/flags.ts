@@ -63,7 +63,6 @@ function evaluateUserRules(
 }
 
 function evaluateRule(rule: UserRule, userContext: UserContext): boolean {
-	// Handle batch mode first
 	if (rule.batch && rule.batchValues?.length) {
 		switch (rule.type) {
 			case 'user_id': {
