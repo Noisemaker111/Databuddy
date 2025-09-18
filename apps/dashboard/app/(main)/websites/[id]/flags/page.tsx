@@ -5,6 +5,7 @@ import { FlagIcon } from '@phosphor-icons/react';
 import { useAtom } from 'jotai';
 import { useParams } from 'next/navigation';
 import { Suspense, useCallback, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useWebsite } from '@/hooks/use-websites';
 import { trpc } from '@/lib/trpc';
@@ -143,30 +144,21 @@ export default function FlagsPage() {
 				websiteId={websiteId}
 				websiteName={website?.name || undefined}
 			/>
-
 			{isExperimentEnabled && (
-				<Card className="border bg-primary/10">
-					<CardContent className="flex items-center justify-between gap-3 p-4">
-						<div className="flex items-center gap-3">
-							<FlagIcon
-								className="h-5 w-5 text-primary"
-								size={16}
-								weight="duotone"
-							/>
-							<div>
-								<p className="font-medium text-foreground text-sm">
-									You found a hidden feature!
-								</p>
-								<p className="text-muted-foreground text-xs">
-									Only 50% of users can see this, you're one of them! (This is a
-									feature flag:)
-								</p>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+				<div className="flex items-center gap-2">
+					<FlagIcon
+						className="h-5 w-5 text-primary"
+						color={isExperimentEnabled ? 'red' : 'blue'}
+						size={16}
+						weight="fill"
+					/>
+					{isExperimentEnabled ? (
+						<Badge className="bg-red-500">Red Team</Badge>
+					) : (
+						<Badge className="bg-blue-500">Blue Team</Badge>
+					)}
+				</div>
 			)}
-
 			<Suspense fallback={<FlagsListSkeleton />}>
 				<FlagsList
 					flags={flags || []}
