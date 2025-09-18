@@ -294,7 +294,7 @@ export function MapComponent({
 						// Use flyTo with smooth animation and duration
 						mapRef.current.flyTo(
 							e.latlng,
-							Math.min(mapRef.current.getZoom() + 2, 8),
+							Math.min(mapRef.current.getZoom() + 2, 12),
 							{
 								animate: true,
 								duration: 1.5,
@@ -323,7 +323,7 @@ export function MapComponent({
 		return () => window.removeEventListener('resize', updateHeight);
 	}, []);
 
-	const zoom = 2.2;
+	const zoom = 1.5;
 
 	useEffect(() => {
 		if (mapRef.current) {
@@ -398,7 +398,7 @@ export function MapComponent({
 		const centroid = calculateCountryCentroid(countryFeature.geometry);
 		if (centroid) {
 			// Fly to the country with smooth animation
-			mapRef.current.flyTo([centroid.lat, centroid.lng], 5, {
+			mapRef.current.flyTo([centroid.lat, centroid.lng], 7, {
 				animate: true,
 				duration: 2,
 				easeLinearity: 0.25,
@@ -438,12 +438,12 @@ export function MapComponent({
 					center={[40, 3]}
 					className={resolvedTheme === 'dark' ? 'map-dark' : 'map-light'}
 					maxBounds={[
-						[-85, -180],
-						[85, 180],
+						[-120, -400],
+						[120, 400],
 					]}
-					maxBoundsViscosity={1.0}
-					maxZoom={5}
-					minZoom={2.2}
+					maxBoundsViscosity={0.1}
+					maxZoom={8}
+					minZoom={1.5}
 					preferCanvas
 					ref={mapRef}
 					style={{
@@ -462,7 +462,7 @@ export function MapComponent({
 								// Use flyTo with smooth animation for map background clicks
 								mapRef.current.flyTo(
 									latlng,
-									Math.min(mapRef.current.getZoom() + 1, 6),
+									Math.min(mapRef.current.getZoom() + 1, 12),
 									{
 										animate: true,
 										duration: 1.2,
