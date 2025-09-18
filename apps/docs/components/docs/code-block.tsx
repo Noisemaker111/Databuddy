@@ -1,4 +1,4 @@
-import { Geist_Mono } from 'next/font/google';
+
 import type * as React from 'react';
 import { cache } from 'react';
 import { createHighlighter } from 'shiki';
