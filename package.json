@@ -6,7 +6,7 @@
     "dev": "dotenv -- turbo run dev",
     "start": "turbo run start",
     "lint": "bunx biome check ./",
-    "format": "bunx biome format --write ./",
+    "format": "bunx --bun biome lint --write --unsafe ./",
     "check-types": "tsc --noEmit --project .",
     "generate-db": "turbo run generate --filter=@databuddy/db",
     "db:studio": "dotenv -- turbo run db:studio",
