@@ -1,6 +1,5 @@
 'use client';
 
-import { useFlags } from '@databuddy/sdk/react';
 import { FlagIcon } from '@phosphor-icons/react';
 import { useAtom } from 'jotai';
 import { useParams } from 'next/navigation';
