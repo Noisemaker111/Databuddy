@@ -731,4 +731,114 @@ describe('Flag Evaluation System', () => {
 			expect(totalEnabled).toBeGreaterThan(0);
 		});
 	});
+
+	describe('Comprehensive User Consistency', () => {
+		it('should always return the same result for the same user across 1000 evaluations', () => {
+			const testUserIds = [
+				'user_001',
+				'user_002',
+				'user_003',
+				'user_004',
+				'user_005',
+				'user_006',
+				'user_007',
+				'user_008',
+				'user_009',
+				'user_010',
+			];
+
+			const flags = [
+				{
+					key: 'boolean-flag',
+					type: 'boolean',
+					defaultValue: false,
+					payload: { feature: 'test' },
+					rules: [
+						{
+							type: 'user_id',
+							operator: 'equals',
+							value: 'user_001',
+							enabled: true,
+							batch: false,
+						},
+						{
+							type: 'email',
+							operator: 'ends_with',
+							value: '@test.com',
+							enabled: true,
+							batch: false,
+						},
+					],
+				},
+				{
+					key: 'rollout-flag',
+					type: 'rollout',
+					defaultValue: false,
+					rolloutPercentage: 50,
+					payload: { rollout: true },
+					rules: [],
+				},
+				{
+					key: 'percentage-flag',
+					type: 'boolean',
+					defaultValue: false,
+					payload: { percentage: true },
+					rules: [
+						{
+							type: 'percentage',
+							operator: 'equals',
+							value: 25,
+							enabled: true,
+							batch: false,
+						},
+					],
+				},
+				{
+					key: 'property-flag',
+					type: 'boolean',
+					defaultValue: false,
+					payload: { property: true },
+					rules: [
+						{
+							type: 'property',
+							field: 'plan',
+							operator: 'equals',
+							value: 'premium',
+							enabled: true,
+							batch: false,
+						},
+					],
+				},
+			];
+
+			const contexts: UserContext[] = testUserIds.map((userId) => ({
+				userId,
+				email: `${userId}@test.com`,
+				properties: { plan: userId === 'user_001' ? 'premium' : 'free' },
+			}));
+
+			const baselineResults: Record<string, boolean> = {};
+
+			// First evaluation - establish baseline
+			for (const userId of testUserIds) {
+				for (const flag of flags) {
+					const context = contexts.find((c) => c.userId === userId);
+					const result = evaluateFlag(flag, context);
+					baselineResults[`${userId}-${flag.key}`] = result.enabled;
+				}
+			}
+
+			for (let evaluation = 0; evaluation < 1000; evaluation++) {
+				for (const userId of testUserIds) {
+					for (const flag of flags) {
+						const context = contexts.find((c) => c.userId === userId);
+						const result = evaluateFlag(flag, context);
+						const key = `${userId}-${flag.key}`;
+
+						expect(result.enabled).toBe(baselineResults[key]);
+					}
+				}
+			}
+		});
+	});
 });

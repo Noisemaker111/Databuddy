@@ -57,8 +57,8 @@ function MyComponent() {
 
   return (
     <div className={darkModeEnabled ? 'dark' : ''}>
-      {showNewFeature && <NewDashboard />}
-      {showBetaFeatures && <BetaFeatures />}
+      {showNewFeature !== undefined && showNewFeature && <NewDashboard />}
+      {showBetaFeatures !== undefined && showBetaFeatures && <BetaFeatures />}
       <button>Click me</button>
     </div>
   );
@@ -94,7 +94,7 @@ function MyComponent() {
 
   return (
     <div>
-      {showNewFeature && <NewFeature />}
+      {showNewFeature !== undefined && showNewFeature && <NewFeature />}
       <button>Click me</button>
     </div>
   );
@@ -168,9 +168,14 @@ const showNewUI = isEnabled('new-ui-rollout');`}
   refresh
 } = useFlags();
 
-// Check if flag is enabled
-const showFeature = isEnabled('my-feature');
+// Check if flag is enabled (returns boolean | undefined)
+const showFeature = isEnabled('my-feature'); // undefined if not evaluated yet
 const darkModeDefault = getValue('dark-mode', false);
+
+// Only render when flag is evaluated
+{showFeature !== undefined && (
+  showFeature ? <NewFeature /> : <OldFeature />
+)}
 
 // Refresh all flags
 await fetchAllFlags();`}
@@ -251,24 +256,19 @@ Enable debug mode to see flag evaluation in the browser console.
 1. **Use `isPending`** with authentication to prevent race conditions
 2. **Pass Custom Properties** for granular targeting and A/B testing
 3. **Enable Debug Mode** during development to monitor flag evaluation
-4. **Handle Flag Changes** gracefully with loading states
+4. **Handle Flag Evaluation States** properly - flags return `undefined` until evaluated
 5. **Update User Context** after profile changes to refresh flag evaluation
 
 <CodeBlock language="tsx">
-{`// Best practice: Handle loading states
+{`// Best practice: Wait for flag evaluation before rendering
 function FeatureComponent() {
   const { isEnabled } = useFlags();
-  const [isLoading, setIsLoading] = useState(true);
+  const showNewFeature = isEnabled('new-feature');
 
-  useEffect(() => {
-    // Simulate loading or wait for flags
-    const timer = setTimeout(() => setIsLoading(false), 100);
-    return () => clearTimeout(timer);
-  }, []);
+  // Don't render until flag is evaluated
+  if (showNewFeature === undefined) return <Skeleton />;
 
-  if (isLoading) return <Skeleton />;
-
-  return isEnabled('new-feature') ? <NewFeature /> : <OldFeature />;
+  return showNewFeature ? <NewFeature /> : <OldFeature />;
 }`}
 </CodeBlock>
 

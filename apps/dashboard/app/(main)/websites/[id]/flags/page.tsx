@@ -144,19 +144,21 @@ export default function FlagsPage() {
 				websiteId={websiteId}
 				websiteName={website?.name || undefined}
 			/>
-			<div className="flex items-center gap-2">
-				<FlagIcon
-					className="h-5 w-5"
-					color={isExperimentEnabled ? 'red' : 'blue'}
-					size={16}
-					weight="fill"
-				/>
-				{isExperimentEnabled ? (
-					<Badge className="bg-red-500 text-white">Red Team</Badge>
-				) : (
-					<Badge className="bg-blue-500 text-white">Blue Team</Badge>
-				)}
-			</div>
+			{isExperimentEnabled !== undefined && (
+				<div className="flex items-center gap-2">
+					<FlagIcon
+						className="h-5 w-5"
+						color={isExperimentEnabled ? 'red' : 'blue'}
+						size={16}
+						weight="fill"
+					/>
+					{isExperimentEnabled ? (
+						<Badge className="bg-red-500 text-white">Red Team</Badge>
+					) : (
+						<Badge className="bg-blue-500 text-white">Blue Team</Badge>
+					)}
+				</div>
+			)}
 			<Suspense fallback={<FlagsListSkeleton />}>
 				<FlagsList
 					flags={flags || []}

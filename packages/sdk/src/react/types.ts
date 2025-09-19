@@ -28,7 +28,7 @@ export interface FlagsConfig {
 }
 
 export interface FlagsContext {
-	isEnabled: (key: string) => boolean;
+	isEnabled: (key: string) => boolean | undefined;
 	getValue: (key: string, defaultValue?: boolean) => boolean;
 	fetchAllFlags: () => Promise<void>;
 	updateUser: (user: FlagsConfig['user']) => void;

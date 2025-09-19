@@ -352,12 +352,12 @@ export function useFlags() {
 		return fetchFlag(key);
 	};
 
-	const isEnabled = (key: string): boolean => {
+	const isEnabled = (key: string): boolean | undefined => {
 		if (memoryFlags[key]) {
 			return memoryFlags[key].enabled;
 		}
 		getFlag(key);
-		return false;
+		return;
 	};
 
 	const getValue = (key: string, defaultValue = false): boolean => {

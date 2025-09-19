@@ -91,7 +91,7 @@ export function WebsitePageHeader({
 								</Link>
 							</Button>
 						)}
-						<div className="rounded-xl border border-primary/20 bg-primary/10 p-3">
+						<div className="rounded-xl border border-primary/10 bg-primary/5 p-3">
 							{icon}
 						</div>
 					</div>
@@ -105,7 +105,7 @@ export function WebsitePageHeader({
 				<div className="flex items-center gap-3">
 					{onRefresh && (
 						<Button
-							className="gap-2"
+							className="cursor-pointer gap-2 transition-all duration-300 hover:border-primary/50 hover:bg-primary/5"
 							disabled={isRefreshing}
 							onClick={onRefresh}
 							variant="outline"
@@ -137,7 +137,7 @@ export function WebsitePageHeader({
 									</Link>
 								</Button>
 							)}
-							<div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-3">
+							<div className="rounded-xl border border-primary/10 bg-gradient-to-br from-primary/5 to-primary/10 p-3">
 								{icon}
 							</div>
 							<div>
@@ -151,7 +151,7 @@ export function WebsitePageHeader({
 					<div className="flex items-center gap-3">
 						{onRefresh && (
 							<Button
-								className="gap-2 border-border/50 transition-all duration-200 hover:border-primary/50 hover:bg-primary/5"
+								className="cursor-pointer select-none gap-2 border-border/50"
 								disabled={isRefreshing}
 								onClick={onRefresh}
 								variant="outline"
@@ -165,7 +165,7 @@ export function WebsitePageHeader({
 						)}
 						{onCreateAction && (
 							<Button
-								className="gap-2 bg-gradient-to-r from-primary to-primary/90 shadow-lg transition-all duration-200 hover:from-primary/90 hover:to-primary hover:shadow-xl"
+								className="group relative cursor-pointer select-none gap-2 overflow-hidden bg-gradient-to-r from-primary to-primary/90 px-8 py-4 font-medium text-sm transition-all duration-300 hover:from-primary/90 hover:to-primary"
 								onClick={onCreateAction}
 							>
 								<PlusIcon size={16} />
@@ -181,7 +181,7 @@ export function WebsitePageHeader({
 				<Card className="rounded-xl border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
 					<CardContent className="pt-6">
 						<div className="flex flex-col items-center space-y-3 text-center">
-							<div className="rounded-full border border-destructive/20 bg-destructive/10 p-3">
+							<div className="rounded-full border border-destructive/10 bg-destructive/5 p-3">
 								{icon}
 							</div>
 							<div>
@@ -195,7 +195,7 @@ export function WebsitePageHeader({
 							</div>
 							{onRefresh && (
 								<Button
-									className="gap-2 rounded-lg"
+									className="cursor-pointer select-none gap-2 rounded transition-all duration-300 hover:border-primary/20 hover:bg-primary/10"
 									onClick={onRefresh}
 									size="sm"
 									variant="outline"

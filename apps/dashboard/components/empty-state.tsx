@@ -60,7 +60,7 @@ export function EmptyState({
 	const renderIcon = () => {
 		if (variant === 'simple' || variant === 'minimal') {
 			return (
-				<div className="mb-4 rounded-full border border-muted bg-muted/20 p-6">
+				<div className="mb-4 rounded-full border border-muted bg-muted/10 p-6">
 					{icon}
 				</div>
 			);
@@ -68,13 +68,13 @@ export function EmptyState({
 
 		return (
 			<div className="group relative mb-8">
-				<div className="rounded-full border-2 border-primary/20 bg-primary/10 p-6">
+				<div className="rounded-full border-2 border-primary/10 bg-primary/5 p-6">
 					{icon}
 				</div>
 				{showPlusBadge && (
 					<div
 						aria-label="Create new item"
-						className="-top-2 -right-2 absolute cursor-pointer rounded-full border-2 border-primary/20 bg-background p-2 shadow-sm"
+						className="-top-2 -right-2 absolute cursor-pointer select-none rounded-full border-2 border-primary/10 bg-background p-2"
 						onClick={(e) => {
 							e.stopPropagation();
 							action?.onClick();
@@ -98,7 +98,7 @@ export function EmptyState({
 	const renderCard = () => {
 		const cardClasses = cn(
 			variant === 'default' &&
-				'rounded-xl border-2 border-dashed bg-gradient-to-br from-background to-muted/20',
+				'rounded-xl border-2 border-dashed bg-gradient-to-br from-background to-muted/10',
 			variant === 'simple' && 'rounded border-dashed bg-muted/10',
 			variant === 'minimal' && 'rounded border-none bg-transparent shadow-none',
 			className
@@ -147,9 +147,11 @@ export function EmptyState({
 									<Button
 										className={cn(
 											variant === 'default' &&
-												'group relative cursor-pointer gap-2 overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary/90 px-8 py-4 font-medium text-base transition-all duration-300 hover:from-primary/90 hover:to-primary',
-											variant === 'simple' && 'gap-2',
-											variant === 'minimal' && 'gap-2'
+												'group relative cursor-pointer select-none gap-2 overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary/90 px-8 py-4 font-medium text-base transition-all duration-300 hover:from-primary/90 hover:to-primary',
+											variant === 'simple' &&
+												'cursor-pointer select-none gap-2',
+											variant === 'minimal' &&
+												'cursor-pointer select-none gap-2'
 										)}
 										onClick={action.onClick}
 										size="lg"
