@@ -1,7 +1,7 @@
 'use client';
 
 import { PlusIcon } from '@phosphor-icons/react';
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -31,9 +31,15 @@ export interface EmptyStateProps {
 	showPlusBadge?: boolean;
 	/** Custom padding */
 	padding?: 'sm' | 'md' | 'lg';
+	/** Custom role for accessibility (defaults to 'region') */
+	role?: 'region' | 'complementary' | 'main';
+	/** Custom aria-label for screen readers */
+	'aria-label'?: string;
+	/** Whether this is the main content area */
+	isMainContent?: boolean;
 }
 
-export function EmptyState({
+export const EmptyState = memo(function EmptyState({
 	icon,
 	title,
 	description,
@@ -43,6 +49,9 @@ export function EmptyState({
 	className,
 	showPlusBadge = true,
 	padding = 'lg',
+	role = 'region',
+	'aria-label': ariaLabel,
+	isMainContent = false,
 }: EmptyStateProps) {
 	const getPadding = () => {
 		switch (padding) {
@@ -60,7 +69,11 @@ export function EmptyState({
 	const renderIcon = () => {
 		if (variant === 'simple' || variant === 'minimal') {
 			return (
-				<div className="mb-4 rounded-full border border-muted bg-muted/10 p-6">
+				<div
+					aria-hidden="true"
+					className="mb-4 rounded-full border border-muted bg-muted/10 p-6"
+					role="img"
+				>
 					{icon}
 				</div>
 			);
@@ -68,7 +81,11 @@ export function EmptyState({
 
 		return (
 			<div className="group relative mb-8">
-				<div className="rounded-full border-2 border-primary/10 bg-primary/5 p-6">
+				<div
+					aria-hidden="true"
+					className="rounded-full border-2 border-primary/10 bg-primary/5 p-6"
+					role="img"
+				>
 					{icon}
 				</div>
 				{showPlusBadge && (
@@ -101,69 +118,89 @@ export function EmptyState({
 				'rounded-xl border-2 border-dashed bg-gradient-to-br from-background to-muted/10',
 			variant === 'simple' && 'rounded border-dashed bg-muted/10',
 			variant === 'minimal' && 'rounded border-none bg-transparent shadow-none',
+			'safe-area-inset-4 sm:safe-area-inset-6 lg:safe-area-inset-8',
 			className
 		);
 
 		const contentClasses = cn(
 			'flex flex-col items-center justify-center text-center',
-			getPadding()
+			getPadding(),
+			'px-6 sm:px-8 lg:px-12'
 		);
 
 		return (
-			<Card className={cardClasses}>
+			<Card
+				aria-label={ariaLabel || `${title} - Empty State`}
+				className={cardClasses}
+				role={isMainContent ? 'main' : role}
+			>
 				<CardContent className={contentClasses}>
 					{renderIcon()}
 					<div
 						className={cn(
 							'space-y-4',
 							variant === 'minimal' && 'max-w-sm',
-							variant !== 'minimal' && 'max-w-md'
+							variant !== 'minimal' && 'max-w-md lg:max-w-lg'
 						)}
 					>
-						<h3
-							className={cn(
-								'font-semibold text-foreground',
-								variant === 'minimal' ? 'text-lg' : 'text-2xl'
-							)}
-						>
-							{title}
-						</h3>
+						{isMainContent ? (
+							<h1
+								className={cn(
+									'font-semibold text-foreground',
+									variant === 'minimal' ? 'text-lg' : 'text-2xl lg:text-3xl'
+								)}
+							>
+								{title}
+							</h1>
+						) : (
+							<h2
+								className={cn(
+									'font-semibold text-foreground',
+									variant === 'minimal' ? 'text-lg' : 'text-2xl lg:text-3xl'
+								)}
+							>
+								{title}
+							</h2>
+						)}
 						<div
 							className={cn(
 								'text-muted-foreground leading-relaxed',
-								variant === 'minimal' ? 'text-sm' : 'text-base'
+								variant === 'minimal' ? 'text-sm' : 'text-base lg:text-lg'
 							)}
 						>
 							{description}
 						</div>
 						{(action || secondaryAction) && (
 							<div
+								aria-label="Actions"
 								className={cn(
-									'flex gap-3 pt-2',
-									variant === 'minimal' ? 'justify-center' : 'justify-center'
+									'flex flex-col items-stretch justify-center gap-3 pt-4',
+									'sm:flex-row sm:items-center'
 								)}
+								role="group"
 							>
 								{action && (
 									<Button
 										className={cn(
 											variant === 'default' &&
-												'group relative cursor-pointer select-none gap-2 overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary/90 px-8 py-4 font-medium text-base transition-all duration-300 hover:from-primary/90 hover:to-primary',
+												'group relative min-h-[44px] cursor-pointer touch-manipulation select-none gap-2 overflow-hidden rounded-lg bg-gradient-to-r from-primary to-primary/90 px-8 py-4 font-medium text-base transition-all duration-300 hover:from-primary/90 hover:to-primary hover:shadow-lg focus-visible:shadow-md focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 motion-reduce:transition-none sm:min-h-[40px]',
 											variant === 'simple' &&
-												'cursor-pointer select-none gap-2',
+												'min-h-[44px] cursor-pointer touch-manipulation select-none gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 motion-reduce:transition-none sm:min-h-[40px]',
 											variant === 'minimal' &&
-												'cursor-pointer select-none gap-2'
+												'min-h-[44px] cursor-pointer touch-manipulation select-none gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 motion-reduce:transition-none sm:min-h-[40px]'
 										)}
 										onClick={action.onClick}
 										size="lg"
+										type="button"
 										variant={action.variant || 'default'}
 									>
 										{variant === 'default' && (
-											<div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-white/0 via-white/20 to-white/0 transition-transform duration-700 group-hover:translate-x-[100%]" />
+											<div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-white/0 via-white/20 to-white/0 transition-transform duration-700 group-hover:translate-x-[100%] motion-reduce:transform-none" />
 										)}
 										{variant === 'default' && (
 											<PlusIcon
-												className="relative z-10 h-5 w-5 transition-transform duration-300 group-hover:rotate-90"
-												size={16}
+												className="relative z-10 h-5 w-5 transition-transform duration-300 group-hover:rotate-90 motion-reduce:transform-none"
+												size={20}
 											/>
 										)}
 										<span
@@ -175,8 +212,12 @@ export function EmptyState({
 								)}
 								{secondaryAction && (
 									<Button
+										className={cn(
+											'min-h-[44px] touch-manipulation focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 motion-reduce:transition-none sm:min-h-[40px]'
+										)}
 										onClick={secondaryAction.onClick}
 										size="lg"
+										type="button"
 										variant={secondaryAction.variant || 'outline'}
 									>
 										{secondaryAction.label}
@@ -191,7 +232,9 @@ export function EmptyState({
 	};
 
 	return renderCard();
-}
+});
+
+EmptyState.displayName = 'EmptyState';
 
 export function FeatureEmptyState({
 	icon,

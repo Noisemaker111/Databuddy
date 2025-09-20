@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAtom } from 'jotai';
 import { useParams, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
-
+import NotFound from '@/app/not-found';
 import { useTrackingSetup } from '@/hooks/use-tracking-setup';
 import { isAnalyticsRefreshingAtom } from '@/stores/jotai/filterAtoms';
 import { AnalyticsToolbar } from './_components/analytics-toolbar';
@@ -20,6 +20,12 @@ export default function WebsiteLayout({ children }: WebsiteLayoutProps) {
 	const queryClient = useQueryClient();
 	const { isTrackingSetup } = useTrackingSetup(id as string);
 	const [isRefreshing, setIsRefreshing] = useAtom(isAnalyticsRefreshingAtom);
+
+	if (!id) {
+		return <NotFound />;
+	}
+
+	const websiteId = id as string;
 
 	const isAssistantPage =
 		pathname.includes('/assistant') ||
@@ -55,6 +61,7 @@ export default function WebsiteLayout({ children }: WebsiteLayoutProps) {
 					<AnalyticsToolbar
 						isRefreshing={isRefreshing}
 						onRefresh={handleRefresh}
+						websiteId={websiteId}
 					/>
 					<FiltersSection />
 				</div>

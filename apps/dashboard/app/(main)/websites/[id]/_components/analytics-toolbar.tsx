@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { useAtom } from 'jotai';
 import { useCallback, useMemo } from 'react';
 import type { DateRange as DayPickerRange } from 'react-day-picker';
+import { LiveUserIndicator } from '@/components/analytics';
 import { DateRangePicker } from '@/components/date-range-picker';
 import { Button } from '@/components/ui/button';
 import { useDateFilters } from '@/hooks/use-date-filters';
@@ -14,11 +15,13 @@ import { AddFilterForm } from './utils/add-filters';
 interface AnalyticsToolbarProps {
 	isRefreshing: boolean;
 	onRefresh: () => void;
+	websiteId: string;
 }
 
 export function AnalyticsToolbar({
 	isRefreshing,
 	onRefresh,
+	websiteId,
 }: AnalyticsToolbarProps) {
 	const {
 		currentDateRange,
@@ -88,6 +91,7 @@ export function AnalyticsToolbar({
 
 				<div className="flex items-center gap-2">
 					<AddFilterForm addFilter={addFilter} buttonText="Filter" />
+					<LiveUserIndicator websiteId={websiteId} />
 					<Button
 						aria-label="Refresh data"
 						className="h-8 w-8"
