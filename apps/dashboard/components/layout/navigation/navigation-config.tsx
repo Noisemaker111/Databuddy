@@ -315,6 +315,7 @@ export const databaseNavigation: NavigationSection[] = [
 			{ name: 'Performance', icon: ChartLineIcon, href: '/performance' },
 			{ name: 'Queries', icon: DatabaseIcon, href: '/queries' },
 			{ name: 'Tables', icon: TableIcon, href: '/tables' },
+			{ name: 'Online Advisor', icon: SparkleIcon, href: '/online-advisor' },
 		],
 	},
 	{
