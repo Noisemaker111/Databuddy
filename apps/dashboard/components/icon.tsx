@@ -45,6 +45,9 @@ const BROWSER_ICONS = [
 	'HeyTap',
 	'360',
 	'Brave',
+	'Twitter',
+	'GSA',
+	'LinkedIn',
 ] as const;
 
 const OS_ICONS = [
