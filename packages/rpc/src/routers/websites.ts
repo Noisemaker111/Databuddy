@@ -365,7 +365,10 @@ export const websitesRouter = createTRPCRouter({
 			if (input.organizationId) {
 				const { success } = await websitesApi.hasPermission({
 					headers: ctx.headers,
-					body: { permissions: { website: ['create'] } },
+					body: {
+						organizationId: input.organizationId,
+						permissions: { website: ['create'] },
+					},
 				});
 				if (!success) {
 					throw new TRPCError({

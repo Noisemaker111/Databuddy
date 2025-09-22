@@ -5,6 +5,7 @@ import {
 	ClipboardIcon,
 	DownloadIcon,
 	InfoIcon,
+	UserIcon,
 	WarningCircleIcon,
 } from '@phosphor-icons/react';
 import dayjs from 'dayjs';
@@ -12,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import type { DateRange as DayPickerRange } from 'react-day-picker';
 import { toast } from 'sonner';
+import { FaviconImage } from '@/components/analytics/favicon-image';
 import { DateRangePicker } from '@/components/date-range-picker';
 import {
 	AlertDialog,
@@ -31,7 +33,6 @@ import { WebsiteDialog } from '@/components/website-dialog';
 import { useDataExport } from '@/hooks/use-data-export';
 import { useDeleteWebsite, useTogglePublicWebsite } from '@/hooks/use-websites';
 import { SETTINGS_TABS, TOAST_MESSAGES } from '../shared/tracking-constants';
-
 import type {
 	DeleteWebsiteDialogProps,
 	ExportFormat,
