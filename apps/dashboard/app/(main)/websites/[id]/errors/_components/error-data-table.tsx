@@ -8,10 +8,9 @@ import {
 	errorColumns,
 } from './error-table-columns';
 
-// Dynamically import DataTable for better performance
 const DataTable = dynamic(
 	() =>
-		import('@/components/analytics/data-table').then((mod) => ({
+		import('@/components/table/data-table').then((mod) => ({
 			default: mod.DataTable,
 		})),
 	{

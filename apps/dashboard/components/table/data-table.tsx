@@ -11,11 +11,11 @@ import { useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { FullScreenModal } from './components/fullscreen-modal';
-import { TableContent } from './components/table-content';
-import { TableTabs } from './components/table-tabs';
-import { TableToolbar } from './components/table-toolbar';
+import { FullScreenModal } from './fullscreen-modal';
 import { useFullScreen } from './hooks/use-fullscreen';
+import { TableContent } from './table-content';
+import { TableTabs } from './table-tabs';
+import { TableToolbar } from './table-toolbar';
 
 const DEFAULT_MIN_HEIGHT = 200;
 const FULLSCREEN_HEIGHT = 'h-[92vh]';
@@ -268,7 +268,7 @@ export function DataTable<TData extends { name: string | number }, TValue>({
 						<div className="absolute inset-0 animate-fadein bg-black/70 backdrop-blur-[3px] transition-opacity" />
 						<div
 							className={cn(
-								'relative flex scale-100 animate-scalein flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl',
+								'relative flex scale-100 animate-scalein flex-col overflow-hidden rounded border border-border bg-background shadow-2xl',
 								FULLSCREEN_HEIGHT,
 								FULLSCREEN_WIDTH
 							)}

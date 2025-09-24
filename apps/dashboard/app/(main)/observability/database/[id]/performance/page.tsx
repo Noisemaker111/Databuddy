@@ -11,7 +11,8 @@ import {
 	WarningIcon,
 } from '@phosphor-icons/react';
 import { use, useCallback, useMemo, useState } from 'react';
-import { DataTable, StatCard } from '@/components/analytics';
+import { StatCard } from '@/components/analytics';
+import { DataTable } from '@/components/table/data-table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {

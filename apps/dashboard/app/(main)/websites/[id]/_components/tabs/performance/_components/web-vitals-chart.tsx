@@ -2,9 +2,9 @@
 
 import { LightningIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
-import { DataTable } from '@/components/analytics/data-table';
 import { MetricsChart } from '@/components/charts/metrics-chart';
 import type { ChartDataRow } from '@/components/charts/metrics-constants';
+import { DataTable } from '@/components/table/data-table';
 
 interface WebVitalsData {
 	date: string;

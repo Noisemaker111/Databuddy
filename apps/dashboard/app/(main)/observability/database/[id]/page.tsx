@@ -10,7 +10,7 @@ import {
 } from '@phosphor-icons/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { use } from 'react';
-import { DataTable } from '@/components/analytics/data-table';
+import { DataTable } from '@/components/table/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useDbConnection } from '@/hooks/use-db-connections';

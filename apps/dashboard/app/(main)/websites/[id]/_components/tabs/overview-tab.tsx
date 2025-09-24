@@ -17,7 +17,6 @@ import { useAtom } from 'jotai';
 import dynamic from 'next/dynamic';
 import { useCallback, useMemo } from 'react';
 import {
-	DataTable,
 	DeviceTypeCell,
 	EventLimitIndicator,
 	StatCard,
@@ -29,6 +28,7 @@ import {
 } from '@/components/atomic/ReferrerSourceCell';
 import { MetricsChart } from '@/components/charts/metrics-chart';
 import { BrowserIcon, OSIcon } from '@/components/icon';
+import { DataTable } from '@/components/table/data-table';
 import { useBatchDynamicQuery } from '@/hooks/use-dynamic-query';
 import { getUserTimezone } from '@/lib/timezone';
 import {

@@ -18,16 +18,14 @@ import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 import { useCallback, useEffect, useMemo } from 'react';
-import { DataTable } from '@/components/analytics/data-table';
+import { CountryFlag } from '@/components/analytics/icons/CountryFlag';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { BrowserIcon } from '@/components/icon';
+import { DataTable } from '@/components/table/data-table';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBatchDynamicQuery } from '@/hooks/use-dynamic-query';
-import {
-	PercentageBadge,
-	type TechnologyTableEntry,
-} from '../utils/technology-helpers';
+import { PercentageBadge } from '../utils/technology-helpers';
 import type { FullTabProps } from '../utils/types';
 
 dayjs.extend(utc);
@@ -42,15 +40,11 @@ interface GeographicEntry {
 	country_name?: string;
 }
 
-interface ConnectionEntry extends TechnologyTableEntry {
-	category: 'connection';
-	iconComponent: React.ReactNode;
-}
-
 interface BrowserVersion {
 	version: string;
 	visitors: number;
 	pageviews: number;
+	percentage?: number;
 }
 
 interface BrowserEntry {
@@ -66,25 +60,7 @@ interface ScreenResolutionEntry {
 	name: string;
 	visitors: number;
 	pageviews?: number;
-}
-
-interface DeviceData {
-	browser_name: string[];
-	browser_versions: string[];
-	os_name: string[];
-	screen_resolution: ScreenResolutionEntry[];
-	connection_type: string[];
-}
-
-interface ProcessedData {
-	geographic: {
-		countries: GeographicEntry[];
-		regions: GeographicEntry[];
-		cities: GeographicEntry[];
-		timezones: GeographicEntry[];
-		languages: GeographicEntry[];
-	};
-	device: DeviceData;
+	percentage?: number;
 }
 
 const formatNumber = (value: number | null | undefined): string => {
@@ -194,63 +170,29 @@ export function WebsiteAudienceTab({
 		[addFilter]
 	);
 
-	const processedData = useMemo((): ProcessedData => {
-		if (!batchResults?.length) {
-			return {
-				geographic: {
-					countries: [],
-					regions: [],
-					cities: [],
-					timezones: [],
-					languages: [],
-				},
-				device: {
-					browser_name: [],
-					browser_versions: [],
-					os_name: [],
-					screen_resolution: [],
-					connection_type: [],
-				},
-			};
-		}
+	// Extract API data directly
+	const geographicData = useMemo(() => {
+		const result = batchResults?.find((r) => r.queryId === 'geographic-data');
+		return result?.data || {};
+	}, [batchResults]);
 
-		const geographicResult = batchResults.find(
-			(r) => r.queryId === 'geographic-data'
-		);
-		const deviceResult = batchResults.find((r) => r.queryId === 'device-data');
-
-		const geographicData = geographicResult?.data || {};
-		const deviceData = deviceResult?.data || {};
-
-		return {
-			geographic: {
-				countries: geographicData.country || [],
-				regions: geographicData.region || [],
-				cities: geographicData.city || [],
-				timezones: geographicData.timezone || [],
-				languages: geographicData.language || [],
-			},
-			device: {
-				browser_name: deviceData.browser_name || [],
-				browser_versions: deviceData.browser_versions || [],
-				os_name: deviceData.os_name || [],
-				screen_resolution: deviceData.screen_resolution || [],
-				connection_type: deviceData.connection_type || [],
-			},
-		};
+	const deviceData = useMemo(() => {
+		const result = batchResults?.find((r) => r.queryId === 'device-data');
+		return result?.data || {};
 	}, [batchResults]);
 
 	const processedBrowserData = useMemo((): BrowserEntry[] => {
-		const browserVersions = processedData.device.browser_versions || [];
-		const browserData = processedData.device.browser_name || [];
+		const browserVersions = deviceData.browser_versions || [];
+		const browserData = deviceData.browser_name || [];
 
 		return browserData.map((browser: any) => {
 			const versions = browserVersions
-				.filter((version: any) => version.name.startsWith(`${browser.name} `))
+				.filter((version: any) => version.browser_name === browser.name)
 				.map((version: any) => ({
-					version: version.name.slice(browser.name.length + 1),
+					version: version.browser_version,
 					visitors: version.visitors,
 					pageviews: version.pageviews,
+					percentage: version.percentage,
 				}));
 
 			return {
@@ -259,18 +201,7 @@ export function WebsiteAudienceTab({
 				versions,
 			};
 		});
-	}, [
-		processedData.device.browser_name,
-		processedData.device.browser_versions,
-	]);
-
-	const processedConnectionData = useMemo((): ConnectionEntry[] => {
-		return (processedData.device.connection_type || []).map((item: any) => ({
-			...item,
-			iconComponent: getConnectionIcon(item.name || ''),
-			category: 'connection' as const,
-		}));
-	}, [processedData.device.connection_type]);
+	}, [deviceData.browser_name, deviceData.browser_versions]);
 
 	const isLoading = isBatchLoading || isRefreshing;
 
@@ -347,12 +278,12 @@ export function WebsiteAudienceTab({
 				id: 'name',
 				accessorKey: 'name',
 				header: 'Connection Type',
-				cell: (info: CellContext<ConnectionEntry, any>) => {
-					const entry = info.row.original;
+				cell: (info: CellContext<any, any>) => {
+					const name = info.getValue() as string;
 					return (
 						<div className="flex items-center gap-3">
-							{entry.iconComponent}
-							<span className="font-medium">{entry.name}</span>
+							{getConnectionIcon(name)}
+							<span className="font-medium">{name}</span>
 						</div>
 					);
 				},
@@ -628,6 +559,70 @@ export function WebsiteAudienceTab({
 		[displayNames]
 	);
 
+	const regionColumns = useMemo(
+		(): ColumnDef<GeographicEntry>[] => [
+			{
+				id: 'name',
+				accessorKey: 'name',
+				header: 'Region',
+				cell: (info: CellContext<GeographicEntry, any>) => {
+					const name = info.getValue() as string;
+					const row = info.row.original;
+					const regionName = name;
+					const countryCode = (row as any).country_code;
+					const countryName = (row as any).country_name;
+
+					const getRegionCountryIcon = () => {
+						if (countryCode) {
+							return <CountryFlag country={countryCode} size={16} />;
+						}
+						return <CountryFlag country={''} size={16} />;
+					};
+
+					const formatRegionName = () => {
+						if (countryName && regionName) {
+							return `${regionName}, ${countryName}`;
+						}
+						return regionName || 'Unknown region';
+					};
+
+					return (
+						<div className="flex items-center gap-2">
+							{getRegionCountryIcon()}
+							<span className="font-medium">{formatRegionName()}</span>
+						</div>
+					);
+				},
+			},
+			{
+				id: 'visitors',
+				accessorKey: 'visitors',
+				header: 'Visitors',
+				cell: (info: CellContext<GeographicEntry, any>) => (
+					<span className="font-medium">{formatNumber(info.getValue())}</span>
+				),
+			},
+			{
+				id: 'pageviews',
+				accessorKey: 'pageviews',
+				header: 'Pageviews',
+				cell: (info: CellContext<GeographicEntry, any>) => (
+					<span className="font-medium">{formatNumber(info.getValue())}</span>
+				),
+			},
+			{
+				id: 'percentage',
+				accessorKey: 'percentage',
+				header: 'Share',
+				cell: (info: CellContext<GeographicEntry, any>) => {
+					const percentage = info.getValue() as number;
+					return <PercentageBadge percentage={percentage} />;
+				},
+			},
+		],
+		[]
+	);
+
 	const cityColumns = useMemo(
 		(): ColumnDef<GeographicEntry>[] => [
 			{
@@ -636,10 +631,29 @@ export function WebsiteAudienceTab({
 				header: 'City',
 				cell: (info: CellContext<GeographicEntry, any>) => {
 					const name = info.getValue() as string;
+					const row = info.row.original;
+					const cityName = name;
+					const countryCode = (row as any).country_code;
+					const countryName = (row as any).country_name;
+
+					const getCityCountryIcon = () => {
+						if (countryCode) {
+							return <CountryFlag country={countryCode} size={16} />;
+						}
+						return <MapPinIcon className="h-4 w-4 text-primary" />;
+					};
+
+					const formatCityName = () => {
+						if (countryName && cityName) {
+							return `${cityName}, ${countryName}`;
+						}
+						return cityName || 'Unknown city';
+					};
+
 					return (
 						<div className="flex items-center gap-2">
-							<MapPinIcon className="h-4 w-4 text-primary" />
-							<span className="font-medium">{name}</span>
+							{getCityCountryIcon()}
+							<span className="font-medium">{formatCityName()}</span>
 						</div>
 					);
 				},
@@ -678,7 +692,7 @@ export function WebsiteAudienceTab({
 			{
 				id: 'countries',
 				label: 'Countries',
-				data: processedData.geographic.countries,
+				data: geographicData.country || [],
 				columns: countryColumns,
 				getFilter: (row: any) => ({
 					field: 'country',
@@ -688,8 +702,8 @@ export function WebsiteAudienceTab({
 			{
 				id: 'regions',
 				label: 'Regions',
-				data: processedData.geographic.regions,
-				columns: geographicColumns,
+				data: geographicData.region || [],
+				columns: regionColumns,
 				getFilter: (row: any) => ({
 					field: 'region',
 					value: row.name,
@@ -698,7 +712,7 @@ export function WebsiteAudienceTab({
 			{
 				id: 'cities',
 				label: 'Cities',
-				data: processedData.geographic.cities,
+				data: geographicData.city || [],
 				columns: cityColumns,
 				getFilter: (row: any) => ({
 					field: 'city',
@@ -710,7 +724,7 @@ export function WebsiteAudienceTab({
 						{
 							id: 'languages',
 							label: 'Languages',
-							data: processedData.geographic.languages,
+							data: geographicData.language || [],
 							columns: languageColumns,
 							getFilter: (row: any) => ({
 								field: 'language',
@@ -722,7 +736,7 @@ export function WebsiteAudienceTab({
 			{
 				id: 'timezones',
 				label: 'Timezones',
-				data: processedData.geographic.timezones,
+				data: geographicData.timezone || [],
 				columns: timezoneColumns,
 				getFilter: (row: any) => ({
 					field: 'timezone',
@@ -731,12 +745,13 @@ export function WebsiteAudienceTab({
 			},
 		],
 		[
-			processedData.geographic.countries,
-			processedData.geographic.regions,
-			processedData.geographic.cities,
-			processedData.geographic.languages,
-			processedData.geographic.timezones,
+			geographicData.country,
+			geographicData.region,
+			geographicData.city,
+			geographicData.language,
+			geographicData.timezone,
 			countryColumns,
+			regionColumns,
 			geographicColumns,
 			cityColumns,
 			languageColumns,
@@ -765,6 +780,7 @@ export function WebsiteAudienceTab({
 					minHeight={350}
 					onAddFilter={onAddFilter}
 					renderSubRow={(subRow: any, parentRow: any) => {
+						// Calculate percentage relative to parent browser (not total visitors)
 						const percentage = Math.round(
 							((subRow.visitors || 0) / (parentRow.visitors || 1)) * 100
 						);
@@ -833,7 +849,7 @@ export function WebsiteAudienceTab({
 
 				<DataTable
 					columns={connectionColumns}
-					data={processedConnectionData}
+					data={deviceData.connection_type || []}
 					description="Visitors by network connection"
 					isLoading={isLoading}
 					minHeight={350}
@@ -843,7 +859,7 @@ export function WebsiteAudienceTab({
 						{
 							id: 'connections',
 							label: 'Connection Types',
-							data: processedConnectionData,
+							data: deviceData.connection_type || [],
 							columns: connectionColumns,
 							getFilter: (row: any) => ({
 								field: 'connection_type',
@@ -908,11 +924,11 @@ export function WebsiteAudienceTab({
 								))}
 							</div>
 						</div>
-					) : processedData.device.screen_resolution?.length ? (
+					) : deviceData.screen_resolution?.length ? (
 						<div className="space-y-4">
 							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-								{processedData.device.screen_resolution
-									?.slice(0, 6)
+								{(deviceData.screen_resolution || [])
+									.slice(0, 6)
 									.map((item: ScreenResolutionEntry) => {
 										const resolution = item.name;
 										if (!resolution) {
@@ -923,15 +939,7 @@ export function WebsiteAudienceTab({
 											Number.isNaN(width) || Number.isNaN(height)
 										);
 
-										const totalVisitors =
-											processedData.device.screen_resolution?.reduce(
-												(sum: number, resItem: ScreenResolutionEntry) =>
-													sum + resItem.visitors,
-												0
-											) || 1;
-										const percentage = Math.round(
-											(item.visitors / totalVisitors) * 100
-										);
+										const percentage = item.percentage || 0;
 
 										let deviceType = 'Unknown';
 										let deviceIcon = (
@@ -1073,12 +1081,11 @@ export function WebsiteAudienceTab({
 									})}
 							</div>
 
-							{processedData.device.screen_resolution &&
-								processedData.device.screen_resolution.length > 6 && (
+							{deviceData.screen_resolution &&
+								deviceData.screen_resolution.length > 6 && (
 									<div className="border-border/30 border-t pt-2 text-center text-muted-foreground text-xs">
-										Showing top 6 of{' '}
-										{processedData.device.screen_resolution.length} screen
-										resolutions
+										Showing top 6 of {deviceData.screen_resolution.length}{' '}
+										screen resolutions
 									</div>
 								)}
 						</div>

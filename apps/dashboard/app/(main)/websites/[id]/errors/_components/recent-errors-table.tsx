@@ -3,9 +3,9 @@
 import type { ErrorEvent } from '@databuddy/shared';
 import { GlobeIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
-import { DataTable } from '@/components/analytics/data-table';
 import { CountryFlag } from '@/components/analytics/icons/CountryFlag';
 import { BrowserIcon, OSIcon } from '@/components/icon';
+import { DataTable } from '@/components/table/data-table';
 import { Badge } from '@/components/ui/badge';
 import { ErrorDetailModal } from './error-detail-modal';
 import { getErrorTypeIcon } from './error-icons';

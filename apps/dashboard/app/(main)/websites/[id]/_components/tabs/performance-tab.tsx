@@ -3,9 +3,9 @@
 import { getCountryCode, getCountryName } from '@databuddy/shared';
 import { LightningIcon } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DataTable } from '@/components/analytics/data-table';
 import { CountryFlag } from '@/components/analytics/icons/CountryFlag';
 import { BrowserIcon, OSIcon } from '@/components/icon';
+import { DataTable } from '@/components/table/data-table';
 import { useEnhancedPerformanceData } from '@/hooks/use-dynamic-query';
 import { calculatePerformanceSummary } from '@/lib/performance-utils';
 import type { PerformanceEntry } from '@/types/performance';
