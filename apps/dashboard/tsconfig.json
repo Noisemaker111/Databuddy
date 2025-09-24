@@ -21,6 +21,7 @@
     "paths": {
       "@/*": ["./*"]
     },
+    "baseUrl": ".",
     "strictNullChecks": true
   },
   "include": [

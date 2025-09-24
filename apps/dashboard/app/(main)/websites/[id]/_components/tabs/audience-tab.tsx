@@ -1,15 +1,12 @@
 'use client';
 
 import {
-	ClockIcon,
 	DeviceMobileIcon,
 	DeviceTabletIcon,
 	GlobeIcon,
 	InfoIcon,
 	LaptopIcon,
-	MapPinIcon,
 	MonitorIcon,
-	TranslateIcon,
 	WifiHighIcon,
 	WifiLowIcon,
 } from '@phosphor-icons/react';
@@ -18,10 +15,16 @@ import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 import { useCallback, useEffect, useMemo } from 'react';
-import { CountryFlag } from '@/components/analytics/icons/CountryFlag';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { BrowserIcon } from '@/components/icon';
 import { DataTable } from '@/components/table/data-table';
+import {
+	createGeoColumns,
+	createIconTextColumns,
+	createLanguageColumns,
+	createTimezoneColumns,
+} from '@/components/table/rows';
+
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBatchDynamicQuery } from '@/hooks/use-dynamic-query';
@@ -30,15 +33,6 @@ import type { FullTabProps } from '../utils/types';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-
-interface GeographicEntry {
-	name: string;
-	visitors: number;
-	pageviews: number;
-	percentage: number;
-	country_code?: string;
-	country_name?: string;
-}
 
 interface BrowserVersion {
 	version: string;
@@ -159,18 +153,6 @@ export function WebsiteAudienceTab({
 		}
 	}, [isRefreshing, handleRefresh]);
 
-	const onAddFilter = useCallback(
-		(field: string, value: string) => {
-			addFilter({
-				field,
-				operator: 'eq' as const,
-				value,
-			});
-		},
-		[addFilter]
-	);
-
-	// Extract API data directly
 	const geographicData = useMemo(() => {
 		const result = batchResults?.find((r) => r.queryId === 'geographic-data');
 		return result?.data || {};
@@ -272,420 +254,27 @@ export function WebsiteAudienceTab({
 		[]
 	);
 
-	const connectionColumns = useMemo(
-		(): ColumnDef<ConnectionEntry>[] => [
-			{
-				id: 'name',
-				accessorKey: 'name',
-				header: 'Connection Type',
-				cell: (info: CellContext<any, any>) => {
-					const name = info.getValue() as string;
-					return (
-						<div className="flex items-center gap-3">
-							{getConnectionIcon(name)}
-							<span className="font-medium">{name}</span>
-						</div>
-					);
-				},
-			},
-			{
-				id: 'visitors',
-				accessorKey: 'visitors',
-				header: 'Visitors',
-				cell: (info: CellContext<ConnectionEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'percentage',
-				accessorKey: 'percentage',
-				header: 'Share',
-				cell: (info: CellContext<ConnectionEntry, any>) => {
-					const percentage = info.getValue() as number;
-					return <PercentageBadge percentage={percentage} />;
-				},
-			},
-		],
-		[]
-	);
+	const connectionColumns = createIconTextColumns({
+		header: 'Connection Type',
+		getIcon: getConnectionIcon,
+	});
 
-	const geographicColumns = useMemo(
-		(): ColumnDef<GeographicEntry>[] => [
-			{
-				id: 'name',
-				accessorKey: 'name',
-				header: 'Location',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const name = info.getValue() as string;
-					return (
-						<div className="flex items-center gap-2">
-							<GlobeIcon className="h-4 w-4 text-primary" />
-							<span className="font-medium">{name}</span>
-						</div>
-					);
-				},
-			},
-			{
-				id: 'visitors',
-				accessorKey: 'visitors',
-				header: 'Visitors',
-				cell: (info: CellContext<GeographicEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'pageviews',
-				accessorKey: 'pageviews',
-				header: 'Pageviews',
-				cell: (info: CellContext<GeographicEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'percentage',
-				accessorKey: 'percentage',
-				header: 'Share',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const percentage = info.getValue() as number;
-					return <PercentageBadge percentage={percentage} />;
-				},
-			},
-		],
-		[]
-	);
+	const countryColumns = createGeoColumns({ type: 'country' });
 
-	const countryColumns = useMemo(
-		(): ColumnDef<GeographicEntry>[] => [
-			{
-				id: 'country',
-				accessorKey: 'country_name',
-				header: 'Country',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const entry = info.row.original;
-					const code = entry.country_code;
-					const name = entry.country_name || entry.name || 'Unknown';
-					return (
-						<div className="flex items-center gap-2">
-							{code && code !== 'Unknown' ? (
-								<img
-									alt={code}
-									className="h-4 w-5 rounded-sm bg-muted object-cover"
-									onError={(e) => {
-										(e.target as HTMLImageElement).style.display = 'none';
-									}}
-									src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${code.toUpperCase()}.svg`}
-								/>
-							) : (
-								<GlobeIcon className="h-3 w-3 text-muted-foreground" />
-							)}
-							<span className="font-medium">{name}</span>
-						</div>
-					);
-				},
-			},
-			{
-				id: 'visitors',
-				accessorKey: 'visitors',
-				header: 'Visitors',
-				cell: (info: CellContext<GeographicEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'pageviews',
-				accessorKey: 'pageviews',
-				header: 'Pageviews',
-				cell: (info: CellContext<GeographicEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'percentage',
-				accessorKey: 'percentage',
-				header: 'Share',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const percentage = info.getValue() as number;
-					return <PercentageBadge percentage={percentage} />;
-				},
-			},
-		],
-		[]
-	);
+	const timezoneColumns = createTimezoneColumns();
 
-	const timezoneColumns = useMemo(
-		(): ColumnDef<GeographicEntry>[] => [
-			{
-				id: 'name',
-				accessorKey: 'name',
-				header: 'Timezone',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const entry = info.row.original;
-					const timezoneName = entry.name;
-					return (
-						<div className="flex items-center gap-2">
-							<ClockIcon className="h-4 w-4 text-primary" />
-							<div>
-								<div className="font-medium">{timezoneName}</div>
-							</div>
-						</div>
-					);
-				},
-			},
-			{
-				id: 'current_time',
-				header: 'Current Time',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const entry = info.row.original;
-					const timezoneName = entry.name;
-					let currentTime = '-';
-					try {
-						if (timezoneName) {
-							currentTime = dayjs().tz(timezoneName).format('hh:mm A');
-						}
-					} catch {}
-					return <span className="font-mono text-xs">{currentTime}</span>;
-				},
-			},
-			{
-				id: 'visitors',
-				accessorKey: 'visitors',
-				header: 'Visitors',
-				cell: (info: CellContext<GeographicEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'pageviews',
-				accessorKey: 'pageviews',
-				header: 'Pageviews',
-				cell: (info: CellContext<GeographicEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'percentage',
-				accessorKey: 'percentage',
-				header: 'Share',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const percentage = info.getValue() as number;
-					return <PercentageBadge percentage={percentage} />;
-				},
-			},
-		],
-		[]
-	);
+	const displayNames =
+		typeof window !== 'undefined'
+			? new Intl.DisplayNames([navigator.language || 'en'], {
+					type: 'language',
+				})
+			: null;
 
-	// Feature detection for Intl.DisplayNames
-	const canUseDisplayNames = useMemo(() => {
-		if (typeof window === 'undefined') {
-			return false;
-		}
-		try {
-			// Try to construct and use .of
-			const dn = new Intl.DisplayNames([navigator.language || 'en'], {
-				type: 'language',
-			});
-			return typeof dn.of === 'function' && !!dn.of('en');
-		} catch {
-			return false;
-		}
-	}, []);
+	const languageColumns = createLanguageColumns(displayNames);
 
-	const displayNames = useMemo(
-		() =>
-			typeof window !== 'undefined'
-				? new Intl.DisplayNames([navigator.language || 'en'], {
-						type: 'language',
-					})
-				: null,
-		[]
-	);
+	const regionColumns = createGeoColumns({ type: 'region' });
 
-	const languageColumns = useMemo(
-		(): ColumnDef<GeographicEntry>[] => [
-			{
-				id: 'name',
-				accessorKey: 'name',
-				header: 'Language',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const entry = info.row.original;
-					const language = entry.name;
-					const code = (entry as any).code;
-					let readableName = language;
-					try {
-						readableName = displayNames?.of(language) || language;
-					} catch {
-						readableName = language;
-					}
-					return (
-						<div className="flex items-center gap-2">
-							<TranslateIcon className="h-4 w-4 text-primary" />
-							<div>
-								<div className="font-medium">{readableName}</div>
-								{code && code !== language && (
-									<div className="text-muted-foreground text-xs">{code}</div>
-								)}
-							</div>
-						</div>
-					);
-				},
-			},
-			{
-				id: 'visitors',
-				accessorKey: 'visitors',
-				header: 'Visitors',
-				cell: (info: CellContext<GeographicEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'pageviews',
-				accessorKey: 'pageviews',
-				header: 'Pageviews',
-				cell: (info: CellContext<GeographicEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'percentage',
-				accessorKey: 'percentage',
-				header: 'Share',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const percentage = info.getValue() as number;
-					return <PercentageBadge percentage={percentage} />;
-				},
-			},
-		],
-		[displayNames]
-	);
-
-	const regionColumns = useMemo(
-		(): ColumnDef<GeographicEntry>[] => [
-			{
-				id: 'name',
-				accessorKey: 'name',
-				header: 'Region',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const name = info.getValue() as string;
-					const row = info.row.original;
-					const regionName = name;
-					const countryCode = (row as any).country_code;
-					const countryName = (row as any).country_name;
-
-					const getRegionCountryIcon = () => {
-						if (countryCode) {
-							return <CountryFlag country={countryCode} size={16} />;
-						}
-						return <CountryFlag country={''} size={16} />;
-					};
-
-					const formatRegionName = () => {
-						if (countryName && regionName) {
-							return `${regionName}, ${countryName}`;
-						}
-						return regionName || 'Unknown region';
-					};
-
-					return (
-						<div className="flex items-center gap-2">
-							{getRegionCountryIcon()}
-							<span className="font-medium">{formatRegionName()}</span>
-						</div>
-					);
-				},
-			},
-			{
-				id: 'visitors',
-				accessorKey: 'visitors',
-				header: 'Visitors',
-				cell: (info: CellContext<GeographicEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'pageviews',
-				accessorKey: 'pageviews',
-				header: 'Pageviews',
-				cell: (info: CellContext<GeographicEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'percentage',
-				accessorKey: 'percentage',
-				header: 'Share',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const percentage = info.getValue() as number;
-					return <PercentageBadge percentage={percentage} />;
-				},
-			},
-		],
-		[]
-	);
-
-	const cityColumns = useMemo(
-		(): ColumnDef<GeographicEntry>[] => [
-			{
-				id: 'name',
-				accessorKey: 'name',
-				header: 'City',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const name = info.getValue() as string;
-					const row = info.row.original;
-					const cityName = name;
-					const countryCode = (row as any).country_code;
-					const countryName = (row as any).country_name;
-
-					const getCityCountryIcon = () => {
-						if (countryCode) {
-							return <CountryFlag country={countryCode} size={16} />;
-						}
-						return <MapPinIcon className="h-4 w-4 text-primary" />;
-					};
-
-					const formatCityName = () => {
-						if (countryName && cityName) {
-							return `${cityName}, ${countryName}`;
-						}
-						return cityName || 'Unknown city';
-					};
-
-					return (
-						<div className="flex items-center gap-2">
-							{getCityCountryIcon()}
-							<span className="font-medium">{formatCityName()}</span>
-						</div>
-					);
-				},
-			},
-			{
-				id: 'visitors',
-				accessorKey: 'visitors',
-				header: 'Visitors',
-				cell: (info: CellContext<GeographicEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'pageviews',
-				accessorKey: 'pageviews',
-				header: 'Pageviews',
-				cell: (info: CellContext<GeographicEntry, any>) => (
-					<span className="font-medium">{formatNumber(info.getValue())}</span>
-				),
-			},
-			{
-				id: 'percentage',
-				accessorKey: 'percentage',
-				header: 'Share',
-				cell: (info: CellContext<GeographicEntry, any>) => {
-					const percentage = info.getValue() as number;
-					return <PercentageBadge percentage={percentage} />;
-				},
-			},
-		],
-		[]
-	);
+	const cityColumns = createGeoColumns({ type: 'city' });
 
 	const geographicTabs = useMemo(
 		() => [
@@ -719,7 +308,7 @@ export function WebsiteAudienceTab({
 					value: row.name,
 				}),
 			},
-			...(canUseDisplayNames
+			...(displayNames
 				? [
 						{
 							id: 'languages',
@@ -750,13 +339,7 @@ export function WebsiteAudienceTab({
 			geographicData.city,
 			geographicData.language,
 			geographicData.timezone,
-			countryColumns,
-			regionColumns,
-			geographicColumns,
-			cityColumns,
-			languageColumns,
-			timezoneColumns,
-			canUseDisplayNames,
+			displayNames,
 		]
 	);
 
@@ -778,7 +361,9 @@ export function WebsiteAudienceTab({
 					getSubRows={(row: any) => row.versions}
 					isLoading={isLoading}
 					minHeight={350}
-					onAddFilter={onAddFilter}
+					onAddFilter={(field: string, value: string) =>
+						addFilter({ field, operator: 'eq' as const, value })
+					}
 					renderSubRow={(subRow: any, parentRow: any) => {
 						// Calculate percentage relative to parent browser (not total visitors)
 						const percentage = Math.round(
@@ -853,7 +438,9 @@ export function WebsiteAudienceTab({
 					description="Visitors by network connection"
 					isLoading={isLoading}
 					minHeight={350}
-					onAddFilter={onAddFilter}
+					onAddFilter={(field: string, value: string) =>
+						addFilter({ field, operator: 'eq' as const, value })
+					}
 					showSearch={false}
 					tabs={[
 						{
@@ -879,7 +466,9 @@ export function WebsiteAudienceTab({
 						initialPageSize={8}
 						isLoading={isLoading}
 						minHeight={400}
-						onAddFilter={onAddFilter}
+						onAddFilter={(field: string, value: string) =>
+							addFilter({ field, operator: 'eq' as const, value })
+						}
 						tabs={geographicTabs}
 						title="Geographic Distribution"
 					/>
