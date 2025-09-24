@@ -2,6 +2,7 @@ import type { CellContext, ColumnDef } from '@tanstack/react-table';
 import { PercentageBadge } from '@/components/ui/percentage-badge';
 
 export interface MetricEntry {
+	name: string;
 	visitors: number;
 	pageviews?: number;
 	percentage?: number;
@@ -18,6 +19,8 @@ const formatNumber = (value: number | null | undefined): string => {
 };
 
 interface MetricRowProps {
+	includeName?: boolean;
+	nameLabel?: string;
 	includePageviews?: boolean;
 	visitorsLabel?: string;
 	pageviewsLabel?: string;
@@ -25,27 +28,45 @@ interface MetricRowProps {
 }
 
 export function createMetricColumns({
+	includeName = false,
+	nameLabel = 'Name',
 	includePageviews = true,
 	visitorsLabel = 'Visitors',
 	pageviewsLabel = 'Pageviews',
 	percentageLabel = 'Share',
 }: MetricRowProps = {}): ColumnDef<MetricEntry>[] {
-	const columns: ColumnDef<MetricEntry>[] = [
-		{
-			id: 'visitors',
-			accessorKey: 'visitors',
-			header: visitorsLabel,
+	const columns: ColumnDef<MetricEntry>[] = [];
+
+	if (includeName) {
+		columns.push({
+			id: 'name',
+			accessorKey: 'name',
+			header: nameLabel,
 			cell: (info: CellContext<MetricEntry, any>) => {
-				const value = info.getValue() as number;
+				const name = info.getValue() as string;
 				return (
-					<div>
-						<div className="font-medium">{formatNumber(value)}</div>
-						<div className="text-muted-foreground text-xs">unique users</div>
-					</div>
+					<span className="font-medium text-foreground" title={name}>
+						{name}
+					</span>
 				);
 			},
+		});
+	}
+
+	columns.push({
+		id: 'visitors',
+		accessorKey: 'visitors',
+		header: visitorsLabel,
+		cell: (info: CellContext<MetricEntry, any>) => {
+			const value = info.getValue() as number;
+			return (
+				<div>
+					<div className="font-medium">{formatNumber(value)}</div>
+					<div className="text-muted-foreground text-xs">unique users</div>
+				</div>
+			);
 		},
-	];
+	});
 
 	if (includePageviews) {
 		columns.push({

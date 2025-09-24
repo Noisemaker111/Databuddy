@@ -22,13 +22,14 @@ import {
 	StatCard,
 	UnauthorizedAccessError,
 } from '@/components/analytics';
-import {
-	ReferrerSourceCell,
-	type ReferrerSourceCellData,
-} from '@/components/atomic/ReferrerSourceCell';
 import { MetricsChart } from '@/components/charts/metrics-chart';
 import { BrowserIcon, OSIcon } from '@/components/icon';
 import { DataTable } from '@/components/table/data-table';
+import {
+	createMetricColumns,
+	createPageColumns,
+	createReferrerColumns,
+} from '@/components/table/rows';
 import { useBatchDynamicQuery } from '@/hooks/use-dynamic-query';
 import { getUserTimezone } from '@/lib/timezone';
 import {
@@ -73,22 +74,21 @@ interface CellInfo {
 	row: { original: unknown };
 }
 
+interface PageRowData {
+	name: string;
+	visitors: number;
+	pageviews: number;
+	percentage: number;
+}
+
 interface AnalyticsRowData {
 	name: string;
-	visitors?: number;
-	pageviews?: number;
-	percentage?: number;
+	visitors: number;
+	pageviews: number;
+	percentage: number;
 	referrer?: string;
 }
 
-interface PageRowData {
-	name: string;
-	visitors?: number;
-	pageviews?: number;
-	percentage?: number;
-}
-
-// Constants
 const MIN_PREVIOUS_SESSIONS_FOR_TREND = 5;
 const MIN_PREVIOUS_VISITORS_FOR_TREND = 5;
 const MIN_PREVIOUS_PAGEVIEWS_FOR_TREND = 10;
@@ -266,50 +266,15 @@ export function WebsiteOverviewTab({
 		return <PercentageBadge percentage={percentage} />;
 	};
 
-	const referrerCustomCell = (info: CellInfo) => {
-		const cellData = info.row.original as ReferrerSourceCellData;
-		return <ReferrerSourceCell {...cellData} />;
-	};
-
 	const referrerTabs = [
 		{
 			id: 'referrers',
 			label: 'Referrers',
 			data: analytics.top_referrers || [],
-			columns: [
-				{
-					id: 'name',
-					accessorKey: 'name',
-					header: 'Source',
-					cell: referrerCustomCell,
-				},
-				{
-					id: 'visitors',
-					accessorKey: 'visitors',
-					header: 'Visitors',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'pageviews',
-					accessorKey: 'pageviews',
-					header: 'Views',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'percentage',
-					accessorKey: 'percentage',
-					header: 'Share',
-					cell: createPercentageCell(),
-				},
-			] as ColumnDef<AnalyticsRowData, unknown>[],
+			columns: createReferrerColumns() as ColumnDef<
+				AnalyticsRowData,
+				unknown
+			>[],
 			getFilter: (row: AnalyticsRowData) => {
 				return {
 					field: 'referrer',
@@ -321,47 +286,12 @@ export function WebsiteOverviewTab({
 			id: 'utm_sources',
 			label: 'UTM Sources',
 			data: analytics.utm_sources || [],
-			columns: [
-				{
-					id: 'name',
-					accessorKey: 'name',
-					header: 'Source',
-					cell: (info: CellInfo) => {
-						const name = info.getValue() as string;
-						return (
-							<span className="font-medium text-foreground" title={name}>
-								{name}
-							</span>
-						);
-					},
-				},
-				{
-					id: 'visitors',
-					accessorKey: 'visitors',
-					header: 'Visitors',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'pageviews',
-					accessorKey: 'pageviews',
-					header: 'Views',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'percentage',
-					accessorKey: 'percentage',
-					header: 'Share',
-					cell: createPercentageCell(),
-				},
-			] as ColumnDef<AnalyticsRowData, unknown>[],
+			columns: createMetricColumns({
+				includeName: true,
+				nameLabel: 'Source',
+				visitorsLabel: 'Visitors',
+				pageviewsLabel: 'Views',
+			}) as ColumnDef<AnalyticsRowData, unknown>[],
 			getFilter: (row: AnalyticsRowData) => ({
 				field: 'utm_source',
 				value: row.name,
@@ -371,47 +301,12 @@ export function WebsiteOverviewTab({
 			id: 'utm_mediums',
 			label: 'UTM Mediums',
 			data: analytics.utm_mediums || [],
-			columns: [
-				{
-					id: 'name',
-					accessorKey: 'name',
-					header: 'Medium',
-					cell: (info: CellInfo) => {
-						const name = info.getValue() as string;
-						return (
-							<span className="font-medium text-foreground" title={name}>
-								{name}
-							</span>
-						);
-					},
-				},
-				{
-					id: 'visitors',
-					accessorKey: 'visitors',
-					header: 'Visitors',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'pageviews',
-					accessorKey: 'pageviews',
-					header: 'Views',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'percentage',
-					accessorKey: 'percentage',
-					header: 'Share',
-					cell: createPercentageCell(),
-				},
-			] as ColumnDef<AnalyticsRowData, unknown>[],
+			columns: createMetricColumns({
+				includeName: true,
+				nameLabel: 'Medium',
+				visitorsLabel: 'Visitors',
+				pageviewsLabel: 'Views',
+			}) as ColumnDef<AnalyticsRowData, unknown>[],
 			getFilter: (row: AnalyticsRowData) => ({
 				field: 'utm_medium',
 				value: row.name,
@@ -421,47 +316,12 @@ export function WebsiteOverviewTab({
 			id: 'utm_campaigns',
 			label: 'UTM Campaigns',
 			data: analytics.utm_campaigns || [],
-			columns: [
-				{
-					id: 'name',
-					accessorKey: 'name',
-					header: 'Campaign',
-					cell: (info: CellInfo) => {
-						const name = info.getValue() as string;
-						return (
-							<span className="font-medium text-foreground" title={name}>
-								{name}
-							</span>
-						);
-					},
-				},
-				{
-					id: 'visitors',
-					accessorKey: 'visitors',
-					header: 'Visitors',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'pageviews',
-					accessorKey: 'pageviews',
-					header: 'Views',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'percentage',
-					accessorKey: 'percentage',
-					header: 'Share',
-					cell: createPercentageCell(),
-				},
-			] as ColumnDef<AnalyticsRowData, unknown>[],
+			columns: createMetricColumns({
+				includeName: true,
+				nameLabel: 'Campaign',
+				visitorsLabel: 'Visitors',
+				pageviewsLabel: 'Views',
+			}) as ColumnDef<AnalyticsRowData, unknown>[],
 			getFilter: (row: AnalyticsRowData) => ({
 				field: 'utm_campaign',
 				value: row.name,
@@ -658,47 +518,7 @@ export function WebsiteOverviewTab({
 			id: 'top_pages',
 			label: 'Top Pages',
 			data: analytics.top_pages || [],
-			columns: [
-				{
-					id: 'name',
-					accessorKey: 'name',
-					header: 'Page',
-					cell: (info: CellInfo) => {
-						const name = info.getValue() as string;
-						return (
-							<span className="font-medium text-foreground" title={name}>
-								{name}
-							</span>
-						);
-					},
-				},
-				{
-					id: 'visitors',
-					accessorKey: 'visitors',
-					header: 'Visitors',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'pageviews',
-					accessorKey: 'pageviews',
-					header: 'Views',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'percentage',
-					accessorKey: 'percentage',
-					header: 'Share',
-					cell: createPercentageCell(),
-				},
-			] as ColumnDef<PageRowData, unknown>[],
+			columns: createPageColumns() as ColumnDef<PageRowData, unknown>[],
 			getFilter: (row: PageRowData) => ({
 				field: 'path',
 				value: row.name,
@@ -708,47 +528,7 @@ export function WebsiteOverviewTab({
 			id: 'entry_pages',
 			label: 'Entry Pages',
 			data: analytics.entry_pages || [],
-			columns: [
-				{
-					id: 'name',
-					accessorKey: 'name',
-					header: 'Page',
-					cell: (info: CellInfo) => {
-						const name = info.getValue() as string;
-						return (
-							<span className="font-medium text-foreground" title={name}>
-								{name}
-							</span>
-						);
-					},
-				},
-				{
-					id: 'visitors',
-					accessorKey: 'visitors',
-					header: 'Visitors',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'pageviews',
-					accessorKey: 'pageviews',
-					header: 'Views',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'percentage',
-					accessorKey: 'percentage',
-					header: 'Share',
-					cell: createPercentageCell(),
-				},
-			] as ColumnDef<PageRowData, unknown>[],
+			columns: createPageColumns() as ColumnDef<PageRowData, unknown>[],
 			getFilter: (row: PageRowData) => ({
 				field: 'path',
 				value: row.name,
@@ -758,47 +538,7 @@ export function WebsiteOverviewTab({
 			id: 'exit_pages',
 			label: 'Exit Pages',
 			data: analytics.exit_pages || [],
-			columns: [
-				{
-					id: 'name',
-					accessorKey: 'name',
-					header: 'Page',
-					cell: (info: CellInfo) => {
-						const name = info.getValue() as string;
-						return (
-							<span className="font-medium text-foreground" title={name}>
-								{name}
-							</span>
-						);
-					},
-				},
-				{
-					id: 'visitors',
-					accessorKey: 'visitors',
-					header: 'Visitors',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'pageviews',
-					accessorKey: 'pageviews',
-					header: 'Views',
-					cell: (info: CellInfo) => (
-						<span className="font-medium text-foreground">
-							{formatNumber(info.getValue() as number)}
-						</span>
-					),
-				},
-				{
-					id: 'percentage',
-					accessorKey: 'percentage',
-					header: 'Share',
-					cell: createPercentageCell(),
-				},
-			] as ColumnDef<PageRowData, unknown>[],
+			columns: createPageColumns() as ColumnDef<PageRowData, unknown>[],
 			getFilter: (row: PageRowData) => ({
 				field: 'path',
 				value: row.name,

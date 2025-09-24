@@ -1,4 +1,3 @@
-export * from './device-row';
 export * from './geo-row';
 export * from './icon-text-row';
 export * from './language-row';
