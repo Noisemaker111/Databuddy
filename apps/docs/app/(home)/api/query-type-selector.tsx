@@ -87,7 +87,7 @@ export function QueryTypeSelector({
 												Limit:
 												{
 													availableTypes.find((t) => t.name === type)
-														.defaultLimit
+														?.defaultLimit
 												}
 											</div>
 										)}
