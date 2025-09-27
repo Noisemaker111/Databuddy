@@ -23,7 +23,7 @@ export default function PrivacyPage() {
 
 	const isPublic = websiteData?.isPublic ?? false;
 	const shareableLink = websiteData
-		? `${window.location.origin}/websites/${websiteId}`
+		? `${window.location.origin}/demo/${websiteId}`
 		: '';
 
 	const handleTogglePublic = useCallback(() => {
