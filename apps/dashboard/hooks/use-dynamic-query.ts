@@ -961,6 +961,94 @@ export function useProfilesData(
 }
 
 /**
+ * Hook for fetching a single user's complete profile with sessions and events
+ * Much more efficient than useProfilesData for individual user pages
+ */
+export function useUserProfile(
+	websiteId: string,
+	userId: string,
+	dateRange: DateRange,
+	options?: Partial<UseQueryOptions<DynamicQueryResponse>>
+) {
+	const queryResult = useDynamicQuery(
+		websiteId,
+		dateRange,
+		{
+			id: `user-profile-${userId}`,
+			parameters: ['profile_detail'],
+			filters: [
+				{
+					field: 'anonymous_id',
+					operator: 'eq',
+					value: userId,
+				},
+			],
+		},
+		{
+			...options,
+			staleTime: 5 * 60 * 1000, // 5 minutes
+			gcTime: 10 * 60 * 1000, // 10 minutes
+			enabled: Boolean(userId && websiteId), // Only run if we have both IDs
+		}
+	);
+
+	const userProfile = useMemo(() => {
+		const rawProfile = (queryResult.data as any)?.profile_detail?.[0];
+		if (!rawProfile) {
+			return null;
+		}
+
+		// Transform the raw profile data to match expected structure
+		return {
+			visitor_id: rawProfile.visitor_id,
+			first_visit: rawProfile.first_visit,
+			last_visit: rawProfile.last_visit,
+			total_sessions: rawProfile.total_sessions,
+			total_pageviews: rawProfile.total_pageviews,
+			total_duration: rawProfile.total_duration,
+			total_duration_formatted: rawProfile.total_duration_formatted,
+			device: rawProfile.device,
+			browser: rawProfile.browser,
+			os: rawProfile.os,
+			country: rawProfile.country,
+			region: rawProfile.region,
+			sessions:
+				rawProfile.sessions?.map((sessionTuple: any[]) => ({
+					session_id: sessionTuple[0],
+					session_name: sessionTuple[1],
+					first_visit: sessionTuple[2],
+					last_visit: sessionTuple[3],
+					duration: sessionTuple[4],
+					duration_formatted: sessionTuple[5],
+					page_views: sessionTuple[6],
+					unique_pages: sessionTuple[7],
+					device: sessionTuple[8],
+					browser: sessionTuple[9],
+					os: sessionTuple[10],
+					country: sessionTuple[11],
+					region: sessionTuple[12],
+					referrer: sessionTuple[13],
+					events:
+						sessionTuple[14]?.map((eventTuple: any[]) => ({
+							event_id: eventTuple[0],
+							time: eventTuple[1],
+							event_name: eventTuple[2],
+							path: eventTuple[3],
+							properties: eventTuple[4] ? JSON.parse(eventTuple[4]) : {},
+							error_message: eventTuple[5],
+							error_type: eventTuple[6],
+						})) || [],
+				})) || [],
+		};
+	}, [queryResult.data]);
+
+	return {
+		...queryResult,
+		userProfile,
+	};
+}
+
+/**
  * Hook for real-time active user stats. Polls every 5 seconds.
  */
 export function useRealTimeStats(

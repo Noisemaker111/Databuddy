@@ -519,27 +519,9 @@ async function insertTrackEvent(
 		dom_interactive: validatePerformanceMetric(trackData.dom_interactive),
 		ttfb: validatePerformanceMetric(trackData.ttfb),
 		connection_time: validatePerformanceMetric(trackData.connection_time),
-		request_time: validatePerformanceMetric(trackData.request_time),
 		render_time: validatePerformanceMetric(trackData.render_time),
 		redirect_time: validatePerformanceMetric(trackData.redirect_time),
 		domain_lookup_time: validatePerformanceMetric(trackData.domain_lookup_time),
-
-		fcp: validatePerformanceMetric(trackData.fcp),
-		lcp: validatePerformanceMetric(trackData.lcp),
-		cls: validatePerformanceMetric(trackData.cls),
-		fid: validatePerformanceMetric(trackData.fid),
-		inp: validatePerformanceMetric(trackData.inp),
-
-		href: trackData.href,
-		text: trackData.text,
-		value: trackData.value,
-
-		error_message: undefined,
-		error_filename: undefined,
-		error_lineno: undefined,
-		error_colno: undefined,
-		error_stack: undefined,
-		error_type: undefined,
 
 		properties: trackData.properties
 			? JSON.stringify(trackData.properties)
@@ -850,7 +832,6 @@ const app = new Elysia()
 			}
 
 			if (eventType === 'outgoing_link') {
-				// Check for bots before processing outgoing link events
 				const botError = await checkForBot(
 					request,
 					body,
