@@ -212,7 +212,7 @@ export function WebsiteAudienceTab({
 									{browserName}
 								</div>
 								<div className="text-muted-foreground text-xs">
-									{row.versions?.length || 0} versions detected
+									{row.versions?.length || 0} versions
 								</div>
 							</div>
 						</div>

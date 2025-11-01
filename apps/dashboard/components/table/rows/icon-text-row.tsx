@@ -1,5 +1,6 @@
 import type { CellContext, ColumnDef } from '@tanstack/react-table';
 import type { ReactNode } from 'react';
+import { PercentageBadge } from '@/components/ui/percentage-badge';
 
 export interface IconTextEntry {
 	name: string;
@@ -74,11 +75,7 @@ export function createIconTextColumns({
 				header: 'Share',
 				cell: (info: CellContext<IconTextEntry, any>) => {
 					const percentage = info.getValue() as number;
-					return (
-						<div className="flex justify-end">
-							<span className="font-medium">{percentage}%</span>
-						</div>
-					);
+					return <PercentageBadge percentage={percentage} />;
 				},
 			}
 		);
