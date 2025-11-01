@@ -217,7 +217,7 @@ function shouldAutoParseReferrers(
 
 /**
  * Groups and maps screen resolutions to device types, summing pageviews/visitors by type.
- * Preserves all original fields (e.g., percentage) from the first row of each device type.
+ * Calculates percentages based on visitors to match the frontend display.
  */
 export function mapDeviceTypesPlugin(rows: DataRow[]): DataRow[] {
 	const grouped = new Map<string, DataRow>();
@@ -231,24 +231,24 @@ export function mapDeviceTypesPlugin(rows: DataRow[]): DataRow[] {
 		if (agg) {
 			agg.pageviews = getNumber(agg.pageviews) + getNumber(row.pageviews);
 			agg.visitors = getNumber(agg.visitors) + getNumber(row.visitors);
-			const aggPct = agg.percentage;
-			const rowPct = row.percentage;
-			if (typeof aggPct === 'number' && typeof rowPct === 'number') {
-				agg.percentage = aggPct + rowPct;
-			}
 		}
 	}
-	let totalPageviews = 0;
-	for (const row of grouped.values()) {
-		totalPageviews += getNumber(row.pageviews);
+	let totalVisitors = 0;
+	const groupedArray = Array.from(grouped.values());
+	for (const row of groupedArray) {
+		totalVisitors += getNumber(row.visitors);
 	}
-	for (const row of grouped.values()) {
+	for (const row of groupedArray) {
 		row.percentage =
-			totalPageviews > 0
-				? Math.round((getNumber(row.pageviews) / totalPageviews) * 10_000) / 100
+			totalVisitors > 0
+				? Math.round((getNumber(row.visitors) / totalVisitors) * 10_000) / 100
 				: 0;
 	}
-	return Array.from(grouped.values());
+	return groupedArray.sort((a, b) => {
+		const visitorsA = getNumber(a.visitors);
+		const visitorsB = getNumber(b.visitors);
+		return visitorsB - visitorsA;
+	});
 }
 
 function applyUrlNormalization(data: DataRow[]): DataRow[] {
