@@ -80,7 +80,7 @@ function OrganizationSelectorTrigger({
 		>
 			<div className="flex w-full items-center justify-between">
 				<div className="flex items-center gap-3">
-					<div className="rounded shadow-sm">
+					<div className="rounded">
 						<Avatar className="h-5 w-5">
 							<AvatarImage
 								alt={activeOrganization?.name || 'Personal'}
@@ -165,7 +165,7 @@ export function OrganizationSelector() {
 			<div className="flex h-12 w-full items-center border-sidebar-border border-b bg-sidebar-accent px-3 py-3">
 				<div className="flex w-full items-center justify-between">
 					<div className="flex items-center gap-3">
-						<div className="rounded-lg bg-sidebar/80 p-1.5 shadow-sm ring-1 ring-sidebar-border/50">
+						<div className="rounded-lg bg-sidebar/80 p-1.5 ring-1 ring-sidebar-border/50">
 							<Skeleton className="h-5 w-5 rounded" />
 						</div>
 						<div className="flex min-w-0 flex-1 flex-col items-start">
@@ -241,7 +241,7 @@ export function OrganizationSelector() {
 
 					{filteredOrganizations && filteredOrganizations.length > 0 && (
 						<div className="flex flex-col">
-							<DropdownMenuSeparator className="my-1 bg-sidebar-border" />
+							<DropdownMenuSeparator className="p-0 m-0 bg-sidebar-border" />
 							{filteredOrganizations.map((org) => (
 								<DropdownMenuItem
 									className={cn(
@@ -278,7 +278,7 @@ export function OrganizationSelector() {
 						</div>
 					)}
 
-					<DropdownMenuSeparator className="my-1 bg-sidebar-border" />
+					<DropdownMenuSeparator className="p-0 m-0 bg-sidebar-border" />
 					<DropdownMenuItem
 						className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sidebar-foreground/70 text-sm transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
 						onClick={handleCreateOrganization}
