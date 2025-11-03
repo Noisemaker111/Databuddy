@@ -82,18 +82,15 @@ export function RetentionContent({ websiteId }: RetentionContentProps) {
 	}, [rateData, dateRange]);
 
 	const overallStats = useMemo(() => {
-		const avgRetentionRate =
-			rates.length > 0
-				? rates.reduce((sum, rate) => sum + rate.retention_rate, 0) /
-					rates.length
-				: 0;
-
 		const totalNewUsers = rates.reduce((sum, rate) => sum + rate.new_users, 0);
 		const totalReturningUsers = rates.reduce(
 			(sum, rate) => sum + rate.returning_users,
 			0
 		);
 		const totalUniqueUsers = totalNewUsers + totalReturningUsers;
+
+		const overallRetentionRate =
+			totalUniqueUsers > 0 ? (totalReturningUsers / totalUniqueUsers) * 100 : 0;
 
 		const weightedWeek1 = cohorts.reduce(
 			(sum, cohort) => sum + cohort.week_1_retention * cohort.users,
@@ -107,7 +104,7 @@ export function RetentionContent({ websiteId }: RetentionContentProps) {
 			totalCohortUsers > 0 ? weightedWeek1 / totalCohortUsers : 0;
 
 		return {
-			avgRetentionRate: avgRetentionRate.toFixed(1),
+			avgRetentionRate: overallRetentionRate.toFixed(1),
 			totalUsers: totalUniqueUsers,
 			totalNewUsers,
 			totalReturningUsers,
@@ -145,7 +142,7 @@ export function RetentionContent({ websiteId }: RetentionContentProps) {
 									</div>
 									<div>
 										<p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-											Avg Retention Rate
+											Overall Retention Rate
 										</p>
 										<p className="font-bold text-foreground text-xl">
 											{overallStats.avgRetentionRate}%
