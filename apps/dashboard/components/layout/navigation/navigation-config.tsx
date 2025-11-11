@@ -277,11 +277,11 @@ export const websiteNavigation: NavigationSection[] = [
 			alpha: true,
 			rootLevel: false,
 		}),
-		createNavItem("Databunny AI", RobotIcon, "/assistant", {
-			alpha: true,
-			hideFromDemo: true,
-			rootLevel: false,
-		}),
+		// createNavItem("Databunny AI", RobotIcon, "/assistant", {
+		// 	alpha: true,
+		// 	hideFromDemo: true,
+		// 	rootLevel: false,
+		// }),
 	]),
 ];
 

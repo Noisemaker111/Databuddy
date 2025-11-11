@@ -4,6 +4,7 @@ import {
 	eq,
 	type InferSelectModel,
 	isNull,
+	ne,
 	websites,
 } from "@databuddy/db";
 import { logger } from "@databuddy/shared/utils/discord-webhook";
@@ -272,16 +273,20 @@ export class WebsiteService {
 	private validateDomainIfPresentAndFlow(
 		updates: Updates,
 		userId: string,
-		organizationId?: string
+		organizationId?: string,
+		excludeWebsiteId?: string
 	): Effect.Effect<Updates, WebsiteError> {
 		if (!updates.domain) {
 			return Effect.succeed(updates);
 		}
 		const domainToUpdate = buildFullDomain(updates.domain as string);
-		const websiteFilter = and(
+		const baseFilter = and(
 			eq(websites.domain, domainToUpdate),
 			buildWebsiteFilter(userId, organizationId)
 		);
+		const websiteFilter = excludeWebsiteId
+			? and(baseFilter, ne(websites.id, excludeWebsiteId))
+			: baseFilter;
 		return pipe(
 			this.performDBOperation<Website | null>(() =>
 				this.db.query.websites.findFirst({ where: websiteFilter }).then((result) => result ?? null)
@@ -311,7 +316,7 @@ export class WebsiteService {
 			Effect.succeed(updates),
 			Effect.flatMap(this.validateNameIfPresentAndFlow),
 			Effect.flatMap((u) =>
-				this.validateDomainIfPresentAndFlow(u, userId, organizationId)
+				this.validateDomainIfPresentAndFlow(u, userId, organizationId, websiteId)
 			),
 			Effect.flatMap((finalUpdates) =>
 				this.performDBOperation<Website | null>(() => updateFn(finalUpdates))

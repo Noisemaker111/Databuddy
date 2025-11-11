@@ -129,6 +129,9 @@ const updateWebsiteCache = (
 		updateWebsiteInList(old, updatedWebsite)
 	);
 	queryClient.setQueryData(getByIdKey, updatedWebsite);
+
+	queryClient.invalidateQueries({ queryKey: getByIdKey });
+	queryClient.invalidateQueries({ queryKey: listKey });
 };
 
 export function useUpdateWebsite() {

@@ -131,7 +131,7 @@ export function WebsiteDialog({
 		};
 
 		try {
-			if (isEditing) {
+			if (website?.id) {
 				const updateData: UpdateWebsiteInput = {
 					id: website.id,
 					name: formData.name,
@@ -151,7 +151,7 @@ export function WebsiteDialog({
 			}
 			onOpenChange(false);
 		} catch (error: unknown) {
-			const message = getErrorMessage(error, isEditing);
+			const message = getErrorMessage(error, !!website?.id);
 			toast.error(message);
 		}
 	});
