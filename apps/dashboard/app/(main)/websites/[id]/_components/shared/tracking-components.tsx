@@ -308,22 +308,12 @@ export function TrackingStatusCard({
 					</div>
 					<div className="flex flex-col gap-0.5">
 						<span className="font-medium text-sm">
-							{isSetup
-								? integrationType === "vercel"
-									? "Vercel Integration Active"
-									: "Tracking Active"
-								: integrationType === "vercel"
-									? "Vercel Integration Ready"
-									: "Tracking Not Setup"}
+							{isSetup ? "Tracking Active" : "Tracking Not Setup"}
 						</span>
 						<span className="text-muted-foreground text-xs">
 							{isSetup
-								? integrationType === "vercel"
-									? "Data is being collected via Vercel integration"
-									: "Data is being collected successfully"
-								: integrationType === "vercel"
-									? "Environment variables configured, waiting for traffic"
-									: "Install the tracking script to start collecting data"}
+								? "Data is being collected successfully"
+								: "Install the tracking script to start collecting data"}
 						</span>
 					</div>
 				</div>

@@ -5,9 +5,9 @@ import type { ProcessedMiniChartData } from "@databuddy/shared/types/website";
 import { logger } from "@databuddy/shared/utils/discord-webhook";
 import {
 	createWebsiteSchema,
+	togglePublicWebsiteSchema,
 	transferWebsiteSchema,
 	transferWebsiteToOrgSchema,
-	togglePublicWebsiteSchema,
 	updateWebsiteSchema,
 } from "@databuddy/validation";
 import { ORPCError } from "@orpc/server";
@@ -147,11 +147,7 @@ const fetchChartData = async (
 
 export const websitesRouter = {
 	list: protectedProcedure
-		.input(
-			z
-				.object({ organizationId: z.string().optional() })
-				.default({})
-		)
+		.input(z.object({ organizationId: z.string().optional() }).default({}))
 		.handler(({ context, input }) => {
 			const listCacheKey = `list:${context.user.id}:${input.organizationId || ""}`;
 			return websiteCache.withCache({
@@ -183,11 +179,7 @@ export const websitesRouter = {
 		}),
 
 	listWithCharts: protectedProcedure
-		.input(
-			z
-				.object({ organizationId: z.string().optional() })
-				.default({})
-		)
+		.input(z.object({ organizationId: z.string().optional() }).default({}))
 		.handler(({ context, input }) => {
 			const chartsListCacheKey = `listWithCharts:${context.user.id}:${input.organizationId || ""}`;
 
@@ -517,35 +509,50 @@ export const websitesRouter = {
 	isTrackingSetup: publicProcedure
 		.input(z.object({ websiteId: z.string() }))
 		.handler(async ({ context, input }) => {
-			const website = await authorizeWebsiteAccess(
-				context,
-				input.websiteId,
-				"read"
-			);
+			try {
+				await authorizeWebsiteAccess(
+					context,
+					input.websiteId,
+					"read"
+				);
 
-			const hasVercelIntegration = !!(
-				website.integrations as unknown as {
-					vercel?: { environments: unknown[] };
+				let hasTrackingEvents = false;
+				try {
+					const trackingCheckResult = await Promise.race([
+						chQuery<{ count: number }>(
+							`SELECT COUNT(*) as count FROM analytics.events WHERE client_id = {websiteId:String} AND event_name = 'screen_view' LIMIT 1`,
+							{ websiteId: input.websiteId }
+						),
+						new Promise<never>((_, reject) =>
+							setTimeout(
+								() => reject(new Error("ClickHouse query timeout")),
+								10_000
+							)
+						),
+					]);
+
+					hasTrackingEvents = (trackingCheckResult[0]?.count ?? 0) > 0;
+				} catch (error) {
+					logger.error(
+						"Error checking tracking events:",
+						error instanceof Error ? error.message : String(error),
+						{ websiteId: input.websiteId }
+					);
+					// Default to false if query fails
+					hasTrackingEvents = false;
 				}
-			)?.vercel?.environments?.length;
 
-			const trackingCheckResult = await chQuery<{ count: number }>(
-				`SELECT COUNT(*) as count FROM analytics.events WHERE client_id = {websiteId:String} AND event_name = 'screen_view' LIMIT 1`,
-				{ websiteId: input.websiteId }
-			);
-
-			const hasTrackingEvents = (trackingCheckResult[0]?.count ?? 0) > 0;
-
-			let integrationType: "vercel" | "manual" | null = null;
-			if (hasVercelIntegration) {
-				integrationType = "vercel";
-			} else if (hasTrackingEvents) {
-				integrationType = "manual";
+				return {
+					tracking_setup: hasTrackingEvents,
+					integration_type: hasTrackingEvents ? "manual" : null,
+				};
+			} catch (error) {
+				logger.error(
+					"Error in isTrackingSetup:",
+					error instanceof Error ? error.message : String(error),
+					{ websiteId: input.websiteId }
+				);
+				throw error;
 			}
-
-			return {
-				tracking_setup: hasTrackingEvents,
-				integration_type: integrationType,
-			};
 		}),
 };

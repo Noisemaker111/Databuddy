@@ -44,8 +44,6 @@ export const authEnvSchema = {
  * External service environment variables
  */
 export const externalServiceEnvSchema = {
-	VERCEL_CLIENT_ID: z.string(),
-	VERCEL_CLIENT_SECRET: z.string(),
 	RESEND_API_KEY: z.string(),
 } as const;
 

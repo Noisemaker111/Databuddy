@@ -1,75 +1,75 @@
 import type {
-	LanguageModelV2,
-	LanguageModelV2Middleware,
+    LanguageModelV2,
+    LanguageModelV2Middleware,
 } from "@ai-sdk/provider";
 import { wrapLanguageModel } from "ai";
 import { computeCostUSD } from "tokenlens";
 import type { Databuddy } from "@/node";
 
 export type TrackProperties = {
-	inputTokens?: number;
-	outputTokens?: number;
-	totalTokens?: number;
-	cachedInputTokens?: number;
-	finishReason?: string;
-	toolCallCount?: number;
-	toolResultCount?: number;
-	toolCallNames?: string[];
-	inputTokenCostUSD?: number;
-	outputTokenCostUSD?: number;
-	totalTokenCostUSD?: number;
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+    cachedInputTokens?: number;
+    finishReason?: string;
+    toolCallCount?: number;
+    toolResultCount?: number;
+    toolCallNames?: string[];
+    inputTokenCostUSD?: number;
+    outputTokenCostUSD?: number;
+    totalTokenCostUSD?: number;
 };
 
 const buddyWare = (buddy: Databuddy): LanguageModelV2Middleware => {
-	return {
-		wrapGenerate: async ({ doGenerate, model }) => {
-			const result = await doGenerate();
+    return {
+        wrapGenerate: async ({ doGenerate, model }) => {
+            const result = await doGenerate();
 
-			const isToolCall = (
-				part: (typeof result.content)[number]
-			): part is Extract<
-				(typeof result.content)[number],
-				{ type: "tool-call" }
-			> => part.type === "tool-call";
+            const isToolCall = (
+                part: (typeof result.content)[number]
+            ): part is Extract<
+                (typeof result.content)[number],
+                { type: "tool-call" }
+            > => part.type === "tool-call";
 
-			const isToolResult = (
-				part: (typeof result.content)[number]
-			): part is Extract<
-				(typeof result.content)[number],
-				{ type: "tool-result" }
-			> => part.type === "tool-result";
+            const isToolResult = (
+                part: (typeof result.content)[number]
+            ): part is Extract<
+                (typeof result.content)[number],
+                { type: "tool-result" }
+            > => part.type === "tool-result";
 
-			const toolCalls = result.content.filter(isToolCall);
-			const toolResults = result.content.filter(isToolResult);
-			const toolCallNames = Array.from(
-				new Set(toolCalls.map((c) => c.toolName))
-			);
+            const toolCalls = result.content.filter(isToolCall);
+            const toolResults = result.content.filter(isToolResult);
+            const toolCallNames = Array.from(
+                new Set(toolCalls.map((c) => c.toolName))
+            );
 
-			const costs = await computeCostUSD({
-				modelId: model.modelId,
-				provider: model.provider,
-				usage: result.usage,
-			});
+            const costs = await computeCostUSD({
+                modelId: model.modelId,
+                provider: model.provider,
+                usage: result.usage,
+            });
 
-			const payload: TrackProperties = {
-				inputTokens: result.usage.inputTokens,
-				outputTokens: result.usage.outputTokens,
-				totalTokens: result.usage.totalTokens,
-				cachedInputTokens: result.usage.cachedInputTokens,
-				finishReason: result.finishReason,
-				toolCallCount: toolCalls.length,
-				toolResultCount: toolResults.length,
-				inputTokenCostUSD: costs.inputTokenCostUSD,
-				outputTokenCostUSD: costs.outputTokenCostUSD,
-				totalTokenCostUSD: costs.totalTokenCostUSD,
-				toolCallNames,
-			};
-			console.log("payload", payload);
-			// buddy.track({name: 'ai.generate', properties: payload});
+            const payload: TrackProperties = {
+                inputTokens: result.usage.inputTokens,
+                outputTokens: result.usage.outputTokens,
+                totalTokens: result.usage.totalTokens,
+                cachedInputTokens: result.usage.cachedInputTokens,
+                finishReason: result.finishReason,
+                toolCallCount: toolCalls.length,
+                toolResultCount: toolResults.length,
+                inputTokenCostUSD: costs.inputTokenCostUSD,
+                outputTokenCostUSD: costs.outputTokenCostUSD,
+                totalTokenCostUSD: costs.totalTokenCostUSD,
+                toolCallNames,
+            };
+            console.log("payload", payload);
+            // buddy.track({name: 'ai.generate', properties: payload});
 
-			return result;
-		},
-	};
+            return result;
+        },
+    };
 };
 
 /**
@@ -79,10 +79,11 @@ const buddyWare = (buddy: Databuddy): LanguageModelV2Middleware => {
  * @returns The wrapped language model, can be used in e.g. generateText from the ai package
  */
 export const wrapVercelLanguageModel = (
-	model: LanguageModelV2,
-	buddy: Databuddy
+    model: LanguageModelV2,
+    buddy: Databuddy
 ) =>
-	wrapLanguageModel({
-		model,
-		middleware: buddyWare(buddy),
-	});
+    wrapLanguageModel({
+        model,
+        middleware: buddyWare(buddy),
+    });
+

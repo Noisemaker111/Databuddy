@@ -12,7 +12,6 @@ import {
 	trackingOptionsAtom,
 } from "@/stores/jotai/filterAtoms";
 import {
-	CodeBlock,
 	InfoSection,
 	InstallationTabs,
 	TrackingOptionsGrid,
@@ -23,11 +22,7 @@ import {
 	BASIC_TRACKING_OPTIONS,
 	COPY_SUCCESS_TIMEOUT,
 } from "../shared/tracking-constants";
-import {
-	generateNpmCode,
-	generateScriptTag,
-	generateVercelNpmCode,
-} from "../utils/code-generators";
+import { generateNpmCode, generateScriptTag } from "../utils/code-generators";
 
 import type { TrackingOptions, WebsiteDataTabProps } from "../utils/types";
 
@@ -62,23 +57,11 @@ export function WebsiteTrackingSetupTab({ websiteId }: WebsiteDataTabProps) {
 			const result = await refetchTrackingSetup();
 
 			if (result.data?.tracking_setup) {
-				const integrationType = result.data.integration_type;
-				if (integrationType === "vercel") {
-					toast.success("Vercel integration active! Data is being collected.");
-				} else {
-					toast.success("Tracking setup correctly! Data is being collected.");
-				}
+				toast.success("Tracking setup correctly! Data is being collected.");
 			} else {
-				const integrationType = result.data?.integration_type;
-				if (integrationType === "vercel") {
-					toast.error(
-						"Vercel integration detected but no events yet. Make sure your site is deployed and receiving traffic."
-					);
-				} else {
-					toast.error(
-						"Tracking not found. Please verify the script installation."
-					);
-				}
+				toast.error(
+					"Tracking not found. Please verify the script installation."
+				);
 			}
 		} catch (error) {
 			console.error("Failed to check tracking status:", error);
@@ -96,56 +79,19 @@ export function WebsiteTrackingSetupTab({ websiteId }: WebsiteDataTabProps) {
 			/>
 
 			{/* Installation Instructions */}
-			{trackingSetupData?.integration_type === "vercel" ? (
-				<InfoSection title="Vercel Integration Setup">
-					<div className="space-y-4">
-						<p className="text-muted-foreground text-sm">
-							Your website is integrated with Vercel - no manual setup required!
-						</p>
-
-						<div className="rounded border bg-muted/30 p-3">
-							<p className="font-medium text-sm">Automatic SDK Detection</p>
-							<p className="text-muted-foreground text-xs leading-relaxed">
-								The Databuddy SDK will automatically detect the{" "}
-								<code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
-									NEXT_PUBLIC_DATABUDDY_CLIENT_ID
-								</code>{" "}
-								environment variable set by your Vercel integration.
-							</p>
-						</div>
-
-						<div className="space-y-2">
-							<p className="font-medium text-sm">Add the SDK to your app:</p>
-							<CodeBlock
-								code={generateVercelNpmCode(trackingOptions)}
-								copied={copiedBlockId === "vercel-setup"}
-								description="Add this to your root layout or _app.js file:"
-								onCopy={() =>
-									handleCopyCode(
-										generateVercelNpmCode(trackingOptions),
-										"vercel-setup",
-										"Vercel setup code copied to clipboard!"
-									)
-								}
-							/>
-						</div>
-					</div>
-				</InfoSection>
-			) : (
-				<InfoSection title="Installation">
-					<div className="space-y-4">
-						<p className="text-muted-foreground text-sm">
-							Choose your preferred installation method
-						</p>
-						<InstallationTabs
-							copiedBlockId={copiedBlockId}
-							npmCode={npmCode}
-							onCopyCode={handleCopyCode}
-							trackingCode={trackingCode}
-						/>
-					</div>
-				</InfoSection>
-			)}
+			<InfoSection title="Installation">
+				<div className="space-y-4">
+					<p className="text-muted-foreground text-sm">
+						Choose your preferred installation method
+					</p>
+					<InstallationTabs
+						copiedBlockId={copiedBlockId}
+						npmCode={npmCode}
+						onCopyCode={handleCopyCode}
+						trackingCode={trackingCode}
+					/>
+				</div>
+			</InfoSection>
 
 			<InfoSection title="Configuration">
 				<p className="mb-4 text-muted-foreground text-xs">

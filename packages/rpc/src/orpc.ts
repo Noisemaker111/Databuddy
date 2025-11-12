@@ -23,6 +23,16 @@ const os = createOS.$context<Context>();
 export const publicProcedure = os;
 
 export const protectedProcedure = os.use(({ context, next }) => {
+    if (context.user?.role === "ADMIN") {
+        return next({
+            context: {
+                ...context,
+                session: context.session,
+                user: context.user,
+            },
+        });
+    }
+
     if (!(context.user && context.session)) {
         throw new ORPCError("UNAUTHORIZED");
     }

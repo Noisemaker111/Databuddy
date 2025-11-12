@@ -13,5 +13,4 @@ export * from "./performance";
 export * from "./query";
 export * from "./realtime";
 export * from "./sessions";
-export * from "./vercel";
 export * from "./website";

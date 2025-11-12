@@ -29,15 +29,15 @@ export const CustomEventsBuilders: Record<string, SimpleQueryConfig> = {
 							ce.timestamp,
 							ce.properties,
 							-- Get context from events table using session_id
-							e.path,
-							e.country,
-							e.device_type,
-							e.browser_name,
-							e.os_name,
-							e.referrer,
-							e.utm_source,
-							e.utm_medium,
-							e.utm_campaign
+							any(e.path) as path,
+							any(e.country) as country,
+							any(e.device_type) as device_type,
+							any(e.browser_name) as browser_name,
+							any(e.os_name) as os_name,
+							any(e.referrer) as referrer,
+							any(e.utm_source) as utm_source,
+							any(e.utm_medium) as utm_medium,
+							any(e.utm_campaign) as utm_campaign
 						FROM analytics.custom_events ce
 						LEFT JOIN analytics.events e ON (
 							ce.session_id = e.session_id 
@@ -50,6 +50,12 @@ export const CustomEventsBuilders: Record<string, SimpleQueryConfig> = {
 							AND ce.timestamp <= parseDateTimeBestEffort(concat({endDate:String}, ' 23:59:59'))
 							AND ce.event_name != ''
 							${combinedWhereClause}
+						GROUP BY 
+							ce.event_name,
+							ce.anonymous_id,
+							ce.session_id,
+							ce.timestamp,
+							ce.properties
 					)
 					SELECT 
 						event_name as name,
@@ -120,15 +126,16 @@ export const CustomEventsBuilders: Record<string, SimpleQueryConfig> = {
 							ce.timestamp,
 							ce.properties,
 							-- Get context from events table using session_id
-							e.path,
-							e.country,
-							e.device_type,
-							e.browser_name,
-							e.os_name,
-							e.referrer,
-							e.utm_source,
-							e.utm_medium,
-							e.utm_campaign
+							-- Use any() to pick one matching event and prevent duplicates
+							any(e.path) as path,
+							any(e.country) as country,
+							any(e.device_type) as device_type,
+							any(e.browser_name) as browser_name,
+							any(e.os_name) as os_name,
+							any(e.referrer) as referrer,
+							any(e.utm_source) as utm_source,
+							any(e.utm_medium) as utm_medium,
+							any(e.utm_campaign) as utm_campaign
 						FROM analytics.custom_events ce
 						LEFT JOIN analytics.events e ON (
 							ce.session_id = e.session_id 
@@ -143,6 +150,12 @@ export const CustomEventsBuilders: Record<string, SimpleQueryConfig> = {
 							AND ce.properties != '{}'
 							AND isValidJSON(ce.properties)
 							${combinedWhereClause}
+						GROUP BY 
+							ce.event_name,
+							ce.anonymous_id,
+							ce.session_id,
+							ce.timestamp,
+							ce.properties
 					)
 					SELECT 
 						event_name as name,

@@ -7,7 +7,6 @@ import { chatRouter } from "./routers/chat";
 import { flagsRouter } from "./routers/flags";
 import { funnelsRouter } from "./routers/funnels";
 import { goalsRouter } from "./routers/goals";
-import { integrationsRouter } from "./routers/integrations";
 import { miniChartsRouter } from "./routers/mini-charts";
 import { organizationsRouter } from "./routers/organizations";
 import { preferencesRouter } from "./routers/preferences";
@@ -26,7 +25,6 @@ export const appRouter = {
 	assistant: assistantRouter,
 	chat: chatRouter,
 	organizations: organizationsRouter,
-	integrations: integrationsRouter,
 	billing: billingRouter,
 };
 
