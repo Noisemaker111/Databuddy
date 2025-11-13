@@ -399,7 +399,6 @@ export const EngagementBuilders: Record<string, SimpleQueryConfig> = {
                     ELSE 0 
                   END, 2) as week_5_retention
                 FROM retention_calc
-                GROUP BY cohort, total_users, week_1_returned, week_2_returned, week_3_returned, week_4_returned, week_5_returned
                 ORDER BY cohort DESC
             `,
 				params: {
