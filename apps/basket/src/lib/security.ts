@@ -1,6 +1,6 @@
 import crypto, { createHash } from "node:crypto";
 import { redis } from "@databuddy/redis";
-import { logger } from "@databuddy/shared/logger";
+import { logger } from "./logger";
 /**
  * Get or generate a daily salt for anonymizing user IDs
  * The salt rotates daily to maintain privacy while allowing same-day tracking

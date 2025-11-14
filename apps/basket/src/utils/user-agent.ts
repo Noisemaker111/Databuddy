@@ -6,10 +6,10 @@
  */
 
 import { bots } from "@databuddy/shared/lists/bots";
-import { logger } from "@databuddy/shared/logger";
 import { UAParser } from "ua-parser-js";
+import { logger } from "../lib/logger";
 
-export interface UserAgentInfo {
+export type UserAgentInfo = {
 	bot: {
 		isBot: boolean;
 		name?: string;
@@ -18,7 +18,7 @@ export interface UserAgentInfo {
 	browser?: string;
 	os?: string;
 	device?: "desktop" | "mobile" | "tablet" | "unknown";
-}
+};
 
 /**
  * Parse user agent to extract useful information
@@ -59,11 +59,8 @@ export function parseUserAgent(userAgent: string): {
 		};
 	} catch (error) {
 		logger.error(
-			"User Agent Parse Error",
-			`Failed to parse user agent: ${userAgent}`,
-			{
-				error: error instanceof Error ? error.message : "Unknown error",
-			}
+			{ error, userAgent },
+			"Failed to parse user agent"
 		);
 		return {
 			browserName: undefined,
