@@ -19,8 +19,10 @@ async function _getOrganizationOwnerId(
 		return orgMember?.userId || null;
 	} catch (error) {
 		logger.error(
-			"[Billing Util] Error with _getOrganizationOwnerId:",
-			error instanceof Error ? error.message : String(error)
+			{
+				error,
+			},
+			"[Billing Util] Error with _getOrganizationOwnerId"
 		);
 		return null;
 	}
