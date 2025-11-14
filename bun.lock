@@ -56,6 +56,7 @@
       "name": "@databuddy/basket",
       "version": "1.0.50",
       "dependencies": {
+        "@axiomhq/pino": "^1.3.1",
         "@clickhouse/client": "catalog:",
         "@clickhouse/client-web": "catalog:",
         "@databuddy/auth": "workspace:*",
