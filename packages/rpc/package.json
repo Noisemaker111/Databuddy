@@ -11,19 +11,21 @@
     "@databuddy/redis": "workspace:*",
     "@databuddy/shared": "workspace:*",
     "@databuddy/validation": "workspace:*",
-    "@logtail/edge": "catalog:",
-    "@orpc/server": "^1.10.4",
-    "ai": "^5.0.81",
-    "autumn-js": "catalog:",
+    "@logtail/edge": "^0.5.7",
+    "@opentelemetry/api": "^1.9.0",
+    "@orpc/otel": "^1.11.2",
+    "@orpc/server": "^1.11.2",
+    "ai": "^5.0.93",
+    "autumn-js": "^0.0.101",
     "drizzle-orm": "^0.44.7",
-    "effect": "^3.17.14",
-    "nanoid": "^5.1.5",
+    "effect": "^3.19.3",
+    "nanoid": "^5.1.6",
     "pg": "^8.16.3",
-    "superjson": "catalog:",
+    "superjson": "^2.2.5",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/pg": "^8.15.5",
-    "typescript": "catalog:"
+    "@types/pg": "^8.15.6",
+    "typescript": "^5.9.3"
   }
 }
