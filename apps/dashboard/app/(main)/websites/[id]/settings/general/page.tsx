@@ -80,17 +80,17 @@ export default function GeneralSettingsPage() {
 					<section className="border-b px-4 py-5 sm:px-6">
 						<div className="flex items-center justify-between gap-3">
 							<div className="min-w-0">
-								<Label className="mb-1 block font-medium text-sm">Name</Label>
-								<p className="truncate text-muted-foreground text-xs">
+								<Label className="block font-medium text-sm">Name</Label>
+								<p className="truncate text-muted-foreground text-sm">
 									{websiteData.name || "Not set"}
 								</p>
 							</div>
 							<Button
 								onClick={() => setShowEditDialog(true)}
 								size="sm"
-								variant="outline"
+								variant="secondary"
 							>
-								<PencilSimpleIcon className="mr-2 h-4 w-4" /> Edit
+								<PencilSimpleIcon className="size-3.5" /> Edit
 							</Button>
 						</div>
 					</section>
@@ -99,17 +99,17 @@ export default function GeneralSettingsPage() {
 					<section className="border-b px-4 py-5 sm:px-6">
 						<div className="flex items-center justify-between gap-3">
 							<div className="min-w-0">
-								<Label className="mb-1 block font-medium text-sm">Domain</Label>
-								<p className="truncate text-muted-foreground text-xs">
+								<Label className="block font-medium text-sm">Domain</Label>
+								<p className="truncate text-muted-foreground text-sm">
 									{websiteData.domain || "Not set"}
 								</p>
 							</div>
 							<Button
 								onClick={() => setShowEditDialog(true)}
 								size="sm"
-								variant="outline"
+							variant="secondary"
 							>
-								<PencilSimpleIcon className="mr-2 h-4 w-4" /> Edit
+								<PencilSimpleIcon className="size-3.5" /> Edit
 							</Button>
 						</div>
 					</section>
@@ -118,7 +118,7 @@ export default function GeneralSettingsPage() {
 						<div className="flex items-center justify-between gap-3">
 							<div>
 								<h2 className="font-medium text-sm">Transfer Website</h2>
-								<p className="text-muted-foreground text-xs">
+								<p className="text-muted-foreground text-sm">
 									Move this website to a different organization
 								</p>
 							</div>
@@ -127,9 +127,9 @@ export default function GeneralSettingsPage() {
 									router.push(`/websites/${websiteId}/settings/transfer`)
 								}
 								size="sm"
-								variant="outline"
+							variant="secondary"
 							>
-								<ArrowSquareOutIcon className="mr-2 h-4 w-4" /> Transfer
+								<ArrowSquareOutIcon className="size-3.5" /> Transfer
 							</Button>
 						</div>
 					</section>
@@ -139,7 +139,7 @@ export default function GeneralSettingsPage() {
 						<div className="flex items-center justify-between gap-3">
 							<div>
 								<h2 className="font-medium text-sm">Danger Zone</h2>
-								<p className="text-muted-foreground text-xs">
+								<p className="text-muted-foreground text-sm">
 									Permanently delete this website and all its data
 								</p>
 							</div>
@@ -148,7 +148,7 @@ export default function GeneralSettingsPage() {
 								size="sm"
 								variant="destructive"
 							>
-								<TrashIcon className="mr-2 h-4 w-4" /> Delete Website
+								<TrashIcon className="size-3.5" /> Delete Website
 							</Button>
 						</div>
 					</section>

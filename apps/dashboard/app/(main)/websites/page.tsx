@@ -141,7 +141,7 @@ export default function WebsitesPage() {
 				{/* Website count indicator */}
 				{!isLoading && websites && websites.length > 0 && (
 					<div className="mb-6">
-						<div className="flex items-center gap-2 rounded-lg border bg-accent px-3 py-2 text-muted-foreground text-sm">
+						<div className="flex items-center gap-2 rounded-lg border bg-accent-brighter px-3 py-2 text-accent-foreground text-sm">
 							<GlobeIcon
 								aria-hidden="true"
 								className="h-4 w-4 shrink-0 text-accent-foreground"

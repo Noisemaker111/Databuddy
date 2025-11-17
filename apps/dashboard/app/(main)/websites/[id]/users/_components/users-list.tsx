@@ -280,7 +280,7 @@ export function UsersList({ websiteId }: UsersListProps) {
 				<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
 					<div className="overflow-auto">
 						<Table>
-							<TableHeader className="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
+							<TableHeader className="sticky top-0 z-10 bg-accent/50 backdrop-blur-sm">
 								<TableRow>
 									{columns.map((column) => (
 										<TableHead className="h-[39px]" key={column.id}>
@@ -371,7 +371,7 @@ export function UsersList({ websiteId }: UsersListProps) {
 					<Table>
 						<TableHeader className="sticky top-0 z-10 bg-accent backdrop-blur-sm">
 							{table.getHeaderGroups().map((headerGroup) => (
-								<TableRow key={headerGroup.id}>
+								<TableRow className="shadow-[0_0_0_0.5px_var(--border)] bg-accent" key={headerGroup.id}>
 									{headerGroup.headers.map((header) => (
 										<TableHead
 											className="h-[39px]"

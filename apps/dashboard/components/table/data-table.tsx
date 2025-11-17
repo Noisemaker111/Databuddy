@@ -154,7 +154,7 @@ export function DataTable<TData extends { name: string | number }, TValue>({
 		<>
 			<div
 				className={cn(
-					"w-full overflow-hidden rounded border bg-card shadow-sm backdrop-blur-sm",
+					"w-full overflow-hidden rounded border bg-card backdrop-blur-sm",
 					className
 				)}
 			>

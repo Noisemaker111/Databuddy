@@ -202,7 +202,7 @@ export function TableContent<TData extends { name: string | number }>({
 				style={{ minHeight }}
 			>
 				<div className="mb-4">
-					<div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/20">
+					<div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/20">
 						<DatabaseIcon className="h-7 w-7 text-muted-foreground/50" />
 					</div>
 				</div>
@@ -220,7 +220,7 @@ export function TableContent<TData extends { name: string | number }>({
 		<div
 			aria-labelledby={`tab-${activeTab}`}
 			className={cn(
-				"custom-scrollbar relative overflow-auto border-sidebar-border bg-sidebar",
+				"relative overflow-auto bg-accent table-scrollbar",
 				className
 			)}
 			id={`tabpanel-${activeTab}`}
@@ -231,13 +231,13 @@ export function TableContent<TData extends { name: string | number }>({
 				<TableHeader>
 					{headerGroups.map((headerGroup) => (
 						<TableRow
-							className="sticky top-0 z-10 border-sidebar-border/30 bg-sidebar-accent"
+							className="sticky shadow-[0_0_0_0.5px_var(--border)] top-0 z-10 bg-accent"
 							key={headerGroup.id}
 						>
 							{headerGroup.headers.map((header) => (
 								<TableHead
 									className={cn(
-										"h-10 bg-sidebar-accent px-2 font-semibold text-sidebar-foreground/70 text-xs uppercase tracking-wide",
+										"h-10 bg-card px-2 font-semibold text-sidebar-foreground/70 text-xs uppercase tracking-wide",
 										(header.column.columnDef.meta as any)?.className
 									)}
 									key={header.id}
@@ -276,10 +276,10 @@ export function TableContent<TData extends { name: string | number }>({
 							<Fragment key={row.id}>
 								<TableRow
 									className={cn(
-										"relative h-11 border-border/20 pl-3 transition-all duration-300 ease-in-out",
+										"relative h-11 bg-accent/20! border border-border pl-3 transition-all duration-300 ease-in-out",
 										(isInteractive || hasSubRows) && "cursor-pointer",
 										!gradient &&
-											(rowIndex % 2 === 0 ? "bg-background/50" : "bg-muted/10")
+											(rowIndex % 2 === 0 ? "bg-accent/50" : "bg-accent/10")
 									)}
 									onClick={() =>
 										handleRowClick(row.original, hasSubRows, row.id)
@@ -302,7 +302,7 @@ export function TableContent<TData extends { name: string | number }>({
 									{row.getVisibleCells().map((cell, cellIndex) => (
 										<TableCell
 											className={cn(
-												"px-2 py-2 font-medium text-sidebar-foreground/80 text-sm transition-colors",
+												"px-2 py-2 font-medium text-accent-foreground/80 text-sm transition-colors",
 												cellIndex === 0 &&
 													"font-semibold text-sidebar-foreground",
 												(cell.column.columnDef.meta as any)?.className
@@ -356,7 +356,7 @@ export function TableContent<TData extends { name: string | number }>({
 									expandedRow === row.id &&
 									subRows.map((subRow, subIndex) => (
 										<TableRow
-											className="border-sidebar-border/10 bg-sidebar-accent/5 transition-colors hover:bg-sidebar-accent/10"
+											className="border-border/50 bg-accent transition-colors hover:bg-accent/10"
 											key={`${row.id}-sub-${subIndex}`}
 										>
 											{renderSubRow ? (

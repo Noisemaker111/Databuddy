@@ -19,7 +19,7 @@ export function PercentageBadge({
 		if (pct >= 10) {
 			return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
 		}
-		return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+		return 'bg-accent-brighter text-accent-foreground';
 	};
 
 	return (

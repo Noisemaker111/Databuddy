@@ -137,7 +137,6 @@ export const WebsiteCard = memo(
 						<ArrowRightIcon
 							aria-hidden="true"
 							className="h-4 w-4 shrink-0 text-muted-foreground transition-all duration-200 group-hover:translate-x-1 group-hover:text-primary"
-							weight="fill"
 						/>
 					</div>
 				</CardHeader>

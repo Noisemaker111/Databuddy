@@ -30,7 +30,7 @@ export function TableToolbar({
 					{showFullScreen && onFullScreenToggle && (
 						<button
 							aria-label="Full screen"
-							className="flex h-8 w-8 items-center justify-center rounded border-sidebar-border bg-sidebar-accent/30 text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60"
+							className="flex h-8 w-8 items-center justify-center rounded border-sidebar-border bg-sidebar-accent/30 text-sidebar-foreground transition-colors hover:bg-accent-brighter"
 							onClick={onFullScreenToggle}
 							title="Full screen"
 							type="button"

@@ -277,9 +277,9 @@ export function CreateOrganizationDialog({
 					className="w-full max-w-md overflow-y-auto p-4 sm:max-w-lg sm:p-6 md:max-w-xl lg:max-w-2xl"
 					side="right"
 				>
-					<SheetHeader className="space-y-3 border-border/50 border-b pb-4 sm:pb-6">
+					<SheetHeader className="space-y-3 border rounded-md bg-accent pb-4 sm:pb-6">
 						<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-							<div className="self-start rounded border border-accent bg-accent/50 p-3 sm:self-center">
+							<div className="self-start rounded border bg-accent-brighter p-3 sm:self-center">
 								<BuildingsIcon
 									className="size-6 text-accent-foreground"
 									weight="duotone"
@@ -440,12 +440,12 @@ export function CreateOrganizationDialog({
 
 						<div className="space-y-4">
 							<div className="flex items-center gap-2">
-								<UsersIcon className="h-5 w-5 text-primary" weight="duotone" />
+								<UsersIcon className="h-5 w-5 text-accent-foreground" weight="duotone" />
 								<Label className="font-semibold text-base text-foreground">
 									Getting Started
 								</Label>
 							</div>
-							<div className="rounded border border-border/50 bg-muted/30 p-4">
+							<div className="rounded border bg-accent p-4">
 								<p className="text-muted-foreground text-sm">
 									After creating your organization, you'll be able to:
 								</p>

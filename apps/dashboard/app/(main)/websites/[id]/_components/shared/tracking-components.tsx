@@ -88,7 +88,7 @@ export function CodeBlock({
 					"Add this script to the <head> section of your website:" ? (
 						<>
 							Add this script to the{" "}
-							<code className="rounded bg-muted px-1 py-0.5 text-xs">
+							<code className="rounded bg-accent-brighter px-1 py-0.5 text-xs">
 								&lt;head&gt;
 							</code>{" "}
 							section of your website:

@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 function Table({ className, ...props }: React.ComponentProps<'table'>) {
 	return (
 		<div
-			className="relative h-full w-full overflow-x-auto bg-background"
+			className="relative h-full w-full overflow-x-auto bg-card"
 			data-slot="table-container"
 		>
 			<table

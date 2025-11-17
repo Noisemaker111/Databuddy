@@ -627,7 +627,7 @@ export function WebsiteAudienceTab({
 													{(deviceType === "Desktop" ||
 														deviceType === "Laptop") && (
 														<div
-															className="absolute bottom-0 mx-auto h-3 w-1/4 rounded-b-md bg-muted/60"
+															className="absolute bottom-0 mx-auto h-3 w-1/4 rounded-b-md bg-accent border"
 															style={{
 																left: "50%",
 																transform: "translateX(-50%)",
@@ -643,7 +643,7 @@ export function WebsiteAudienceTab({
 															{formatNumber(item.visitors)} visitors
 														</span>
 													</div>
-													<div className="h-2 w-full overflow-hidden rounded-full bg-muted/40">
+													<div className="h-2 w-full overflow-hidden rounded-full bg-accent-brighter">
 														<div
 															className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
 															style={{ width: `${percentage}%` }}

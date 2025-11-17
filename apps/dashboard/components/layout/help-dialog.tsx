@@ -63,13 +63,13 @@ export function HelpDialog({ open, onOpenChangeAction }: HelpDialogProps) {
 								className="block"
 							>
 								<Button
-									className="h-auto w-full justify-start p-4 text-left transition-colors hover:bg-muted/50"
+									className="h-auto w-full justify-start p-4 text-left transition-colors hover:bg-accent"
 									variant="ghost"
 								>
 									<div className="flex items-start gap-4">
-										<div className="rounded-lg bg-primary/10 p-2">
+										<div className="rounded-lg bg-accent-brighter p-2">
 											<Icon
-												className="h-5 w-5 not-dark:text-primary"
+												className="h-5 w-5 text-accent-foreground"
 												weight="duotone"
 											/>
 										</div>
