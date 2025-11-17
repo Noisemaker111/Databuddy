@@ -111,12 +111,11 @@ const app = new Elysia()
 		"/rpc/*",
 		async ({ request, store }) => {
 			try {
-				const headers = new Headers(request.headers);
+				const rpcContext = await createRPCContext({
+					headers: request.headers,
+				});
 
 				const handler = async () => {
-					const rpcContext = await createRPCContext({
-						headers,
-					});
 					const { response } = await rpcHandler.handle(request, {
 						prefix: "/rpc",
 						context: rpcContext,
