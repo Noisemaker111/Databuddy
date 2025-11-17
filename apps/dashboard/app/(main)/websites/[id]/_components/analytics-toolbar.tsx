@@ -94,12 +94,8 @@ export function AnalyticsToolbar({
 			"h-full w-24 cursor-pointer touch-manipulation rounded-none px-0 text-sm";
 		const activeClass = isActive
 			? "font-medium bg-accent hover:bg-accent! text-accent-foreground"
-			: "text-muted-foreground hover:bg-accent!";
-		const disabledClass =
-			type === "hourly" && isHourlyDisabled
-				? "cursor-not-allowed opacity-40"
-				: "";
-		return `${baseClass} ${activeClass} ${disabledClass}`.trim();
+			: "text-muted-foreground";
+		return `${baseClass} ${activeClass}`.trim();
 	};
 
 	const isQuickRangeActive = useCallback(
@@ -120,9 +116,7 @@ export function AnalyticsToolbar({
 	);
 
 	return (
-		<div
-			className={`flex h-fit flex-col border-b bg-background ${isDisabled ? "pointer-events-none opacity-50" : ""}`}
-		>
+		<div className="flex h-fit flex-col border-b bg-background">
 			<div className="flex h-12 items-center justify-between border-b pr-4">
 				<div className="flex h-full items-center">
 					<Button
@@ -173,7 +167,7 @@ export function AnalyticsToolbar({
 			</div>
 
 			<div className="flex h-10 items-center overflow-x-auto pr-4">
-				{QUICK_RANGES.map((range, index) => {
+				{QUICK_RANGES.map((range) => {
 					const isActive = isQuickRangeActive(range);
 					return (
 						<div className="flex h-full items-center" key={range.label}>

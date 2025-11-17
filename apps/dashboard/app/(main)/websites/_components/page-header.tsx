@@ -1,0 +1,75 @@
+"use client";
+
+import type { IconProps } from "@phosphor-icons/react";
+import { cloneElement, memo } from "react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+type PageHeaderProps = {
+	title: string;
+	description: string;
+	icon: React.ReactElement<IconProps>;
+	badgeContent?: string;
+	badgeVariant?: "default" | "secondary" | "destructive" | "outline";
+	badgeClassName?: string;
+	right?: React.ReactNode;
+	count?: number;
+};
+
+export const PageHeader = memo(
+	({
+		title,
+		description,
+		icon,
+		badgeContent,
+		badgeVariant = "secondary",
+		badgeClassName,
+		right,
+		count,
+	}: PageHeaderProps) => (
+		<div className="box-content flex h-22 w-full flex-col justify-between gap-3 border-box border-b sm:flex-row sm:items-center sm:gap-0">
+			<div className="flex h-full items-center gap-3 p-3 sm:px-4 sm:py-4">
+				<div className="rounded-lg border border-accent-foreground/20 bg-accent-foreground/20 p-2">
+					{cloneElement(icon, {
+						...icon.props,
+						className: cn(
+							"size-5 text-accent-foreground",
+							icon.props.className
+						),
+						"aria-hidden": "true",
+						size: 24,
+						weight: "fill",
+					})}
+				</div>
+				<div className="min-w-0 flex-1">
+					<div className="flex items-center gap-2">
+						<h1 className="truncate font-bold text-foreground text-xl tracking-tight sm:text-2xl">
+							{title}
+						</h1>
+						{count && (
+							<div className="flex items-center gap-2 text-accent-foreground/60 text-sm">
+								{count}
+							</div>
+						)}
+						{badgeContent && (
+							<Badge
+								className={cn("h-5 px-2", badgeClassName)}
+								variant={badgeVariant}
+							>
+								{badgeContent}
+							</Badge>
+						)}
+					</div>
+					<p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
+						{description}
+					</p>
+				</div>
+			</div>
+			{right && (
+				<div className="flex h-full items-center gap-2 px-3">{right}</div>
+			)}
+		</div>
+	)
+);
+
+PageHeader.displayName = "PageHeader";

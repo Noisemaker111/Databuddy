@@ -1,9 +1,9 @@
 "use client";
 
-import { ChartLineUpIcon, FlaskIcon } from "@phosphor-icons/react";
+import { ChartLineUpIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense, useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/app/(main)/websites/_components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOrganizations } from "@/hooks/use-organizations";
 import { orpc } from "@/lib/orpc";
@@ -70,28 +70,14 @@ export default function CostBreakdownPage() {
 	return (
 		<div className="flex h-full flex-col">
 			<div className="border-b bg-linear-to-r from-background to-muted/20 px-6 py-6">
-				<div className="flex items-center gap-4">
-					<div className="rounded-xl border border-accent bg-accent/50 p-3">
-						<ChartLineUpIcon className="h-6 w-6 text-accent-foreground" />
-					</div>
-					<div>
-						<div className="flex items-center gap-3">
-							<h1 className="font-bold text-2xl tracking-tight">
-								Cost Breakdown
-							</h1>
-							<Badge
-								className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-								variant="secondary"
-							>
-								<FlaskIcon className="mr-1" size={12} weight="duotone" />
-								Experimental
-							</Badge>
-						</div>
-						<p className="text-muted-foreground text-sm">
-							Detailed analytics usage breakdown and consumption patterns
-						</p>
-					</div>
-				</div>
+				<PageHeader
+					badgeClassName="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+					badgeContent="Experimental"
+					badgeVariant="secondary"
+					description="Detailed analytics usage breakdown and consumption patterns"
+					icon={<ChartLineUpIcon />}
+					title="Cost Breakdown"
+				/>
 			</div>
 
 			<div className="flex min-h-0 flex-1 flex-col">

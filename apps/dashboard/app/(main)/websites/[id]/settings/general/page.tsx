@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { WebsiteDialog } from "@/components/website-dialog";
 import { useDeleteWebsite, useWebsite } from "@/hooks/use-websites";
+import { PageHeader } from "../../../_components/page-header";
 import { TOAST_MESSAGES } from "../../_components/shared/tracking-constants";
 import { DeleteWebsiteDialog } from "../_components/delete-dialog";
 
@@ -65,21 +66,11 @@ export default function GeneralSettingsPage() {
 			{/* Header */}
 			<div className="h-[89px] border-b">
 				<div className="flex h-full flex-col justify-center gap-2 px-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-3">
-							<div className="rounded-lg border border-accent bg-accent/50 p-2">
-								<GearIcon className="h-5 w-5 text-primary" />
-							</div>
-							<div className="min-w-0 flex-1">
-								<h1 className="truncate font-bold text-foreground text-xl tracking-tight sm:text-2xl">
-									General
-								</h1>
-								<p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
-									Manage name, domain, and basic settings
-								</p>
-							</div>
-						</div>
-					</div>
+					<PageHeader
+						description="Manage name, domain, and basic settings"
+						icon={<GearIcon />}
+						title="General"
+					/>
 					{/* Right-side actions (optional) */}
 				</div>
 

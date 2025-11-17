@@ -91,7 +91,7 @@ function OrganizationSelectorTrigger({
 								{activeOrganization?.name ? (
 									getOrganizationInitials(activeOrganization.name)
 								) : (
-									<UserIcon className="text-sidebar-ring" weight="duotone" />
+									<UserIcon weight="duotone" />
 								)}
 							</AvatarFallback>
 						</Avatar>
@@ -228,7 +228,7 @@ export function OrganizationSelector() {
 						onClick={() => handleSelectOrganization(null)}
 					>
 						<UserIcon
-							className="h-5 w-5 not-dark:text-primary"
+							className="h-5 w-5 text-accent-foreground"
 							weight="duotone"
 						/>
 						<div className="flex min-w-0 flex-1 flex-col items-start text-left">
@@ -238,7 +238,7 @@ export function OrganizationSelector() {
 							</span>
 						</div>
 						{!activeOrganization && (
-							<CheckIcon className="h-4 w-4 not-dark:text-primary" />
+							<CheckIcon className="h-4 w-4 text-accent-foreground" />
 						)}
 					</DropdownMenuItem>
 
@@ -286,7 +286,7 @@ export function OrganizationSelector() {
 						className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sidebar-foreground/70 text-sm transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
 						onClick={handleCreateOrganization}
 					>
-						<PlusIcon className="h-5 w-5 not-dark:text-primary" />
+						<PlusIcon className="h-5 w-5 text-accent-foreground" />
 						<span className="font-medium text-sm">Create Organization</span>
 					</DropdownMenuItem>
 				</DropdownMenuContent>

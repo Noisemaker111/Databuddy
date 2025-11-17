@@ -35,7 +35,6 @@ import { metricVisibilityAtom } from "@/stores/jotai/chartAtoms";
 import {
 	calculatePercentChange,
 	formatDateByGranularity,
-	getColorVariant,
 } from "../utils/analytics-helpers";
 import { PercentageBadge } from "../utils/technology-helpers";
 import type { FullTabProps, MetricPoint } from "../utils/types";
@@ -847,12 +846,6 @@ export function WebsiteOverviewTab({
 						chartData: miniChartData.bounceRate,
 						trend: calculateTrends.bounce_rate,
 						formatValue: (value: number) => `${value.toFixed(1)}%`,
-						invertTrend: true,
-						variant: getColorVariant(
-							analytics.summary?.bounce_rate || 0,
-							70,
-							50
-						),
 					},
 					{
 						id: "session-duration-chart",
@@ -927,8 +920,8 @@ export function WebsiteOverviewTab({
 			</div>
 
 			{/* Chart */}
-			<div className="rounded border border-sidebar-border border-b-0 bg-sidebar shadow-sm">
-				<div className="flex flex-col items-start justify-between gap-3 border-sidebar-border border-b px-4 py-3 sm:flex-row">
+			<div className="rounded border bg-card">
+				<div className="flex flex-col items-start justify-between gap-3 border-b px-4 py-3 sm:flex-row">
 					<div>
 						<h2 className="font-semibold text-lg text-sidebar-foreground tracking-tight">
 							Traffic Trends

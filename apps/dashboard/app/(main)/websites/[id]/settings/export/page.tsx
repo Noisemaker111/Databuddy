@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import { useParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import type { DateRange as DayPickerRange } from "react-day-picker";
+import { PageHeader } from "@/app/(main)/websites/_components/page-header";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -93,26 +94,12 @@ export default function ExportPage() {
 			{/* Header - align with websites header */}
 			<div className="h-[89px] border-b">
 				<div className="flex h-full flex-col justify-center gap-2 px-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-3">
-							<div className="rounded-lg border border-accent bg-accent/50 p-2">
-								<DownloadIcon className="h-5 w-5 text-primary" />
-							</div>
-							<div className="min-w-0 flex-1">
-								<div className="flex items-center gap-2">
-									<h1 className="truncate font-bold text-foreground text-xl tracking-tight sm:text-2xl">
-										Data Export
-									</h1>
-									<Badge className="h-5 px-2" variant="secondary">
-										Tools
-									</Badge>
-								</div>
-								<p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
-									Download your analytics data for backup and analysis
-								</p>
-							</div>
-						</div>
-					</div>
+					<PageHeader
+						badgeContent="Tools"
+						description="Download your analytics data for backup and analysis"
+						icon={<DownloadIcon />}
+						title="Data Export"
+					/>
 					{/* Right-side actions (optional) */}
 				</div>
 

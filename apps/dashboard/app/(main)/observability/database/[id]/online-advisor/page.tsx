@@ -304,21 +304,11 @@ export default function OnlineAdvisorPage({ params }: OnlineAdvisorPageProps) {
 		<div className="flex h-full flex-col">
 			<div className="border-b bg-linear-to-r from-background to-muted/20 px-6 py-6">
 				<div className="flex items-center gap-4">
-					<div className="rounded-xl border border-accent bg-accent/50 p-3">
-						<SparkleIcon
-							className="size-6 text-accent-foreground"
-							weight="duotone"
-						/>
-					</div>
-					<div className="flex-1">
-						<h1 className="font-bold text-2xl tracking-tight">
-							Online Advisor
-						</h1>
-						<p className="text-muted-foreground text-sm">
-							Get intelligent recommendations for indexes, statistics, and
-							prepared statements
-						</p>
-					</div>
+					<PageHeader
+						title="Online Advisor"
+						description="Get intelligent recommendations for indexes, statistics, and prepared statements"
+						icon={<SparkleIcon />}
+					/>
 					{isExtensionEnabled && (
 						<Badge className="text-xs" variant="secondary">
 							<CheckIcon className="mr-1 h-3 w-3" />

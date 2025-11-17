@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useWebsites } from "@/hooks/use-websites";
 import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
 import {
 	categoryConfig,
 	createLoadingWebsitesNavigation,
@@ -75,7 +76,7 @@ export function CategorySidebar({
 	return (
 		<div className="fixed inset-y-0 left-0 z-40 w-12 border-r bg-transparent">
 			<div className="flex h-full flex-col">
-				<div className="flex h-12 items-center justify-center  border-b">
+				<div className="flex h-12 items-center justify-center border-b">
 					<Link
 						className="relative shrink-0 transition-opacity hover:opacity-80"
 						href="/websites"
@@ -127,7 +128,7 @@ export function CategorySidebar({
 
 				<div className="flex-1" />
 
-				<div className="space-y-2  border-t p-2 pb-4">
+				<div className="space-y-2 border-t p-2 pb-4">
 					<div className="flex justify-center">
 						<div className="flex h-8 w-8 items-center justify-center">
 							<NotificationsPopover />
@@ -141,16 +142,15 @@ export function CategorySidebar({
 					</div>
 
 					<div className="flex justify-center">
-						<button
-							className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-muted/50 focus:outline-none"
+						<Button
+							className="flex h-8 w-8 items-center justify-center transition-colors"
 							onClick={() => setHelpOpen(true)}
+							suppressHydrationWarning
 							type="button"
+							variant="ghost"
 						>
-							<InfoIcon
-								className="h-4 w-4 not-dark:text-primary"
-								weight="duotone"
-							/>
-						</button>
+							<InfoIcon className="h-4 w-4" weight="duotone" />
+						</Button>
 					</div>
 
 					<div className="flex justify-center">

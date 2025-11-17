@@ -108,17 +108,17 @@ const MiniChart = memo(
 							<linearGradient id={`gradient-${id}`} x1="0" x2="0" y1="0" y2="1">
 								<stop
 									offset="0%"
-									stopColor="var(--chart-color)"
+									stopColor="var(--accent-foreground)"
 									stopOpacity={0.8}
 								/>
 								<stop
 									offset="50%"
-									stopColor="var(--chart-color)"
+									stopColor="var(--accent-foreground)"
 									stopOpacity={0.3}
 								/>
 								<stop
 									offset="100%"
-									stopColor="var(--chart-color)"
+									stopColor="var(--accent-foreground)"
 									stopOpacity={0.05}
 								/>
 							</linearGradient>
@@ -154,7 +154,7 @@ const MiniChart = memo(
 								) : null
 							}
 							cursor={{
-								stroke: "var(--chart-color)",
+								stroke: "var(--accent-foreground)",
 								strokeWidth: 1,
 								strokeOpacity: 0.3,
 							}}
@@ -162,7 +162,7 @@ const MiniChart = memo(
 						<Area
 							activeDot={{
 								r: 3,
-								fill: "var(--chart-color)",
+								fill: "var(--accent-foreground)",
 								stroke: "var(--background)",
 								strokeWidth: 2,
 								filter: `url(#glow-${id})`,
@@ -170,7 +170,7 @@ const MiniChart = memo(
 							dataKey="value"
 							dot={false}
 							fill={`url(#gradient-${id})`}
-							stroke="var(--chart-color)"
+							stroke="var(--accent-foreground)"
 							strokeWidth={2}
 							type="monotone"
 						/>
@@ -277,7 +277,7 @@ export function StatCard({
 		<Card
 			className={cn(
 				"group overflow-hidden pt-0",
-				"border-border/50 hover:border-primary/20 transition-colors duration-200",
+				"transition-colors duration-200 hover:border-primary/30",
 				"bg-card",
 				getVariantClasses(),
 				className
@@ -298,7 +298,7 @@ export function StatCard({
 							</div>
 							<div
 								className={cn(
-									"font-bold text-foreground leading-tight group-hover:text-primary",
+									"font-bold text-foreground leading-tight transition-colors duration-200 group-hover:text-primary",
 									isTimeValue
 										? "text-base sm:text-lg md:text-xl"
 										: "text-lg sm:text-xl md:text-2xl",
@@ -311,8 +311,8 @@ export function StatCard({
 							</div>
 						</div>
 						{Icon && (
-							<div className="ml-1.5 shrink-0 rounded-lg bg-primary/5 p-1 group-hover:bg-primary/10 sm:ml-2 sm:p-1.5">
-								<Icon className="h-3 w-3 text-primary/70 group-hover:text-primary sm:h-4 sm:w-4" />
+							<div className="ml-1.5 shrink-0 rounded-lg bg-accent-brighter p-1 transition-colors duration-200 group-hover:bg-primary/10 sm:ml-2 sm:p-1.5">
+								<Icon className="h-3 w-3 text-accent-foreground transition-colors duration-200 group-hover:text-primary sm:h-4 sm:w-4" />
 							</div>
 						)}
 					</div>
@@ -368,7 +368,7 @@ export function StatCard({
 			<HoverCardContent className="w-80" sideOffset={10}>
 				<div className="space-y-3">
 					<div className="mb-2 flex items-center gap-2">
-						{Icon && <Icon className="h-4 w-4 text-primary" />}
+						{Icon && <Icon className="h-4 w-4 text-accent-foreground" />}
 						<h4 className="font-semibold text-foreground">{title}</h4>
 					</div>
 					<div className="grid grid-cols-2 gap-4">

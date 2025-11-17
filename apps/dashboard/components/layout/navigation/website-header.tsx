@@ -55,7 +55,7 @@ export function WebsiteHeader({
 			{/* Back navigation - aligned with category buttons */}
 			{showBackButton && (
 				<button
-					className="group flex h-10 w-full cursor-pointer items-center justify-start px-3 transition-colors hover:bg-accent-brighter"
+					className="group flex h-10 w-full cursor-pointer items-center justify-start px-3 transition-colors hover:bg-accent"
 					type="button"
 				>
 					<Link className="flex items-center gap-2" href="/websites">

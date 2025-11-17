@@ -121,7 +121,7 @@ export function DataTable<TData extends { name: string | number }, TValue>({
 		return (
 			<div
 				className={cn(
-					"w-full overflow-hidden rounded border-sidebar-border bg-sidebar/50 shadow-sm backdrop-blur-sm",
+					"w-full overflow-hidden rounded border bg-accent/50 backdrop-blur-sm",
 					className
 				)}
 			>
@@ -154,7 +154,7 @@ export function DataTable<TData extends { name: string | number }, TValue>({
 		<>
 			<div
 				className={cn(
-					"w-full overflow-hidden rounded border bg-card/50 shadow-sm backdrop-blur-sm",
+					"w-full overflow-hidden rounded border bg-card shadow-sm backdrop-blur-sm",
 					className
 				)}
 			>

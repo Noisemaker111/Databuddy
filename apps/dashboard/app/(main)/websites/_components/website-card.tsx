@@ -21,11 +21,11 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface WebsiteCardProps {
+type WebsiteCardProps = {
 	website: Website;
 	chartData?: ProcessedMiniChartData;
 	isLoadingChart?: boolean;
-}
+};
 
 function TrendStat({
 	trend,

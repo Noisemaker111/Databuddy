@@ -1,8 +1,14 @@
 "use client";
 
-import { CreditCardIcon } from "@phosphor-icons/react";
+import {
+	ActivityIcon,
+	CreditCardIcon,
+	CurrencyDollarIcon,
+	ReceiptIcon,
+} from "@phosphor-icons/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { lazy, Suspense, useEffect, useState } from "react";
+import { PageHeader } from "@/app/(main)/websites/_components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	type Customer,
@@ -57,54 +63,35 @@ export default function BillingPage() {
 				return {
 					title: "Usage & Metrics",
 					description: "Monitor your usage and billing metrics",
+					icon: <ActivityIcon />,
 				};
 			case "plans":
 				return {
 					title: "Plans & Pricing",
 					description: "Manage your subscription and billing plan",
+					icon: <CurrencyDollarIcon />,
 				};
 			case "history":
 				return {
 					title: "Payment History",
 					description: "View your billing history and invoices",
+					icon: <ReceiptIcon />,
 				};
 			default:
 				return {
 					title: "Billing & Subscription",
 					description:
 						"Manage your subscription, usage, and billing preferences",
+					icon: <CreditCardIcon />,
 				};
 		}
 	};
 
-	const { title, description } = getPageTitle();
+	const { title, description, icon } = getPageTitle();
 
 	return (
 		<div className="flex h-full flex-col">
-			<div className="border-b bg-linear-to-r from-background via-background to-muted/20">
-				<div className="flex flex-col justify-between gap-3 p-4 sm:flex-row sm:items-center sm:gap-0 sm:px-6 sm:py-6">
-					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-4">
-							<div className="rounded-xl border border-accent bg-accent/50 p-3">
-								<CreditCardIcon
-									className="size-6 text-accent-foreground"
-									size={24}
-									weight="duotone"
-								/>
-							</div>
-							<div>
-								<h1 className="truncate font-bold text-2xl text-foreground tracking-tight sm:text-3xl">
-									{title}
-								</h1>
-								<p className="mt-1 text-muted-foreground text-sm sm:text-base">
-									{description}
-								</p>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
+			<PageHeader description={description} icon={icon} title={title} />
 			<main className="flex-1 overflow-y-auto p-4 sm:p-6">
 				{activeTab === "overview" && (
 					<Suspense fallback={<ComponentSkeleton />}>

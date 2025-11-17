@@ -2,18 +2,20 @@
 
 import {
 	BuildingsIcon,
-	EnvelopeIcon,
+	CalendarIcon,
+	ChartPieIcon,
 	GearIcon,
-	GlobeIcon,
+	GlobeSimpleIcon,
+	type IconProps,
 	KeyIcon,
 	PlusIcon,
+	UserIcon,
 	UserPlusIcon,
-	UsersIcon,
 	WarningIcon,
 } from "@phosphor-icons/react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-
+import { PageHeader } from "@/app/(main)/websites/_components/page-header";
 import { CreateOrganizationDialog } from "@/components/organizations/create-organization-dialog";
 import { InviteMemberDialog } from "@/components/organizations/invite-member-dialog";
 import { Button } from "@/components/ui/button";
@@ -30,12 +32,26 @@ export function OrganizationProvider({
 	const [showCreateDialog, setShowCreateDialog] = useState(false);
 	const [showInviteMemberDialog, setShowInviteMemberDialog] = useState(false);
 
-	const getPageInfo = () => {
+	type HeaderActionButton = {
+		text: string;
+		icon: React.ComponentType<IconProps>;
+		action: () => void;
+	};
+
+	type PageInfo = {
+		title: string;
+		description: string;
+		icon: React.ComponentType<IconProps>;
+		requiresOrg?: boolean;
+		actionButton?: HeaderActionButton;
+	};
+
+	const getPageInfo = (): PageInfo => {
 		if (pathname === "/organizations") {
 			return {
-				title: "Organizations",
-				description: "Manage your organizations and team collaboration",
-				icon: BuildingsIcon,
+				title: "Overview",
+				description: "High-level metrics and status for your organization",
+				icon: ChartPieIcon,
 				actionButton: {
 					text: "New Organization",
 					icon: PlusIcon,
@@ -45,9 +61,9 @@ export function OrganizationProvider({
 		}
 		if (pathname === "/organizations/members") {
 			return {
-				title: "Team Members",
+				title: "Members",
 				description: "Manage team members and their roles",
-				icon: UsersIcon,
+				icon: UserIcon,
 				requiresOrg: true,
 				actionButton: {
 					text: "Invite Member",
@@ -58,9 +74,9 @@ export function OrganizationProvider({
 		}
 		if (pathname === "/organizations/invitations") {
 			return {
-				title: "Pending Invitations",
+				title: "Invitations",
 				description: "View and manage pending team invitations",
-				icon: EnvelopeIcon,
+				icon: CalendarIcon,
 				requiresOrg: true,
 				actionButton: {
 					text: "Send Invitation",
@@ -71,7 +87,7 @@ export function OrganizationProvider({
 		}
 		if (pathname === "/organizations/settings") {
 			return {
-				title: "General Settings",
+				title: "General",
 				description: "Manage organization name, slug, and basic settings",
 				icon: GearIcon,
 				requiresOrg: true,
@@ -79,9 +95,9 @@ export function OrganizationProvider({
 		}
 		if (pathname === "/organizations/settings/websites") {
 			return {
-				title: "Website Management",
+				title: "Website Access",
 				description: "Manage websites associated with this organization",
-				icon: GlobeIcon,
+				icon: GlobeSimpleIcon,
 				requiresOrg: true,
 			};
 		}
@@ -152,26 +168,12 @@ export function OrganizationProvider({
 		return (
 			<div className="flex h-full flex-col">
 				<div className="border-b bg-linear-to-r from-background via-background to-muted/20">
-					<div className="flex flex-col justify-between gap-3 p-4 sm:flex-row sm:items-center sm:gap-0 sm:px-6 sm:py-6">
-						<div className="min-w-0 flex-1">
-							<div className="flex items-center gap-3 sm:gap-4">
-								<div className="rounded border border-accent bg-accent/50 p-2 sm:p-3">
-									<Icon
-										className="h-5 w-5 text-accent-foreground sm:h-6 sm:w-6"
-										size={20}
-										weight="duotone"
-									/>
-								</div>
-								<div>
-									<h1 className="truncate font-bold text-foreground text-xl tracking-tight sm:text-2xl lg:text-3xl">
-										{title}
-									</h1>
-									<p className="mt-1 text-muted-foreground text-xs sm:text-sm lg:text-base">
-										{description}
-									</p>
-								</div>
-							</div>
-						</div>
+					<div className="flex h-24 items-center px-4 sm:px-6">
+						<PageHeader
+							description={description}
+							icon={<Icon />}
+							title={title}
+						/>
 						{actionButton && (
 							<Button
 								className="w-full rounded text-xs sm:w-auto sm:text-sm"
@@ -224,25 +226,7 @@ export function OrganizationProvider({
 		<div className="flex h-full flex-col">
 			<div className="h-22 border-b bg-linear-to-r from-background via-background to-muted/20">
 				<div className="flex flex-col justify-between gap-2.5 p-3 sm:flex-row sm:items-center sm:gap-0 sm:px-5 sm:py-4">
-					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-2.5">
-							<div className="rounded border border-accent bg-accent/50 p-2">
-								<Icon
-									className="h-5 w-5 text-accent-foreground"
-									size={20}
-									weight="duotone"
-								/>
-							</div>
-							<div>
-								<h1 className="truncate font-bold text-foreground text-lg tracking-tight sm:text-xl">
-									{title}
-								</h1>
-								<p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
-									{description}
-								</p>
-							</div>
-						</div>
-					</div>
+					<PageHeader description={description} icon={<Icon />} title={title} />
 					{actionButton && (
 						<Button
 							className="w-full rounded text-xs sm:w-auto sm:text-sm"

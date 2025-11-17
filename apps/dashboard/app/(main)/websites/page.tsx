@@ -15,6 +15,7 @@ import { WebsiteDialog } from "@/components/website-dialog";
 import { useWebsites } from "@/hooks/use-websites";
 
 import { cn } from "@/lib/utils";
+import { PageHeader } from "./_components/page-header";
 import { WebsiteCard } from "./_components/website-card";
 
 function LoadingSkeleton() {
@@ -94,29 +95,11 @@ export default function WebsitesPage() {
 	return (
 		<div className="flex h-full flex-col">
 			{/* Enhanced header */}
-			<div className="border-b">
-				<div className="flex flex-col justify-between gap-3 p-3 sm:flex-row sm:items-center sm:gap-0 sm:px-4 sm:py-4">
-					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-3">
-							<div className="rounded-lg border bg-accent-foreground p-2">
-								<TrendUpIcon
-									aria-hidden="true"
-									className="size-5 text-accent"
-									size={24}
-									weight="fill"
-								/>
-							</div>
-							<div className="min-w-0 flex-1">
-								<h1 className="truncate font-bold text-foreground text-xl tracking-tight sm:text-2xl">
-									Websites
-								</h1>
-								<p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
-									Track analytics for all your websites
-								</p>
-							</div>
-						</div>
-					</div>
-					<div className="flex items-center gap-2">
+			<PageHeader
+				description="Track analytics for all your websites"
+				icon={<TrendUpIcon />}
+				right={
+					<>
 						<Button
 							aria-label="Refresh websites"
 							disabled={isLoading || isFetching}
@@ -145,9 +128,10 @@ export default function WebsitesPage() {
 							<PlusIcon className="relative z-10 h-4 w-4 transition-transform duration-300 group-hover:rotate-90" />
 							<span className="relative z-10 truncate">New Website</span>
 						</Button>
-					</div>
-				</div>
-			</div>
+					</>
+				}
+				title="Websites"
+			/>
 
 			{/* Content area */}
 			<div

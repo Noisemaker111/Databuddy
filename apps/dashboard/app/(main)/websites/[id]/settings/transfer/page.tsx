@@ -11,6 +11,7 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
+import { PageHeader } from "@/app/(main)/websites/_components/page-header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -95,21 +96,11 @@ function TransferPageContent() {
 			<div className="flex h-full flex-col">
 				<div className="h-[89px] border-b">
 					<div className="flex h-full flex-col justify-center gap-2 px-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-						<div className="min-w-0 flex-1">
-							<div className="flex items-center gap-3">
-								<div className="rounded-lg border border-accent bg-accent/50 p-2">
-									<ArrowSquareOutIcon className="h-5 w-5 text-primary" />
-								</div>
-								<div className="min-w-0 flex-1">
-									<h1 className="truncate font-bold text-foreground text-xl tracking-tight sm:text-2xl">
-										Transfer Website
-									</h1>
-									<p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
-										Move this website to a different organization
-									</p>
-								</div>
-							</div>
-						</div>
+						<PageHeader
+							description="Move this website to a different organization"
+							icon={<ArrowSquareOutIcon />}
+							title="Transfer Website"
+						/>
 					</div>
 				</div>
 				<div className="flex flex-1 items-center justify-center">
@@ -149,21 +140,11 @@ function TransferPageContent() {
 		<div className="flex h-full flex-col">
 			<div className="h-[89px] border-b">
 				<div className="flex h-full flex-col justify-center gap-2 px-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-3">
-							<div className="rounded-lg border border-accent bg-accent/50 p-2">
-								<ArrowSquareOutIcon className="h-5 w-5 text-primary" />
-							</div>
-							<div className="min-w-0 flex-1">
-								<h1 className="truncate font-bold text-foreground text-xl tracking-tight sm:text-2xl">
-									Transfer Website
-								</h1>
-								<p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
-									Move this website to a different organization
-								</p>
-							</div>
-						</div>
-					</div>
+					<PageHeader
+						description="Move this website to a different organization"
+						icon={<ArrowSquareOutIcon />}
+						title="Transfer Website"
+					/>
 				</div>
 			</div>
 
@@ -448,21 +429,11 @@ export default function TransferPage() {
 				<div className="flex h-full flex-col">
 					<div className="h-[89px] border-b">
 						<div className="flex h-full flex-col justify-center gap-2 px-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-							<div className="min-w-0 flex-1">
-								<div className="flex items-center gap-3">
-									<div className="rounded-lg border border-accent bg-accent/50 p-2">
-										<ArrowSquareOutIcon className="h-5 w-5 text-primary" />
-									</div>
-									<div className="min-w-0 flex-1">
-										<h1 className="truncate font-bold text-foreground text-xl tracking-tight sm:text-2xl">
-											Transfer Website
-										</h1>
-										<p className="mt-0.5 text-muted-foreground text-xs sm:text-sm">
-											Move this website to a different organization
-										</p>
-									</div>
-								</div>
-							</div>
+							<PageHeader
+								description="Move this website to a different organization"
+								icon={<ArrowSquareOutIcon />}
+								title="Transfer Website"
+							/>
 						</div>
 					</div>
 					<div className="flex flex-1 items-center justify-center">

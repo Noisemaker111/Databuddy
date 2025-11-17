@@ -11,11 +11,11 @@ import {
 	YAxis,
 } from "recharts";
 
-interface MiniChartProps {
+type MiniChartProps = {
 	data: { date: string; value: number }[];
 	id: string;
 	days?: number;
-}
+};
 
 const formatNumber = (num: number) => {
 	if (num >= 1_000_000) {

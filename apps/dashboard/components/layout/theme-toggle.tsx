@@ -27,7 +27,7 @@ export function ThemeToggle({ className }: ThemeTogglerProps) {
 		<Button
 			aria-label="Toggle theme"
 			className={cn(
-				"relative hidden h-8 w-8 transition-all duration-200 hover:bg-accent/50 md:flex",
+				"relative hidden h-8 w-8 transition-all duration-200 md:flex",
 				className
 			)}
 			onClick={switchTheme}
@@ -37,7 +37,7 @@ export function ThemeToggle({ className }: ThemeTogglerProps) {
 		>
 			<SunIcon
 				className={cn(
-					"size-5 not-dark:text-primary transition-all duration-300",
+					"size-5 transition-all duration-300",
 					currentTheme === "light" ? "rotate-0 scale-100" : "-rotate-90 scale-0"
 				)}
 				size={32}
@@ -46,7 +46,7 @@ export function ThemeToggle({ className }: ThemeTogglerProps) {
 			/>
 			<MoonIcon
 				className={cn(
-					"absolute size-5 not-dark:text-primary transition-all duration-300",
+					"absolute size-5 transition-all duration-300",
 					currentTheme === "dark" ? "rotate-0 scale-100" : "rotate-90 scale-0"
 				)}
 				size={32}
@@ -55,7 +55,7 @@ export function ThemeToggle({ className }: ThemeTogglerProps) {
 			/>
 			<MonitorIcon
 				className={cn(
-					"absolute size-5 not-dark:text-primary transition-all duration-300",
+					"absolute size-5 transition-all duration-300",
 					currentTheme === "system" ? "rotate-0 scale-100" : "rotate-90 scale-0"
 				)}
 				size={32}
