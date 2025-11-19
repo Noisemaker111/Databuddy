@@ -106,7 +106,7 @@ jobs:
           
         run: bun run test
 
-      - name: Upload coverage reports
+      - name: Upload coverage reports 
         if: always()
         uses: codecov/codecov-action@v4
         with:
