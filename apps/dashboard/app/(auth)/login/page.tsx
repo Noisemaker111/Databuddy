@@ -113,13 +113,11 @@ function LoginPage() {
 				</p>
 			</div>
 			<div className="relative px-6">
-				<div className="-top-40 -right-40 pointer-events-none absolute h-80 w-80 rounded-full blur-3xl" />
-				<div className="-bottom-40 -left-40 pointer-events-none absolute h-80 w-80 rounded-full blur-3xl" />
 				<div className="relative z-10">
 					<div className="space-y-6">
 						<div className="grid w-full grid-cols-1 gap-3 lg:grid-cols-2">
 							<Button
-								className="w-full"
+								className="relative w-full"
 								disabled={isLoading}
 								onClick={() => handleSocialLogin("github")}
 								size="lg"
@@ -130,7 +128,7 @@ function LoginPage() {
 								Sign in with GitHub
 								{lastUsed === "github" && (
 									<Badge
-										className="-top-3 -right-0.5 absolute rounded-full px-1 py-0 text-[10px]"
+										className="-top-3 -right-0.5 absolute z-10 rounded-full px-1 py-0 text-[10px]"
 										variant="secondary"
 									>
 										Last used
@@ -138,7 +136,7 @@ function LoginPage() {
 								)}
 							</Button>
 							<Button
-								className="w-full"
+								className="relative w-full"
 								disabled={isLoading}
 								onClick={() => handleSocialLogin("google")}
 								size="lg"
@@ -149,14 +147,18 @@ function LoginPage() {
 								Sign in with Google
 								{lastUsed === "google" && (
 									<Badge
-										className="-top-3 -right-0.5 absolute rounded-full px-1 py-0 text-[10px]"
+										className="-top-3 -right-0.5 absolute z-10 rounded-full px-1 py-0 text-[10px]"
 										variant="secondary"
 									>
 										Last used
 									</Badge>
 								)}
 							</Button>
-							<Link className="lg:col-span-2" href="/login/magic" passHref>
+							<Link
+								className="relative lg:col-span-2"
+								href="/login/magic"
+								passHref
+							>
 								<Button
 									className="w-full"
 									disabled={isLoading}
@@ -167,6 +169,14 @@ function LoginPage() {
 									<SparkleIcon className="size-4" />
 									Sign in with Magic Link
 								</Button>
+								{lastUsed === "magic" && (
+									<Badge
+										className="-top-3 -right-0.5 absolute z-10 rounded-full px-1 py-0 text-[10px]"
+										variant="secondary"
+									>
+										Last used
+									</Badge>
+								)}
 							</Link>
 						</div>
 						<div className="relative flex w-full items-center justify-center gap-3">
@@ -224,16 +234,16 @@ function LoginPage() {
 										aria-label={
 											showPassword ? "Hide password" : "Show password"
 										}
-										className="absolute top-0 right-0 h-full px-3 text-muted-foreground hover:text-foreground"
+										className="absolute top-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
 										onClick={() => setShowPassword(!showPassword)}
 										size="sm"
 										type="button"
-										variant="link"
+										variant="ghost"
 									>
 										{showPassword ? (
-											<EyeSlashIcon className="h-4 w-4" />
+											<EyeSlashIcon className="size-4" />
 										) : (
-											<EyeIcon className="h-4 w-4" />
+											<EyeIcon className="size-4" />
 										)}
 									</Button>
 								</div>
