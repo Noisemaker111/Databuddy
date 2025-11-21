@@ -11,7 +11,6 @@ import {
 	updateWebsiteSchema,
 } from "@databuddy/validation";
 import { ORPCError } from "@orpc/server";
-import { Effect, pipe } from "effect";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure } from "../orpc";
 import {
@@ -19,7 +18,6 @@ import {
 	DuplicateDomainError,
 	ValidationError,
 	type Website,
-	type WebsiteError,
 	WebsiteNotFoundError,
 	WebsiteService,
 } from "../services/website-service";
@@ -255,25 +253,21 @@ export const websitesRouter = {
 				organizationId: input.organizationId,
 			};
 
-			const result = await pipe(
-				new WebsiteService(context.db).createWebsite(serviceInput),
-				Effect.mapError((error: WebsiteError) => {
-					if (error instanceof ValidationError) {
-						return new ORPCError("BAD_REQUEST", {
-							message: error.message,
-						});
-					}
-					if (error instanceof DuplicateDomainError) {
-						return new ORPCError("CONFLICT", { message: error.message });
-					}
-					return new ORPCError("INTERNAL_SERVER_ERROR", {
+			try {
+				return await new WebsiteService(context.db).createWebsite(serviceInput);
+			} catch (error) {
+				if (error instanceof ValidationError) {
+					throw new ORPCError("BAD_REQUEST", {
 						message: error.message,
 					});
-				}),
-				Effect.runPromise
-			);
-
-			return result;
+				}
+				if (error instanceof DuplicateDomainError) {
+					throw new ORPCError("CONFLICT", { message: error.message });
+				}
+				throw new ORPCError("INTERNAL_SERVER_ERROR", {
+					message: error instanceof Error ? error.message : String(error),
+				});
+			}
 		}),
 
 	update: protectedProcedure
@@ -290,31 +284,30 @@ export const websitesRouter = {
 				domain: input.domain,
 			};
 
-			const updatedWebsite: Website = await pipe(
-				new WebsiteService(context.db).updateWebsite(
+			let updatedWebsite: Website;
+			try {
+				updatedWebsite = await new WebsiteService(context.db).updateWebsite(
 					input.id,
 					serviceInput,
 					context.user.id,
 					websiteToUpdate.organizationId ?? undefined
-				),
-				Effect.mapError((error: WebsiteError) => {
-					if (error instanceof ValidationError) {
-						return new ORPCError("BAD_REQUEST", {
-							message: error.message,
-						});
-					}
-					if (error instanceof DuplicateDomainError) {
-						return new ORPCError("CONFLICT", { message: error.message });
-					}
-					if (error instanceof WebsiteNotFoundError) {
-						return new ORPCError("NOT_FOUND", { message: error.message });
-					}
-					return new ORPCError("INTERNAL_SERVER_ERROR", {
+				);
+			} catch (error) {
+				if (error instanceof ValidationError) {
+					throw new ORPCError("BAD_REQUEST", {
 						message: error.message,
 					});
-				}),
-				Effect.runPromise
-			);
+				}
+				if (error instanceof DuplicateDomainError) {
+					throw new ORPCError("CONFLICT", { message: error.message });
+				}
+				if (error instanceof WebsiteNotFoundError) {
+					throw new ORPCError("NOT_FOUND", { message: error.message });
+				}
+				throw new ORPCError("INTERNAL_SERVER_ERROR", {
+					message: error instanceof Error ? error.message : String(error),
+				});
+			}
 
 			const changes: string[] = [];
 			if (input.name !== websiteToUpdate.name) {
@@ -327,10 +320,10 @@ export const websitesRouter = {
 			}
 
 			if (changes.length > 0) {
-				logger.info("Website Updated", changes.join(", "), {
+				logger.info({
 					websiteId: updatedWebsite.id,
 					userId: context.user.id,
-				});
+				}, `Website Updated: ${changes.join(", ")}`);
 			}
 
 			return updatedWebsite;
@@ -341,31 +334,30 @@ export const websitesRouter = {
 		.handler(async ({ context, input }) => {
 			const website = await authorizeWebsiteAccess(context, input.id, "update");
 
-			const updatedWebsite = await pipe(
-				new WebsiteService(context.db).toggleWebsitePublic(
+			let updatedWebsite: Website;
+			try {
+				updatedWebsite = await new WebsiteService(context.db).toggleWebsitePublic(
 					input.id,
 					input.isPublic,
 					context.user.id
-				),
-				Effect.mapError((error: WebsiteError) => {
-					if (error instanceof WebsiteNotFoundError) {
-						return new ORPCError("NOT_FOUND", { message: error.message });
-					}
-					return new ORPCError("INTERNAL_SERVER_ERROR", {
-						message: error.message,
-					});
-				}),
-				Effect.runPromise
-			);
+				);
+			} catch (error) {
+				if (error instanceof WebsiteNotFoundError) {
+					throw new ORPCError("NOT_FOUND", { message: error.message });
+				}
+				throw new ORPCError("INTERNAL_SERVER_ERROR", {
+					message: error instanceof Error ? error.message : String(error),
+				});
+			}
 
 			logger.info(
-				"Website Privacy Updated",
-				`${website.domain} is now ${input.isPublic ? "public" : "private"}`,
 				{
 					websiteId: input.id,
 					isPublic: input.isPublic,
 					userId: context.user.id,
-				}
+					event: "Website Privacy Updated"
+				},
+				`${website.domain} is now ${input.isPublic ? "public" : "private"}`
 			);
 
 			return updatedWebsite;
@@ -380,26 +372,26 @@ export const websitesRouter = {
 				"delete"
 			);
 
-			await pipe(
-				new WebsiteService(context.db).deleteWebsite(input.id, context.user.id),
-				Effect.mapError(
-					(error: WebsiteError) =>
-						new ORPCError("INTERNAL_SERVER_ERROR", {
-							message: error.message,
-						})
-				),
-				Effect.runPromise
-			);
+			try {
+				await new WebsiteService(context.db).deleteWebsite(
+					input.id,
+					context.user.id
+				);
+			} catch (error) {
+				throw new ORPCError("INTERNAL_SERVER_ERROR", {
+					message: error instanceof Error ? error.message : String(error),
+				});
+			}
 
-			logger.warning(
-				"Website Deleted",
-				`Website "${websiteToDelete.name}" with domain "${websiteToDelete.domain}" was deleted`,
+			logger.warn(
 				{
 					websiteId: websiteToDelete.id,
 					websiteName: websiteToDelete.name,
 					domain: websiteToDelete.domain,
 					userId: context.user.id,
-				}
+					event: "Website Deleted"
+				},
+				`Website "${websiteToDelete.name}" with domain "${websiteToDelete.domain}" was deleted`
 			);
 
 			return { success: true };
@@ -425,24 +417,20 @@ export const websitesRouter = {
 				}
 			}
 
-			const result = await pipe(
-				new WebsiteService(context.db).transferWebsite(
+			try {
+				return await new WebsiteService(context.db).transferWebsite(
 					input.websiteId,
 					input.organizationId ?? null,
 					context.user.id
-				),
-				Effect.mapError((error: WebsiteError) => {
-					if (error instanceof WebsiteNotFoundError) {
-						return new ORPCError("NOT_FOUND", { message: error.message });
-					}
-					return new ORPCError("INTERNAL_SERVER_ERROR", {
-						message: error.message,
-					});
-				}),
-				Effect.runPromise
-			);
-
-			return result;
+				);
+			} catch (error) {
+				if (error instanceof WebsiteNotFoundError) {
+					throw new ORPCError("NOT_FOUND", { message: error.message });
+				}
+				throw new ORPCError("INTERNAL_SERVER_ERROR", {
+					message: error instanceof Error ? error.message : String(error),
+				});
+			}
 		}),
 
 	transferToOrganization: protectedProcedure
@@ -464,24 +452,20 @@ export const websitesRouter = {
 				});
 			}
 
-			const result = await pipe(
-				new WebsiteService(context.db).transferWebsiteToOrganization(
+			try {
+				return await new WebsiteService(context.db).transferWebsiteToOrganization(
 					input.websiteId,
 					input.targetOrganizationId,
 					context.user.id
-				),
-				Effect.mapError((error: WebsiteError) => {
-					if (error instanceof WebsiteNotFoundError) {
-						return new ORPCError("NOT_FOUND", { message: error.message });
-					}
-					return new ORPCError("INTERNAL_SERVER_ERROR", {
-						message: error.message,
-					});
-				}),
-				Effect.runPromise
-			);
-
-			return result;
+				);
+			} catch (error) {
+				if (error instanceof WebsiteNotFoundError) {
+					throw new ORPCError("NOT_FOUND", { message: error.message });
+				}
+				throw new ORPCError("INTERNAL_SERVER_ERROR", {
+					message: error instanceof Error ? error.message : String(error),
+				});
+			}
 		}),
 
 	invalidateCaches: protectedProcedure
@@ -489,19 +473,13 @@ export const websitesRouter = {
 		.handler(async ({ context, input }) => {
 			await authorizeWebsiteAccess(context, input.websiteId, "update");
 
-			await pipe(
-				Effect.tryPromise({
-					try: () => invalidateWebsiteCaches(input.websiteId, context.user.id),
-					catch: () => new Error("Failed to invalidate caches"),
-				}),
-				Effect.mapError(
-					() =>
-						new ORPCError("INTERNAL_SERVER_ERROR", {
-							message: "Failed to invalidate caches",
-						})
-				),
-				Effect.runPromise
-			);
+			try {
+				await invalidateWebsiteCaches(input.websiteId, context.user.id);
+			} catch {
+				throw new ORPCError("INTERNAL_SERVER_ERROR", {
+					message: "Failed to invalidate caches",
+				});
+			}
 
 			return { success: true };
 		}),
@@ -530,11 +508,9 @@ export const websitesRouter = {
 					hasTrackingEvents = (trackingCheckResult[0]?.count ?? 0) > 0;
 				} catch (error) {
 					logger.error(
-						"Error checking tracking events:",
-						error instanceof Error ? error.message : String(error),
-						{ websiteId: input.websiteId }
+						{ websiteId: input.websiteId },
+						`Error checking tracking events: ${error instanceof Error ? error.message : String(error)}`
 					);
-					// Default to false if query fails
 					hasTrackingEvents = false;
 				}
 
@@ -544,9 +520,8 @@ export const websitesRouter = {
 				};
 			} catch (error) {
 				logger.error(
-					"Error in isTrackingSetup:",
-					error instanceof Error ? error.message : String(error),
-					{ websiteId: input.websiteId }
+					{ websiteId: input.websiteId },
+					`Error in isTrackingSetup: ${error instanceof Error ? error.message : String(error)}`
 				);
 				throw error;
 			}
