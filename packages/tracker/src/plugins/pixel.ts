@@ -43,7 +43,7 @@ export function initPixelTracking(tracker: BaseTracker) {
         }
 
         const baseUrl = tracker.options.apiUrl || "https://basket.databuddy.cc";
-        const url = new URL(endpoint === "/" ? "/pixel.gif" : endpoint, baseUrl);
+        const url = new URL(endpoint === "/" ? "/px.jpg" : endpoint, baseUrl);
 
         params.forEach((value, key) => {
             url.searchParams.append(key, value);
