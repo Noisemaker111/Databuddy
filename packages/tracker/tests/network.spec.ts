@@ -22,7 +22,7 @@ test.describe("Network & Batching", () => {
                 initialRetryDelay: 100 // Fast retry for test
             };
         });
-        await page.addScriptTag({ url: "/dist/databuddy.js", type: "module" });
+        await page.addScriptTag({ url: "/dist/databuddy.js" });
 
         await expect.poll(() => attemptCount).toBeGreaterThanOrEqual(3);
     });
@@ -51,7 +51,7 @@ test.describe("Network & Batching", () => {
                 batchTimeout: 1000
             };
         });
-        await page.addScriptTag({ url: "/dist/databuddy.js", type: "module" });
+        await page.addScriptTag({ url: "/dist/databuddy.js" });
 
         // Fire 3 events quickly
         await page.evaluate(() => {

@@ -23,11 +23,9 @@ test.describe("Web Vitals Tracking", () => {
         await page.evaluate(() => {
             (window as any).databuddyConfig = { clientId: "test-client-id", trackWebVitals: true, ignoreBotDetection: true };
         });
-        await page.addScriptTag({ url: "/dist/vitals.js", type: "module" });
+        await page.addScriptTag({ url: "/dist/vitals.js" });
 
-        // Trigger Web Vitals (simulated) and visibility change
         await page.evaluate(() => {
-            // Simulate a visibility change to trigger report
             Object.defineProperty(document, 'visibilityState', { value: 'hidden', writable: true });
             document.dispatchEvent(new Event('visibilitychange'));
         });
@@ -39,7 +37,6 @@ test.describe("Web Vitals Tracking", () => {
             expect(payload.cls).toBeDefined();
         } catch (_e) {
             console.log("Vitals test timed out or failed - this can happen if metrics aren't ready");
-            // Allow pass if it's just a timing issue in CI/Headless for now
         }
     });
 });

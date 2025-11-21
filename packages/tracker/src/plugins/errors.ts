@@ -1,16 +1,28 @@
 import type { BaseTracker } from "../core/tracker";
-import { generateUUIDv4 } from "../core/utils";
+import { generateUUIDv4, logger } from "../core/utils";
+
+type ErrorPayload = {
+    timestamp: number;
+    message: string;
+    filename?: string;
+    lineno?: number;
+    colno?: number;
+    stack?: string;
+    errorType: string;
+};
 
 export function initErrorTracking(tracker: BaseTracker) {
     if (tracker.isServer()) {
         return;
     }
 
-    const trackError = (errorData: any) => {
-        // We need to access shouldSkipTracking. 
-        // It's protected in BaseTracker. 
-        // But we can check public properties.
-        if (tracker.options.disabled || tracker.isLikelyBot || tracker.isServer()) {
+    const trackError = (errorData: ErrorPayload) => {
+        if (
+            tracker.options.disabled ||
+            tracker.isLikelyBot ||
+            tracker.isServer()
+        ) {
+            logger.log("Error tracking skipped (disabled/bot/server)");
             return;
         }
 
@@ -18,38 +30,61 @@ export function initErrorTracking(tracker: BaseTracker) {
             eventId: generateUUIDv4(),
             anonymousId: tracker.anonymousId,
             sessionId: tracker.sessionId,
-            timestamp: errorData.timestamp || Date.now(),
             ...errorData,
             ...tracker.getBaseContext(),
         };
+
+        logger.log("Tracking error", payload);
 
         tracker.api.fetch("/errors", payload, { keepalive: true }).catch(() => {
             tracker.sendBeacon(payload);
         });
     };
 
-    window.addEventListener("error", (event) => {
+    const errorHandler = (event: ErrorEvent) => {
         trackError({
             timestamp: Date.now(),
-            message: event.message,
+            message: event.message || "Unknown Error",
             filename: event.filename,
             lineno: event.lineno,
             colno: event.colno,
             stack: event.error?.stack,
             errorType: event.error?.name || "Error",
         });
-    });
+    };
 
-    window.addEventListener("unhandledrejection", (event) => {
+    const rejectionHandler = (event: PromiseRejectionEvent) => {
         const reason = event.reason;
-        const isError = reason instanceof Error;
+
+        if (reason instanceof Error) {
+            trackError({
+                timestamp: Date.now(),
+                message: reason.message,
+                stack: reason.stack,
+                errorType: reason.name || "Error",
+            });
+            return;
+        }
+
+        let message = String(reason);
+        if (typeof reason === "object" && reason !== null) {
+            try {
+                message = JSON.stringify(reason);
+            } catch {
+                // Message remains String(reason) if stringify fails
+            }
+        }
 
         trackError({
             timestamp: Date.now(),
-            message: isError ? reason.message : String(reason),
-            stack: isError ? reason.stack : undefined,
-            errorType: isError ? reason.name || "Error" : "UnhandledRejection",
+            message,
+            stack: reason?.stack,
+            errorType: "UnhandledRejection",
         });
-    });
-}
+    };
 
+    window.addEventListener("error", errorHandler);
+    window.addEventListener("unhandledrejection", rejectionHandler);
+
+    logger.log("Error tracking initialized");
+}

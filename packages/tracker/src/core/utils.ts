@@ -1,6 +1,8 @@
 /** biome-ignore-all lint/suspicious/noBitwiseOperators: We need it */
 import type { TrackerOptions } from "./types";
 
+declare const process: { env: { DATABUDDY_DEBUG: string | boolean } };
+
 const DATA_ATTR_REGEX = /-./g;
 const NUMBER_REGEX = /^\d+$/;
 
@@ -41,7 +43,19 @@ export function getTrackerConfig(): TrackerOptions {
     if (typeof window === "undefined") {
         return {};
     }
-    const script = document.currentScript as HTMLScriptElement;
+    let script = document.currentScript as HTMLScriptElement;
+
+    if (!script) {
+        // Fallback for module scripts where document.currentScript is null
+        const scripts = document.getElementsByTagName('script');
+        for (let i = 0; i < scripts.length; i++) {
+            const src = scripts[i].src;
+            if (src && (src.includes('/databuddy.js') || src.includes('/databuddy-debug.js'))) {
+                script = scripts[i];
+                break;
+            }
+        }
+    }
 
     const globalConfig = window.databuddyConfig || {};
     let config: TrackerOptions = { ...globalConfig };
@@ -89,3 +103,21 @@ export function getTrackerConfig(): TrackerOptions {
     }
     return config;
 }
+
+export const logger = {
+    log: (...args: any[]) => {
+        if (process.env.DATABUDDY_DEBUG) {
+            console.log("[Databuddy]", ...args);
+        }
+    },
+    error: (...args: any[]) => {
+        if (process.env.DATABUDDY_DEBUG) {
+            console.error("[Databuddy]", ...args);
+        }
+    },
+    warn: (...args: any[]) => {
+        if (process.env.DATABUDDY_DEBUG) {
+            console.warn("[Databuddy]", ...args);
+        }
+    }
+};

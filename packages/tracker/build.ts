@@ -1,25 +1,37 @@
 import { build } from "bun";
 
-await build({
-    entrypoints: ["./src/index.ts"],
-    outdir: "./dist",
+const common = {
     target: "browser",
+    format: "iife",
     minify: true,
-    naming: "databuddy.js",
-});
+} as const;
 
-await build({
-    entrypoints: ["./src/vitals.ts"],
-    outdir: "./dist",
-    target: "browser",
-    minify: true,
-    naming: "vitals.js",
-});
+const entrypoints = [
+    { src: "./src/index.ts", name: "databuddy" },
+    { src: "./src/vitals.ts", name: "vitals" },
+    { src: "./src/errors.ts", name: "errors" },
+];
 
-await build({
-    entrypoints: ["./src/errors.ts"],
-    outdir: "./dist",
-    target: "browser",
-    minify: true,
-    naming: "errors.js",
-});
+for (const { src, name } of entrypoints) {
+    await build({
+        ...common,
+        entrypoints: [src],
+        outdir: "./dist",
+        naming: `${name}.js`,
+        define: {
+            "process.env.DATABUDDY_DEBUG": "false",
+        },
+    });
+}
+
+for (const { src, name } of entrypoints) {
+    await build({
+        ...common,
+        entrypoints: [src],
+        outdir: "./dist",
+        naming: `${name}-debug.js`,
+        define: {
+            "process.env.DATABUDDY_DEBUG": "true",
+        },
+    });
+}

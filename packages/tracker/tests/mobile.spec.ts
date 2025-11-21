@@ -34,7 +34,7 @@ test.describe("Mobile Tracking", () => {
                 ignoreBotDetection: true,
             };
         });
-        await page.addScriptTag({ url: "/dist/databuddy.js", type: "module" });
+        await page.addScriptTag({ url: "/dist/databuddy.js" });
 
         const request = await requestPromise;
         const payload = request.postDataJSON();
@@ -65,7 +65,7 @@ test.describe("Mobile Tracking", () => {
                 trackInteractions: true,
             };
         });
-        await page.addScriptTag({ url: "/dist/databuddy.js", type: "module" });
+        await page.addScriptTag({ url: "/dist/databuddy.js" });
 
         // Simulate touch
         await page.touchscreen.tap(100, 100);

@@ -1,6 +1,6 @@
 import { HttpClient } from "./client";
 import type { EventContext, TrackerOptions } from "./types";
-import { generateUUIDv4 } from "./utils";
+import { generateUUIDv4, logger } from "./utils";
 
 const HEADLESS_CHROME_REGEX = /\bHeadlessChrome\b/i;
 const PHANTOMJS_REGEX = /\bPhantomJS\b/i;
@@ -68,12 +68,16 @@ export class BaseTracker {
         }
 
         this.isLikelyBot = this.detectBot();
+        if (this.isLikelyBot) {
+            logger.log("Bot detected, tracking might be filtered");
+        }
 
         this.anonymousId = this.getOrCreateAnonymousId();
         this.sessionId = this.getOrCreateSessionId();
         this.sessionStartTime = this.getSessionStartTime();
 
         this.setupBotDetection();
+        logger.log("Tracker initialized", this.options);
     }
 
     isServer(): boolean {
@@ -202,7 +206,18 @@ export class BaseTracker {
     }
 
     protected shouldSkipTracking(): boolean {
-        return !!(this.options.disabled || this.isLikelyBot || this.isServer());
+        if (this.isServer()) {
+            return true;
+        }
+        if (this.options.disabled) {
+            logger.log("Tracking disabled");
+            return true;
+        }
+        if (this.isLikelyBot) {
+            logger.log("Tracking skipped: Bot detected");
+            return true;
+        }
+        return false;
     }
 
     protected getMaskedPath(): string {
@@ -327,13 +342,16 @@ export class BaseTracker {
             return Promise.resolve();
         }
         if (this.options.filter && !this.options.filter(eventData)) {
+            logger.log("Event filtered", eventData);
             return Promise.resolve();
         }
 
         if (this.options.enableBatching && !event.isForceSend) {
+            logger.log("Queueing event for batch", eventData);
             return this.addToBatch(eventData);
         }
 
+        logger.log("Sending event", eventData);
         return this.api.fetch("/", eventData, { keepalive: true });
     }
 
@@ -363,14 +381,20 @@ export class BaseTracker {
         const batchEvents = [...this.batchQueue];
         this.batchQueue = [];
 
+        logger.log("Flushing batch", batchEvents.length);
+
         try {
             const beaconResult = await this.sendBatchBeacon(batchEvents);
             if (beaconResult) {
+                logger.log("Batch sent via beacon");
                 return beaconResult;
             }
 
-            return await this.api.fetch("/batch", batchEvents, { keepalive: true });
+            const result = await this.api.fetch("/batch", batchEvents, { keepalive: true });
+            logger.log("Batch sent via fetch", result);
+            return result;
         } catch (_error) {
+            logger.error("Batch failed, retrying individually", _error);
             for (const evt of batchEvents) {
                 this.send({ type: "track", payload: evt, isForceSend: true });
             }
@@ -418,6 +442,7 @@ export class BaseTracker {
                 type: "application/json",
             });
             if (navigator.sendBeacon(url.toString(), blob)) {
+                logger.log("Event sent via beacon", eventData);
                 return { success: true };
             }
         } catch (_error) {

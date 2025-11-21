@@ -22,7 +22,7 @@ test.describe("Privacy & Opt-out", () => {
             (window as any).databuddyConfig = { clientId: "test-privacy", ignoreBotDetection: true };
         });
 
-        await page.addScriptTag({ url: "/dist/databuddy.js", type: "module" });
+        await page.addScriptTag({ url: "/dist/databuddy.js" });
 
         // Try to track
         await page.evaluate(() => {
@@ -40,7 +40,7 @@ test.describe("Privacy & Opt-out", () => {
         await page.evaluate(() => {
             (window as any).databuddyConfig = { clientId: "test-privacy", ignoreBotDetection: true };
         });
-        await page.addScriptTag({ url: "/dist/databuddy.js", type: "module" });
+        await page.addScriptTag({ url: "/dist/databuddy.js" });
 
         // Ensure we are loaded
         await expect.poll(async () => await page.evaluate(() => !!(window as any).db)).toBe(true);

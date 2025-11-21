@@ -1,6 +1,6 @@
 import { type Metric, onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 import type { BaseTracker } from "../core/tracker";
-import { generateUUIDv4 } from "../core/utils";
+import { generateUUIDv4, logger } from "../core/utils";
 
 export function initWebVitalsTracking(tracker: BaseTracker) {
     if (tracker.isServer()) {
@@ -43,6 +43,8 @@ export function initWebVitalsTracking(tracker: BaseTracker) {
             ...tracker.getBaseContext(),
         };
 
+        logger.log("Sending web vitals", payload);
+
         tracker.api.fetch("/vitals", payload, { keepalive: true }).catch(() => {
             tracker.sendBeacon(payload);
         });
@@ -68,6 +70,7 @@ export function initWebVitalsTracking(tracker: BaseTracker) {
             default:
                 break;
         }
+        logger.log(`Web Vitals Metric: ${metric.name}`, metric.value);
     };
 
     // Initialize web-vitals listeners
