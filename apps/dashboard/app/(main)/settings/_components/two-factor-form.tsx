@@ -30,7 +30,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { NoticeBanner } from "../../websites/_components/notice-banner";
 
 const setupFormDefaultValues = {
 	password: "",
@@ -520,49 +519,37 @@ export function TwoFactorForm() {
 					</div>
 				</>
 			) : (
-				<>
-					<NoticeBanner
-						icon={<ShieldCheckIcon className="size-4" weight="duotone" />}
-						title="Two-factor authentication adds an additional layer of security to
-						your account by requiring more than just a password to sign in."
-					/>
+				<Form {...setupForm}>
+					<form
+						className="space-y-4"
+						onSubmit={setupForm.handleSubmit(onSetupSubmit)}
+					>
+						<FormField
+							control={setupForm.control}
+							name="password"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Your Password</FormLabel>
+									<FormControl>
+										<Input placeholder="••••••••" type="password" {...field} />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
-					<Form {...setupForm}>
-						<form
-							className="space-y-4"
-							onSubmit={setupForm.handleSubmit(onSetupSubmit)}
-						>
-							<FormField
-								control={setupForm.control}
-								name="password"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Your Password</FormLabel>
-										<FormControl>
-											<Input
-												placeholder="••••••••"
-												type="password"
-												{...field}
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
-							<Button className="w-full" disabled={isLoading} type="submit">
-								{isLoading && (
-									<ArrowClockwiseIcon
-										className="mr-2 h-4 w-4 animate-spin"
-										size={16}
-										weight="fill"
-									/>
-								)}
-								Enable Two-Factor Authentication
-							</Button>
-						</form>
-					</Form>
-				</>
+						<Button className="w-full" disabled={isLoading} type="submit">
+							{isLoading && (
+								<ArrowClockwiseIcon
+									className="mr-2 h-4 w-4 animate-spin"
+									size={16}
+									weight="fill"
+								/>
+							)}
+							Enable Two-Factor Authentication
+						</Button>
+					</form>
+				</Form>
 			)}
 		</div>
 	);

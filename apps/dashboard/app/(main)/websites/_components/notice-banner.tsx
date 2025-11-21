@@ -7,13 +7,13 @@ export const NoticeBanner = ({
 	children,
 	icon,
 	className,
-	subtitle,
+	description,
 }: {
 	title?: string;
 	children?: React.ReactNode;
 	icon: React.ReactElement<IconProps>;
 	className?: string;
-	subtitle?: string;
+	description?: string;
 }) => (
 	<div
 		className={cn(
@@ -22,8 +22,8 @@ export const NoticeBanner = ({
 		)}
 	>
 		<div className="flex w-full flex-wrap items-center justify-between gap-5">
-			{(subtitle || title || icon) && (
-				<div className="flex items-center gap-2">
+			{(description || title || icon) && (
+				<div className="flex flex-1 items-center gap-2">
 					{icon &&
 						cloneElement(icon, {
 							...icon.props,
@@ -32,14 +32,16 @@ export const NoticeBanner = ({
 							weight: "fill",
 							size: 20,
 						})}
-					<div className="flex flex-col">
+					<div className="flex flex-1 flex-col">
 						{title && (
 							<h3 className="font-medium text-accent-brighter text-sm">
 								{title}
 							</h3>
 						)}
-						{subtitle && (
-							<p className="text-accent-brighter/80 text-xs">{subtitle}</p>
+						{description && (
+							<p className="text-nowrap text-accent-brighter/80 text-xs">
+								{description}
+							</p>
 						)}
 					</div>
 				</div>

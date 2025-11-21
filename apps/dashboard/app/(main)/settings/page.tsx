@@ -154,7 +154,7 @@ export default function SettingsPage() {
 				)}
 				{activeTab === "account" && (
 					<div className="space-y-6">
-						<Card className="shadow-sm">
+						<Card>
 							<CardHeader>
 								<CardTitle>Email Address</CardTitle>
 								<CardDescription>
@@ -166,7 +166,7 @@ export default function SettingsPage() {
 							</CardContent>
 						</Card>
 
-						<Card className="shadow-sm">
+						<Card>
 							<CardHeader>
 								<CardTitle>Password</CardTitle>
 								<CardDescription>
@@ -178,7 +178,7 @@ export default function SettingsPage() {
 							</CardContent>
 						</Card>
 
-						<Card className="shadow-sm">
+						<Card>
 							<CardHeader>
 								<CardTitle>Timezone</CardTitle>
 								<CardDescription>
@@ -190,11 +190,9 @@ export default function SettingsPage() {
 							</CardContent>
 						</Card>
 
-						<Card className="border-destructive/20 shadow-sm">
+						<Card>
 							<CardHeader>
-								<CardTitle className="text-destructive">
-									Delete Account
-								</CardTitle>
+								<CardTitle>Delete Account</CardTitle>
 								<CardDescription>
 									Permanently delete your account and all associated data. This
 									action cannot be undone.
