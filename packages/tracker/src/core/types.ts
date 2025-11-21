@@ -46,9 +46,6 @@ export type EventContext = {
     viewport_size?: string;
     timezone?: string;
     language: string;
-    connection_type?: string;
-    rtt?: number;
-    downlink?: number;
     utm_source?: string;
     utm_medium?: string;
     utm_campaign?: string;

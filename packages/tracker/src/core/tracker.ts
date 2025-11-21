@@ -250,19 +250,6 @@ export class BaseTracker {
         return pathname;
     }
 
-    protected getConnectionInfo() {
-        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-        if (!connection) {
-            return {};
-        }
-
-        return {
-            connection_type: connection.effectiveType || connection.type || undefined,
-            rtt: connection.rtt || undefined,
-            downlink: connection.downlink || undefined,
-        };
-    }
-
     protected getUtmParams() {
         if (this.isServer()) {
             return {};
@@ -283,7 +270,6 @@ export class BaseTracker {
         }
 
         const utmParams = this.getUtmParams();
-        const connectionInfo = this.getConnectionInfo();
 
         let width: number | undefined = window.innerWidth;
         let height: number | undefined = window.innerHeight;
@@ -327,9 +313,6 @@ export class BaseTracker {
             viewport_size,
             timezone,
             language: navigator.language,
-            connection_type: connectionInfo.connection_type,
-            rtt: connectionInfo.rtt,
-            downlink: connectionInfo.downlink,
             ...utmParams,
         };
     }
