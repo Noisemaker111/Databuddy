@@ -151,10 +151,11 @@ function processErrorEventData(
 	ip: string
 ): Promise<ErrorEvent> {
 	return record("processErrorEventData", async () => {
-		const payload = errorData.payload;
-		const eventId = parseEventId(payload.eventId, randomUUID);
+		// Support both envelope format (payload) and direct format
+		const payload = errorData.payload || errorData;
+		const eventId = parseEventId(payload.eventId || errorData.eventId, randomUUID);
 		const now = Date.now();
-		const timestamp = parseTimestamp(payload.timestamp);
+		const timestamp = parseTimestamp(payload.timestamp || errorData.timestamp);
 
 		const [geoData, uaData] = await Promise.all([
 			getGeo(ip),
@@ -170,25 +171,25 @@ function processErrorEventData(
 			client_id: clientId,
 			event_id: eventId,
 			anonymous_id: sanitizeString(
-				payload.anonymousId,
+				payload.anonymousId || errorData.anonymousId,
 				VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH
 			),
-			session_id: validateSessionId(payload.sessionId),
+			session_id: validateSessionId(payload.sessionId || errorData.sessionId),
 			timestamp,
-			path: sanitizeString(payload.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
+			path: sanitizeString(payload.path || errorData.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
 			message: sanitizeString(
-				payload.message,
+				payload.message || errorData.message,
 				VALIDATION_LIMITS.STRING_MAX_LENGTH
 			),
 			filename: sanitizeString(
-				payload.filename,
+				payload.filename || errorData.filename,
 				VALIDATION_LIMITS.STRING_MAX_LENGTH
 			),
-			lineno: payload.lineno,
-			colno: payload.colno,
-			stack: sanitizeString(payload.stack, VALIDATION_LIMITS.STRING_MAX_LENGTH),
+			lineno: payload.lineno || errorData.lineno,
+			colno: payload.colno || errorData.colno,
+			stack: sanitizeString(payload.stack || errorData.stack, VALIDATION_LIMITS.STRING_MAX_LENGTH),
 			error_type: sanitizeString(
-				payload.errorType,
+				payload.errorType || errorData.errorType,
 				VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH
 			),
 			ip: anonymizedIP || "",
@@ -212,10 +213,11 @@ function processWebVitalsEventData(
 	ip: string
 ): Promise<WebVitalsEvent> {
 	return record("processWebVitalsEventData", async () => {
-		const payload = vitalsData.payload;
-		const eventId = parseEventId(payload.eventId, randomUUID);
+		// Support both envelope format (payload) and direct format
+		const payload = vitalsData.payload || vitalsData;
+		const eventId = parseEventId(payload.eventId || vitalsData.eventId, randomUUID);
 		const now = Date.now();
-		const timestamp = parseTimestamp(payload.timestamp);
+		const timestamp = parseTimestamp(payload.timestamp || vitalsData.timestamp);
 
 		const [geoData, uaData] = await Promise.all([
 			getGeo(ip),
@@ -231,17 +233,17 @@ function processWebVitalsEventData(
 			client_id: clientId,
 			event_id: eventId,
 			anonymous_id: sanitizeString(
-				payload.anonymousId,
+				payload.anonymousId || vitalsData.anonymousId,
 				VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH
 			),
-			session_id: validateSessionId(payload.sessionId),
+			session_id: validateSessionId(payload.sessionId || vitalsData.sessionId),
 			timestamp,
-			path: sanitizeString(payload.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
-			fcp: validatePerformanceMetric(payload.fcp),
-			lcp: validatePerformanceMetric(payload.lcp),
-			cls: validatePerformanceMetric(payload.cls),
-			fid: validatePerformanceMetric(payload.fid),
-			inp: validatePerformanceMetric(payload.inp),
+			path: sanitizeString(payload.path || vitalsData.path || vitalsData.url, VALIDATION_LIMITS.STRING_MAX_LENGTH), // Support both path and url
+			fcp: validatePerformanceMetric(payload.fcp || vitalsData.fcp),
+			lcp: validatePerformanceMetric(payload.lcp || vitalsData.lcp),
+			cls: validatePerformanceMetric(payload.cls || vitalsData.cls),
+			fid: validatePerformanceMetric(payload.fid || vitalsData.fid),
+			inp: validatePerformanceMetric(payload.inp || vitalsData.inp),
 			ip: "",
 			user_agent: "",
 			country: country || "",
@@ -299,6 +301,112 @@ function processOutgoingLinkData(
 }
 
 const app = new Elysia()
+	.post("/vitals", async (context) => {
+		const { body, query, request } = context as {
+			body: any;
+			query: any;
+			request: Request;
+		};
+
+		try {
+			const validation = await validateRequest(body, query, request);
+			if ("error" in validation) {
+				return validation.error;
+			}
+
+			const { clientId, userAgent, ip } = validation;
+
+			const [botError, parseResult] = await Promise.all([
+				checkForBot(request, body, query, clientId, userAgent),
+				validateEventSchema(
+					webVitalsEventSchema,
+					body,
+					request,
+					query,
+					clientId
+				),
+			]);
+
+			if (botError) {
+				return botError.error;
+			}
+
+			if (!parseResult.success) {
+				return createSchemaErrorResponse(parseResult.error.issues);
+			}
+
+			const vitalsEvent = await processWebVitalsEventData(
+				body,
+				clientId,
+				userAgent,
+				ip
+			);
+
+			await insertWebVitals(vitalsEvent, clientId, userAgent, ip);
+			return { status: "success", type: "web_vitals" };
+
+		} catch (error) {
+			captureError(error, { message: "Error processing vitals" });
+			return { status: "error", message: "Internal server error" };
+		}
+	})
+	.post("/errors", async (context) => {
+		const { body, query, request } = context as {
+			body: any;
+			query: any;
+			request: Request;
+		};
+
+		try {
+			const validation = await validateRequest(body, query, request);
+			if ("error" in validation) {
+				return validation.error;
+			}
+
+			const { clientId, userAgent, ip } = validation;
+
+			if (FILTERED_ERROR_MESSAGES.has(body.message)) {
+				return {
+					status: "ignored",
+					type: "error",
+					reason: "filtered_message",
+				};
+			}
+
+			const [botError, parseResult] = await Promise.all([
+				checkForBot(request, body, query, clientId, userAgent),
+				validateEventSchema(
+					errorEventSchema,
+					body,
+					request,
+					query,
+					clientId
+				),
+			]);
+
+			if (botError) {
+				return botError.error;
+			}
+
+			if (!parseResult.success) {
+				return createSchemaErrorResponse(parseResult.error.issues);
+			}
+
+			const errorEvent = await processErrorEventData(
+				body,
+				clientId,
+				userAgent,
+				ip
+			);
+
+			await insertError(errorEvent, clientId, userAgent, ip);
+			return { status: "success", type: "error" };
+
+		} catch (error) {
+			captureError(error, { message: "Error processing error" });
+			return { status: "error", message: "Internal server error" };
+		}
+	})
 	.post("/", async (context) => {
 		const { body, query, request } = context as {
 			body: any;
@@ -362,7 +470,8 @@ const app = new Elysia()
 					return createSchemaErrorResponse(parseResult.error.issues);
 				}
 
-				insertError(body, clientId, userAgent, ip);
+				const errorEvent = await processErrorEventData(body, clientId, userAgent, ip);
+				insertError(errorEvent, clientId, userAgent, ip);
 				return { status: "success", type: "error" };
 			}
 
@@ -386,7 +495,8 @@ const app = new Elysia()
 					return createSchemaErrorResponse(parseResult.error.issues);
 				}
 
-				insertWebVitals(body, clientId, userAgent, ip);
+				const vitalsEvent = await processWebVitalsEventData(body, clientId, userAgent, ip);
+				insertWebVitals(vitalsEvent, clientId, userAgent, ip);
 				return { status: "success", type: "web_vitals" };
 			}
 

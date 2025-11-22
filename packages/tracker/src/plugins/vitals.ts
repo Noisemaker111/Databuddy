@@ -20,10 +20,9 @@ export function initWebVitalsTracking(tracker: BaseTracker) {
         inp: undefined,
         ttfb: undefined,
     };
-    let reported = false;
 
     const sendVitals = () => {
-        if (!Object.values(metrics).some((m) => m !== undefined && m !== 0)) {
+        if (!Object.values(metrics).some((m) => m !== undefined)) {
             return;
         }
 
@@ -40,14 +39,12 @@ export function initWebVitalsTracking(tracker: BaseTracker) {
             cls: clamp(metrics.cls),
             inp: metrics.inp,
             ttfb: clamp(metrics.ttfb),
-            ...tracker.getBaseContext(),
+            url: window.location.href,
         };
 
         logger.log("Sending web vitals", payload);
 
-        tracker.api.fetch("/vitals", payload, { keepalive: true }).catch(() => {
-            tracker.sendBeacon(payload);
-        });
+        tracker.sendBeacon(payload);
     };
 
     const handleMetric = (metric: Metric) => {
@@ -59,7 +56,7 @@ export function initWebVitalsTracking(tracker: BaseTracker) {
                 metrics.lcp = Math.round(metric.value);
                 break;
             case "CLS":
-                metrics.cls = Math.round(metric.value);
+                metrics.cls = metric.value; // CLS is a score, not ms, so keep decimals if needed, but usually small
                 break;
             case "INP":
                 metrics.inp = Math.round(metric.value);
@@ -79,23 +76,34 @@ export function initWebVitalsTracking(tracker: BaseTracker) {
     onINP(handleMetric);
     onTTFB(handleMetric);
 
-    const report = () => {
-        if (reported) {
-            return;
-        }
-        reported = true;
+    setTimeout(() => {
         sendVitals();
+    }, 4000);
+
+    const report = () => {
+        sendVitals();
+    };
+
+    let reportTimeout: number | undefined;
+    const debouncedReport = (immediate = false) => {
+        if (reportTimeout) {
+            window.clearTimeout(reportTimeout);
+        }
+        if (immediate) {
+            report();
+        } else {
+            reportTimeout = window.setTimeout(report, 1000);
+        }
     };
 
     document.addEventListener(
         "visibilitychange",
         () => {
             if (document.visibilityState === "hidden") {
-                report();
+                debouncedReport(true);
             }
-        },
-        { once: true }
+        }
     );
 
-    window.addEventListener("pagehide", report, { once: true });
+    window.addEventListener("pagehide", () => debouncedReport(true));
 }

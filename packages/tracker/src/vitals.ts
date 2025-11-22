@@ -10,10 +10,6 @@ function initializeVitals() {
         return;
     }
 
-    if (window.databuddy) {
-        return;
-    }
-
     const config = getTrackerConfig();
     if (config.clientId) {
         const tracker = new BaseTracker({
@@ -27,3 +23,4 @@ function initializeVitals() {
 if (typeof window !== "undefined") {
     initializeVitals();
 }
+

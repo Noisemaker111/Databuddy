@@ -11,7 +11,7 @@
     "dev": "bun build.ts --watch",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "serve": "bun test-server.ts"
+    "serve": "bun --watch --hot test-server.ts"
   },
   "devDependencies": {
     "@inquirer/prompts": "^8.0.1",

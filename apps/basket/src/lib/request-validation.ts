@@ -46,10 +46,21 @@ export function validateRequest(
 			return { error: { status: "error", message: "Payload too large" } };
 		}
 
-		const clientId = sanitizeString(
+		let clientId = sanitizeString(
 			query.client_id,
 			VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH
 		);
+
+		if (!clientId) {
+			const headerClientId = request.headers.get("databuddy-client-id");
+			if (headerClientId) {
+				clientId = sanitizeString(
+					headerClientId,
+					VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH
+				);
+			}
+		}
+
 		if (!clientId) {
 			logBlockedTraffic(
 				request,

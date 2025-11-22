@@ -35,7 +35,6 @@ export class BaseTracker {
     constructor(options: TrackerOptions) {
         this.options = {
             disabled: false,
-            trackScreenViews: true,
             trackPerformance: true,
             samplingRate: 1.0,
             enableRetries: true,
@@ -279,20 +278,6 @@ export class BaseTracker {
         }
         const viewport_size = width && height ? `${width}x${height}` : undefined;
 
-        let screenWidth: number | undefined = window.screen.width;
-        let screenHeight: number | undefined = window.screen.height;
-        if (
-            screenWidth < 240 ||
-            screenWidth > 10_000 ||
-            screenHeight < 240 ||
-            screenHeight > 10_000
-        ) {
-            screenWidth = undefined;
-            screenHeight = undefined;
-        }
-        const screen_resolution =
-            screenWidth && screenHeight ? `${screenWidth}x${screenHeight}` : undefined;
-
         const maskedPathname = this.getMaskedPath();
         const path =
             window.location.origin +
@@ -309,7 +294,6 @@ export class BaseTracker {
             path,
             title: document.title,
             referrer: document.referrer || "direct",
-            screen_resolution,
             viewport_size,
             timezone,
             language: navigator.language,

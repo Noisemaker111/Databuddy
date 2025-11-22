@@ -42,7 +42,6 @@ export type EventContext = {
     path: string;
     title: string;
     referrer?: string;
-    screen_resolution?: string;
     viewport_size?: string;
     timezone?: string;
     language: string;

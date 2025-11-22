@@ -126,7 +126,7 @@ export default function RootLayout({
 				maskPatterns={["/websites/***"]}
 				scriptUrl={
 					isLocalhost
-						? "http://localhost:3000/databuddy.js"
+						? "https://databuddy.b-cdn.net/databuddy.js"
 						: "https://cdn.databuddy.cc/databuddy.js"
 				}
 				skipPatterns={[]}

@@ -98,7 +98,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 				trackAttributes
 				trackErrors
 				trackOutgoingLinks
-				trackWebVitals
+				trackWebVitals 
 			/>
 			<body>
 				<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
