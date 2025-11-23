@@ -125,7 +125,7 @@ export const NavigationSection = memo(function NavigationSectionComponent({
 			<button
 				className={clsx(
 					className,
-					"box-content flex h-10 items-center gap-3 px-3 text-left font-medium text-sidebar-foreground text-sm transition-colors focus:outline-none",
+					"flex h-10 items-center gap-3 px-3 py-2.5 text-left font-medium text-sidebar-foreground text-sm transition-colors focus:outline-none",
 					isExpanded
 						? "border-b-0 bg-sidebar-accent-brighter"
 						: "hover:bg-sidebar-accent-brighter"
@@ -136,7 +136,7 @@ export const NavigationSection = memo(function NavigationSectionComponent({
 				type="button"
 			>
 				<Icon className="size-5 shrink-0 text-sidebar-ring" weight="fill" />
-				<span className="flex-1 text-sm">{title}</span>
+				<span className="flex-1 truncate text-sm">{title}</span>
 				<div className="shrink-0">
 					<CaretDownIcon
 						className={clsx(

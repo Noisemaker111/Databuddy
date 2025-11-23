@@ -80,7 +80,7 @@ function OrganizationSelectorTrigger({
 			<div className="flex w-full items-center justify-between">
 				<div className="flex items-center gap-3">
 					<div className="rounded">
-						<Avatar className="h-5 w-5">
+						<Avatar className="size-7 bg-accent">
 							<AvatarImage
 								alt={activeOrganization?.name || "Personal"}
 								className="rounded"

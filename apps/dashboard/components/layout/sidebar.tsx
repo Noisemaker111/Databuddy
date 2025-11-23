@@ -187,7 +187,7 @@ export function Sidebar() {
 							<div className="flex h-8 w-8 items-center justify-center">
 								<Image
 									alt="Databuddy Logo"
-									className="drop-shadow-sm invert dark:invert-0"
+									className="invert dark:invert-0"
 									height={24}
 									priority
 									src="/logo.svg"
@@ -262,11 +262,13 @@ export function Sidebar() {
 								<NavigationSection
 									accordionStates={accordionStates}
 									className={
-										idx === navigation.length - 1
+										navigation.length > 1 && idx === navigation.length - 1
 											? "border-t"
-											: idx === 0
-												? "border-t-0 border-b"
-												: "border-0"
+											: idx === 0 && navigation.length < 2
+												? "border-b"
+												: idx !== 0 && navigation.length > 1
+													? "border-t"
+													: "border-transparent"
 									}
 									currentWebsiteId={currentWebsiteId}
 									icon={section.icon}

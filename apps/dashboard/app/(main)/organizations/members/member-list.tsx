@@ -65,14 +65,7 @@ function RoleSelector({
 	organizationId,
 }: RoleSelectorProps) {
 	if (member.role === "owner") {
-		return (
-			<Badge
-				className="border-amber-200 bg-amber-100 px-2 py-1 text-amber-800"
-				variant="default"
-			>
-				Owner
-			</Badge>
-		);
+		return <Badge variant="amber">Owner</Badge>;
 	}
 
 	return (
@@ -134,7 +127,7 @@ export function MemberList({
 				<div className="space-y-2">
 					{members.map((member) => (
 						<div
-							className="flex items-center justify-between rounded border border-border/30 bg-muted/20 p-3"
+							className="flex items-center justify-between rounded border bg-accent-brighter p-3"
 							key={member.id}
 						>
 							<div className="flex items-center gap-3">
@@ -149,15 +142,15 @@ export function MemberList({
 								</Avatar>
 								<div className="min-w-0 flex-1">
 									<div className="flex items-center gap-2">
-										<p className="truncate font-medium text-sm">
-											{member.user.name}
-										</p>
 										{member.role === "owner" && (
 											<CrownIcon
 												className="h-3 w-3 shrink-0 text-amber-500"
 												size={12}
 											/>
 										)}
+										<p className="truncate font-medium text-sm">
+											{member.user.name}
+										</p>
 									</div>
 									<p className="truncate text-muted-foreground text-xs">
 										{member.user.email}

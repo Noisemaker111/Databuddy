@@ -128,52 +128,49 @@ export function OrganizationsList({
 							key={org.id}
 							onClick={() => handleCardClick(org.id)}
 						>
-							{isActive && (
-								<div className="absolute top-3 right-3">
-									<Badge variant="secondary">
-										<CheckIcon className="mr-1 h-3 w-3" size={12} />
-										Active
-									</Badge>
-								</div>
-							)}
-
 							{isProcessing && (
 								<div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
 									<div className="h-6 w-6 animate-spin rounded-full border border-primary/30 border-t-primary" />
 								</div>
 							)}
 
-							<CardContent>
-								<div className="space-y-3">
-									{/* Organization Info */}
-									<div className="flex items-start gap-3">
-										<Avatar className="size-9 shrink-0">
-											<AvatarImage alt={org.name} src={org.logo || undefined} />
-											<AvatarFallback
-												className={cn(
-													"font-medium text-xs",
-													isActive ? "bg-secondary-brightest" : "bg-accent"
-												)}
-											>
-												{getOrganizationInitials(org.name)}
-											</AvatarFallback>
-										</Avatar>
-										<div className="min-w-0 flex-1">
-											<h3 className="mb-2 truncate font-semibold text-base">
-												{org.name}
-											</h3>
-											<p className="truncate text-muted-foreground text-sm">
-												@{org.slug}
-											</p>
-											<div className="mt-0.5 flex items-center gap-1">
-												<CalendarIcon
-													className="h-3 w-3 text-muted-foreground"
-													size={12}
-												/>
-												<span className="text-muted-foreground text-sm">
-													Created {dayjs(org.createdAt).fromNow()}
-												</span>
-											</div>
+							<CardContent className="flex flex-col flex-wrap items-start justify-between gap-6 sm:flex-row">
+								{isActive && (
+									<Badge
+										className="order-first xl:order-last"
+										variant="secondary"
+									>
+										<CheckIcon className="size-3" />
+										Active
+									</Badge>
+								)}
+								<div className="flex flex-col items-start gap-3 space-y-3 md:flex-row">
+									<Avatar className="size-9 shrink-0">
+										<AvatarImage alt={org.name} src={org.logo || undefined} />
+										<AvatarFallback
+											className={cn(
+												"font-medium text-xs",
+												isActive ? "bg-secondary-brightest" : "bg-accent"
+											)}
+										>
+											{getOrganizationInitials(org.name)}
+										</AvatarFallback>
+									</Avatar>
+									<div className="min-w-0 flex-1">
+										<h3 className="mb-2 truncate font-semibold text-base">
+											{org.name}
+										</h3>
+										<p className="truncate text-muted-foreground text-sm">
+											@{org.slug}
+										</p>
+										<div className="mt-1 flex items-center gap-1">
+											<CalendarIcon
+												className="size-3 text-accent-foreground"
+												weight="duotone"
+											/>
+											<span className="text-muted-foreground text-xs">
+												Created {dayjs(org.createdAt).fromNow()}
+											</span>
 										</div>
 									</div>
 								</div>

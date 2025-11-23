@@ -253,10 +253,10 @@ export function ApiKeyCreateDialog({
 		<>
 			<Sheet onOpenChange={handleClose} open={open}>
 				<SheetContent
-					className="w-full overflow-y-auto p-4 sm:w-[480px] sm:max-w-[480px]"
+					className="w-full sm:w-[480px] sm:max-w-[480px]"
 					side="right"
 				>
-					<SheetHeader className="pb-3">
+					<SheetHeader>
 						<SheetTitle className="text-foreground text-lg">
 							Create API Key
 						</SheetTitle>

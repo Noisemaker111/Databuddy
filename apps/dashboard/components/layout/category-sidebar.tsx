@@ -92,46 +92,48 @@ export function CategorySidebar({
 					</Link>
 				</div>
 
-				{categories.map((category, index) => {
-					const Icon = category.icon;
-					const isActive = activeCategory === category.id;
+				<div className="border-b">
+					{categories.map((category, idx) => {
+						const Icon = category.icon;
+						const isActive = activeCategory === category.id;
 
-					return (
-						<Tooltip delayDuration={500} key={category.id}>
-							<TooltipTrigger asChild>
-								<button
-									className={cn(
-										index === 0
-											? "box-content border-t-0 border-b"
-											: index === categories.length - 1
-												? "box-content border-b-0"
-												: "box-content border-b",
-										"flex h-10 items-center justify-center border-transparent px-3 transition-colors duration-200",
-										"focus:outline-none",
-										isActive
-											? "cursor-default bg-accent text-sidebar-accent-foreground hover:bg-accent"
-											: "cursor-pointer hover:bg-sidebar-accent"
-									)}
-									onClick={() => onCategoryChangeAction?.(category.id)}
-									type="button"
-								>
-									<Icon
+						return (
+							<Tooltip delayDuration={500} key={category.id}>
+								<TooltipTrigger asChild>
+									<button
 										className={cn(
-											"h-5 w-5 transition-colors",
-											isActive
-												? "text-sidebar-ring"
-												: "text-sidebar-primary-foreground/70"
+											"relative flex h-10 w-full items-center justify-center transition-colors duration-200 hover:bg-accent",
+											"focus:outline-none"
 										)}
-										weight={isActive ? "fill" : "duotone"}
-									/>
-								</button>
-							</TooltipTrigger>
-							<TooltipContent side="right" sideOffset={8}>
-								{category.name}
-							</TooltipContent>
-						</Tooltip>
-					);
-				})}
+										onClick={() => onCategoryChangeAction?.(category.id)}
+										type="button"
+									>
+										{isActive && (
+											<div
+												className={cn(
+													"absolute top-0 left-0 z-[-1] h-full w-full border-accent border-b bg-accent",
+													idx === 0 ? "box-border" : "box-content"
+												)}
+											/>
+										)}
+										<Icon
+											className={cn(
+												"h-5 w-5 transition-colors",
+												isActive
+													? "text-sidebar-ring"
+													: "text-sidebar-primary-foreground/70"
+											)}
+											weight={isActive ? "fill" : "duotone"}
+										/>
+									</button>
+								</TooltipTrigger>
+								<TooltipContent side="right" sideOffset={8}>
+									{category.name}
+								</TooltipContent>
+							</Tooltip>
+						);
+					})}
+				</div>
 
 				<div className="flex-1" />
 

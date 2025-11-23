@@ -146,8 +146,8 @@ export default function SettingsPage() {
 			<PageHeader description={description} icon={icon} title={title} />
 			<main className="flex-1 overflow-y-auto p-4">
 				{activeTab === "profile" && (
-					<Card className="shadow-sm">
-						<CardContent className="pt-6">
+					<Card>
+						<CardContent>
 							<ProfileForm />
 						</CardContent>
 					</Card>
