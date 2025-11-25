@@ -99,7 +99,7 @@ export const OverviewTab = memo(function OverviewTabComponent({
 	const isCanceled = currentPlan?.scenario === "cancel";
 
 	return (
-		<>
+		<div className="flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
 			<CancelSubscriptionDialog
 				currentPeriodEnd={cancelTarget?.currentPeriodEnd}
 				isLoading={isLoading}
@@ -113,77 +113,74 @@ export const OverviewTab = memo(function OverviewTabComponent({
 				planName={cancelTarget?.name ?? ""}
 			/>
 
-			<div className="flex h-full flex-col lg:flex-row">
-				{/* Main Content */}
-				<div className="flex-1 overflow-y-auto">
-					<div className="border-b px-5 py-4">
-						<h2 className="font-semibold">Usage</h2>
-						<p className="text-muted-foreground text-sm">
-							Track your feature consumption
-						</p>
-					</div>
+			{/* Main Content */}
+			<div className="shrink-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+				<div className="border-b px-5 py-4">
+					<h2 className="font-semibold">Usage</h2>
+					<p className="text-muted-foreground text-sm">
+						Track your feature consumption
+					</p>
+				</div>
 
-					{usageStats.length === 0 ? (
-						<EmptyUsageState />
-					) : (
-						<div className="divide-y">
-							{usageStats.map((feature) => (
-								<UsageRow
-									feature={feature}
-									key={feature.id}
-									onUpgrade={onNavigateToPlans}
-								/>
-							))}
+				{usageStats.length === 0 ? (
+					<EmptyUsageState />
+				) : (
+					<div className="divide-y">
+						{usageStats.map((feature) => (
+							<UsageRow
+								feature={feature}
+								key={feature.id}
+								onUpgrade={onNavigateToPlans}
+							/>
+						))}
+					</div>
+				)}
+			</div>
+
+			{/* Sidebar */}
+			<div className="flex w-full shrink-0 flex-col border-t bg-muted/30 lg:w-80 lg:overflow-y-auto lg:border-t-0 lg:border-l">
+				{/* Plan */}
+				<div className="border-b p-5">
+					<div className="mb-3 flex items-center justify-between">
+						<h3 className="font-semibold">Current Plan</h3>
+						<PlanStatusBadge
+							isCanceled={!!currentProduct?.canceled_at}
+							isScheduled={currentProduct?.status === "scheduled"}
+						/>
+					</div>
+					<div className="flex items-center gap-3">
+						<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded border bg-background">
+							<CrownIcon className="text-primary" size={20} weight="duotone" />
+						</div>
+						<div>
+							<div className="font-medium">
+								{currentPlan?.display?.name || currentPlan?.name || "Free"}
+							</div>
+							{!isFree && currentPlan?.items[0]?.display?.primary_text && (
+								<div className="text-muted-foreground text-sm">
+									{currentPlan.items[0].display.primary_text}
+								</div>
+							)}
+						</div>
+					</div>
+					{statusDetails && (
+						<div className="mt-3 flex items-center gap-2 text-muted-foreground text-sm">
+							<CalendarIcon size={14} weight="duotone" />
+							{statusDetails}
 						</div>
 					)}
 				</div>
 
-				{/* Sidebar */}
-				<div className="w-full shrink-0 border-l bg-muted/30 lg:w-80">
-					{/* Plan */}
-					<div className="border-b p-5">
-						<div className="mb-3 flex items-center justify-between">
-							<h3 className="font-semibold">Current Plan</h3>
-							<PlanStatusBadge
-								isCanceled={!!currentProduct?.canceled_at}
-								isScheduled={currentProduct?.status === "scheduled"}
-							/>
-						</div>
-						<div className="flex items-center gap-3">
-							<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded border bg-background">
-								<CrownIcon
-									className="text-primary"
-									size={20}
-									weight="duotone"
-								/>
-							</div>
-							<div>
-								<div className="font-medium">
-									{currentPlan?.display?.name || currentPlan?.name || "Free"}
-								</div>
-								{!isFree && currentPlan?.items[0]?.display?.primary_text && (
-									<div className="text-muted-foreground text-sm">
-										{currentPlan.items[0].display.primary_text}
-									</div>
-								)}
-							</div>
-						</div>
-						{statusDetails && (
-							<div className="mt-3 flex items-center gap-2 text-muted-foreground text-sm">
-								<CalendarIcon size={14} weight="duotone" />
-								{statusDetails}
-							</div>
-						)}
-					</div>
-
+				{/* Payment Method + Actions - inline on mobile, stacked on desktop */}
+				<div className="flex flex-1 flex-col gap-5 p-5 sm:flex-row sm:items-start lg:flex-col lg:gap-0 lg:p-0">
 					{/* Payment Method */}
-					<div className="border-b p-5">
+					<div className="w-full sm:w-auto sm:flex-1 lg:w-full lg:border-b lg:p-5">
 						<h3 className="mb-3 font-semibold">Payment Method</h3>
 						<CreditCardDisplay customer={customer} />
 					</div>
 
 					{/* Actions */}
-					<div className="space-y-2 p-5">
+					<div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-40 lg:w-full lg:p-5">
 						{isCanceled ? (
 							<Button className="w-full" onClick={onNavigateToPlans}>
 								Reactivate Plan
@@ -228,7 +225,7 @@ export const OverviewTab = memo(function OverviewTabComponent({
 					</div>
 				</div>
 			</div>
-		</>
+		</div>
 	);
 });
 
@@ -243,7 +240,7 @@ function CreditCardDisplay({ customer }: { customer: Customer | null }) {
 
 	if (!card) {
 		return (
-			<div className="flex aspect-[1.586/1] w-full flex-col items-center justify-center rounded-xl border border-dashed bg-background">
+			<div className="flex aspect-[1.586/1] w-full max-w-xs flex-col items-center justify-center rounded-xl border border-dashed bg-background sm:max-w-56 lg:max-w-none">
 				<CreditCardIcon
 					className="mb-2 text-muted-foreground"
 					size={28}
@@ -261,7 +258,7 @@ function CreditCardDisplay({ customer }: { customer: Customer | null }) {
 	const brand = card.brand?.toLowerCase() || "card";
 
 	return (
-		<div className="relative aspect-[1.586/1] w-full">
+		<div className="relative aspect-[1.586/1] w-full max-w-xs sm:max-w-56 lg:max-w-none">
 			<div
 				className={cn(
 					"absolute inset-0 flex flex-col justify-between overflow-hidden rounded-xl p-4",
@@ -563,8 +560,8 @@ function ErrorState({
 
 function OverviewSkeleton() {
 	return (
-		<div className="flex h-full flex-col lg:flex-row">
-			<div className="flex-1">
+		<div className="flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+			<div className="shrink-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
 				<div className="border-b px-5 py-4">
 					<Skeleton className="mb-1 h-5 w-20" />
 					<Skeleton className="h-4 w-40" />
@@ -584,7 +581,7 @@ function OverviewSkeleton() {
 					))}
 				</div>
 			</div>
-			<div className="w-full shrink-0 border-l bg-muted/30 lg:w-80">
+			<div className="flex w-full shrink-0 flex-col border-t bg-muted/30 lg:w-80 lg:overflow-y-auto lg:border-t-0 lg:border-l">
 				<div className="border-b p-5">
 					<Skeleton className="mb-3 h-5 w-28" />
 					<div className="flex items-center gap-3">
@@ -595,14 +592,16 @@ function OverviewSkeleton() {
 						</div>
 					</div>
 				</div>
-				<div className="border-b p-5">
-					<Skeleton className="mb-3 h-5 w-32" />
-					<Skeleton className="aspect-[1.586/1] w-full rounded-xl" />
-				</div>
-				<div className="space-y-2 p-5">
-					<Skeleton className="h-10 w-full" />
-					<Skeleton className="h-10 w-full" />
-					<Skeleton className="h-10 w-full" />
+				<div className="flex flex-1 flex-col gap-5 p-5 sm:flex-row sm:items-start lg:flex-col lg:gap-0 lg:p-0">
+					<div className="w-full sm:w-auto sm:flex-1 lg:w-full lg:border-b lg:p-5">
+						<Skeleton className="mb-3 h-5 w-32" />
+						<Skeleton className="aspect-[1.586/1] w-full max-w-xs rounded-xl sm:max-w-56 lg:max-w-none" />
+					</div>
+					<div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-40 lg:w-full lg:p-5">
+						<Skeleton className="h-10 w-full" />
+						<Skeleton className="h-10 w-full" />
+						<Skeleton className="h-10 w-full" />
+					</div>
 				</div>
 			</div>
 		</div>
