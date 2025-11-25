@@ -2,7 +2,7 @@
 
 import PricingTable from "@/components/autumn/pricing-table";
 
-interface PlansTabProps {
+type PlansTabProps = {
 	selectedPlan?: string | null;
 }
 
