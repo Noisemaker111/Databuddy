@@ -99,7 +99,7 @@ export const OverviewTab = memo(function OverviewTabComponent({
 	const isCanceled = currentPlan?.scenario === "cancel";
 
 	return (
-		<div className="flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+		<div className="flex h-full flex-col overflow-y-auto lg:grid lg:h-full lg:grid-cols-[1fr_20rem] lg:overflow-hidden">
 			<CancelSubscriptionDialog
 				currentPeriodEnd={cancelTarget?.currentPeriodEnd}
 				isLoading={isLoading}
@@ -114,7 +114,7 @@ export const OverviewTab = memo(function OverviewTabComponent({
 			/>
 
 			{/* Main Content */}
-			<div className="shrink-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+			<div className="shrink-0 lg:h-full lg:min-h-0 lg:overflow-y-auto">
 				<div className="border-b px-5 py-4">
 					<h2 className="font-semibold">Usage</h2>
 					<p className="text-muted-foreground text-sm">
@@ -138,7 +138,7 @@ export const OverviewTab = memo(function OverviewTabComponent({
 			</div>
 
 			{/* Sidebar */}
-			<div className="flex w-full shrink-0 flex-col border-t bg-muted/30 lg:w-80 lg:overflow-y-auto lg:border-t-0 lg:border-l">
+			<div className="flex w-full shrink-0 flex-col border-t bg-muted/30 lg:h-full lg:w-auto lg:overflow-y-auto lg:border-t-0 lg:border-l">
 				{/* Plan */}
 				<div className="border-b p-5">
 					<div className="mb-3 flex items-center justify-between">
@@ -172,15 +172,15 @@ export const OverviewTab = memo(function OverviewTabComponent({
 				</div>
 
 				{/* Payment Method + Actions - inline on mobile, stacked on desktop */}
-				<div className="flex flex-1 flex-col gap-5 p-5 sm:flex-row sm:items-start lg:flex-col lg:gap-0 lg:p-0">
+				<div className="grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-1 lg:gap-0 lg:p-0">
 					{/* Payment Method */}
-					<div className="w-full sm:w-auto sm:flex-1 lg:w-full lg:border-b lg:p-5">
+					<div className="w-full lg:w-auto lg:border-b lg:p-5">
 						<h3 className="mb-3 font-semibold">Payment Method</h3>
 						<CreditCardDisplay customer={customer} />
 					</div>
 
 					{/* Actions */}
-					<div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-40 lg:w-full lg:p-5">
+					<div className="flex w-full flex-col gap-2 lg:w-auto lg:p-5">
 						{isCanceled ? (
 							<Button className="w-full" onClick={onNavigateToPlans}>
 								Reactivate Plan
@@ -240,7 +240,7 @@ function CreditCardDisplay({ customer }: { customer: Customer | null }) {
 
 	if (!card) {
 		return (
-			<div className="flex aspect-[1.586/1] w-full max-w-xs flex-col items-center justify-center rounded-xl border border-dashed bg-background sm:max-w-56 lg:max-w-none">
+			<div className="flex aspect-[1.586/1] w-full flex-col items-center justify-center rounded-xl border border-dashed bg-background">
 				<CreditCardIcon
 					className="mb-2 text-muted-foreground"
 					size={28}
@@ -258,7 +258,7 @@ function CreditCardDisplay({ customer }: { customer: Customer | null }) {
 	const brand = card.brand?.toLowerCase() || "card";
 
 	return (
-		<div className="relative aspect-[1.586/1] w-full max-w-xs sm:max-w-56 lg:max-w-none">
+		<div className="relative aspect-[1.586/1] w-full">
 			<div
 				className={cn(
 					"absolute inset-0 flex flex-col justify-between overflow-hidden rounded-xl p-4",
@@ -560,8 +560,8 @@ function ErrorState({
 
 function OverviewSkeleton() {
 	return (
-		<div className="flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
-			<div className="shrink-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+		<div className="flex h-full flex-col overflow-y-auto lg:grid lg:grid-cols-[1fr_20rem] lg:overflow-hidden">
+			<div className="shrink-0 lg:h-full lg:min-h-0 lg:overflow-y-auto">
 				<div className="border-b px-5 py-4">
 					<Skeleton className="mb-1 h-5 w-20" />
 					<Skeleton className="h-4 w-40" />
@@ -581,7 +581,7 @@ function OverviewSkeleton() {
 					))}
 				</div>
 			</div>
-			<div className="flex w-full shrink-0 flex-col border-t bg-muted/30 lg:w-80 lg:overflow-y-auto lg:border-t-0 lg:border-l">
+			<div className="flex w-full shrink-0 flex-col border-t bg-muted/30 lg:h-full lg:w-auto lg:overflow-y-auto lg:border-t-0 lg:border-l">
 				<div className="border-b p-5">
 					<Skeleton className="mb-3 h-5 w-28" />
 					<div className="flex items-center gap-3">
@@ -592,12 +592,12 @@ function OverviewSkeleton() {
 						</div>
 					</div>
 				</div>
-				<div className="flex flex-1 flex-col gap-5 p-5 sm:flex-row sm:items-start lg:flex-col lg:gap-0 lg:p-0">
-					<div className="w-full sm:w-auto sm:flex-1 lg:w-full lg:border-b lg:p-5">
+				<div className="grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-1 lg:gap-0 lg:p-0">
+					<div className="w-full lg:w-auto lg:border-b lg:p-5">
 						<Skeleton className="mb-3 h-5 w-32" />
-						<Skeleton className="aspect-[1.586/1] w-full max-w-xs rounded-xl sm:max-w-56 lg:max-w-none" />
+						<Skeleton className="aspect-[1.586/1] w-full rounded-xl" />
 					</div>
-					<div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-40 lg:w-full lg:p-5">
+					<div className="flex w-full flex-col gap-2 lg:w-auto lg:p-5">
 						<Skeleton className="h-10 w-full" />
 						<Skeleton className="h-10 w-full" />
 						<Skeleton className="h-10 w-full" />
