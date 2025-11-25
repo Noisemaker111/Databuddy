@@ -4,7 +4,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 
 dayjs.extend(relativeTime);
 
-export interface FeatureUsage {
+export type FeatureUsage = {
     id: string;
     name: string;
     used: number;
@@ -18,7 +18,7 @@ export interface FeatureUsage {
     resetAt: number | null;
     resetDateFormatted: string | null;
     resetRelative: string | null;
-}
+};
 
 export function calculateFeatureUsage(feature: CustomerFeature): FeatureUsage {
     const includedUsage = feature.included_usage ?? 0;
@@ -68,16 +68,25 @@ export function calculateFeatureUsage(feature: CustomerFeature): FeatureUsage {
 export function calculateAllFeatureUsage(
     features: Record<string, CustomerFeature> | undefined
 ): FeatureUsage[] {
-    if (!features) return [];
+    if (!features) {
+        return [];
+    }
     return Object.values(features).map(calculateFeatureUsage);
 }
 
 export function formatCompactNumber(num: number): string {
-    if (num >= 1_000_000_000_000)
+    if (num >= 1_000_000_000_000) {
         return `${(num / 1_000_000_000_000).toFixed(1)}T`;
-    if (num >= 1_000_000_000) return `${(num / 1_000_000_000).toFixed(1)}B`;
-    if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-    if (num >= 10_000) return `${(num / 1000).toFixed(0)}K`;
+    }
+    if (num >= 1_000_000_000) {
+        return `${(num / 1_000_000_000).toFixed(1)}B`;
+    }
+    if (num >= 1_000_000) {
+        return `${(num / 1_000_000).toFixed(1)}M`;
+    }
+    if (num >= 10_000) {
+        return `${(num / 1000).toFixed(0)}K`;
+    }
     return num.toLocaleString();
 }
 
