@@ -30,7 +30,7 @@ function ApiKeyListSkeleton() {
 				<Skeleton className="h-10 w-28 rounded" />
 			</div>
 			<div className="overflow-hidden rounded border border-border/50 bg-card">
-				<div className="border-border/50 border-b bg-muted/30 px-6 py-4">
+				<div className="border-border/50 border-b bg-muted/10 px-6 py-4">
 					<div className="flex gap-4">
 						<Skeleton className="h-4 w-16 rounded" />
 						<Skeleton className="h-4 w-12 rounded" />
@@ -79,17 +79,12 @@ export function ApiKeyList({
 
 	if (isError) {
 		return (
-			<div className="rounded border p-6 text-center">
-				<div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-					<KeyIcon className="h-6 w-6 not-dark:text-primary" weight="duotone" />
-				</div>
-				<div className="font-semibold text-foreground text-sm">
-					Failed to load API keys
-				</div>
-				<div className="mt-1 text-muted-foreground text-xs">
-					Please try again in a moment
-				</div>
-			</div>
+			<EmptyState
+				description="Please try again in a moment"
+				icon={<KeyIcon weight="duotone" />}
+				title="Failed to load API keys"
+				variant="error"
+			/>
 		);
 	}
 
@@ -128,7 +123,7 @@ export function ApiKeyList({
 							<TableBody>
 								{items.map((k) => (
 									<TableRow
-										className="cursor-pointer"
+										className="group cursor-pointer"
 										key={k.id}
 										onClick={() => onSelect?.(k.id)}
 									>
@@ -166,14 +161,13 @@ export function ApiKeyList({
 										</TableCell>
 										<TableCell className="p-3 text-right">
 											<Button
-												className="rounded opacity-0 transition-all duration-200 hover:bg-primary/10 hover:text-primary hover:opacity-100"
 												onClick={(e) => {
 													e.stopPropagation();
 													onSelect?.(k.id);
 												}}
 												size="sm"
 												type="button"
-												variant="ghost"
+												variant="secondary"
 											>
 												Manage
 											</Button>

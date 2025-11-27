@@ -19,13 +19,13 @@ export type EmptyStateProps = {
 	/** Main heading */
 	title: string;
 	/** Description text */
-	description: string | ReactNode;
+	description?: string | ReactNode;
 	/** Primary action button */
 	action?: EmptyStateAction;
 	/** Secondary action button */
 	secondaryAction?: EmptyStateAction;
 	/** Custom styling variants */
-	variant?: "default" | "simple" | "minimal";
+	variant?: "default" | "simple" | "minimal" | "error";
 	/** Custom className */
 	className?: string;
 	/** Whether to show the plus badge on the icon */
@@ -68,16 +68,23 @@ export const EmptyState = memo(function EmptyState({
 	};
 
 	const renderIcon = () => {
-		if (variant === "simple" || variant === "minimal") {
+		if (variant === "simple" || variant === "minimal" || variant === "error") {
 			return (
 				<div
 					aria-hidden="true"
-					className="flex size-12 items-center justify-center rounded-2xl bg-accent-foreground"
+					className={cn(
+						"flex size-12 items-center justify-center rounded-2xl bg-accent-foreground",
+						variant === "error" && "bg-destructive/10"
+					)}
 					role="img"
 				>
 					{cloneElement(icon, {
 						...icon.props,
-						className: cn("size-6 text-accent", icon.props.className),
+						className: cn(
+							"size-6 text-accent",
+							variant === "error" && "text-destructive",
+							icon.props.className
+						),
 						"aria-hidden": "true",
 						size: 24,
 						weight: "fill",
@@ -126,6 +133,8 @@ export const EmptyState = memo(function EmptyState({
 			variant === "simple" && "rounded border-dashed bg-muted/10",
 			variant === "minimal" &&
 				"flex flex-1 rounded border-none bg-transparent shadow-none",
+			variant === "error" &&
+				"flex flex-1 rounded border-none bg-transparent shadow-none",
 			"safe-area-inset-4 sm:safe-area-inset-6 lg:safe-area-inset-8",
 			className
 		);
@@ -155,7 +164,9 @@ export const EmptyState = memo(function EmptyState({
 							<h1
 								className={cn(
 									"font-semibold text-foreground",
-									variant === "minimal" ? "text-lg" : "text-2xl lg:text-3xl"
+									variant === "minimal" || variant === "error"
+										? "text-lg"
+										: "text-2xl lg:text-3xl"
 								)}
 							>
 								{title}
@@ -164,13 +175,17 @@ export const EmptyState = memo(function EmptyState({
 							<div
 								className={cn(
 									"text-muted-foreground leading-relaxed",
-									variant === "minimal" ? "text-sm" : "text-base lg:text-lg"
+									variant === "minimal" || variant === "error"
+										? "text-sm"
+										: "text-base lg:text-lg"
 								)}
 							>
 								<h2
 									className={cn(
 										"mt-5 font-medium text-foreground",
-										variant === "minimal" ? "text-lg" : "text-2xl lg:text-3xl"
+										variant === "minimal" || variant === "error"
+											? "text-lg"
+											: "text-2xl lg:text-3xl"
 									)}
 								>
 									{title}

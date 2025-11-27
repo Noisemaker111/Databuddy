@@ -30,7 +30,7 @@ export function FunnelsList({
 }: FunnelsListProps) {
 	if (isLoading) {
 		return (
-			<div className="space-y-4">
+			<div className="space-y-4 px-4">
 				{new Array(3).fill(null).map((_, index) => (
 					<Card key={index.toString()}>
 						<CardHeader className="pb-4">

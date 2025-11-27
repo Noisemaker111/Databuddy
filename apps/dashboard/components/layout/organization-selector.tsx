@@ -279,7 +279,7 @@ export function OrganizationSelector() {
 									key={org.id}
 									onClick={() => handleSelectOrganization(org.id)}
 								>
-									<Avatar className="h-5 w-5">
+									<Avatar className="size-5">
 										<AvatarImage alt={org.name} src={org.logo || undefined} />
 										<AvatarFallback className="bg-sidebar-primary/30 text-xs">
 											{getOrganizationInitials(org.name)}

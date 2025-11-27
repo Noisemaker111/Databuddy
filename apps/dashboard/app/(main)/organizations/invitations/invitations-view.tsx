@@ -15,6 +15,7 @@ import { InviteMemberDialog } from "@/components/organizations/invite-member-dia
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tip } from "@/components/ui/tip";
 import { useOrganizationInvitations } from "@/hooks/use-organization-invitations";
 import type {
 	ActiveOrganization,
@@ -304,13 +305,7 @@ export function InvitationsView({
 					</Button>
 
 					{/* Tip */}
-					<div className="mt-auto rounded border border-dashed bg-background/50 p-4">
-						<p className="mb-2 font-medium text-sm">Quick tip</p>
-						<p className="text-muted-foreground text-xs leading-relaxed">
-							Invitations expire after 7 days. Resend if needed from the pending
-							tab.
-						</p>
-					</div>
+					<Tip description="Invitations expire after 7 days. Resend if needed from the pending tab." />
 				</aside>
 			</div>
 

@@ -288,7 +288,7 @@ export function MetricsChart({
 		return (
 			<div
 				className={cn(
-					"w-full rounded border border-sidebar-border bg-sidebar",
+					"w-full rounded border border-sidebar-border bg-card",
 					className
 				)}
 			>

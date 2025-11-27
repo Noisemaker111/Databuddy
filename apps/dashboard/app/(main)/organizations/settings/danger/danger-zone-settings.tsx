@@ -153,7 +153,7 @@ export function DangerZoneSettings({
 			</div>
 
 			{/* Sidebar */}
-			<aside className="flex flex-col gap-4 bg-muted/30 p-5">
+			<aside className="flex flex-col gap-4 bg-card p-5">
 				{/* Warning Card */}
 				<div className="flex items-start gap-3 rounded border border-amber-500/20 bg-amber-500/5 p-4">
 					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-amber-500/10">

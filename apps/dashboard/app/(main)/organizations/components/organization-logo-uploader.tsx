@@ -159,9 +159,9 @@ export function OrganizationLogoUploader({
 
 	return (
 		<div className="space-y-3">
-			<div className="mt-5 flex items-center gap-3">
+			<div className="flex items-center gap-3">
 				<div className="group relative">
-					<Avatar className="size-10 border">
+					<Avatar className="size-10">
 						<AvatarImage alt={organization.name} src={preview || undefined} />
 						<AvatarFallback className="bg-accent font-medium text-sm">
 							{getOrganizationInitials(organization.name)}

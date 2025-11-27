@@ -105,7 +105,7 @@ function MemberRow({
 }: MemberRowProps) {
 	return (
 		<div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 px-5 py-4">
-			<Avatar className="h-10 w-10 border">
+			<Avatar className="size-10">
 				<AvatarImage
 					alt={member.user.name}
 					src={member.user.image ?? undefined}

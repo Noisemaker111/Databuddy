@@ -7,6 +7,7 @@ import {
 	RocketLaunchIcon,
 	SparkleIcon,
 	StarIcon,
+	WarningIcon,
 } from "@phosphor-icons/react";
 import type { Product, ProductItem } from "autumn-js";
 import {
@@ -17,6 +18,7 @@ import {
 import { createContext, useCallback, useContext, useState } from "react";
 import { PricingTiersTooltip } from "@/app/(main)/billing/components/pricing-tiers-tooltip";
 import AttachDialog from "@/components/autumn/attach-dialog";
+import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getPricingTableContent } from "@/lib/autumn/pricing-table-content";
@@ -112,14 +114,13 @@ export default function PricingTable({
 
 	if (error) {
 		return (
-			<div className="flex flex-col items-center justify-center py-12">
-				<span className="mb-3 font-medium text-destructive">
-					Failed to load pricing plans
-				</span>
-				<Button onClick={handleRetry} size="sm" variant="outline">
-					Retry
-				</Button>
-			</div>
+			<EmptyState
+				className="flex h-full flex-col items-center justify-center"
+				description="Something went wrong while loading pricing plans"
+				icon={<WarningIcon />}
+				title="Failed to load pricing plans"
+				variant="error"
+			/>
 		);
 	}
 

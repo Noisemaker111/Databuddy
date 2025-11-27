@@ -261,7 +261,7 @@ function ApiKeysSection() {
 	}>(null);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	return (
-		<div className="space-y-4">
+		<div className="h-full space-y-4">
 			<ApiKeyList
 				onCreateNew={() => setOpen(true)}
 				onSelect={(id) => setSelectedId(id)}

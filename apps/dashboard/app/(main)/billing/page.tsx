@@ -209,8 +209,8 @@ export default function BillingPage() {
 								</>
 							)}
 							<Button className="w-full" onClick={onManageBilling}>
-								<ArrowSquareOutIcon className="ml-2" size={14} />
 								Billing Portal
+								<ArrowSquareOutIcon size={14} />
 							</Button>
 						</div>
 					</div>

@@ -12,6 +12,7 @@ import type { CustomerInvoice } from "autumn-js";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { memo, useMemo } from "react";
+import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -59,15 +60,14 @@ export default function HistoryPage() {
 			<div className="flex h-full flex-col overflow-y-auto lg:grid lg:h-full lg:grid-cols-[1fr_20rem] lg:overflow-hidden">
 				{/* Main Content - Invoices */}
 				<div className="shrink-0 lg:h-full lg:min-h-0 lg:overflow-y-auto">
-					<div className="border-b px-5 py-4">
-						<h2 className="font-semibold">Invoices</h2>
-						<p className="text-muted-foreground text-sm">
-							View and download your billing history
-						</p>
-					</div>
-
 					{sortedInvoices.length === 0 ? (
-						<EmptyInvoices />
+						<EmptyState
+							className="h-full"
+							description="Invoices will appear here after your first payment"
+							icon={<ReceiptIcon />}
+							title="No invoices yet"
+							variant="minimal"
+						/>
 					) : (
 						<div className="divide-y">
 							{sortedInvoices.map((invoice) => (
@@ -78,10 +78,10 @@ export default function HistoryPage() {
 				</div>
 
 				{/* Sidebar - Subscription History + Actions */}
-				<div className="flex w-full shrink-0 flex-col border-t bg-muted/30 lg:h-full lg:w-auto lg:overflow-y-auto lg:border-t-0 lg:border-l">
+				<div className="flex w-full shrink-0 flex-col border-t bg-card lg:h-full lg:w-auto lg:overflow-y-auto lg:border-t-0 lg:border-l">
 					{/* Subscription Changes */}
 					<div className="border-b p-5">
-						<h3 className="mb-3 font-semibold">Subscription History</h3>
+						<h3 className="font-semibold">Subscription History</h3>
 						{subscriptionHistory.length === 0 ? (
 							<p className="text-muted-foreground text-sm">
 								No subscription history yet
@@ -104,13 +104,9 @@ export default function HistoryPage() {
 
 						{/* Actions */}
 						<div className="flex w-full flex-col gap-2 lg:w-auto lg:p-5">
-							<Button
-								className="w-full"
-								onClick={onManageBilling}
-								variant="outline"
-							>
+							<Button className="w-full" onClick={onManageBilling}>
 								Billing Portal
-								<ArrowSquareOutIcon className="ml-2" size={14} />
+								<ArrowSquareOutIcon size={14} />
 							</Button>
 						</div>
 					</div>
@@ -282,24 +278,6 @@ function BillingSummary({ invoices }: { invoices: CustomerInvoice[] }) {
 				<span className="text-muted-foreground text-sm">Last Payment</span>
 				<span className="font-medium">{stats.lastPayment}</span>
 			</div>
-		</div>
-	);
-}
-
-function EmptyInvoices() {
-	return (
-		<div className="flex flex-col items-center justify-center py-16 text-center">
-			<div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-				<ReceiptIcon
-					className="text-muted-foreground"
-					size={24}
-					weight="duotone"
-				/>
-			</div>
-			<p className="font-semibold">No invoices yet</p>
-			<p className="mt-1 max-w-xs text-muted-foreground text-sm">
-				Invoices will appear here after your first payment
-			</p>
 		</div>
 	);
 }

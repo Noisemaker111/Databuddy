@@ -35,11 +35,11 @@ import {
 } from "../ui/sheet";
 import type { ApiKeyAccessEntry, ApiScope } from "./api-key-types";
 
-interface ApiKeyCreateDialogProps {
+type ApiKeyCreateDialogProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	organizationId?: string;
-}
+};
 
 const SCOPES: { value: ApiScope; label: string }[] = [
 	{ value: "read:data", label: "Read Data" },
@@ -208,15 +208,19 @@ export function ApiKeyCreateDialog({
 	return (
 		<Sheet onOpenChange={handleClose} open={open}>
 			<SheetContent
-				className="m-3 h-[calc(100%-1.5rem)] rounded border bg-background p-0 sm:max-w-md"
+				className="m-3 h-[calc(100%-1.5rem)] rounded border bg-card p-0 sm:max-w-md"
 				side="right"
 			>
-				<div className="flex h-full flex-col">
+				<div className="flex h-full flex-col gap-6">
 					{/* Header */}
-					<SheetHeader className="shrink-0 border-b bg-muted/30 px-6 py-5">
+					<SheetHeader className="shrink-0">
 						<div className="flex items-center gap-4">
-							<div className="flex h-11 w-11 items-center justify-center rounded border bg-background">
-								<KeyIcon className="text-primary" size={22} weight="duotone" />
+							<div className="flex h-11 w-11 items-center justify-center rounded border bg-secondary-brighter">
+								<KeyIcon
+									className="text-accent-foreground"
+									size={22}
+									weight="fill"
+								/>
 							</div>
 							<div>
 								<SheetTitle className="text-lg">Create API Key</SheetTitle>
@@ -232,7 +236,7 @@ export function ApiKeyCreateDialog({
 						onSubmit={onSubmit}
 					>
 						{/* Content */}
-						<div className="flex-1 space-y-6 overflow-y-auto p-6">
+						<div className="flex-1 space-y-6 overflow-y-auto px-2">
 							{/* Name Section */}
 							<section className="space-y-3">
 								<Label className="font-medium" htmlFor="name">
@@ -265,17 +269,13 @@ export function ApiKeyCreateDialog({
 								<p className="text-muted-foreground text-xs">
 									These permissions apply to all websites
 								</p>
-								<div className="rounded border bg-muted/20 p-1">
+								<div className="rounded border bg-accent p-1">
 									<div className="grid grid-cols-2 gap-1">
 										{SCOPES.map((scope) => {
 											const isSelected = globalScopes.includes(scope.value);
 											return (
 												<button
-													className={`flex items-center gap-2 rounded px-3 py-2.5 text-left text-sm transition-colors ${
-														isSelected
-															? "bg-primary text-primary-foreground"
-															: "hover:bg-muted"
-													}`}
+													className="flex items-center gap-2 rounded bg-accent px-3 py-2.5 text-left text-sm transition-colors"
 													key={scope.value}
 													onClick={() => toggleGlobalScope(scope.value)}
 													type="button"
@@ -283,12 +283,16 @@ export function ApiKeyCreateDialog({
 													<div
 														className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${
 															isSelected
-																? "border-primary-foreground bg-primary-foreground text-primary"
+																? "border-primary bg-primary text-primary"
 																: "border-muted-foreground/30"
 														}`}
 													>
 														{isSelected && (
-															<CheckIcon size={12} weight="bold" />
+															<CheckIcon
+																className="text-accent-foreground"
+																size={12}
+																weight="bold"
+															/>
 														)}
 													</div>
 													<span className="truncate">{scope.label}</span>
@@ -302,7 +306,7 @@ export function ApiKeyCreateDialog({
 							{/* Website-Specific Permissions */}
 							{websites && websites.length > 0 && (
 								<section className="space-y-3">
-									<div className="flex items-center justify-between">
+									<div className="flex items-center gap-2">
 										<Label className="font-medium">Website Restrictions</Label>
 										<span className="text-muted-foreground text-xs">
 											optional
@@ -424,7 +428,7 @@ export function ApiKeyCreateDialog({
 						</div>
 
 						{/* Footer */}
-						<div className="flex shrink-0 items-center justify-end gap-3 border-t bg-muted/30 px-6 py-4">
+						<div className="flex shrink-0 items-center justify-end gap-3 border-t px-2 py-4">
 							<Button onClick={handleClose} type="button" variant="ghost">
 								Cancel
 							</Button>
@@ -433,7 +437,7 @@ export function ApiKeyCreateDialog({
 									"Creating..."
 								) : (
 									<>
-										<PlusIcon className="mr-1.5" size={16} />
+										<PlusIcon size={16} />
 										Create Key
 									</>
 								)}

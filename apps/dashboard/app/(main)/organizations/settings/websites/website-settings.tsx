@@ -12,13 +12,11 @@ import Link from "next/link";
 import { FaviconImage } from "@/components/analytics/favicon-image";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tip } from "@/components/ui/tip";
 import type { Organization } from "@/hooks/use-organizations";
 import type { Website } from "@/hooks/use-websites";
 import { orpc } from "@/lib/orpc";
-
-interface WebsiteSettingsProps {
-	organization: Organization;
-}
+import { EmptyState } from "../../components/empty-state";
 
 function SkeletonRow() {
 	return (
@@ -46,26 +44,6 @@ function WebsitesSkeleton() {
 				<Skeleton className="h-18 w-full rounded" />
 				<Skeleton className="h-10 w-full" />
 			</div>
-		</div>
-	);
-}
-
-function EmptyState() {
-	return (
-		<div className="flex h-full flex-col items-center justify-center p-8 text-center">
-			<div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-				<GlobeIcon className="text-primary" size={28} weight="duotone" />
-			</div>
-			<h3 className="mb-1 font-semibold text-lg">No websites yet</h3>
-			<p className="mb-6 max-w-sm text-muted-foreground text-sm">
-				Add your first website to start tracking analytics and performance
-			</p>
-			<Button asChild>
-				<Link href="/websites">
-					<PlusIcon className="mr-2" size={16} />
-					Add Website
-				</Link>
-			</Button>
 		</div>
 	);
 }
@@ -128,7 +106,11 @@ function WebsiteRow({ website }: WebsiteRowProps) {
 	);
 }
 
-export function WebsiteSettings({ organization }: WebsiteSettingsProps) {
+export function WebsiteSettings({
+	organization,
+}: {
+	organization: Organization;
+}) {
 	const { data, isLoading, isError, refetch } = useQuery({
 		...orpc.websites.list.queryOptions({
 			input: { organizationId: organization.id },
@@ -139,9 +121,22 @@ export function WebsiteSettings({ organization }: WebsiteSettingsProps) {
 
 	const websites = data ?? [];
 
-	if (isLoading) return <WebsitesSkeleton />;
-	if (isError) return <ErrorState onRetry={refetch} />;
-	if (websites.length === 0) return <EmptyState />;
+	if (isLoading) {
+		return <WebsitesSkeleton />;
+	}
+	if (isError) {
+		return <ErrorState onRetry={refetch} />;
+	}
+	if (websites.length === 0) {
+		return (
+			<EmptyState
+				description="Start tracking your website analytics by adding your first website. Get insights into visitors, pageviews, and performance."
+				icon={<GlobeIcon weight="duotone" />}
+				title="No websites yet"
+				variant="minimal"
+			/>
+		);
+	}
 
 	return (
 		<div className="h-full lg:grid lg:grid-cols-[1fr_18rem]">
@@ -155,7 +150,7 @@ export function WebsiteSettings({ organization }: WebsiteSettingsProps) {
 			</div>
 
 			{/* Sidebar */}
-			<aside className="flex flex-col gap-4 bg-muted/30 p-5">
+			<aside className="flex flex-col gap-4 bg-card p-5">
 				{/* Add Website Button */}
 				<Button asChild className="w-full">
 					<Link href="/websites">
@@ -190,13 +185,7 @@ export function WebsiteSettings({ organization }: WebsiteSettingsProps) {
 				</Button>
 
 				{/* Tip */}
-				<div className="mt-auto rounded border border-dashed bg-background/50 p-4">
-					<p className="mb-2 font-medium text-sm">Quick tip</p>
-					<p className="text-muted-foreground text-xs leading-relaxed">
-						Click on a website to view its settings, manage tracking scripts,
-						and configure analytics.
-					</p>
-				</div>
+				<Tip description="Click on a website to view its settings, manage tracking scripts, and configure analytics." />
 			</aside>
 		</div>
 	);

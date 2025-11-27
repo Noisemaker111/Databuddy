@@ -1,9 +1,8 @@
 "use client";
 
-import { ChartLineUpIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense, useMemo, useState } from "react";
-import { PageHeader } from "@/app/(main)/websites/_components/page-header";
+import { useOrganizationsContext } from "@/components/providers/organizations-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { orpc } from "@/lib/orpc";
 import { ConsumptionChart } from "./components/consumption-chart";
@@ -72,36 +71,25 @@ export default function CostBreakdownPage() {
 	}, [orgUsage]);
 
 	return (
-		<div className="flex h-full flex-col">
-			<PageHeader
-				badgeContent="Experimental"
-				description="Detailed analytics usage breakdown and consumption patterns"
-				icon={<ChartLineUpIcon weight="regular" />}
-				title="Cost Breakdown"
-			/>
-
+		<main className="flex h-full flex-col">
 			<div className="flex min-h-0 flex-1 flex-col">
-				<div className="flex-3">
-					<Suspense fallback={<Skeleton className="h-full w-full" />}>
-						<ConsumptionChart
-							isLoading={isUsageLoading}
-							onDateRangeChange={(start, end) =>
-								setDateRange({ startDate: start, endDate: end })
-							}
-							overageInfo={overageInfo}
-							usageData={usageData}
-						/>
-					</Suspense>
-				</div>
-				<div className="flex-2">
-					<Suspense fallback={<Skeleton className="h-full w-full" />}>
-						<UsageBreakdownTable
-							isLoading={isUsageLoading}
-							overageInfo={overageInfo}
-							usageData={usageData}
-						/>
-					</Suspense>
-				</div>
+				<Suspense fallback={<Skeleton className="h-full w-full" />}>
+					<ConsumptionChart
+						isLoading={isUsageLoading}
+						onDateRangeChange={(start, end) =>
+							setDateRange({ startDate: start, endDate: end })
+						}
+						overageInfo={overageInfo}
+						usageData={usageData}
+					/>
+				</Suspense>
+				<Suspense fallback={<Skeleton className="h-full w-full" />}>
+					<UsageBreakdownTable
+						isLoading={isUsageLoading}
+						overageInfo={overageInfo}
+						usageData={usageData}
+					/>
+				</Suspense>
 			</div>
 		</main>
 	);

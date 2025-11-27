@@ -182,7 +182,9 @@ export function ApiKeyDetailDialog({
 	};
 
 	const onSubmit = form.handleSubmit((values) => {
-		if (!keyId) return;
+		if (!keyId) {
+			return;
+		}
 		updateMutation.mutate({
 			id: keyId,
 			name: values.name,
@@ -215,7 +217,9 @@ export function ApiKeyDetailDialog({
 										/>
 									</div>
 									<div className="min-w-0 flex-1">
-										<SheetTitle className="truncate text-lg">{detail.name}</SheetTitle>
+										<SheetTitle className="truncate text-lg">
+											{detail.name}
+										</SheetTitle>
 										<SheetDescription className="font-mono text-xs">
 											{detail.prefix}_{detail.start}…
 										</SheetDescription>
@@ -233,7 +237,10 @@ export function ApiKeyDetailDialog({
 								</div>
 							</SheetHeader>
 
-							<form className="flex flex-1 flex-col overflow-hidden" onSubmit={onSubmit}>
+							<form
+								className="flex flex-1 flex-col overflow-hidden"
+								onSubmit={onSubmit}
+							>
 								{/* Content */}
 								<div className="flex-1 space-y-6 overflow-y-auto p-6">
 									{/* New Secret Alert */}
@@ -253,7 +260,10 @@ export function ApiKeyDetailDialog({
 													variant="ghost"
 												>
 													{copied ? (
-														<CheckCircleIcon className="text-green-600" size={16} />
+														<CheckCircleIcon
+															className="text-green-600"
+															size={16}
+														/>
 													) : (
 														<CopyIcon size={16} />
 													)}
@@ -263,14 +273,18 @@ export function ApiKeyDetailDialog({
 									)}
 
 									{/* Settings Section */}
-									<section className="space-y-4">
+									<div className="space-y-4">
 										<Label className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
 											Settings
 										</Label>
 										<div className="grid gap-4 sm:grid-cols-2">
 											<div className="space-y-2">
 												<Label htmlFor="name">Name</Label>
-												<Input className="h-11" id="name" {...form.register("name")} />
+												<Input
+													className="h-11"
+													id="name"
+													{...form.register("name")}
+												/>
 											</div>
 											<div className="space-y-2">
 												<Label htmlFor="expiresAt">Expires</Label>
@@ -283,117 +297,136 @@ export function ApiKeyDetailDialog({
 											</div>
 										</div>
 
-{/* Enabled Toggle */}
-<div className="flex items-center justify-between rounded border bg-accent p-3">
-	<div>
-		<p className="font-medium text-foreground text-sm">Enabled</p>
-		<p className="text-muted-foreground text-xs">
-			Disable to block all requests
-		</p>
-	</div>
-	<Switch
-		checked={form.watch("enabled")}
-		onCheckedChange={(v) => form.setValue("enabled", v)}
-	/>
-</div>
+										{/* Enabled Toggle */}
+										<div className="flex items-center justify-between rounded border bg-accent p-3">
+											<div>
+												<p className="font-medium text-foreground text-sm">
+													Enabled
+												</p>
+												<p className="text-muted-foreground text-xs">
+													Disable to block all requests
+												</p>
+											</div>
+											<Switch
+												checked={form.watch("enabled")}
+												onCheckedChange={(v) => form.setValue("enabled", v)}
+											/>
+										</div>
 
-									{/* Permissions Section */}
-									<section className="space-y-3">
-										<Label className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-											Permissions
-										</Label>
-										<div className="rounded border bg-muted/20 p-1">
-											<div className="grid grid-cols-2 gap-1">
-												{SCOPES.map((scope) => {
-													const hasScope = detail.scopes.includes(scope.value);
-													return (
-														<div
-															className={`flex items-center gap-2 rounded px-3 py-2.5 text-sm ${
-																hasScope
-																	? "bg-primary/10 text-foreground"
-																	: "text-muted-foreground/50"
-															}`}
-															key={scope.value}
-														>
+										{/* Permissions Section */}
+										<section className="space-y-3">
+											<Label className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+												Permissions
+											</Label>
+											<div className="rounded border bg-muted/20 p-1">
+												<div className="grid grid-cols-2 gap-1">
+													{SCOPES.map((scope) => {
+														const hasScope = detail.scopes.includes(
+															scope.value
+														);
+														return (
 															<div
-																className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${
+																className={`flex items-center gap-2 rounded px-3 py-2.5 text-sm ${
 																	hasScope
-																		? "border-primary bg-primary text-primary-foreground"
-																		: "border-muted-foreground/30"
+																		? "bg-primary/10 text-foreground"
+																		: "text-muted-foreground/50"
 																}`}
+																key={scope.value}
 															>
-																{hasScope && <CheckIcon size={10} weight="bold" />}
+																<div
+																	className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${
+																		hasScope
+																			? "border-primary bg-primary text-primary-foreground"
+																			: "border-muted-foreground/30"
+																	}`}
+																>
+																	{hasScope && (
+																		<CheckIcon size={10} weight="bold" />
+																	)}
+																</div>
+																<span className="truncate">{scope.label}</span>
 															</div>
-															<span className="truncate">{scope.label}</span>
-														</div>
-													);
-												})}
+														);
+													})}
+												</div>
 											</div>
-										</div>
-									</section>
+										</section>
 
-									{/* Meta Section */}
-									<section className="space-y-2 rounded border bg-muted/20 p-4">
-										<div className="flex items-center justify-between text-sm">
-											<span className="text-muted-foreground">Created</span>
-											<span>{dayjs(detail.createdAt).format("MMM D, YYYY")}</span>
-										</div>
-										{detail.expiresAt && (
+										{/* Meta Section */}
+										<section className="space-y-2 rounded border bg-muted/20 p-4">
 											<div className="flex items-center justify-between text-sm">
-												<span className="text-muted-foreground">Expires</span>
-												<span>{dayjs(detail.expiresAt).format("MMM D, YYYY")}</span>
-											</div>
-										)}
-										{detail.revokedAt && (
-											<div className="flex items-center justify-between text-sm">
-												<span className="text-muted-foreground">Revoked</span>
-												<span className="text-destructive">
-													{dayjs(detail.revokedAt).format("MMM D, YYYY")}
+												<span className="text-muted-foreground">Created</span>
+												<span>
+													{dayjs(detail.createdAt).format("MMM D, YYYY")}
 												</span>
 											</div>
-										)}
-									</section>
+											{detail.expiresAt && (
+												<div className="flex items-center justify-between text-sm">
+													<span className="text-muted-foreground">Expires</span>
+													<span>
+														{dayjs(detail.expiresAt).format("MMM D, YYYY")}
+													</span>
+												</div>
+											)}
+											{detail.revokedAt && (
+												<div className="flex items-center justify-between text-sm">
+													<span className="text-muted-foreground">Revoked</span>
+													<span className="text-destructive">
+														{dayjs(detail.revokedAt).format("MMM D, YYYY")}
+													</span>
+												</div>
+											)}
+										</section>
 
-									{/* Danger Zone */}
-									<section className="space-y-3">
-										<Label className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-											Actions
-										</Label>
-										<div className="flex flex-wrap gap-2">
+										{/* Danger Zone */}
+										<section className="space-y-3">
+											<Label className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+												Actions
+											</Label>
+											<div className="flex flex-wrap gap-2">
+												<Button
+													className="flex-1"
+													disabled={rotateMutation.isPending}
+													onClick={() =>
+														rotateMutation.mutate({ id: keyId as string })
+													}
+													size="sm"
+													type="button"
+													variant="outline"
+												>
+													<ArrowsClockwiseIcon className="mr-1.5" size={14} />
+													{rotateMutation.isPending
+														? "Rotating…"
+														: "Rotate Secret"}
+												</Button>
+												<Button
+													className="flex-1"
+													disabled={revokeMutation.isPending || !isActive}
+													onClick={() =>
+														revokeMutation.mutate({ id: keyId as string })
+													}
+													size="sm"
+													type="button"
+													variant="outline"
+												>
+													<ProhibitIcon className="mr-1.5" size={14} />
+													{revokeMutation.isPending
+														? "Revoking…"
+														: "Revoke Key"}
+												</Button>
+											</div>
 											<Button
-												className="flex-1"
-												disabled={rotateMutation.isPending}
-												onClick={() => rotateMutation.mutate({ id: keyId as string })}
+												className="w-full border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+												onClick={() => setShowDeleteConfirm(true)}
 												size="sm"
 												type="button"
 												variant="outline"
 											>
-												<ArrowsClockwiseIcon className="mr-1.5" size={14} />
-												{rotateMutation.isPending ? "Rotating…" : "Rotate Secret"}
+												<TrashIcon className="mr-1.5" size={14} />
+												Delete Key Permanently
 											</Button>
-											<Button
-												className="flex-1"
-												disabled={revokeMutation.isPending || !isActive}
-												onClick={() => revokeMutation.mutate({ id: keyId as string })}
-												size="sm"
-												type="button"
-												variant="outline"
-											>
-												<ProhibitIcon className="mr-1.5" size={14} />
-												{revokeMutation.isPending ? "Revoking…" : "Revoke Key"}
-											</Button>
-										</div>
-										<Button
-											className="w-full border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-											onClick={() => setShowDeleteConfirm(true)}
-											size="sm"
-											type="button"
-											variant="outline"
-										>
-											<TrashIcon className="mr-1.5" size={14} />
-											Delete Key Permanently
-										</Button>
-									</section>
+										</section>
+									</div>
 								</div>
 
 								{/* Footer */}

@@ -38,7 +38,7 @@ function SkeletonRow() {
 function ApiKeysSkeleton() {
 	return (
 		<div className="h-full lg:grid lg:grid-cols-[1fr_18rem]">
-			<div className="divide-y border-b lg:border-b-0 lg:border-r">
+			<div className="divide-y border-b lg:border-r lg:border-b-0">
 				<SkeletonRow />
 				<SkeletonRow />
 				<SkeletonRow />
@@ -94,7 +94,9 @@ export function ApiKeySettings({ organization }: ApiKeySettingsProps) {
 	const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null);
 
 	const { data, isLoading, isError, refetch } = useQuery({
-		...orpc.apikeys.list.queryOptions({ input: { organizationId: organization.id } }),
+		...orpc.apikeys.list.queryOptions({
+			input: { organizationId: organization.id },
+		}),
 		refetchOnMount: true,
 		refetchOnReconnect: true,
 		staleTime: 0,
@@ -105,13 +107,14 @@ export function ApiKeySettings({ organization }: ApiKeySettingsProps) {
 
 	if (isLoading) return <ApiKeysSkeleton />;
 	if (isError) return <ErrorState onRetry={refetch} />;
-	if (items.length === 0) return <EmptyState onCreateNew={() => setShowCreateDialog(true)} />;
+	if (items.length === 0)
+		return <EmptyState onCreateNew={() => setShowCreateDialog(true)} />;
 
 	return (
 		<>
 			<div className="h-full lg:grid lg:grid-cols-[1fr_18rem]">
 				{/* Keys List */}
-				<div className="flex flex-col border-b lg:border-b-0 lg:border-r">
+				<div className="flex flex-col border-b lg:border-r lg:border-b-0">
 					<div className="flex-1 divide-y overflow-y-auto">
 						{items.map((apiKey) => (
 							<ApiKeyRow
@@ -127,7 +130,7 @@ export function ApiKeySettings({ organization }: ApiKeySettingsProps) {
 				</div>
 
 				{/* Sidebar */}
-				<aside className="flex flex-col gap-4 bg-muted/30 p-5">
+				<aside className="flex flex-col gap-4 bg-card p-5">
 					{/* Create Button */}
 					<Button className="w-full" onClick={() => setShowCreateDialog(true)}>
 						<PlusIcon className="mr-2" size={16} />
@@ -137,11 +140,18 @@ export function ApiKeySettings({ organization }: ApiKeySettingsProps) {
 					{/* Stats Card */}
 					<div className="flex items-center gap-3 rounded border bg-background p-4">
 						<div className="flex h-10 w-10 items-center justify-center rounded bg-primary/10">
-							<ShieldCheckIcon className="text-primary" size={20} weight="duotone" />
+							<ShieldCheckIcon
+								className="text-primary"
+								size={20}
+								weight="duotone"
+							/>
 						</div>
 						<div>
 							<p className="font-semibold tabular-nums">
-								{activeCount} <span className="font-normal text-muted-foreground">/ {items.length}</span>
+								{activeCount}{" "}
+								<span className="font-normal text-muted-foreground">
+									/ {items.length}
+								</span>
 							</p>
 							<p className="text-muted-foreground text-sm">Active keys</p>
 						</div>
@@ -163,7 +173,8 @@ export function ApiKeySettings({ organization }: ApiKeySettingsProps) {
 					<div className="mt-auto rounded border border-dashed bg-background/50 p-4">
 						<p className="mb-2 font-medium text-sm">Security reminder</p>
 						<p className="text-muted-foreground text-xs leading-relaxed">
-							Keep your API keys secure. Never share them publicly or commit them to version control.
+							Keep your API keys secure. Never share them publicly or commit
+							them to version control.
 						</p>
 					</div>
 				</aside>
