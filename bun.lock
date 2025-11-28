@@ -475,7 +475,7 @@
       "name": "@databuddy/sdk",
       "version": "2.2.11",
       "dependencies": {
-        "jotai": ">=2.12.5",
+        "jotai": "^2.15.1",
       },
       "devDependencies": {
         "@ai-sdk/provider": "^2.0.0",
