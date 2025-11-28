@@ -13,9 +13,3 @@ authentication:
   useSecureCookies: false
   basic:
     enabled: true
-authorization:
-  roleBindings:
-    - roleName: admin
-      users:
-        - loginType: basic
-          name: "admin"
