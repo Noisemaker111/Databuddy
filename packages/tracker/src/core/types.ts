@@ -1,9 +1,8 @@
 /** biome-ignore-all lint/style/useConsistentTypeDefinitions: Interfaces are needed for declaration merging */
 export type TrackerOptions = {
-	// Basic Config
+	clientId: string;
 	disabled?: boolean;
 	apiUrl?: string;
-	clientId?: string;
 	sdk?: string;
 	sdkVersion?: string;
 
@@ -88,6 +87,15 @@ export type ErrorSpan = {
 	errorType: string;
 	anonymousId?: string;
 	sessionId?: string;
+};
+
+export type CustomEventSpan = {
+	timestamp: number;
+	path: string;
+	eventName: string;
+	anonymousId?: string;
+	sessionId?: string;
+	properties?: Record<string, unknown>;
 };
 
 export type DatabuddyGlobal = {

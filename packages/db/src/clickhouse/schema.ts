@@ -193,6 +193,7 @@ SETTINGS index_granularity = 8192
 const CREATE_WEB_VITALS_SPANS_TABLE = `
 CREATE TABLE IF NOT EXISTS ${ANALYTICS_DATABASE}.web_vitals_spans (
   client_id String CODEC(ZSTD(1)),
+  anonymous_id String CODEC(ZSTD(1)),
   session_id String CODEC(ZSTD(1)),
   
   timestamp DateTime64(3, 'UTC') CODEC(Delta(8), ZSTD(1)),
@@ -206,7 +207,6 @@ CREATE TABLE IF NOT EXISTS ${ANALYTICS_DATABASE}.web_vitals_spans (
 ) ENGINE = MergeTree
 PARTITION BY toDate(timestamp)
 ORDER BY (client_id, metric_name, path, timestamp)
-TTL toDateTime(timestamp) + INTERVAL 90 DAY
 SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1
 `;
 
@@ -402,6 +402,7 @@ SETTINGS index_granularity = 8192
 const CREATE_CUSTOM_EVENT_SPANS_TABLE = `
 CREATE TABLE IF NOT EXISTS ${ANALYTICS_DATABASE}.custom_event_spans (
   client_id String CODEC(ZSTD(1)),
+  anonymous_id String CODEC(ZSTD(1)),
   session_id String CODEC(ZSTD(1)),
   
   timestamp DateTime64(3, 'UTC') CODEC(Delta(8), ZSTD(1)),
@@ -521,6 +522,7 @@ export type WebVitalMetricName =
 
 export type WebVitalsSpan = {
 	client_id: string;
+	anonymous_id: string;
 	session_id: string;
 	timestamp: number;
 	path: string;
@@ -667,6 +669,7 @@ export type CustomEvent = {
  */
 export type CustomEventSpan = {
 	client_id: string;
+	anonymous_id: string;
 	session_id: string;
 	timestamp: number;
 	path: string;

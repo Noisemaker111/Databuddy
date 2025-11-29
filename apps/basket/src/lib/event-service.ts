@@ -246,34 +246,20 @@ export async function insertCustomEventSpans(
 	}
 
 	const now = Date.now();
-	const spans: CustomEventSpan[] = [];
+	const spans: CustomEventSpan[] = events.map((event) => ({
+		client_id: clientId,
+		anonymous_id: sanitizeString(event.anonymousId, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
+		session_id: validateSessionId(event.sessionId),
+		timestamp: typeof event.timestamp === "number" ? event.timestamp : now,
+		path: sanitizeString(event.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
+		event_name: sanitizeString(event.eventName, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
+		properties: (event.properties as Record<string, unknown>) ?? {},
+	}));
 
-	for (const event of events) {
-		// Dedup by client+session+path+eventName+timestamp
-		const dedupKey = `custom_${clientId}_${event.sessionId}_${event.path}_${event.eventName}_${event.timestamp}`;
-		const isDuplicate = await checkDuplicate(dedupKey, "custom");
-		if (isDuplicate) {
-			continue;
-		}
-
-		const span: CustomEventSpan = {
-			client_id: clientId,
-			session_id: validateSessionId(event.sessionId),
-			timestamp: typeof event.timestamp === "number" ? event.timestamp : now,
-			path: sanitizeString(event.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
-			event_name: sanitizeString(event.eventName, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
-			properties: (event.properties as Record<string, unknown>) ?? {},
-		};
-
-		spans.push(span);
-	}
-
-	if (spans.length > 0) {
-		try {
-			await sendEventBatch("analytics-custom-event-spans", spans);
-		} catch (error) {
-			captureError(error, { count: spans.length });
-		}
+	try {
+		await sendEventBatch("analytics-custom-event-spans", spans);
+	} catch (error) {
+		captureError(error, { count: spans.length });
 	}
 }
 
@@ -530,39 +516,24 @@ export async function insertErrorSpans(
 	}
 
 	const now = Date.now();
-	const spans: ErrorSpanRow[] = [];
+	const spans: ErrorSpanRow[] = errors.map((error) => ({
+		client_id: clientId,
+		anonymous_id: sanitizeString(error.anonymousId, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
+		session_id: validateSessionId(error.sessionId),
+		timestamp: typeof error.timestamp === "number" ? error.timestamp : now,
+		path: sanitizeString(error.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
+		message: sanitizeString(error.message, VALIDATION_LIMITS.STRING_MAX_LENGTH),
+		filename: sanitizeString(error.filename, VALIDATION_LIMITS.STRING_MAX_LENGTH),
+		lineno: error.lineno ?? undefined,
+		colno: error.colno ?? undefined,
+		stack: sanitizeString(error.stack, VALIDATION_LIMITS.STRING_MAX_LENGTH),
+		error_type: sanitizeString(error.errorType, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH) || "Error",
+	}));
 
-	for (const error of errors) {
-		// Use message hash as dedup key
-		const dedupKey = `error_${clientId}_${error.message.slice(0, 50)}_${error.path}`;
-		const isDuplicate = await checkDuplicate(dedupKey, "error");
-		if (isDuplicate) {
-			continue;
-		}
-
-		const errorSpan: ErrorSpanRow = {
-			client_id: clientId,
-			anonymous_id: sanitizeString(error.anonymousId, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
-			session_id: validateSessionId(error.sessionId),
-			timestamp: typeof error.timestamp === "number" ? error.timestamp : now,
-			path: sanitizeString(error.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
-			message: sanitizeString(error.message, VALIDATION_LIMITS.STRING_MAX_LENGTH),
-			filename: sanitizeString(error.filename, VALIDATION_LIMITS.STRING_MAX_LENGTH),
-			lineno: error.lineno ?? undefined,
-			colno: error.colno ?? undefined,
-			stack: sanitizeString(error.stack, VALIDATION_LIMITS.STRING_MAX_LENGTH),
-			error_type: sanitizeString(error.errorType, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH) || "Error",
-		};
-
-		spans.push(errorSpan);
-	}
-
-	if (spans.length > 0) {
-		try {
-			await sendEventBatch("analytics-error-spans", spans);
-		} catch (error) {
-			captureError(error, { count: spans.length });
-		}
+	try {
+		await sendEventBatch("analytics-error-spans", spans);
+	} catch (error) {
+		captureError(error, { count: spans.length });
 	}
 }
 
@@ -602,34 +573,20 @@ export async function insertIndividualVitals(
 	}
 
 	const now = Date.now();
-	const spans: WebVitalsSpan[] = [];
+	const spans: WebVitalsSpan[] = vitals.map((vital) => ({
+		client_id: clientId,
+		anonymous_id: sanitizeString(vital.anonymousId, VALIDATION_LIMITS.SHORT_STRING_MAX_LENGTH),
+		session_id: validateSessionId(vital.sessionId),
+		timestamp: typeof vital.timestamp === "number" ? vital.timestamp : now,
+		path: sanitizeString(vital.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
+		metric_name: vital.metricName,
+		metric_value: vital.metricValue,
+	}));
 
-	for (const vital of vitals) {
-		// Dedup by client+session+path+metric
-		const dedupKey = `vital_${clientId}_${vital.sessionId}_${vital.path}_${vital.metricName}`;
-		const isDuplicate = await checkDuplicate(dedupKey, "web_vitals");
-		if (isDuplicate) {
-			continue;
-		}
-
-		const span: WebVitalsSpan = {
-			client_id: clientId,
-			session_id: validateSessionId(vital.sessionId),
-			timestamp: typeof vital.timestamp === "number" ? vital.timestamp : now,
-			path: sanitizeString(vital.path, VALIDATION_LIMITS.STRING_MAX_LENGTH),
-			metric_name: vital.metricName,
-			metric_value: vital.metricValue,
-		};
-
-		spans.push(span);
-	}
-
-	if (spans.length > 0) {
-		try {
-			await sendEventBatch("analytics-vitals-spans", spans);
-		} catch (error) {
-			captureError(error, { count: spans.length });
-		}
+	try {
+		await sendEventBatch("analytics-vitals-spans", spans);
+	} catch (error) {
+		captureError(error, { count: spans.length });
 	}
 }
 

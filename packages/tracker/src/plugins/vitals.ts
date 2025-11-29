@@ -70,6 +70,8 @@ export function initWebVitalsTracking(tracker: BaseTracker) {
 			path: window.location.pathname,
 			metricName: name,
 			metricValue: value,
+			anonymousId: tracker.anonymousId,
+			sessionId: tracker.sessionId,
 		});
 	};
 

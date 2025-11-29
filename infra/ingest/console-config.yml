@@ -1,12 +1,9 @@
 kafka:
-  brokers: ["redpanda:9092"]
   sasl:
     enabled: true
+    mechanism: SCRAM-SHA-256
+  tls:
+    enabled: false
 redpanda:
   adminApi:
-    enabled: true
-    urls: ["http://redpanda:9644"]
-authentication:
-  useSecureCookies: false
-  basic:
-    enabled: true
+    enabled: false

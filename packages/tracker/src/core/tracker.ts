@@ -1,5 +1,5 @@
 import { HttpClient } from "./client";
-import type { BaseEvent, ErrorSpan, EventContext, TrackerOptions, WebVitalEvent } from "./types";
+import type { BaseEvent, CustomEventSpan, ErrorSpan, EventContext, TrackerOptions, WebVitalEvent } from "./types";
 import { generateUUIDv4, logger } from "./utils";
 
 const HEADLESS_CHROME_REGEX = /\bHeadlessChrome\b/i;
@@ -43,9 +43,18 @@ export class BaseTracker {
 	errorsTimer: Timer | null = null;
 	private isFlushingErrors = false;
 
+	// Custom Events Queue
+	customEventsQueue: CustomEventSpan[] = [];
+	customEventsTimer: Timer | null = null;
+	private isFlushingCustomEvents = false;
+
 	private readonly routeChangeCallbacks: Array<(path: string) => void> = [];
 
 	constructor(options: TrackerOptions) {
+		if (!options.clientId || typeof options.clientId !== "string") {
+			throw new Error("[Databuddy] clientId is required and must be a string");
+		}
+
 		this.options = {
 			disabled: false,
 			trackPerformance: true,
@@ -61,10 +70,9 @@ export class BaseTracker {
 			...options,
 		};
 
-		const headers: Record<string, string> = {};
-		if (this.options.clientId) {
-			headers["databuddy-client-id"] = this.options.clientId;
-		}
+		const headers: Record<string, string> = {
+			"databuddy-client-id": this.options.clientId,
+		};
 		headers["databuddy-sdk-name"] = this.options.sdk || "web";
 		headers["databuddy-sdk-version"] = this.options.sdkVersion || "2.0.0";
 
@@ -354,7 +362,7 @@ export class BaseTracker {
 		}
 
 		logger.log("Sending event", event);
-		return this.api.fetch("/", event, { keepalive: true });
+		return this.api.fetch("/", event, { keepalive: true }, { client_id: this.options.clientId });
 	}
 
 	addToBatch(event: BaseEvent): Promise<void> {
@@ -389,7 +397,7 @@ export class BaseTracker {
 		try {
 			const result = await this.api.fetch("/batch", batchEvents, {
 				keepalive: true,
-			});
+			}, { client_id: this.options.clientId });
 			logger.log("Batch sent", result);
 			return result;
 		} catch (_error) {
@@ -444,7 +452,7 @@ export class BaseTracker {
 		try {
 			const result = await this.api.fetch("/vitals", vitals, {
 				keepalive: true,
-			});
+			}, { client_id: this.options.clientId });
 			logger.log("Vitals sent", result);
 			return result;
 		} catch (error) {
@@ -496,7 +504,7 @@ export class BaseTracker {
 		try {
 			const result = await this.api.fetch("/errors", errors, {
 				keepalive: true,
-			});
+			}, { client_id: this.options.clientId });
 			logger.log("Errors sent", result);
 			return result;
 		} catch (error) {
@@ -504,6 +512,58 @@ export class BaseTracker {
 			return null;
 		} finally {
 			this.isFlushingErrors = false;
+		}
+	}
+
+	sendCustomEvent(event: CustomEventSpan): Promise<void> {
+		if (this.shouldSkipTracking()) {
+			return Promise.resolve();
+		}
+
+		logger.log("Queueing custom event", event);
+		return this.addToCustomEventsQueue(event);
+	}
+
+	addToCustomEventsQueue(event: CustomEventSpan): Promise<void> {
+		this.customEventsQueue.push(event);
+		if (this.customEventsTimer === null) {
+			this.customEventsTimer = setTimeout(
+				() => this.flushCustomEvents(),
+				this.options.batchTimeout
+			);
+		}
+		if (this.customEventsQueue.length >= 10) {
+			this.flushCustomEvents();
+		}
+		return Promise.resolve();
+	}
+
+	async flushCustomEvents() {
+		if (this.customEventsTimer) {
+			clearTimeout(this.customEventsTimer);
+			this.customEventsTimer = null;
+		}
+		if (this.customEventsQueue.length === 0 || this.isFlushingCustomEvents) {
+			return;
+		}
+
+		this.isFlushingCustomEvents = true;
+		const events = [...this.customEventsQueue];
+		this.customEventsQueue = [];
+
+		logger.log("Flushing custom events", events.length);
+
+		try {
+			const result = await this.api.fetch("/events", events, {
+				keepalive: true,
+			}, { client_id: this.options.clientId });
+			logger.log("Custom events sent", result);
+			return result;
+		} catch (error) {
+			logger.error("Custom events batch failed", error);
+			return null;
+		} finally {
+			this.isFlushingCustomEvents = false;
 		}
 	}
 
@@ -519,7 +579,8 @@ export class BaseTracker {
 				type: "application/json",
 			});
 			const baseUrl = this.options.apiUrl || "https://basket.databuddy.cc";
-			return navigator.sendBeacon(`${baseUrl}${endpoint}`, blob);
+			const url = `${baseUrl}${endpoint}?client_id=${encodeURIComponent(this.options.clientId)}`;
+			return navigator.sendBeacon(url, blob);
 		} catch {
 			return false;
 		}

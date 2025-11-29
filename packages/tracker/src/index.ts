@@ -191,6 +191,10 @@ export class Databuddy extends BaseTracker {
 	}
 
 	track(name: string, props?: Record<string, unknown>) {
+		if (this.shouldSkipTracking()) {
+			return;
+		}
+
 		const payload = {
 			eventId: generateUUIDv4(),
 			name,
@@ -201,14 +205,24 @@ export class Databuddy extends BaseTracker {
 			...this.globalProperties,
 			...props,
 		};
-		this.send(payload);
+		this.addToBatch(payload);
 	}
 
 	trackCustomEvent(name: string, props?: Record<string, unknown>) {
-		this.track(name, {
-			event_type: "custom",
-			...props,
-		});
+		if (this.shouldSkipTracking()) {
+			return;
+		}
+
+		const event = {
+			timestamp: Date.now(),
+			path: this.isServer() ? "" : window.location.pathname,
+			eventName: name,
+			anonymousId: this.anonymousId,
+			sessionId: this.sessionId,
+			properties: props,
+		};
+
+		this.sendCustomEvent(event);
 	}
 
 	setGlobalProperties(props: Record<string, unknown>) {
@@ -285,7 +299,7 @@ function initializeDatabuddy() {
 			flush: () => { },
 			setGlobalProperties: () => { },
 			trackCustomEvent: () => { },
-			options: { disabled: true },
+			options: { clientId: "", disabled: true },
 		};
 		window.db = window.databuddy;
 		return;
