@@ -15,6 +15,7 @@ program
 	.option("-m, --message <text>", "Add a note to the deployment notification")
 	.option("-s, --skip-notification", "Skip sending Discord notification")
 	.option("-t, --skip-tests", "Skip running E2E tests before deployment")
+	.option("-b, --skip-build", "Skip building before deployment")
 	.option("-p, --purge", "Only purge cache, skip deployment")
 	.option("-v, --verbose", "Enable verbose logging")
 	.parse(process.argv);
@@ -26,6 +27,7 @@ const options = program.opts<{
 	message?: string;
 	skipNotification?: boolean;
 	skipTests?: boolean;
+	skipBuild?: boolean;
 	purge?: boolean;
 	verbose: boolean;
 }>();
@@ -276,8 +278,11 @@ async function purgePullZoneCache() {
 
 async function deploy() {
 	try {
-		if (!(options.skipTests || options.dryRun)) {
+		if (!options.skipBuild) {
 			await runBuild();
+		}
+
+		if (!(options.skipTests || options.dryRun)) {
 			await runTests();
 		}
 

@@ -161,20 +161,17 @@ export class Databuddy extends BaseTracker {
 
 	private trackPageExit() {
 		const timeOnPage = Math.round((Date.now() - this.pageStartTime) / 1000);
-		const isBounce = this.interactionCount === 0 && timeOnPage < 10 ? 1 : 0;
 
 		this._trackInternal("page_exit", {
 			time_on_page: timeOnPage,
 			scroll_depth: this.maxScrollDepth,
 			interaction_count: this.interactionCount,
 			page_count: this.pageCount,
-			is_bounce: isBounce,
 		});
 	}
 
 	private sendPageExitBeacon() {
 		const timeOnPage = Math.round((Date.now() - this.pageStartTime) / 1000);
-		const isBounce = this.interactionCount === 0 && timeOnPage < 10 ? 1 : 0;
 
 		const event = {
 			eventId: generateUUIDv4(),
@@ -188,10 +185,8 @@ export class Databuddy extends BaseTracker {
 			scroll_depth: this.maxScrollDepth,
 			interaction_count: this.interactionCount,
 			page_count: this.pageCount,
-			is_bounce: isBounce,
 		};
 
-		// Use sendBeacon for reliability on page unload
 		this.sendBatchBeacon([event]);
 	}
 
