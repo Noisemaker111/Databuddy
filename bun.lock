@@ -238,6 +238,7 @@
         "react-resizable-panels": "^3.0.6",
         "recharts": "^2.15.4",
         "shiki": "^3.13.0",
+        "simple-icons": "^16.0.0",
         "sonner": "catalog:",
         "streamdown": "^1.4.0",
         "tailwind-merge": "catalog:",
@@ -3549,6 +3550,8 @@
     "siginfo": ["siginfo@2.0.0", "", {}, "sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g=="],
 
     "signal-exit": ["signal-exit@3.0.7", "", {}, "sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ=="],
+
+    "simple-icons": ["simple-icons@16.0.0", "", {}, "sha512-FPA/dxEy0dfXplKhPhqFI6KoPKAhe7t75emZ5i1T1vmqCYwboCqVNezRWaMmPkBazpHKmMAnaUYxoYsfRoDnZQ=="],
 
     "sisteransi": ["sisteransi@1.0.5", "", {}, "sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg=="],
 
