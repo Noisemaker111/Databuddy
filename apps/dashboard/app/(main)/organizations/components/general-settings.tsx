@@ -1,17 +1,12 @@
 "use client";
 
-import {
-	BookOpenIcon,
-	BuildingsIcon,
-	FloppyDiskIcon,
-} from "@phosphor-icons/react";
+import { BuildingsIcon, FloppyDiskIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { RightSidebar } from "@/components/right-sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tip } from "@/components/ui/tip";
 import { type Organization, useOrganizations } from "@/hooks/use-organizations";
 import { OrganizationLogoUploader } from "./organization-logo-uploader";
 
@@ -122,37 +117,13 @@ export function GeneralSettings({
 
 			{/* Sidebar */}
 			<RightSidebar className="gap-4 p-5">
-				{/* Org Info Card */}
-				<div className="flex items-center gap-3 rounded border bg-background p-4">
-					<div className="flex h-10 w-10 items-center justify-center rounded bg-secondary">
-						<BuildingsIcon
-							className="text-accent-foreground"
-							size={20}
-							weight="duotone"
-						/>
-					</div>
-					<div className="min-w-0">
-						<p className="truncate font-semibold">{organization.name}</p>
-						<p className="truncate text-muted-foreground text-sm">
-							/{organization.slug}
-						</p>
-					</div>
-				</div>
-
-				{/* Docs Link */}
-				<Button asChild className="w-full justify-start" variant="secondary">
-					<a
-						href="https://www.databuddy.cc/docs/getting-started"
-						rel="noopener noreferrer"
-						target="_blank"
-					>
-						<BookOpenIcon size={16} />
-						Documentation
-					</a>
-				</Button>
-
-				{/* Tip */}
-				<Tip description="The slug is used in URLs and API requests. Keep it short and memorable." />
+				<RightSidebar.InfoCard
+					description={`/${organization.slug}`}
+					icon={BuildingsIcon}
+					title={organization.name}
+				/>
+				<RightSidebar.DocsLink />
+				<RightSidebar.Tip description="The slug is used in URLs and API requests. Keep it short and memorable." />
 			</RightSidebar>
 		</div>
 	);

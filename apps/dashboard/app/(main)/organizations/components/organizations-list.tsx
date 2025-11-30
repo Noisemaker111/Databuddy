@@ -2,7 +2,6 @@
 
 import { authClient } from "@databuddy/auth/client";
 import {
-	BookOpenIcon,
 	BuildingsIcon,
 	CaretRightIcon,
 	CheckCircleIcon,
@@ -20,15 +19,14 @@ import { RightSidebar } from "@/components/right-sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tip } from "@/components/ui/tip";
 import { cn, getOrganizationInitials } from "@/lib/utils";
 
 dayjs.extend(relativeTime);
 
-interface OrganizationsListProps {
+type OrganizationsListProps = {
 	organizations: Organization[] | null | undefined;
 	activeOrganization: Organization | null | undefined;
-}
+};
 
 function EmptyState() {
 	return (
@@ -169,7 +167,6 @@ export function OrganizationsList({
 
 			{/* Sidebar */}
 			<RightSidebar className="gap-4 p-5">
-				{/* Create Button */}
 				<Button
 					className="w-full"
 					onClick={() => setShowCreateOrganizationDialog(true)}
@@ -181,21 +178,8 @@ export function OrganizationsList({
 					isOpen={showCreateOrganizationDialog}
 					onClose={() => setShowCreateOrganizationDialog(false)}
 				/>
-
-				{/* Docs Link */}
-				<Button asChild className="w-full" variant="outline">
-					<a
-						href="https://www.databuddy.cc/docs/getting-started"
-						rel="noopener noreferrer"
-						target="_blank"
-					>
-						<BookOpenIcon size={16} />
-						Documentation
-					</a>
-				</Button>
-
-				{/* Tip */}
-				<Tip description="Click on an organization to switch to it. The active organization is used across the dashboard." />
+				<RightSidebar.DocsLink />
+				<RightSidebar.Tip description="Click on an organization to switch to it. The active organization is used across the dashboard." />
 			</RightSidebar>
 		</div>
 	);

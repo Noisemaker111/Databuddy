@@ -2,7 +2,6 @@
 
 import {
 	ArrowClockwiseIcon,
-	BookOpenIcon,
 	UserPlusIcon,
 	UsersIcon,
 } from "@phosphor-icons/react";
@@ -11,7 +10,6 @@ import { InviteMemberDialog } from "@/components/organizations/invite-member-dia
 import { RightSidebar } from "@/components/right-sidebar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tip } from "@/components/ui/tip";
 import {
 	type ActiveOrganization,
 	type Organization,
@@ -42,7 +40,7 @@ function MembersSkeleton() {
 				<SkeletonRow />
 				<SkeletonRow />
 			</div>
-			<div className="space-y-4 bg-muted/30 p-5">
+			<div className="space-y-4 bg-card p-5">
 				<Skeleton className="h-18 w-full rounded" />
 				<Skeleton className="h-10 w-full" />
 				<Skeleton className="h-20 w-full rounded" />
@@ -127,45 +125,18 @@ export function MembersView({
 					</div>
 				</div>
 
-				{/* Sidebar */}
 				<RightSidebar className="gap-4 p-5">
-					{/* Invite Button */}
 					<Button className="w-full" onClick={() => setShowInviteDialog(true)}>
 						<UserPlusIcon className="mr-2" size={16} />
 						Invite Member
 					</Button>
-
-					{/* Stats Card */}
-					<div className="flex items-center gap-3 rounded border bg-background p-4">
-						<div className="flex h-10 w-10 items-center justify-center rounded bg-accent">
-							<UsersIcon
-								className="text-accent-foreground"
-								size={20}
-								weight="duotone"
-							/>
-						</div>
-						<div>
-							<p className="font-semibold tabular-nums">{members.length}</p>
-							<p className="text-muted-foreground text-sm">
-								Team member{members.length !== 1 ? "s" : ""}
-							</p>
-						</div>
-					</div>
-
-					{/* Docs Link */}
-					<Button asChild className="w-full justify-start" variant="secondary">
-						<a
-							href="https://www.databuddy.cc/docs/getting-started"
-							rel="noopener noreferrer"
-							target="_blank"
-						>
-							<BookOpenIcon size={16} />
-							Documentation
-						</a>
-					</Button>
-
-					{/* Tip */}
-					<Tip description="Admins can manage settings and invite members. Members have read-only access to analytics." />
+					<RightSidebar.InfoCard
+						description={`Team member${members.length !== 1 ? "s" : ""}`}
+						icon={UsersIcon}
+						title={String(members.length)}
+					/>
+					<RightSidebar.DocsLink />
+					<RightSidebar.Tip description="Admins can manage settings and invite members. Members have read-only access to analytics." />
 				</RightSidebar>
 			</div>
 

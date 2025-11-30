@@ -1,12 +1,7 @@
 "use client";
 
 import { authClient } from "@databuddy/auth/client";
-import {
-	BookOpenIcon,
-	SignOutIcon,
-	TrashIcon,
-	WarningIcon,
-} from "@phosphor-icons/react";
+import { SignOutIcon, TrashIcon, WarningIcon } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -23,7 +18,6 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Tip } from "@/components/ui/tip";
 import { type Organization, useOrganizations } from "@/hooks/use-organizations";
 import { TransferAssets } from "./transfer-assets";
 
@@ -162,20 +156,8 @@ export function DangerZoneSettings({
 
 			{/* Sidebar */}
 			<RightSidebar className="gap-4 p-5">
-				{/* Docs Link */}
-				<Button asChild className="w-full justify-start" variant="secondary">
-					<a
-						href="https://www.databuddy.cc/docs/getting-started"
-						rel="noopener noreferrer"
-						target="_blank"
-					>
-						<BookOpenIcon size={16} />
-						Documentation
-					</a>
-				</Button>
-
-				{/* Tip */}
-				<Tip
+				<RightSidebar.DocsLink />
+				<RightSidebar.Tip
 					description="Contact support if you need to recover deleted data or transfer ownership of an organization."
 					title="Need help?"
 				/>

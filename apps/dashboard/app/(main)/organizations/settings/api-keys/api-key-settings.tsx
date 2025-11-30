@@ -1,11 +1,6 @@
 "use client";
 
-import {
-	BookOpenIcon,
-	KeyIcon,
-	PlusIcon,
-	ShieldCheckIcon,
-} from "@phosphor-icons/react";
+import { KeyIcon, PlusIcon, ShieldCheckIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { EmptyState } from "@/components/empty-state";
@@ -44,7 +39,7 @@ function ApiKeysSkeleton() {
 				<SkeletonRow />
 				<SkeletonRow />
 			</div>
-			<div className="space-y-4 bg-muted/30 p-5">
+			<div className="space-y-4 bg-card p-5">
 				<Skeleton className="h-10 w-full" />
 				<Skeleton className="h-18 w-full rounded" />
 				<Skeleton className="h-10 w-full" />
@@ -114,54 +109,22 @@ export function ApiKeySettings({ organization }: ApiKeySettingsProps) {
 
 				{/* Sidebar */}
 				<RightSidebar className="gap-4 p-5">
-					{/* Create Button */}
 					<Button className="w-full" onClick={() => setShowCreateDialog(true)}>
 						<PlusIcon className="mr-2" size={16} />
 						Create New Key
 					</Button>
-
-					{/* Stats Card */}
 					{!isEmpty && (
-						<div className="flex items-center gap-3 rounded border bg-background p-4">
-							<div className="flex h-10 w-10 items-center justify-center rounded bg-primary/10">
-								<ShieldCheckIcon
-									className="text-primary"
-									size={20}
-									weight="duotone"
-								/>
-							</div>
-							<div>
-								<p className="font-semibold tabular-nums">
-									{activeCount}{" "}
-									<span className="font-normal text-muted-foreground">
-										/ {items.length}
-									</span>
-								</p>
-								<p className="text-muted-foreground text-sm">Active keys</p>
-							</div>
-						</div>
+						<RightSidebar.InfoCard
+							description="Active keys"
+							icon={ShieldCheckIcon}
+							title={`${activeCount} / ${items.length}`}
+						/>
 					)}
-
-					{/* Actions */}
-					<Button asChild className="w-full justify-start" variant="secondary">
-						<a
-							href="https://www.databuddy.cc/docs/getting-started"
-							rel="noopener noreferrer"
-							target="_blank"
-						>
-							<BookOpenIcon size={16} />
-							Documentation
-						</a>
-					</Button>
-
-					{/* Tips */}
-					<div className="mt-auto rounded border border-dashed bg-background/50 p-4">
-						<p className="mb-2 font-medium text-sm">Security reminder</p>
-						<p className="text-muted-foreground text-xs leading-relaxed">
-							Keep your API keys secure. Never share them publicly or commit
-							them to version control.
-						</p>
-					</div>
+					<RightSidebar.DocsLink />
+					<RightSidebar.Tip
+						description="Keep your API keys secure. Never share them publicly or commit them to version control."
+						title="Security reminder"
+					/>
 				</RightSidebar>
 			</div>
 

@@ -2,7 +2,6 @@
 
 import {
 	ArrowClockwiseIcon,
-	BookOpenIcon,
 	CheckIcon,
 	ClockIcon,
 	EnvelopeIcon,
@@ -16,7 +15,6 @@ import { RightSidebar } from "@/components/right-sidebar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tip } from "@/components/ui/tip";
 import { useOrganizationInvitations } from "@/hooks/use-organization-invitations";
 import type {
 	ActiveOrganization,
@@ -52,7 +50,7 @@ function InvitationsSkeleton() {
 					<SkeletonRow />
 				</div>
 			</div>
-			<div className="space-y-4 bg-muted/30 p-5">
+			<div className="space-y-4 bg-card p-5">
 				<Skeleton className="h-10 w-full" />
 				<Skeleton className="h-18 w-full rounded" />
 				<Skeleton className="h-10 w-full" />
@@ -267,46 +265,17 @@ export function InvitationsView({
 
 				{/* Sidebar */}
 				<RightSidebar className="gap-4 p-5">
-					{/* Invite Button */}
 					<Button className="w-full" onClick={() => setShowInviteDialog(true)}>
 						<UserPlusIcon className="mr-2" size={16} />
 						Send Invitation
 					</Button>
-
-					{/* Stats Card */}
-					<div className="flex items-center gap-3 rounded border bg-background p-4">
-						<div className="flex h-10 w-10 items-center justify-center rounded bg-primary/10">
-							<EnvelopeIcon
-								className="text-primary"
-								size={20}
-								weight="duotone"
-							/>
-						</div>
-						<div>
-							<p className="font-semibold tabular-nums">
-								{pendingCount}{" "}
-								<span className="font-normal text-muted-foreground">
-									/ {totalCount}
-								</span>
-							</p>
-							<p className="text-muted-foreground text-sm">Pending</p>
-						</div>
-					</div>
-
-					{/* Docs Link */}
-					<Button asChild className="w-full justify-start" variant="secondary">
-						<a
-							href="https://www.databuddy.cc/docs/getting-started"
-							rel="noopener noreferrer"
-							target="_blank"
-						>
-							<BookOpenIcon size={16} />
-							Documentation
-						</a>
-					</Button>
-
-					{/* Tip */}
-					<Tip description="Invitations expire after 7 days. Resend if needed from the pending tab." />
+					<RightSidebar.InfoCard
+						description="Pending"
+						icon={EnvelopeIcon}
+						title={`${pendingCount} / ${totalCount}`}
+					/>
+					<RightSidebar.DocsLink />
+					<RightSidebar.Tip description="Invitations expire after 7 days. Resend if needed from the pending tab." />
 				</RightSidebar>
 			</div>
 
