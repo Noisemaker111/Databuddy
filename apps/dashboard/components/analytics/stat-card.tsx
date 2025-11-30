@@ -101,9 +101,9 @@ function TrendIndicator({
 			: MinusIcon;
 
 	return (
-		<span className={cn("flex items-center gap-0.5", colorClass, className)}>
-			<Icon className="size-3.5" weight={isNeutral ? "regular" : "fill"} />
-			<span className="font-medium text-xs">
+		<span className={cn("flex items-center gap-1", colorClass, className)}>
+			<Icon className="size-4" weight={isNeutral ? "regular" : "fill"} />
+			<span className="font-semibold text-xs">
 				{isPositive ? "+" : ""}
 				{Math.abs(value).toFixed(0)}%
 			</span>
@@ -332,21 +332,21 @@ export function StatCard({
 					{/* Comparison */}
 					<div className="grid grid-cols-2 divide-x">
 						<div className="p-3">
-							<p className="text-muted-foreground text-xs">Previous</p>
+							<p className="font-medium text-muted-foreground text-xs">Previous</p>
 							<p className="mt-1 font-semibold text-foreground text-lg tabular-nums">
 								{formatTrendValue(trend.previous, formatValue)}
 							</p>
-							<p className="mt-0.5 text-[10px] text-muted">
+							<p className="mt-0.5 text-muted-foreground text-xs">
 								{dayjs(trend.previousPeriod.start).format("MMM D")} –{" "}
 								{dayjs(trend.previousPeriod.end).format("MMM D")}
 							</p>
 						</div>
 						<div className="p-3">
-							<p className="text-muted-foreground text-xs">Current</p>
+							<p className="font-medium text-muted-foreground text-xs">Current</p>
 							<p className="mt-1 font-semibold text-foreground text-lg tabular-nums">
 								{formatTrendValue(trend.current, formatValue)}
 							</p>
-							<p className="mt-0.5 text-[10px] text-muted">
+							<p className="mt-0.5 text-muted-foreground text-xs">
 								{dayjs(trend.currentPeriod.start).format("MMM D")} –{" "}
 								{dayjs(trend.currentPeriod.end).format("MMM D")}
 							</p>
