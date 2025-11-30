@@ -116,10 +116,12 @@ const MiniChart = memo(
 		data,
 		id,
 		formatChartValue,
+		title,
 	}: {
 		data: MiniChartDataPoint[];
 		id: string;
 		formatChartValue?: (value: number) => string;
+		title?: string;
 	}) => {
 		const hasData = data && data.length > 0;
 		const hasVariation = hasData && data.some((d) => d.value !== data[0].value);
@@ -175,7 +177,12 @@ const MiniChart = memo(
 									<p className="font-semibold text-foreground">
 										{formatChartValue
 											? formatChartValue(payload[0].value)
-											: formatMetricNumber(payload[0].value)}
+											: formatMetricNumber(payload[0].value)}{" "}
+										{title && (
+											<span className="font-normal text-muted-foreground">
+												{title}
+											</span>
+										)}
 									</p>
 								</div>
 							) : null
@@ -272,6 +279,7 @@ export function StatCard({
 						data={chartData}
 						formatChartValue={formatChartValue}
 						id={id || `chart-${title.toLowerCase().replace(/\s/g, "-")}`}
+						title={title}
 					/>
 				</div>
 			)}
