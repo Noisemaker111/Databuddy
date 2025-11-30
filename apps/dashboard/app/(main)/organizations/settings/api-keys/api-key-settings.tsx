@@ -51,7 +51,7 @@ function ApiKeysSkeleton() {
 export function ApiKeySettings({ organization }: ApiKeySettingsProps) {
 	const [showCreateDialog, setShowCreateDialog] = useState(false);
 	const [showDetailDialog, setShowDetailDialog] = useState(false);
-	const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null);
+	const [selectedKey, setSelectedKey] = useState<ApiKeyRowItem | null>(null);
 
 	const { data, isLoading, isError } = useQuery({
 		...orpc.apikeys.list.queryOptions({
@@ -97,8 +97,8 @@ export function ApiKeySettings({ organization }: ApiKeySettingsProps) {
 								<ApiKeyRow
 									apiKey={apiKey}
 									key={apiKey.id}
-									onSelect={(id) => {
-										setSelectedKeyId(id);
+									onSelect={() => {
+										setSelectedKey(apiKey);
 										setShowDetailDialog(true);
 									}}
 								/>
@@ -134,7 +134,7 @@ export function ApiKeySettings({ organization }: ApiKeySettingsProps) {
 				organizationId={organization.id}
 			/>
 			<ApiKeyDetailDialog
-				keyId={selectedKeyId}
+				apiKey={selectedKey}
 				onOpenChangeAction={setShowDetailDialog}
 				open={showDetailDialog}
 			/>
