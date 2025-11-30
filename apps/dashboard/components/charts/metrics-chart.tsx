@@ -46,12 +46,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 	}
 
 	return (
-		<div className="min-w-[200px] rounded border border-sidebar-border bg-sidebar p-4 shadow-sm">
-			<div className="mb-3 flex items-center gap-2 border-sidebar-border border-b pb-2">
-				<div className="h-2 w-2 animate-pulse rounded-full bg-sidebar-ring" />
-				<p className="font-semibold text-sidebar-foreground text-sm">{label}</p>
+		<div className="min-w-[200px] rounded border bg-popover p-3 shadow-lg">
+			<div className="mb-2 flex items-center gap-2 border-b pb-2">
+				<div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+				<p className="font-medium text-foreground text-xs">{label}</p>
 			</div>
-			<div className="space-y-2.5">
+			<div className="space-y-1.5">
 				{Object.entries(
 					payload.reduce((groups: any, entry: any) => {
 						const key = entry.dataKey
@@ -74,16 +74,16 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 					return (
 						<div className="flex items-center justify-between gap-3" key={key}>
-							<div className="flex items-center gap-2.5">
+							<div className="flex items-center gap-2">
 								<div
-									className="h-3 w-3 rounded-full"
+									className="size-2.5 rounded-full"
 									style={{ backgroundColor: entry.color }}
 								/>
-								<span className="text-sidebar-foreground/70 text-xs">
+								<span className="text-muted-foreground text-xs">
 									{metric.label}
 								</span>
 							</div>
-							<span className="font-bold text-sidebar-foreground text-sm">
+							<span className="font-semibold text-foreground text-sm tabular-nums">
 								{value}
 							</span>
 						</div>
@@ -132,7 +132,6 @@ export function MetricsChart({
 	isLoading,
 	height = 550,
 	title,
-	description,
 	className,
 	metricsFilter,
 	showLegend = true,
@@ -288,20 +287,19 @@ export function MetricsChart({
 		return (
 			<div
 				className={cn(
-					"w-full rounded border border-sidebar-border bg-card",
+					"w-full overflow-hidden rounded border bg-card",
 					className
 				)}
 			>
 				<div className="flex items-center justify-center p-8">
 					<div className="flex flex-col items-center py-12 text-center">
-						<div className="relative flex size-12 items-center justify-center rounded-2xl bg-accent-foreground">
-							<ChartLineIcon className="size-6 text-accent" />
-							<div className="absolute inset-0 rounded-full bg-linear-to-br from-sidebar-ring/10 to-transparent blur-xl" />
+						<div className="relative flex size-12 items-center justify-center rounded bg-accent">
+							<ChartLineIcon className="size-6 text-muted-foreground" />
 						</div>
-						<p className="mt-6 font-medium text-lg text-sidebar-foreground">
+						<p className="mt-6 font-medium text-foreground text-lg">
 							No data available
 						</p>
-						<p className="mx-auto max-w-sm text-sidebar-foreground/70 text-sm">
+						<p className="mx-auto max-w-sm text-muted-foreground text-sm">
 							Your analytics data will appear here as visitors interact with
 							your website
 						</p>
@@ -312,19 +310,21 @@ export function MetricsChart({
 	}
 
 	return (
-		<div className={cn("w-full overflow-hidden rounded", className)}>
+		<div
+			className={cn("w-full overflow-hidden rounded border bg-card", className)}
+		>
 			{/* Annotations Panel */}
 			{annotations.length > 0 && (
-				<div className="flex items-center justify-between border-sidebar-border border-b bg-sidebar px-4 py-2">
+				<div className="flex items-center justify-between border-b bg-accent/30 px-4 py-2">
 					<div className="flex items-center gap-3">
-						<span className="text-sidebar-foreground/70 text-sm">
+						<span className="text-muted-foreground text-sm">
 							{annotations.length} annotation
 							{annotations.length !== 1 ? "s" : ""} on this chart
 						</span>
 						{onToggleAnnotations && (
 							<div className="flex items-center gap-2">
 								<Label
-									className="text-sidebar-foreground/70 text-xs"
+									className="text-muted-foreground text-xs"
 									htmlFor="show-annotations"
 								>
 									Show annotations
@@ -359,7 +359,7 @@ export function MetricsChart({
 					{/* Range Selection Instructions */}
 					{refAreaLeft && !refAreaRight && (
 						<div className="-translate-x-1/2 absolute top-4 left-1/2 z-10 transform">
-							<div className="rounded bg-sidebar-ring px-3 py-1 font-medium text-sidebar-foreground text-xs shadow-sm">
+							<div className="rounded bg-primary px-3 py-1.5 font-medium text-primary-foreground text-xs shadow-lg">
 								Drag to select range or click to annotate this point
 							</div>
 						</div>
@@ -367,11 +367,11 @@ export function MetricsChart({
 
 					{!refAreaLeft && annotations.length === 0 && !tipDismissed && (
 						<div className="absolute top-4 right-4 z-10">
-							<div className="flex items-center gap-2 rounded border border-sidebar-border bg-sidebar px-3 py-2 text-sidebar-foreground/70 text-xs shadow-sm">
+							<div className="flex items-center gap-2 rounded border bg-popover px-3 py-2 text-muted-foreground text-xs shadow-sm">
 								<span>💡 Click or drag on chart to create annotations</span>
 								<button
 									aria-label="Dismiss tip"
-									className="text-sidebar-foreground/70 transition-colors hover:text-sidebar-foreground"
+									className="text-muted-foreground transition-colors hover:text-foreground"
 									onClick={() => setTipDismissed(true)}
 									type="button"
 								>
@@ -437,14 +437,15 @@ export function MetricsChart({
 							<Tooltip
 								content={<CustomTooltip />}
 								cursor={{
-									stroke: "var(--sidebar-ring)",
+									stroke: "var(--color-primary)",
 									strokeDasharray: "4 4",
+									strokeOpacity: 0.5,
 								}}
 							/>
 							{refAreaLeft && refAreaRight && (
 								<ReferenceArea
-									fill="var(--sidebar-ring)"
-									fillOpacity={0.15}
+									fill="var(--color-primary)"
+									fillOpacity={0.1}
 									strokeOpacity={0.3}
 									x1={refAreaLeft}
 									x2={refAreaRight}
