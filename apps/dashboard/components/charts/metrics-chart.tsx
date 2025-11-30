@@ -31,6 +31,7 @@ import {
 	toggleMetricAtom,
 } from "@/stores/jotai/chartAtoms";
 import type { Annotation } from "@/types/annotations";
+import { AnnotationModal } from "./annotation-modal";
 import { AnnotationsPanel } from "./annotations-panel";
 import {
 	type ChartDataRow,
@@ -149,6 +150,7 @@ export function MetricsChart({
 	const [refAreaLeft, setRefAreaLeft] = useState<string | null>(null);
 	const [refAreaRight, setRefAreaRight] = useState<string | null>(null);
 	const [showRangePopup, setShowRangePopup] = useState(false);
+	const [showAnnotationModal, setShowAnnotationModal] = useState(false);
 	const [selectedDateRange, setSelectedDateRange] =
 		useState<DateRangeState | null>(null);
 
@@ -277,7 +279,7 @@ export function MetricsChart({
 		if (onCreateAnnotation) {
 			await onCreateAnnotation(annotation);
 		}
-		setShowRangePopup(false);
+		setShowAnnotationModal(false);
 	};
 
 	if (isLoading) {
@@ -446,8 +448,10 @@ export function MetricsChart({
 							{refAreaLeft && refAreaRight && (
 								<ReferenceArea
 									fill="var(--color-primary)"
-									fillOpacity={0.1}
-									strokeOpacity={0.3}
+									fillOpacity={0.2}
+									stroke="var(--color-primary)"
+									strokeOpacity={0.6}
+									strokeWidth={1}
 									x1={refAreaLeft}
 									x2={refAreaRight}
 								/>
@@ -605,10 +609,22 @@ export function MetricsChart({
 				<RangeSelectionPopup
 					dateRange={selectedDateRange}
 					isOpen={showRangePopup}
+					onAddAnnotationAction={() => {
+						setShowRangePopup(false);
+						setShowAnnotationModal(true);
+					}}
 					onCloseAction={() => setShowRangePopup(false)}
-					onCreateAnnotationAction={handleCreateAnnotation}
 					onZoomAction={handleZoom}
-					position={{ x: 0, y: 0 }}
+				/>
+			)}
+
+			{showAnnotationModal && selectedDateRange && (
+				<AnnotationModal
+					dateRange={selectedDateRange}
+					isOpen={showAnnotationModal}
+					mode="create"
+					onClose={() => setShowAnnotationModal(false)}
+					onCreate={handleCreateAnnotation}
 				/>
 			)}
 		</div>

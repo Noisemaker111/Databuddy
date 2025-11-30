@@ -1,8 +1,10 @@
 "use client";
 
 import {
+	CalendarIcon,
 	EyeIcon,
 	EyeSlashIcon,
+	NoteIcon,
 	PencilIcon,
 	PlusIcon,
 	XIcon,
@@ -27,7 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Annotation, AnnotationFormData } from "@/types/annotations";
 
-type AnnotationModalProps = {
+type EditModeProps = {
 	isOpen: boolean;
 	mode: "edit";
 	annotation: Annotation;
@@ -36,13 +38,28 @@ type AnnotationModalProps = {
 	isSubmitting?: boolean;
 };
 
-export function AnnotationModal({
-	isOpen,
-	annotation,
-	onClose,
-	onSubmit,
-	isSubmitting = false,
-}: AnnotationModalProps) {
+type CreateModeProps = {
+	isOpen: boolean;
+	mode: "create";
+	dateRange: { startDate: Date; endDate: Date };
+	onClose: () => void;
+	onCreate: (annotation: {
+		annotationType: "range";
+		xValue: string;
+		xEndValue: string;
+		text: string;
+		tags: string[];
+		color: string;
+		isPublic: boolean;
+	}) => Promise<void> | void;
+	isSubmitting?: boolean;
+};
+
+type AnnotationModalProps = EditModeProps | CreateModeProps;
+
+export function AnnotationModal(props: AnnotationModalProps) {
+	const { isOpen, mode, onClose, isSubmitting = false } = props;
+
 	const [text, setText] = useState("");
 	const [selectedTags, setSelectedTags] = useState<string[]>([]);
 	const [customTag, setCustomTag] = useState("");
@@ -52,6 +69,7 @@ export function AnnotationModal({
 	const [isPublic, setIsPublic] = useState<boolean>(
 		DEFAULT_ANNOTATION_VALUES.isPublic
 	);
+	const [submitting, setSubmitting] = useState(false);
 	const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
 	useEffect(() => {
@@ -59,15 +77,22 @@ export function AnnotationModal({
 			return;
 		}
 
-		setText(annotation.text);
-		setSelectedTags(annotation.tags || []);
-		setSelectedColor(annotation.color);
-		setIsPublic(annotation.isPublic);
+		if (mode === "edit") {
+			const { annotation } = props as EditModeProps;
+			setText(annotation.text);
+			setSelectedTags(annotation.tags || []);
+			setSelectedColor(annotation.color);
+			setIsPublic(annotation.isPublic);
+		} else {
+			setText("");
+			setSelectedTags([]);
+			setSelectedColor(DEFAULT_ANNOTATION_VALUES.color);
+			setIsPublic(DEFAULT_ANNOTATION_VALUES.isPublic);
+		}
 		setCustomTag("");
 		setValidationErrors([]);
-	}, [isOpen, annotation]);
+	}, [isOpen, mode]);
 
-	// Keyboard shortcuts
 	useEffect(() => {
 		if (!isOpen) {
 			return;
@@ -104,7 +129,7 @@ export function AnnotationModal({
 	};
 
 	const handleSubmit = async () => {
-		if (!text.trim() || isSubmitting) {
+		if (!text.trim() || submitting || isSubmitting) {
 			return;
 		}
 
@@ -122,22 +147,63 @@ export function AnnotationModal({
 		}
 
 		setValidationErrors([]);
-		await onSubmit(annotation.id, formData);
-		onClose();
+		setSubmitting(true);
+
+		try {
+			if (mode === "edit") {
+				const { annotation, onSubmit } = props as EditModeProps;
+				await onSubmit(annotation.id, formData);
+			} else {
+				const { dateRange, onCreate } = props as CreateModeProps;
+				await onCreate({
+					annotationType: "range",
+					xValue: dateRange.startDate.toISOString(),
+					xEndValue: dateRange.endDate.toISOString(),
+					...formData,
+				});
+			}
+			onClose();
+		} catch (error) {
+			console.error("Error submitting annotation:", error);
+		} finally {
+			setSubmitting(false);
+		}
 	};
 
 	if (!isOpen) {
 		return null;
 	}
 
-	const dateRange = formatAnnotationDateRange(
-		annotation.xValue,
-		annotation.xEndValue,
-		"daily"
-	);
+	const getDateRangeText = () => {
+		if (mode === "edit") {
+			const { annotation } = props as EditModeProps;
+			return formatAnnotationDateRange(
+				annotation.xValue,
+				annotation.xEndValue,
+				"daily"
+			);
+		}
+		const { dateRange } = props as CreateModeProps;
+		const start = dateRange.startDate.toLocaleDateString("en-US", {
+			month: "short",
+			day: "numeric",
+		});
+		const end = dateRange.endDate.toLocaleDateString("en-US", {
+			month: "short",
+			day: "numeric",
+		});
+		return dateRange.startDate.getTime() !== dateRange.endDate.getTime()
+			? `${start} – ${end}`
+			: start;
+	};
+
+	const isCreate = mode === "create";
+	const HeaderIcon = isCreate ? CalendarIcon : PencilIcon;
+	const SubmitIcon = isCreate ? NoteIcon : PencilIcon;
+	const loading = submitting || isSubmitting;
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 backdrop-blur-sm">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
 			<button
 				aria-label="Close dialog"
 				className="absolute inset-0 cursor-default"
@@ -153,19 +219,19 @@ export function AnnotationModal({
 				{/* Header */}
 				<div className="flex items-center justify-between border-b bg-accent px-4 py-3">
 					<div className="flex items-center gap-2">
-						<PencilIcon className="size-4 text-primary" weight="duotone" />
+						<HeaderIcon className="size-4 text-primary" weight="duotone" />
 						<div>
 							<h2
 								className="font-medium text-foreground text-sm"
 								id="annotation-modal-title"
 							>
-								Edit Annotation
+								{isCreate ? "New Annotation" : "Edit Annotation"}
 							</h2>
 							<p
 								className="text-muted-foreground text-xs"
 								id="annotation-modal-description"
 							>
-								{dateRange}
+								{getDateRangeText()}
 							</p>
 						</div>
 					</div>
@@ -191,7 +257,7 @@ export function AnnotationModal({
 						<Textarea
 							autoFocus
 							className="resize-none text-sm"
-							disabled={isSubmitting}
+							disabled={loading}
 							id="annotation-text"
 							maxLength={DEFAULT_ANNOTATION_VALUES.maxTextLength}
 							onChange={(e) => setText(e.target.value)}
@@ -205,14 +271,16 @@ export function AnnotationModal({
 									{validationErrors[0]}
 								</span>
 							) : (
-								<span className="text-muted text-xs">Keep it concise</span>
+								<span className="text-muted-foreground text-xs">
+									Keep it concise
+								</span>
 							)}
 							<span
 								className={cn(
 									"text-xs tabular-nums",
 									text.length > DEFAULT_ANNOTATION_VALUES.maxTextLength * 0.9
 										? "text-warning"
-										: "text-muted"
+										: "text-muted-foreground"
 								)}
 							>
 								{text.length}/{DEFAULT_ANNOTATION_VALUES.maxTextLength}
@@ -241,7 +309,7 @@ export function AnnotationModal({
 						<div className="flex gap-2">
 							<Input
 								className="h-8 text-sm"
-								disabled={isSubmitting}
+								disabled={loading}
 								onChange={(e) => setCustomTag(e.target.value)}
 								onKeyDown={(e) => {
 									if (e.key === "Enter") {
@@ -254,7 +322,7 @@ export function AnnotationModal({
 							/>
 							<Button
 								className="size-8 shrink-0"
-								disabled={!customTag.trim() || isSubmitting}
+								disabled={!customTag.trim() || loading}
 								onClick={handleCustomTagSubmit}
 								size="icon"
 								variant="outline"
@@ -270,7 +338,7 @@ export function AnnotationModal({
 								.map((tag) => (
 									<button
 										className="flex cursor-pointer items-center gap-1.5 rounded border bg-background px-2 py-1 text-muted-foreground text-xs transition-all hover:border-primary hover:bg-accent hover:text-foreground active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-										disabled={isSubmitting}
+										disabled={loading}
 										key={tag.value}
 										onClick={() => addTag(tag.value)}
 										type="button"
@@ -297,7 +365,7 @@ export function AnnotationModal({
 											? "scale-110 border-foreground ring-2 ring-ring"
 											: "border-transparent hover:border-muted-foreground"
 									)}
-									disabled={isSubmitting}
+									disabled={loading}
 									key={color.value}
 									onClick={() => setSelectedColor(color.value)}
 									style={{ backgroundColor: color.value }}
@@ -330,7 +398,7 @@ export function AnnotationModal({
 						</div>
 						<Switch
 							checked={isPublic}
-							disabled={isSubmitting}
+							disabled={loading}
 							onCheckedChange={setIsPublic}
 						/>
 					</div>
@@ -339,7 +407,7 @@ export function AnnotationModal({
 					<div className="flex gap-2 pt-1">
 						<Button
 							className="flex-1"
-							disabled={isSubmitting}
+							disabled={loading}
 							onClick={onClose}
 							variant="outline"
 						>
@@ -347,18 +415,18 @@ export function AnnotationModal({
 						</Button>
 						<Button
 							className="flex-1 gap-2"
-							disabled={!text.trim() || isSubmitting}
+							disabled={!text.trim() || loading}
 							onClick={handleSubmit}
 						>
-							{isSubmitting ? (
+							{loading ? (
 								<>
 									<div className="size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-									Saving…
+									{isCreate ? "Creating…" : "Saving…"}
 								</>
 							) : (
 								<>
-									<PencilIcon className="size-4" weight="duotone" />
-									Save
+									<SubmitIcon className="size-4" weight="duotone" />
+									{isCreate ? "Create" : "Save"}
 								</>
 							)}
 						</Button>
