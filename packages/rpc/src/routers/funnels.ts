@@ -58,6 +58,7 @@ export const funnelsRouter = {
 								description: funnelDefinitions.description,
 								steps: funnelDefinitions.steps,
 								filters: funnelDefinitions.filters,
+								ignoreHistoricData: funnelDefinitions.ignoreHistoricData,
 								isActive: funnelDefinitions.isActive,
 								createdAt: funnelDefinitions.createdAt,
 								updatedAt: funnelDefinitions.updatedAt,
@@ -144,6 +145,7 @@ export const funnelsRouter = {
 				description: z.string().optional(),
 				steps: z.array(funnelStepSchema).min(2).max(10),
 				filters: z.array(funnelFilterSchema).optional(),
+				ignoreHistoricData: z.boolean().optional(),
 			})
 		)
 		.handler(async ({ context, input }) => {
@@ -161,6 +163,7 @@ export const funnelsRouter = {
 						description: input.description,
 						steps: input.steps,
 						filters: input.filters,
+						ignoreHistoricData: input.ignoreHistoricData ?? false,
 						createdBy: context.user.id,
 					})
 					.returning();
@@ -195,6 +198,7 @@ export const funnelsRouter = {
 				description: z.string().optional(),
 				steps: z.array(funnelStepSchema).min(2).max(10).optional(),
 				filters: z.array(funnelFilterSchema).optional(),
+				ignoreHistoricData: z.boolean().optional(),
 				isActive: z.boolean().optional(),
 			})
 		)
@@ -369,9 +373,20 @@ export const funnelsRouter = {
 								value: string | string[];
 							}>) || [];
 
+						let effectiveStartDate = startDate;
+						if (funnelData.ignoreHistoricData && funnelData.createdAt) {
+							const funnelCreatedDate = new Date(funnelData.createdAt)
+								.toISOString()
+								.split("T")[0];
+							const requestedStart = new Date(startDate);
+							const funnelStart = new Date(funnelCreatedDate);
+							effectiveStartDate =
+								requestedStart > funnelStart ? startDate : funnelCreatedDate;
+						}
+
 						const params: Record<string, unknown> = {
 							websiteId: input.websiteId,
-							startDate,
+							startDate: effectiveStartDate,
 							endDate: `${endDate} 23:59:59`,
 						};
 
@@ -467,9 +482,20 @@ export const funnelsRouter = {
 								value: string | string[];
 							}>) || [];
 
+						let effectiveStartDate = startDate;
+						if (funnelData.ignoreHistoricData && funnelData.createdAt) {
+							const funnelCreatedDate = new Date(funnelData.createdAt)
+								.toISOString()
+								.split("T")[0];
+							const requestedStart = new Date(startDate);
+							const funnelStart = new Date(funnelCreatedDate);
+							effectiveStartDate =
+								requestedStart > funnelStart ? startDate : funnelCreatedDate;
+						}
+
 						const params: Record<string, unknown> = {
 							websiteId: input.websiteId,
-							startDate,
+							startDate: effectiveStartDate,
 							endDate: `${endDate} 23:59:59`,
 						};
 

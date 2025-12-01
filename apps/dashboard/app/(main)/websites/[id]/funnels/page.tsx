@@ -189,6 +189,7 @@ export default function FunnelsPage() {
 					description: funnel.description ?? "",
 					steps: funnel.steps,
 					filters: funnel.filters,
+					ignoreHistoricData: funnel.ignoreHistoricData,
 				},
 			});
 			setIsDialogOpen(false);

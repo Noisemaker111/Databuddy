@@ -26,6 +26,7 @@ export interface FunnelItemData {
 	description?: string | null;
 	steps: FunnelStep[];
 	filters?: FunnelFilter[];
+	ignoreHistoricData?: boolean;
 	isActive: boolean;
 	createdAt: string | Date;
 	updatedAt: string | Date;

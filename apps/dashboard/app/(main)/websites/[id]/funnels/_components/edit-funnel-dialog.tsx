@@ -25,6 +25,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
 	Sheet,
 	SheetBody,
@@ -80,6 +81,7 @@ export function EditFunnelDialog({
 			setFormData({
 				...funnel,
 				filters: funnel.filters || [],
+				ignoreHistoricData: funnel.ignoreHistoricData ?? false,
 			});
 		} else {
 			setFormData({
@@ -91,6 +93,7 @@ export function EditFunnelDialog({
 					{ type: "PAGE_VIEW" as const, target: "/signup", name: "Sign Up Page" },
 				],
 				filters: [],
+				ignoreHistoricData: false,
 				isActive: true,
 				createdAt: "",
 				updatedAt: "",
@@ -107,6 +110,7 @@ export function EditFunnelDialog({
 				description: formData.description || undefined,
 				steps: formData.steps,
 				filters: formData.filters || [],
+				ignoreHistoricData: formData.ignoreHistoricData,
 			};
 			await onCreate(createData);
 			resetForm();
@@ -126,6 +130,7 @@ export function EditFunnelDialog({
 					{ type: "PAGE_VIEW" as const, target: "/signup", name: "Sign Up Page" },
 				],
 				filters: [],
+				ignoreHistoricData: false,
 				isActive: true,
 				createdAt: "",
 				updatedAt: "",
@@ -432,6 +437,32 @@ export function EditFunnelDialog({
 								<PlusIcon size={14} />
 								Add Step
 							</Button>
+						</section>
+
+						{/* Settings Section */}
+						<section className="space-y-3">
+							<Label className="text-muted-foreground text-xs">
+								Settings
+							</Label>
+							<div className="flex items-center justify-between rounded border bg-card p-3">
+								<div className="space-y-0.5">
+									<Label htmlFor="ignore-historic" className="font-medium text-sm">
+										Ignore historic data
+									</Label>
+									<p className="text-muted-foreground text-xs">
+										Only count events after this funnel was created
+									</p>
+								</div>
+								<Switch
+									id="ignore-historic"
+									checked={formData.ignoreHistoricData ?? false}
+									onCheckedChange={(checked) =>
+										setFormData((prev) =>
+											prev ? { ...prev, ignoreHistoricData: checked } : prev
+										)
+									}
+								/>
+							</div>
 						</section>
 
 						{/* Filters Section */}

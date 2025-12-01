@@ -347,6 +347,7 @@ export const funnelDefinitions = pgTable(
 		description: text(),
 		steps: jsonb().notNull(),
 		filters: jsonb(),
+		ignoreHistoricData: boolean().default(false).notNull(),
 		isActive: boolean().default(true).notNull(),
 		createdBy: text().notNull(),
 		createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
