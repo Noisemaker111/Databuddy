@@ -13,8 +13,7 @@ import {
 	dynamicQueryFiltersAtom,
 	removeDynamicFilterAtom,
 } from "@/stores/jotai/filterAtoms";
-import { DeleteAllDialog } from "./delete-all-dialog";
-import { DeleteFilterDialog } from "./delete-filter-dialog";
+import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { SaveFilterDialog } from "./save-filter-dialog";
 import { SavedFiltersMenu } from "./saved-filters-menu";
 
@@ -269,20 +268,24 @@ export function FiltersSection() {
 				validateName={(name: string) => validateFilterName(name, editing?.id)}
 			/>
 
-			<DeleteFilterDialog
-				filterName={deleteDialog.filterName}
+			<DeleteDialog
 				isDeleting={isDeleting}
 				isOpen={deleteDialog.isOpen}
 				onClose={() => setDeleteDialog((prev) => ({ ...prev, isOpen: false }))}
 				onConfirm={handleConfirmDelete}
+				title="Delete Saved Filter"
+				description={`Are you sure you want to delete "${deleteDialog.filterName}"? This action cannot be undone and the filter configuration will be permanently removed.`}
+				confirmLabel="Delete"
 			/>
 
-			<DeleteAllDialog
-				filterCount={savedFilters.length}
+			<DeleteDialog
 				isDeleting={isDeletingAll}
 				isOpen={isDeleteAllOpen}
 				onClose={() => setIsDeleteAllOpen(false)}
 				onConfirm={handleConfirmDeleteAll}
+				title="Delete All Saved Filters"
+				description={`Are you sure you want to delete all ${savedFilters.length} saved filter${savedFilters.length === 1 ? "" : "s"}? This will permanently remove all your saved filter configurations and cannot be undone.`}
+				confirmLabel="Delete All"
 			/>
 		</div>
 	);

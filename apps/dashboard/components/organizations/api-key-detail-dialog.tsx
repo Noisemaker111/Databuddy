@@ -16,16 +16,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { orpc } from "@/lib/orpc";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "../ui/alert-dialog";
+import { DeleteDialog } from "../ui/delete-dialog";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -388,26 +379,15 @@ export function ApiKeyDetailDialog({
 			</Sheet>
 
 			{/* Delete Confirmation */}
-			<AlertDialog onOpenChange={setShowDeleteConfirm} open={showDeleteConfirm}>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Delete API Key?</AlertDialogTitle>
-						<AlertDialogDescription>
-							This action cannot be undone. Any applications using this key will
-							immediately lose access.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction
-							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-							onClick={() => deleteMutation.mutate({ id: apiKey.id })}
-						>
-							{deleteMutation.isPending ? "Deleting…" : "Delete"}
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+			<DeleteDialog
+				isDeleting={deleteMutation.isPending}
+				isOpen={showDeleteConfirm}
+				onClose={() => setShowDeleteConfirm(false)}
+				onConfirm={() => deleteMutation.mutate({ id: apiKey.id })}
+				title="Delete API Key?"
+				description="This action cannot be undone. Any applications using this key will immediately lose access."
+				confirmLabel="Delete"
+			/>
 		</>
 	);
 }

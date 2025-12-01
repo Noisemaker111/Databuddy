@@ -23,7 +23,7 @@ import {
 import { useWebsite } from "@/hooks/use-websites";
 import { isAnalyticsRefreshingAtom } from "@/stores/jotai/filterAtoms";
 import { WebsitePageHeader } from "../_components/website-page-header";
-import { DeleteGoalDialog } from "./_components/delete-goal-dialog";
+import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { EditGoalDialog } from "./_components/edit-goal-dialog";
 import { GoalsList } from "./_components/goals-list";
 
@@ -263,13 +263,14 @@ export default function GoalsPage() {
 			)}
 
 			{deletingGoalId && (
-				<Suspense>
-					<DeleteGoalDialog
-						isOpen={!!deletingGoalId}
-						onClose={() => setDeletingGoalId(null)}
-						onConfirm={() => deletingGoalId && handleDeleteGoal(deletingGoalId)}
-					/>
-				</Suspense>
+				<DeleteDialog
+					isOpen={!!deletingGoalId}
+					onClose={() => setDeletingGoalId(null)}
+					onConfirm={() => deletingGoalId && handleDeleteGoal(deletingGoalId)}
+					title="Delete Goal"
+					description="Are you sure you want to delete this goal? This action cannot be undone and will permanently remove all associated analytics data."
+					confirmLabel="Delete Goal"
+				/>
 			)}
 		</div>
 	);

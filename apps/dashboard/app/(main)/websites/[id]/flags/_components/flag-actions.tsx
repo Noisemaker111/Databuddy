@@ -9,16 +9,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -107,27 +98,15 @@ export function FlagActions({
 				</DropdownMenuContent>
 			</DropdownMenu>
 
-			<AlertDialog onOpenChange={setIsOpen} open={isOpen}>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Delete flag?</AlertDialogTitle>
-						<AlertDialogDescription>
-							This action cannot be undone. This will permanently delete the
-							flag "{flag.key}".
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-						<AlertDialogAction
-							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-							disabled={isDeleting}
-							onClick={handleConfirmDelete}
-						>
-							Delete
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+			<DeleteDialog
+				isDeleting={isDeleting}
+				isOpen={isOpen}
+				onClose={() => setIsOpen(false)}
+				onConfirm={handleConfirmDelete}
+				title="Delete flag?"
+				description={`This action cannot be undone. This will permanently delete the flag "${flag.key}".`}
+				confirmLabel="Delete"
+			/>
 		</>
 	);
 }

@@ -146,10 +146,9 @@ export const invitation = pgTable(
 		status: text().default("pending").notNull(),
 		expiresAt: timestamp("expires_at").notNull(),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
-		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 		inviterId: text("inviter_id").notNull(),
 	},
-	(table) => [	
+	(table) => [
 		index("invitations_email_idx").using(
 			"btree",
 			table.email.asc().nullsLast().op("text_ops")
