@@ -145,6 +145,8 @@ export const invitation = pgTable(
 		teamId: text("team_id"),
 		status: text().default("pending").notNull(),
 		expiresAt: timestamp("expires_at").notNull(),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 		inviterId: text("inviter_id").notNull(),
 	},
 	(table) => [
