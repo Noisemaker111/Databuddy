@@ -22,11 +22,15 @@ export type AggregateFn =
     | "median"
     | "medianIf"
     | "min"
+    | "minIf"
     | "max"
+    | "maxIf"
     | "any"
     | "argMin"
     | "argMax"
-    | "groupArray";
+    | "groupArray"
+    | "quantile"
+    | "quantileIf";
 
 /** Time granularity options */
 export type Granularity = "minute" | "hour" | "day" | "week" | "month";
@@ -118,6 +122,14 @@ type AggregateBuilder = {
     argMax: (column: string, by: string) => SqlExpression;
     /** groupArray(column) - collects values into array */
     groupArray: (column: string) => SqlExpression;
+    /** quantile(level)(column) - percentile value */
+    quantile: (level: number, column: string) => SqlExpression;
+    /** quantileIf(level)(column, condition) - percentile with condition */
+    quantileIf: (level: number, column: string, condition: string) => SqlExpression;
+    /** minIf(column, condition) - min with condition */
+    minIf: (column: string, condition: string) => SqlExpression;
+    /** maxIf(column, condition) - max with condition */
+    maxIf: (column: string, condition: string) => SqlExpression;
     /** ROUND(expr, decimals) */
     round: (expression: string, decimals?: number) => SqlExpression;
     /** dateDiff(unit, start, end) */
@@ -149,6 +161,11 @@ export const agg: AggregateBuilder = {
     argMin: (column: string, by: string) => expr(`argMin(${column}, ${by})`),
     argMax: (column: string, by: string) => expr(`argMax(${column}, ${by})`),
     groupArray: (column: string) => expr(`groupArray(${column})`),
+    quantile: (level: number, column: string) => expr(`quantile(${level})(${column})`),
+    quantileIf: (level: number, column: string, condition: string) =>
+        expr(`quantileIf(${level})(${column}, ${condition})`),
+    minIf: (column: string, condition: string) => expr(`minIf(${column}, ${condition})`),
+    maxIf: (column: string, condition: string) => expr(`maxIf(${column}, ${condition})`),
     round: (expression: string, decimals = 2) =>
         expr(`round(${expression}, ${decimals})`),
     dateDiff: (unit, start, end) => expr(`dateDiff('${unit}', ${start}, ${end})`),
@@ -710,6 +727,23 @@ function compileAggregate(
                 return source
                     ? `uniq(if(${condition}, ${source}, null))`
                     : `uniqIf(${condition})`;
+            case "min":
+            case "minIf":
+                return source
+                    ? `minIf(${source}, ${condition})`
+                    : `minIf(1, ${condition})`;
+            case "max":
+            case "maxIf":
+                return source
+                    ? `maxIf(${source}, ${condition})`
+                    : `maxIf(1, ${condition})`;
+            case "quantile":
+            case "quantileIf":
+                // For quantile with condition, source should be "level)(column"
+                // e.g., source = "0.50)(metric_value" produces quantileIf(0.50)(metric_value, condition)
+                return source
+                    ? `quantileIf(${source}, ${condition})`
+                    : `quantileIf(0.50)(1, ${condition})`;
             default:
                 // For other aggregates, apply condition as WHERE in subquery pattern
                 return source
@@ -742,6 +776,9 @@ function compileAggregate(
             return `argMax(${source || "*"})`;
         case "groupArray":
             return `groupArray(${source || "*"})`;
+        case "quantile":
+            // source should be "level)(column" e.g., "0.50)(metric_value"
+            return source ? `quantile(${source})` : "quantile(0.50)(*)";
         // Conditional variants without condition just use base
         case "countIf":
             return source ? `count(${source})` : "count()";
@@ -753,6 +790,12 @@ function compileAggregate(
             return `median(${source || "*"})`;
         case "uniqIf":
             return `uniq(${source || "*"})`;
+        case "minIf":
+            return `min(${source || "*"})`;
+        case "maxIf":
+            return `max(${source || "*"})`;
+        case "quantileIf":
+            return source ? `quantile(${source})` : "quantile(0.50)(*)";
         default:
             return `${fn}(${source || "*"})`;
     }
