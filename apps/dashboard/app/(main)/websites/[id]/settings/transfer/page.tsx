@@ -78,7 +78,7 @@ function TransferPageContent() {
 				},
 				onError: (error) => {
 					toast.error(
-						error?.message || "Failed to transfer website. Please try again."
+						(error as Error).message || "Failed to transfer website. Please try again."
 					);
 				},
 			}
@@ -243,159 +243,135 @@ function TransferPageContent() {
 				)}
 
 				{/* Actions */}
-				<section className="mt-auto border-t px-4 py-5 sm:px-6">
-					<div className="flex items-center justify-between gap-3">
-						<p className="text-muted-foreground text-xs">
-							{selectedOrgId
-								? "Review the details and confirm to proceed"
-								: "Select a target organization to continue"}
-						</p>
-						<Button
-							disabled={!selectedOrgId || isTransferring}
-							onClick={() => setShowConfirmDialog(true)}
-							size="sm"
-						>
-							<ArrowSquareOutIcon className="mr-2 h-4 w-4" />
-							Transfer Website
-						</Button>
-					</div>
+				<section className="angled-rectangle-gradient mt-auto flex items-center justify-between gap-3 border-t bg-secondary px-5 py-4">
+					<p className="text-muted-foreground text-sm">
+						{selectedOrgId
+							? "Review the details and confirm to proceed"
+							: "Select a target organization to continue"}
+					</p>
+					<Button
+						disabled={!selectedOrgId || isTransferring}
+						onClick={() => setShowConfirmDialog(true)}
+						size="sm"
+					>
+						<ArrowSquareOutIcon className="mr-2 size-4" />
+						Transfer Website
+					</Button>
 				</section>
 			</div>
 
-			{/* Confirmation Dialog */}
-			<Dialog onOpenChange={setShowConfirmDialog} open={showConfirmDialog}>
-				<DialogContent className="max-w-lg">
-					<DialogHeader>
-						<DialogTitle className="text-xl">
-							Confirm Website Transfer
-						</DialogTitle>
-						<DialogDescription className="text-sm">
-							This action cannot be undone. Please review the transfer details
-							carefully before proceeding.
-						</DialogDescription>
-					</DialogHeader>
+		{/* Confirmation Dialog */}
+		<Dialog onOpenChange={setShowConfirmDialog} open={showConfirmDialog}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Confirm Website Transfer</DialogTitle>
+					<DialogDescription>
+						This action cannot be undone.
+					</DialogDescription>
+				</DialogHeader>
 
-					<div className="space-y-6 py-6">
-						{/* Website Info */}
-						<div className="space-y-2">
-							<Label className="text-muted-foreground text-xs uppercase tracking-wide">
-								Website
-							</Label>
-							<div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-4">
-								<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-									<span className="font-semibold text-primary text-sm">
-										{websiteData.name?.charAt(0).toUpperCase() ||
-											websiteData.domain.charAt(0).toUpperCase()}
-									</span>
-								</div>
-								<div className="min-w-0 flex-1">
-									<p className="font-semibold text-sm">
-										{websiteData.name || websiteData.domain}
-									</p>
-									<p className="truncate text-muted-foreground text-xs">
-										{websiteData.domain}
-									</p>
-								</div>
-							</div>
+				<div className="space-y-3">
+					{/* Website being transferred */}
+					<div className="flex items-center gap-2.5 rounded border bg-accent/50 p-2.5">
+						<div className="flex size-8 shrink-0 items-center justify-center rounded bg-primary/10">
+							<span className="font-semibold text-primary text-xs">
+								{websiteData.name?.charAt(0).toUpperCase() ||
+									websiteData.domain.charAt(0).toUpperCase()}
+							</span>
 						</div>
-
-						{/* Transfer Flow */}
-						<div className="space-y-2">
-							<Label className="text-muted-foreground text-xs uppercase tracking-wide">
-								Transfer Details
-							</Label>
-							<div className="flex items-center gap-4">
-								{/* From Organization */}
-								<div className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border bg-muted/30 p-4">
-									<div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-background">
-										{currentOrg?.logo ? (
-											<img
-												alt={currentOrg.name}
-												className="h-full w-full object-cover"
-												src={currentOrg.logo}
-											/>
-										) : currentOrg ? (
-											<BuildingsIcon className="h-5 w-5 text-muted-foreground" />
-										) : (
-											<UserIcon className="h-5 w-5 text-muted-foreground" />
-										)}
-									</div>
-									<div className="min-w-0 flex-1">
-										<p className="mb-0.5 text-muted-foreground text-xs">From</p>
-										<p className="truncate font-medium text-sm">
-											{currentOrg?.name || "Personal"}
-										</p>
-									</div>
-								</div>
-
-								{/* Arrow */}
-								<div className="flex shrink-0 items-center justify-center">
-									<ArrowRightIcon
-										className="size-4 text-muted-foreground"
-										weight="bold"
-									/>
-								</div>
-
-								{/* To Organization */}
-								<div className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
-									<div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-primary/20 bg-background">
-										{selectedOrg?.logo ? (
-											<img
-												alt={selectedOrg.name}
-												className="h-full w-full object-cover"
-												src={selectedOrg.logo}
-											/>
-										) : (
-											<BuildingsIcon className="h-5 w-5 text-primary" />
-										)}
-									</div>
-									<div className="min-w-0 flex-1">
-										<p className="mb-0.5 text-muted-foreground text-xs">To</p>
-										<p className="truncate font-medium text-primary text-sm">
-											{selectedOrg?.name}
-										</p>
-									</div>
-								</div>
-							</div>
+						<div className="min-w-0 flex-1">
+							<p className="truncate font-medium text-sm">
+								{websiteData.name || websiteData.domain}
+							</p>
+							<p className="truncate text-muted-foreground text-xs">
+								{websiteData.domain}
+							</p>
 						</div>
-
-						{/* Warning */}
-						<NoticeBanner
-							description="This will immediately transfer all ownership, data, settings, and analytics to the selected organization. Members of that organization will gain full access."
-							icon={<WarningIcon />}
-							title="Important"
-						/>
 					</div>
 
-					<DialogFooter className="gap-3">
-						<Button
-							className="min-w-[100px]"
-							disabled={isTransferring}
-							onClick={() => setShowConfirmDialog(false)}
-							variant="outline"
-						>
-							Cancel
-						</Button>
-						<Button
-							className="min-w-[140px]"
-							disabled={isTransferring}
-							onClick={handleTransfer}
-						>
-							{isTransferring ? (
-								<>
-									<div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-									Transferring...
-								</>
-							) : (
-								<>
-									<ArrowSquareOutIcon className="mr-2 h-4 w-4" weight="fill" />
-									Confirm Transfer
-								</>
-							)}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+					{/* Transfer flow - stacked layout */}
+					<div className="space-y-2">
+						<div className="flex items-center gap-2.5 rounded border p-2.5">
+							<div className="flex size-8 shrink-0 items-center justify-center rounded border bg-background">
+								{currentOrg?.logo ? (
+									<img
+										alt={currentOrg.name}
+										className="size-full rounded object-cover"
+										src={currentOrg.logo}
+									/>
+								) : currentOrg ? (
+									<BuildingsIcon className="size-4 text-muted-foreground" />
+								) : (
+									<UserIcon className="size-4 text-muted-foreground" />
+								)}
+							</div>
+							<div className="min-w-0 flex-1">
+								<p className="text-muted-foreground text-xs">From</p>
+								<p className="truncate font-medium text-sm">
+									{currentOrg?.name || "Personal"}
+								</p>
+							</div>
+						</div>
+
+						<div className="flex justify-center">
+							<ArrowRightIcon
+								className="size-4 rotate-90 text-muted-foreground"
+								weight="bold"
+							/>
+						</div>
+
+						<div className="flex items-center gap-2.5 rounded border border-primary/30 bg-primary/5 p-2.5">
+							<div className="flex size-8 shrink-0 items-center justify-center rounded border border-primary/30 bg-background">
+								{selectedOrg?.logo ? (
+									<img
+										alt={selectedOrg.name}
+										className="size-full rounded object-cover"
+										src={selectedOrg.logo}
+									/>
+								) : (
+									<BuildingsIcon className="size-4 text-primary" />
+								)}
+							</div>
+							<div className="min-w-0 flex-1">
+								<p className="text-muted-foreground text-xs">To</p>
+								<p className="truncate font-medium text-primary text-sm">
+									{selectedOrg?.name}
+								</p>
+							</div>
+						</div>
+					</div>
+
+					{/* Warning */}
+					<p className="text-muted-foreground text-xs leading-relaxed">
+						All ownership, data, settings, and analytics will be transferred.
+						Members of <span className="font-medium text-foreground">{selectedOrg?.name}</span> will gain full access.
+					</p>
+				</div>
+
+				<DialogFooter>
+					<Button
+						disabled={isTransferring}
+						onClick={() => setShowConfirmDialog(false)}
+						variant="outline"
+					>
+						Cancel
+					</Button>
+					<Button disabled={isTransferring} onClick={handleTransfer}>
+						{isTransferring ? (
+							<>
+								<div className="mr-2 size-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+								Transferring…
+							</>
+						) : (
+							<>
+								<ArrowSquareOutIcon className="mr-2 size-4" weight="fill" />
+								Confirm Transfer
+							</>
+						)}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 		</div>
 	);
 }
