@@ -13,7 +13,7 @@ import {
 } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { setPasswordForOAuthUser } from "@/app/actions/users";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,15 @@ type TwoFactorDialogProps = {
 	onSuccess: () => void;
 };
 
+const MIN_PASSWORD_LENGTH = 8;
+const TOTP_SECRET_REGEX = /secret=([A-Z2-7]+)/i;
+
+/** Extracts the TOTP secret from a otpauth:// URI */
+function extractSecretFromTotpUri(uri: string): string {
+	const match = uri.match(TOTP_SECRET_REGEX);
+	return match?.[1] ?? "";
+}
+
 export function TwoFactorDialog({
 	open,
 	onOpenChange,
@@ -57,7 +66,8 @@ export function TwoFactorDialog({
 	hasCredentialAccount,
 	onSuccess,
 }: TwoFactorDialogProps) {
-	const getInitialStep = (): TwoFactorStep => {
+	// Determine initial step based on current state
+	const initialStep = useMemo((): TwoFactorStep => {
 		if (isEnabled) {
 			return "manage";
 		}
@@ -65,9 +75,9 @@ export function TwoFactorDialog({
 			return "set-password";
 		}
 		return "password";
-	};
+	}, [isEnabled, hasCredentialAccount]);
 
-	const [step, setStep] = useState<TwoFactorStep>(getInitialStep);
+	const [step, setStep] = useState<TwoFactorStep>(initialStep);
 	const [password, setPassword] = useState("");
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
@@ -78,10 +88,10 @@ export function TwoFactorDialog({
 	const [showSecret, setShowSecret] = useState(false);
 	const [copiedBackup, setCopiedBackup] = useState(false);
 
-	// Reset state when dialog closes or props change
+	// Reset state when dialog closes
 	useEffect(() => {
 		if (!open) {
-			setStep(getInitialStep());
+			setStep(initialStep);
 			setPassword("");
 			setNewPassword("");
 			setConfirmPassword("");
@@ -92,7 +102,12 @@ export function TwoFactorDialog({
 			setShowSecret(false);
 			setCopiedBackup(false);
 		}
-	}, [open, isEnabled, hasCredentialAccount]);
+	}, [open, initialStep]);
+
+	// Password validation
+	const isNewPasswordValid =
+		newPassword.length >= MIN_PASSWORD_LENGTH &&
+		newPassword === confirmPassword;
 
 	// Set password mutation for OAuth users
 	const setPasswordMutation = useMutation({
@@ -100,8 +115,16 @@ export function TwoFactorDialog({
 			if (newPassword !== confirmPassword) {
 				throw new Error("Passwords do not match");
 			}
-			if (newPassword.length < 8) {
-				throw new Error("Password must be at least 8 characters");
+			if (newPassword.length < MIN_PASSWORD_LENGTH) {
+				throw new Error(
+					`Password must be at least ${MIN_PASSWORD_LENGTH} characters`
+				);
+			}
+			// Double-check: shouldn't reach here if user already has credentials
+			if (hasCredentialAccount) {
+				throw new Error(
+					"You already have a password. Use change password instead."
+				);
 			}
 			const result = await setPasswordForOAuthUser(newPassword);
 			if (result.error) {
@@ -113,7 +136,7 @@ export function TwoFactorDialog({
 			toast.success("Password set successfully!");
 			setPassword(newPassword);
 			setStep("password");
-			onSuccess(); // Refresh to update hasCredentialAccount
+			onSuccess();
 		},
 		onError: (error: Error) => {
 			toast.error(error.message || "Failed to set password");
@@ -132,7 +155,7 @@ export function TwoFactorDialog({
 		onSuccess: (data) => {
 			if (data?.totpURI) {
 				setTotpUri(data.totpURI);
-				setSecret(data.totpURI.split("secret=")[1]);
+				setSecret(extractSecretFromTotpUri(data.totpURI));
 			}
 			if (data?.backupCodes) {
 				setBackupCodes(data.backupCodes);
@@ -206,18 +229,18 @@ export function TwoFactorDialog({
 		},
 	});
 
-	const handleCopyBackupCodes = async () => {
+	const handleCopyBackupCodes = useCallback(async () => {
 		const codesText = backupCodes.join("\n");
 		await navigator.clipboard.writeText(codesText);
 		setCopiedBackup(true);
 		toast.success("Backup codes copied to clipboard");
 		setTimeout(() => setCopiedBackup(false), 2000);
-	};
+	}, [backupCodes]);
 
-	const handleCopySecret = async () => {
+	const handleCopySecret = useCallback(async () => {
 		await navigator.clipboard.writeText(secret);
 		toast.success("Secret key copied to clipboard");
-	};
+	}, [secret]);
 
 	const isPending =
 		setPasswordMutation.isPending ||
@@ -255,7 +278,6 @@ export function TwoFactorDialog({
 				</DialogHeader>
 
 				<div className="py-4">
-					{/* Step: Set Password (OAuth users) */}
 					{step === "set-password" && (
 						<div className="space-y-4">
 							<div className="flex items-center gap-3 rounded border bg-blue-500/10 p-4">
@@ -543,11 +565,7 @@ export function TwoFactorDialog({
 								Cancel
 							</Button>
 							<Button
-								disabled={
-									!(newPassword && confirmPassword) ||
-									newPassword !== confirmPassword ||
-									isPending
-								}
+								disabled={!isNewPasswordValid || isPending}
 								onClick={() => setPasswordMutation.mutate()}
 							>
 								{setPasswordMutation.isPending && (
