@@ -103,7 +103,7 @@ export function RangeSelectionPopup({
 							weight="duotone"
 						/>
 						<span className="flex-1 text-foreground">Zoom to range</span>
-						<kbd className="rounded border bg-accent px-1.5 py-0.5 font-mono text-[10px] text-foreground">
+						<kbd className="rounded border bg-accent px-1.5 py-0.5 text-[10px] text-foreground">
 							Z
 						</kbd>
 					</button>
@@ -117,7 +117,7 @@ export function RangeSelectionPopup({
 							weight="duotone"
 						/>
 						<span className="flex-1 text-foreground">Add annotation…</span>
-						<kbd className="rounded border bg-accent px-1.5 py-0.5 font-mono text-[10px] text-foreground">
+						<kbd className="rounded border bg-accent px-1.5 py-0.5 text-[10px] text-foreground">
 							A
 						</kbd>
 					</button>

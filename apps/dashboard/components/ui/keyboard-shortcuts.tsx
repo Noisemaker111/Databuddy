@@ -85,7 +85,7 @@ export function KeyboardShortcuts({
 									<span className="text-muted-foreground text-sm">
 										{shortcut.label}
 									</span>
-									<kbd className="rounded border bg-secondary px-1.5 py-0.5 font-mono text-xs">
+									<kbd className="rounded border bg-secondary px-1.5 py-0.5 text-xs">
 										{displayKeys}
 									</kbd>
 								</div>
