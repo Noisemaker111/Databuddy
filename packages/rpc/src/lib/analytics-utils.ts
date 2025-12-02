@@ -1,6 +1,5 @@
 import { chQuery } from "@databuddy/db";
 import { referrers } from "@databuddy/shared/lists/referrers";
-import { ORPCError } from "@orpc/server";
 
 // Types
 export type AnalyticsStep = {
@@ -45,8 +44,12 @@ type VisitorStep = { step: number; time: number; referrer?: string };
 
 // Helpers
 const formatDuration = (seconds: number): string => {
-	if (!seconds || seconds <= 0) return "—";
-	if (seconds < 60) return `${Math.round(seconds)}s`;
+	if (!seconds || seconds <= 0) {
+		return "—";
+	}
+	if (seconds < 60) {
+		return `${Math.round(seconds)}s`;
+	}
 	if (seconds < 3600) {
 		const m = Math.floor(seconds / 60);
 		const s = Math.round(seconds % 60);
@@ -61,7 +64,7 @@ const avg = (arr: number[]): number =>
 	arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
 
 const pct = (num: number, denom: number): number =>
-	denom > 0 ? Math.round((num / denom) * 10000) / 100 : 0;
+	denom > 0 ? Math.round((num / denom) * 10_000) / 100 : 0;
 
 const parseReferrer = (ref: string) => {
 	if (!ref || ref === "Direct" || ref.toLowerCase() === "(direct)") {
@@ -83,14 +86,35 @@ const parseReferrer = (ref: string) => {
 
 // Filter building
 const FIELDS = new Set([
-	"event_name", "path", "referrer", "user_agent", "country", "city",
-	"device_type", "browser_name", "os_name", "screen_resolution", "language",
-	"utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+	"event_name",
+	"path",
+	"referrer",
+	"user_agent",
+	"country",
+	"city",
+	"device_type",
+	"browser_name",
+	"os_name",
+	"screen_resolution",
+	"language",
+	"utm_source",
+	"utm_medium",
+	"utm_campaign",
+	"utm_term",
+	"utm_content",
 ]);
 
 const OPS = new Set([
-	"equals", "not_equals", "contains", "not_contains", "starts_with",
-	"ends_with", "in", "not_in", "is_null", "is_not_null",
+	"equals",
+	"not_equals",
+	"contains",
+	"not_contains",
+	"starts_with",
+	"ends_with",
+	"in",
+	"not_in",
+	"is_null",
+	"is_not_null",
 ]);
 
 const buildFilterSQL = (
@@ -101,7 +125,9 @@ const buildFilterSQL = (
 
 	for (let i = 0; i < filters.length; i++) {
 		const { field, operator, value } = filters[i];
-		if (!FIELDS.has(field) || !OPS.has(operator)) continue;
+		if (!(FIELDS.has(field) && OPS.has(operator))) {
+			continue;
+		}
 
 		const key = `f${i}`;
 
@@ -111,12 +137,16 @@ const buildFilterSQL = (
 			parts.push(`${field} IS NOT NULL`);
 		} else if (Array.isArray(value)) {
 			params[key] = value;
-			parts.push(`${field} ${operator === "in" ? "IN" : "NOT IN"} {${key}:Array(String)}`);
+			parts.push(
+				`${field} ${operator === "in" ? "IN" : "NOT IN"} {${key}:Array(String)}`
+			);
 		} else {
-			const escaped = value.replace(/[%_]/g, "\\$&");
+			const escaped = value.replace(/\\/g, "\\\\").replace(/[%_]/g, "\\$&");
 			if (operator === "contains" || operator === "not_contains") {
 				params[key] = `%${escaped}%`;
-				parts.push(`${field} ${operator === "contains" ? "LIKE" : "NOT LIKE"} {${key}:String}`);
+				parts.push(
+					`${field} ${operator === "contains" ? "LIKE" : "NOT LIKE"} {${key}:String}`
+				);
 			} else if (operator === "starts_with") {
 				params[key] = `${escaped}%`;
 				parts.push(`${field} LIKE {${key}:String}`);
@@ -125,7 +155,9 @@ const buildFilterSQL = (
 				parts.push(`${field} LIKE {${key}:String}`);
 			} else {
 				params[key] = escaped;
-				parts.push(`${field} ${operator === "equals" ? "=" : "!="} {${key}:String}`);
+				parts.push(
+					`${field} ${operator === "equals" ? "=" : "!="} {${key}:String}`
+				);
 			}
 		}
 	}
@@ -150,7 +182,8 @@ const buildStepQuery = (
 		AND time <= parseDateTimeBestEffort({endDate:String})`;
 
 	if (step.type === "PAGE_VIEW") {
-		params[`t${idx}l`] = `%${step.target}%`;
+		const escapedTarget = step.target.replace(/\\/g, "\\\\").replace(/[%_]/g, "\\$&");
+		params[`t${idx}l`] = `%${escapedTarget}%`;
 		return `SELECT ${idx + 1} as step, {n${idx}:String} as name, anonymous_id as vid, MIN(time) as ts${refCol}
 			FROM analytics.events
 			WHERE ${base} AND event_name = 'screen_view'
@@ -205,7 +238,9 @@ const countStepCompletions = (
 	const counts = new Map<number, Set<string>>();
 
 	for (const [vid, steps] of visitors) {
-		if (filter && !filter.has(vid)) continue;
+		if (filter && !filter.has(vid)) {
+			continue;
+		}
 
 		steps.sort((a, b) => a.time - b.time);
 		let expected = 1;
@@ -218,7 +253,7 @@ const countStepCompletions = (
 					counts.set(expected, set);
 				}
 				set.add(vid);
-				expected++;
+				expected += 1;
 			}
 		}
 	}
@@ -232,9 +267,16 @@ export const processFunnelAnalytics = async (
 	params: Record<string, unknown>
 ): Promise<FunnelAnalytics> => {
 	const filterSQL = buildFilterSQL(filters, params);
-	const stepQueries = steps.map((s, i) => buildStepQuery(s, i, filterSQL, params));
+	const stepQueries = steps.map((s, i) =>
+		buildStepQuery(s, i, filterSQL, params)
+	);
 
-	const rows = await chQuery<{ step: number; name: string; vid: string; ts: number }>(
+	const rows = await chQuery<{
+		step: number;
+		name: string;
+		vid: string;
+		ts: number;
+	}>(
 		`WITH events AS (${stepQueries.join("\nUNION ALL\n")})
 		 SELECT DISTINCT step, name, vid, ts FROM events ORDER BY vid, ts`,
 		params
@@ -271,7 +313,7 @@ export const processFunnelAnalytics = async (
 				if (expected === totalSteps) {
 					completionTimes.push(s.time - firstTime);
 				}
-				expected++;
+				expected += 1;
 			}
 		}
 	}
@@ -298,10 +340,12 @@ export const processFunnelAnalytics = async (
 	});
 
 	const lastStep = stepsAnalytics.at(-1);
-	const biggestDropoff = stepsAnalytics.slice(1).reduce(
-		(max, s) => (s.dropoff_rate > max.dropoff_rate ? s : max),
-		stepsAnalytics[1] || stepsAnalytics[0]
-	);
+	const biggestDropoff = stepsAnalytics
+		.slice(1)
+		.reduce(
+			(max, s) => (s.dropoff_rate > max.dropoff_rate ? s : max),
+			stepsAnalytics[1] || stepsAnalytics[0]
+		);
 
 	return {
 		overall_conversion_rate: pct(lastStep?.users || 0, totalUsers),
@@ -341,16 +385,18 @@ export const processGoalAnalytics = async (
 		avg_completion_time_formatted: "—",
 		biggest_dropoff_step: 1,
 		biggest_dropoff_rate: 0,
-		steps_analytics: [{
-			step_number: 1,
-			step_name: step.name,
-			users: completions,
-			total_users: totalWebsiteUsers,
-			conversion_rate: pct(completions, totalWebsiteUsers),
-			dropoffs: 0,
-			dropoff_rate: 0,
-			avg_time_to_complete: 0,
-		}],
+		steps_analytics: [
+			{
+				step_number: 1,
+				step_name: step.name,
+				users: completions,
+				total_users: totalWebsiteUsers,
+				conversion_rate: pct(completions, totalWebsiteUsers),
+				dropoffs: 0,
+				dropoff_rate: 0,
+				avg_time_to_complete: 0,
+			},
+		],
 	};
 };
 
@@ -361,9 +407,16 @@ export const processFunnelAnalyticsByReferrer = async (
 	params: Record<string, unknown>
 ): Promise<{ referrer_analytics: ReferrerAnalytics[] }> => {
 	const filterSQL = buildFilterSQL(filters, params);
-	const stepQueries = steps.map((s, i) => buildStepQuery(s, i, filterSQL, params, true));
+	const stepQueries = steps.map((s, i) =>
+		buildStepQuery(s, i, filterSQL, params, true)
+	);
 
-	const rows = await chQuery<{ step: number; vid: string; ts: number; ref: string }>(
+	const rows = await chQuery<{
+		step: number;
+		vid: string;
+		ts: number;
+		ref: string;
+	}>(
 		`WITH events AS (${stepQueries.join("\nUNION ALL\n")})
 		 SELECT DISTINCT step, vid, ts, ref FROM events ORDER BY vid, ts`,
 		params
@@ -373,10 +426,15 @@ export const processFunnelAnalyticsByReferrer = async (
 	const totalSteps = steps.length;
 
 	// Group visitors by referrer
-	const groups = new Map<string, { parsed: ReturnType<typeof parseReferrer>; vids: Set<string> }>();
+	const groups = new Map<
+		string,
+		{ parsed: ReturnType<typeof parseReferrer>; vids: Set<string> }
+	>();
 
 	for (const [vid, stepList] of visitors) {
-		if (stepList.length === 0) continue;
+		if (stepList.length === 0) {
+			continue;
+		}
 
 		const ref = stepList[0].referrer || "Direct";
 		const parsed = parseReferrer(ref);
@@ -399,7 +457,9 @@ export const processFunnelAnalyticsByReferrer = async (
 		const completed = counts.get(totalSteps)?.size || 0;
 		const rate = pct(completed, total);
 
-		if (total <= 1) continue;
+		if (total <= 1) {
+			continue;
+		}
 
 		analytics.push({
 			referrer: key,

@@ -97,6 +97,14 @@ function normalizeReferrerValue(value: string, forLikeSearch = false): string {
 		: value;
 }
 
+/**
+ * Escapes special characters in LIKE patterns for ClickHouse
+ * Escapes backslashes first (they're used for escaping), then escapes LIKE special characters
+ */
+function escapeLikePattern(value: string): string {
+	return value.replace(/\\/g, "\\\\").replace(/[%_]/g, "\\$&");
+}
+
 function validateNoSqlInjection(field: string, context: string): void {
 	const upperField = field.toUpperCase();
 	for (const keyword of DANGEROUS_SQL_KEYWORDS) {
@@ -152,18 +160,20 @@ function buildGenericFilter(
 	// Contains / not_contains - wrap value with %
 	if (filter.op === "contains" || filter.op === "not_contains") {
 		const value = transform(String(filter.value));
+		const escaped = escapeLikePattern(value);
 		return {
 			clause: `${fieldExpr} ${operator} {${key}:String}`,
-			params: { [key]: `%${value}%` },
+			params: { [key]: `%${escaped}%` },
 		};
 	}
 
 	// Starts with - append % to value
 	if (filter.op === "starts_with") {
 		const value = transform(String(filter.value));
+		const escaped = escapeLikePattern(value);
 		return {
 			clause: `${fieldExpr} ${operator} {${key}:String}`,
-			params: { [key]: `${value}%` },
+			params: { [key]: `${escaped}%` },
 		};
 	}
 

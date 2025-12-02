@@ -88,6 +88,8 @@ async function getBackupMetadata(backupName: string): Promise<{
     num_files: number;
 } | null> {
     try {
+        // Escape LIKE special characters: backslashes first, then % and _
+        const escaped = backupName.replace(/\\/g, "\\\\").replace(/[%_]/g, "\\$&");
         const result = await clickHouseOG.query({
             query: `
                 SELECT 
@@ -95,11 +97,14 @@ async function getBackupMetadata(backupName: string): Promise<{
                     compressed_size as compressed_size_bytes,
                     num_files
                 FROM system.backups
-                WHERE name LIKE '%${backupName}%'
+                WHERE name LIKE {pattern:String}
                 AND status = 'BACKUP_CREATED'
                 ORDER BY start_time DESC
                 LIMIT 1
             `,
+            query_params: {
+                pattern: `%${escaped}%`,
+            },
         });
 
         const data = await result.json<{
