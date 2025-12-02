@@ -153,15 +153,18 @@ export function ApiKeyCreateDialog({
 	};
 
 	const onSubmit = form.handleSubmit((values) => {
+		const resources: Record<string, ApiScope[]> = {};
+		for (const entry of websiteAccess) {
+			if (entry.resourceId) {
+				resources[entry.resourceId] = entry.scopes;
+			}
+		}
+
 		mutation.mutate({
 			name: values.name,
 			organizationId,
-			globalScopes,
-			access: websiteAccess.map((e) => ({
-				resourceType: e.resourceType,
-				resourceId: e.resourceId ?? undefined,
-				scopes: e.scopes,
-			})),
+			scopes: globalScopes,
+			resources: Object.keys(resources).length > 0 ? resources : undefined,
 		});
 	});
 
