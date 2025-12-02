@@ -7,6 +7,7 @@ import {
 	GithubLogoIcon,
 	GoogleLogoIcon,
 	KeyIcon,
+	LinkBreakIcon,
 	LinkIcon,
 	ShieldCheckIcon,
 } from "@phosphor-icons/react";
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DeleteDialog } from "@/components/ui/delete-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -44,13 +46,10 @@ type SocialProvider = "google" | "github";
 // Constants
 const SOCIAL_PROVIDERS: SocialProvider[] = ["google", "github"];
 
-const PROVIDER_CONFIG: Record<
-	string,
-	{ icon: Icon; name: string; color: string }
-> = {
-	google: { icon: GoogleLogoIcon, name: "Google", color: "text-red-500" },
-	github: { icon: GithubLogoIcon, name: "GitHub", color: "text-foreground" },
-	credential: { icon: KeyIcon, name: "Password", color: "text-amber-500" },
+const PROVIDER_CONFIG: Record<string, { icon: Icon; name: string }> = {
+	google: { icon: GoogleLogoIcon, name: "Google" },
+	github: { icon: GithubLogoIcon, name: "GitHub" },
+	credential: { icon: KeyIcon, name: "Password" },
 };
 
 // Helpers
@@ -180,6 +179,9 @@ export default function AccountSettingsPage() {
 	const [imageUrl, setImageUrl] = useState("");
 	const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 	const [showTwoFactorDialog, setShowTwoFactorDialog] = useState(false);
+	const [unlinkProvider, setUnlinkProvider] = useState<SocialProvider | null>(
+		null
+	);
 
 	// Initialize form when session loads
 	useEffect(() => {
@@ -443,34 +445,29 @@ export default function AccountSettingsPage() {
 													key={provider}
 												>
 													<div className="flex items-center gap-3">
-														<ProviderIcon
-															className={`size-5 ${config.color}`}
-															weight="duotone"
-														/>
+														<ProviderIcon className="size-5" weight="duotone" />
 														<span className="font-medium text-sm">
 															{config.name}
 														</span>
 													</div>
 													{connectedAccount ? (
-														<Button
-															disabled={isOnlyAccount || unlinkAccount.isPending}
-															onClick={() =>
-																unlinkAccount.mutate(connectedAccount.providerId)
-															}
-															size="sm"
-															title={
-																isOnlyAccount
-																	? "Cannot unlink your only login method"
-																	: ""
-															}
-															variant="ghost"
-														>
-															{unlinkAccount.isPending ? (
-																<CircleNotchIcon className="size-4 animate-spin" />
-															) : (
-																<Badge variant="green">Connected</Badge>
-															)}
-														</Button>
+														<div className="flex items-center gap-2">
+															<Badge variant="green">Connected</Badge>
+															<Button
+																className="size-7"
+																disabled={isOnlyAccount}
+																onClick={() => setUnlinkProvider(provider)}
+																size="icon"
+																title={
+																	isOnlyAccount
+																		? "Cannot unlink your only login method"
+																		: `Unlink ${config.name}`
+																}
+																variant="ghost"
+															>
+																<LinkBreakIcon className="size-4" />
+															</Button>
+														</div>
 													) : (
 														<Button
 															disabled={linkSocial.isPending}
@@ -493,13 +490,10 @@ export default function AccountSettingsPage() {
 										{hasCredentialAccount && (
 											<div className="flex items-center justify-between py-2">
 												<div className="flex items-center gap-3">
-													<KeyIcon
-														className="size-5 text-amber-500"
-														weight="duotone"
-													/>
+													<KeyIcon className="size-5" weight="duotone" />
 													<span className="font-medium text-sm">Password</span>
 												</div>
-												<Badge variant="green">Active</Badge>
+												<Badge variant="green">Connected</Badge>
 											</div>
 										)}
 									</>
@@ -579,7 +573,7 @@ export default function AccountSettingsPage() {
 								const ProviderIcon = config?.icon ?? KeyIcon;
 								return (
 									<div className="flex items-center gap-2" key={account.id}>
-										<ProviderIcon className="size-4 text-muted-foreground" />
+										<ProviderIcon className="size-4" weight="duotone" />
 										<span className="flex-1 text-sm">
 											{config?.name ?? account.providerId}
 										</span>
@@ -616,6 +610,21 @@ export default function AccountSettingsPage() {
 					queryClient.invalidateQueries({ queryKey: ["user-accounts"] });
 				}}
 				open={showTwoFactorDialog}
+			/>
+			<DeleteDialog
+				confirmLabel="Unlink"
+				description={`Are you sure you want to unlink your ${unlinkProvider ? PROVIDER_CONFIG[unlinkProvider]?.name : ""} account? You can reconnect it later.`}
+				isDeleting={unlinkAccount.isPending}
+				isOpen={!!unlinkProvider}
+				onClose={() => setUnlinkProvider(null)}
+				onConfirm={() => {
+					if (unlinkProvider) {
+						unlinkAccount.mutate(unlinkProvider, {
+							onSuccess: () => setUnlinkProvider(null),
+						});
+					}
+				}}
+				title="Unlink Account"
 			/>
 		</div>
 	);
