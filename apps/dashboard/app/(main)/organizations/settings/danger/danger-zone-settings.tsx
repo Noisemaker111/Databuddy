@@ -189,7 +189,7 @@ export function DangerZoneSettings({
 				<div className="space-y-4">
 					<div className="space-y-2">
 						<label
-							className="text-foreground text-sm font-medium"
+							className="font-medium text-foreground text-sm"
 							htmlFor="confirm-org-name"
 						>
 							Type the organization name to confirm

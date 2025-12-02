@@ -1,7 +1,7 @@
 "use client";
 
 import type { UsageResponse } from "@databuddy/shared/types/billing";
-import { CalendarIcon, ChartBarIcon } from "@phosphor-icons/react";
+import { CalendarIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import {
 	Bar,
@@ -161,7 +161,9 @@ export function ConsumptionChart({
 			<div className="border-b px-4 py-3 sm:px-6 sm:py-4">
 				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex items-center gap-2">
-						<h2 className="font-medium text-foreground text-lg">Consumption Breakdown</h2>
+						<h2 className="font-medium text-foreground text-lg">
+							Consumption Breakdown
+						</h2>
 					</div>
 					<div className="flex flex-wrap items-center gap-2">
 						<DateRangePicker
@@ -183,7 +185,7 @@ export function ConsumptionChart({
 						/>
 						<div className="flex rounded border border-border">
 							<Button
-								className="rounded-r-none border-r border-border"
+								className="rounded-r-none border-border border-r"
 								onClick={() => setViewMode("cumulative")}
 								size="sm"
 								variant={viewMode === "cumulative" ? "default" : "ghost"}
@@ -262,7 +264,7 @@ export function ConsumptionChart({
 									if (active && payload && payload.length) {
 										return (
 											<div className="min-w-[200px] rounded border border-border bg-popover p-3 shadow-lg">
-												<div className="mb-2 flex items-center gap-2 border-b border-border pb-2">
+												<div className="mb-2 flex items-center gap-2 border-border border-b pb-2">
 													<p className="font-semibold text-foreground text-sm">
 														{label}
 													</p>
@@ -303,7 +305,7 @@ export function ConsumptionChart({
 																		</span>
 																	</div>
 																	<div className="text-right">
-																		<div className="font-semibold tabular-nums text-foreground text-sm">
+																		<div className="font-semibold text-foreground text-sm tabular-nums">
 																			{eventCount.toLocaleString()}
 																		</div>
 																		{overageCost > 0 && (

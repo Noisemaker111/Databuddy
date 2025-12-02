@@ -16,9 +16,9 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { orpc } from "@/lib/orpc";
-import { DeleteDialog } from "../ui/delete-dialog";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { DeleteDialog } from "../ui/delete-dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import {
@@ -380,13 +380,13 @@ export function ApiKeyDetailDialog({
 
 			{/* Delete Confirmation */}
 			<DeleteDialog
+				confirmLabel="Delete"
+				description="This action cannot be undone. Any applications using this key will immediately lose access."
 				isDeleting={deleteMutation.isPending}
 				isOpen={showDeleteConfirm}
 				onClose={() => setShowDeleteConfirm(false)}
 				onConfirm={() => deleteMutation.mutate({ id: apiKey.id })}
 				title="Delete API Key?"
-				description="This action cannot be undone. Any applications using this key will immediately lose access."
-				confirmLabel="Delete"
 			/>
 		</>
 	);

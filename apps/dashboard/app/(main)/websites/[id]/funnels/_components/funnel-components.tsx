@@ -20,7 +20,9 @@ export const AutocompleteInput = memo(
 		inputClassName?: string;
 	}) => {
 		const [isOpen, setIsOpen] = useState(false);
-		const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+		const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>(
+			[]
+		);
 		const containerRef = useRef<HTMLDivElement>(null);
 
 		useEffect(() => {
@@ -35,7 +37,8 @@ export const AutocompleteInput = memo(
 
 			if (isOpen) {
 				document.addEventListener("mousedown", handleClickOutside);
-				return () => document.removeEventListener("mousedown", handleClickOutside);
+				return () =>
+					document.removeEventListener("mousedown", handleClickOutside);
 			}
 		}, [isOpen]);
 
@@ -76,24 +79,24 @@ export const AutocompleteInput = memo(
 			<div className={`relative ${className || ""}`} ref={containerRef}>
 				<Input
 					className={inputClassName}
-					placeholder={placeholder}
-					value={value || ""}
 					onChange={(e) => handleInputChange(e.target.value)}
 					onFocus={handleFocus}
+					placeholder={placeholder}
+					value={value || ""}
 				/>
 				{isOpen && filteredSuggestions.length > 0 && (
 					<div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded border bg-popover shadow-lg">
 						{filteredSuggestions.map((suggestion) => (
 							<button
-								key={suggestion}
-								type="button"
 								className="w-full cursor-pointer border-b px-3 py-2 text-left text-sm last:border-b-0 hover:bg-accent hover:text-accent-foreground"
+								key={suggestion}
 								onClick={() => handleSelect(suggestion)}
 								onKeyDown={(e) => {
 									if (e.key === "Enter" || e.key === " ") {
 										handleSelect(suggestion);
 									}
 								}}
+								type="button"
 							>
 								{suggestion}
 							</button>

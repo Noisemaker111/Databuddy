@@ -31,7 +31,11 @@ interface EventSource {
 }
 
 const EVENT_SOURCES: EventSource[] = [
-	{ table: "analytics.events", dateColumn: "time", category: EVENT_CATEGORIES.EVENT },
+	{
+		table: "analytics.events",
+		dateColumn: "time",
+		category: EVENT_CATEGORIES.EVENT,
+	},
 	{
 		table: "analytics.error_spans",
 		dateColumn: "timestamp",
@@ -62,8 +66,7 @@ const getDefaultDateRange = () => {
 	return { startDate, endDate };
 };
 
-const buildEventSourceQuery = (source: EventSource): string => {
-	return `
+const buildEventSourceQuery = (source: EventSource): string => `
 		SELECT 
 			toDate(${source.dateColumn}) as date,
 			'${source.category}' as event_category
@@ -71,10 +74,11 @@ const buildEventSourceQuery = (source: EventSource): string => {
 		WHERE client_id IN {websiteIds:Array(String)}
 			AND ${source.dateColumn} >= parseDateTimeBestEffort({startDate:String})
 			AND ${source.dateColumn} <= parseDateTimeBestEffort({endDate:String})`;
-};
 
 const getDailyUsageByTypeQuery = (): string => {
-	const eventQueries = EVENT_SOURCES.map(buildEventSourceQuery).join("\n\t\tUNION ALL");
+	const eventQueries = EVENT_SOURCES.map(buildEventSourceQuery).join(
+		"\n\t\tUNION ALL"
+	);
 
 	return `
 	WITH all_events AS (${eventQueries}
@@ -112,8 +116,7 @@ const aggregateUsageData = (
 		const currentDaily = dailyUsageMap.get(row.date) || 0;
 		dailyUsageMap.set(row.date, currentDaily + row.event_count);
 
-		const currentTypeTotal =
-			eventTypeBreakdownMap.get(row.event_category) || 0;
+		const currentTypeTotal = eventTypeBreakdownMap.get(row.event_category) || 0;
 		eventTypeBreakdownMap.set(
 			row.event_category,
 			currentTypeTotal + row.event_count
@@ -157,7 +160,6 @@ const checkOrganizationPermission = async (
 		});
 	}
 };
-
 
 export const billingRouter = {
 	getUsage: protectedProcedure

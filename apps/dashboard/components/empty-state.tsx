@@ -71,9 +71,9 @@ export const EmptyState = memo(function EmptyState({
 		if (!icon || typeof icon !== "object" || !("type" in icon)) {
 			return null;
 		}
-		
+
 		const iconProps = icon.props || {};
-		
+
 		if (variant === "simple" || variant === "minimal" || variant === "error") {
 			return (
 				<div

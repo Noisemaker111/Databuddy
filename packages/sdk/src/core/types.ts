@@ -188,7 +188,7 @@ export type DatabuddyConfig = {
 
 	/** Array of glob patterns to mask sensitive paths (e.g., ['/users/*']) */
 	maskPatterns?: string[];
-}
+};
 
 /**
  * Base event properties that can be attached to any event
@@ -220,7 +220,7 @@ export type BaseEventProperties = {
 	utm_campaign?: string;
 	utm_term?: string;
 	utm_content?: string;
-}
+};
 
 /**
  * Custom event properties that can be attached to any event
@@ -298,7 +298,7 @@ export type EventTypeMap = {
 
 	// Custom events (catch-all)
 	[eventName: string]: EventProperties;
-}
+};
 
 /**
  * Available event names
@@ -310,8 +310,8 @@ export type EventName = keyof EventTypeMap;
  */
 export type PropertiesForEvent<T extends EventName> =
 	T extends keyof EventTypeMap
-	? EventTypeMap[T] & EventProperties
-	: EventProperties;
+		? EventTypeMap[T] & EventProperties
+		: EventProperties;
 
 /**
  * The global tracker instance available at `window.databuddy` or `window.db`.
@@ -370,7 +370,7 @@ export type DatabuddyTracker = {
 	 * Current tracker configuration options.
 	 */
 	options: DatabuddyConfig;
-}
+};
 
 /**
  * Global window interface extensions
@@ -421,7 +421,7 @@ export type DataAttributes = {
 	"data-track": string;
 	/** Additional data attributes (auto-converted from kebab-case to camelCase) */
 	[key: `data-${string}`]: string;
-}
+};
 
 /**
  * Utility types for creating typed event tracking functions
@@ -431,8 +431,6 @@ export type TrackFunction = <T extends EventName>(
 	properties?: PropertiesForEvent<T>
 ) => Promise<void>;
 
-export type ScreenViewFunction = (
-	properties?: Record<string, unknown>
-) => void;
+export type ScreenViewFunction = (properties?: Record<string, unknown>) => void;
 
 export type SetGlobalPropertiesFunction = (properties: EventProperties) => void;

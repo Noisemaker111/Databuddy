@@ -78,17 +78,17 @@ export function WebsiteAudienceTab({
 				limit: 100,
 				filters,
 			},
-		{
-			id: "device-data",
-			parameters: [
-				"browser_name",
-				"browser_versions",
-				"os_name",
-				"screen_resolution",
-			],
-			limit: 50,
-			filters,
-		},
+			{
+				id: "device-data",
+				parameters: [
+					"browser_name",
+					"browser_versions",
+					"os_name",
+					"screen_resolution",
+				],
+				limit: 50,
+				filters,
+			},
 		],
 		[filters]
 	);
@@ -415,16 +415,16 @@ export function WebsiteAudienceTab({
 				</CardHeader>
 
 				<CardContent className="overflow-hidden px-3 pb-2">
-				{isLoading ? (
-					<div className="animate-pulse space-y-3" style={{ minHeight: 400 }}>
-						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-							{Array.from({ length: 6 }).map((_, index) => (
-								<div
-									className="space-y-3 rounded bg-muted/20 p-4"
-									key={`skeleton-resolution-card-${index + 1}`}
-								>
-									<Skeleton className="h-4 w-24 rounded" />
-									<Skeleton className="h-32 w-full rounded" />
+					{isLoading ? (
+						<div className="animate-pulse space-y-3" style={{ minHeight: 400 }}>
+							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+								{Array.from({ length: 6 }).map((_, index) => (
+									<div
+										className="space-y-3 rounded bg-muted/20 p-4"
+										key={`skeleton-resolution-card-${index + 1}`}
+									>
+										<Skeleton className="h-4 w-24 rounded" />
+										<Skeleton className="h-32 w-full rounded" />
 										<div className="space-y-2">
 											<div className="flex justify-between">
 												<Skeleton className="h-3 w-16 rounded-sm" />
@@ -487,10 +487,10 @@ export function WebsiteAudienceTab({
 										const aspectRatio = isValid ? width / height : 16 / 9;
 
 										return (
-								<div
-									className="flex flex-col rounded border bg-accent p-4"
-									key={`resolution-${resolution}-${item.visitors}`}
-								>	
+											<div
+												className="flex flex-col rounded border bg-accent p-4"
+												key={`resolution-${resolution}-${item.visitors}`}
+											>
 												<div className="mb-3 flex items-center justify-between">
 													<div className="flex items-center gap-2">
 														{deviceIcon}
@@ -512,8 +512,8 @@ export function WebsiteAudienceTab({
 
 												{/* Enhanced Screen visualization with perspective */}
 												<div className="perspective relative mb-4 flex h-32 justify-center">
-												<div
-													className="relative flex transform-gpu items-center justify-center rounded border-2 border-primary/20 bg-linear-to-br from-primary/8 to-primary/12 shadow-lg transition-all duration-300 hover:shadow-xl"
+													<div
+														className="relative flex transform-gpu items-center justify-center rounded border-2 border-primary/20 bg-linear-to-br from-primary/8 to-primary/12 shadow-lg transition-all duration-300 hover:shadow-xl"
 														style={{
 															width: `${Math.min(200, 100 * Math.sqrt(aspectRatio))}px`,
 															height: `${Math.min(160, 100 / Math.sqrt(aspectRatio))}px`,

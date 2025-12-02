@@ -11,7 +11,7 @@ type TwoFactorResponse = {
 	error?: {
 		message: string;
 	};
-}
+};
 
 /**
  * Helper function to sign in with email and password with simplified redirect handling

@@ -18,14 +18,17 @@ const isExtensionSource = (candidate?: string | null) => {
 	return extensionSchemes.some((scheme) => normalized.includes(scheme));
 };
 
-const isScriptErrorMessage = (message?: string) => message?.trim().toLowerCase() === "script error.";
+const isScriptErrorMessage = (message?: string) =>
+	message?.trim().toLowerCase() === "script error.";
 
 export function initErrorTracking(tracker: BaseTracker) {
 	if (tracker.isServer()) {
 		return;
 	}
 
-	const trackError = (error: Omit<ErrorSpan, "timestamp" | "path" | "anonymousId" | "sessionId">) => {
+	const trackError = (
+		error: Omit<ErrorSpan, "timestamp" | "path" | "anonymousId" | "sessionId">
+	) => {
 		if (tracker.options.disabled || tracker.isLikelyBot || tracker.isServer()) {
 			return;
 		}
@@ -47,7 +50,10 @@ export function initErrorTracking(tracker: BaseTracker) {
 			return;
 		}
 
-		if (isExtensionSource(event.filename) || isExtensionSource(event.error?.stack)) {
+		if (
+			isExtensionSource(event.filename) ||
+			isExtensionSource(event.error?.stack)
+		) {
 			return;
 		}
 
@@ -81,7 +87,7 @@ export function initErrorTracking(tracker: BaseTracker) {
 		if (typeof reason === "object" && reason !== null) {
 			try {
 				message = JSON.stringify(reason);
-			} catch { }
+			} catch {}
 		}
 
 		if (isExtensionSource(reason?.stack)) {

@@ -4,8 +4,7 @@ import {
 	PhoneIcon,
 	TableIcon,
 } from "@phosphor-icons/react";
-import { CountryFlag } from "@/components/icon";
-import { BrowserIcon, OSIcon } from "@/components/icon";
+import { BrowserIcon, CountryFlag, OSIcon } from "@/components/icon";
 import { Badge } from "@/components/ui/badge";
 import { getErrorTypeIcon } from "./error-icons";
 import { formatDateTime, getErrorCategory, getSeverityColor } from "./utils";

@@ -189,7 +189,6 @@ export function WebVitalsChart({
 						</div>
 					</div>
 				)}
-
 			</div>
 
 			{/* Web Vitals Data Table */}

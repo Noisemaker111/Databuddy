@@ -18,7 +18,12 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { BrowserIcon, CountryFlag, OSIcon } from "@/components/icon";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +35,11 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getDeviceIcon, getErrorTypeIcon } from "./error-icons";
 import type { RecentError } from "./types";
 import {
@@ -47,7 +56,14 @@ interface ErrorDetailModalProps {
 	onClose: () => void;
 }
 
-type CopiedSection = "message" | "stack" | "url" | "session" | "user" | "all" | null;
+type CopiedSection =
+	| "message"
+	| "stack"
+	| "url"
+	| "session"
+	| "user"
+	| "all"
+	| null;
 
 const CopyButton = ({
 	text,
@@ -81,7 +97,11 @@ const CopyButton = ({
 	);
 };
 
-const SeverityIndicator = ({ severity }: { severity: "high" | "medium" | "low" }) => {
+const SeverityIndicator = ({
+	severity,
+}: {
+	severity: "high" | "medium" | "low";
+}) => {
 	const config = {
 		high: { color: "bg-primary" },
 		medium: { color: "bg-chart-2" },
@@ -91,7 +111,9 @@ const SeverityIndicator = ({ severity }: { severity: "high" | "medium" | "low" }
 	return (
 		<div className="flex items-center gap-2">
 			<span className={`h-2.5 w-2.5 rounded-full ${config[severity].color}`} />
-			<span className="text-muted-foreground text-xs capitalize">{severity} severity</span>
+			<span className="text-muted-foreground text-xs capitalize">
+				{severity} severity
+			</span>
 		</div>
 	);
 };
@@ -146,70 +168,87 @@ Context:
 
 	const quickActions: QuickAction[] = [];
 
-if (error.path) {
-	quickActions.push({
-		key: "copy-url",
-		description: "Copy full page URL",
-		node: (
-			<Button onClick={() => copyToClipboard(error.path, "url")} size="sm" variant="outline">
-				<LinkIcon className="h-3.5 w-3.5" weight="duotone" />
-				Copy URL
-			</Button>
-		),
-	});
-}
+	if (error.path) {
+		quickActions.push({
+			key: "copy-url",
+			description: "Copy full page URL",
+			node: (
+				<Button
+					onClick={() => copyToClipboard(error.path, "url")}
+					size="sm"
+					variant="outline"
+				>
+					<LinkIcon className="h-3.5 w-3.5" weight="duotone" />
+					Copy URL
+				</Button>
+			),
+		});
+	}
 
 	const isAbsoluteUrl =
 		typeof error.path === "string" &&
 		(error.path.startsWith("http://") || error.path.startsWith("https://"));
 
-if (isAbsoluteUrl) {
-	quickActions.push({
-		key: "open-page",
-		description: "Open this page in a new tab",
-		node: (
-			<Button asChild size="sm" variant="ghost">
-				<a href={error.path} rel="noopener noreferrer" target="_blank">
-					<ArrowSquareOutIcon className="h-3.5 w-3.5" weight="duotone" />
-					Open Page
-				</a>
-			</Button>
-		),
-	});
-}
+	if (isAbsoluteUrl) {
+		quickActions.push({
+			key: "open-page",
+			description: "Open this page in a new tab",
+			node: (
+				<Button asChild size="sm" variant="ghost">
+					<a href={error.path} rel="noopener noreferrer" target="_blank">
+						<ArrowSquareOutIcon className="h-3.5 w-3.5" weight="duotone" />
+						Open Page
+					</a>
+				</Button>
+			),
+		});
+	}
 
-if (error.session_id) {
-	quickActions.push({
-		key: "copy-session",
-		description: "Copy the session identifier",
-		node: (
-			<Button onClick={() => copyToClipboard(error.session_id ?? "", "session")} size="sm" variant="ghost">
-				<HashIcon className="h-3.5 w-3.5" weight="duotone" />
-				Copy Session
-			</Button>
-		),
-	});
-}
+	if (error.session_id) {
+		quickActions.push({
+			key: "copy-session",
+			description: "Copy the session identifier",
+			node: (
+				<Button
+					onClick={() => copyToClipboard(error.session_id ?? "", "session")}
+					size="sm"
+					variant="ghost"
+				>
+					<HashIcon className="h-3.5 w-3.5" weight="duotone" />
+					Copy Session
+				</Button>
+			),
+		});
+	}
 
-if (error.stack) {
-	quickActions.push({
-		key: "copy-stack",
-		description: "Copy the stack trace",
-		node: (
-			<Button onClick={() => copyToClipboard(error.stack ?? "", "stack")} size="sm" variant="ghost">
-				<StackIcon className="h-3.5 w-3.5" weight="duotone" />
-				Copy Stack
-			</Button>
-		),
-	});
-}
+	if (error.stack) {
+		quickActions.push({
+			key: "copy-stack",
+			description: "Copy the stack trace",
+			node: (
+				<Button
+					onClick={() => copyToClipboard(error.stack ?? "", "stack")}
+					size="sm"
+					variant="ghost"
+				>
+					<StackIcon className="h-3.5 w-3.5" weight="duotone" />
+					Copy Stack
+				</Button>
+			),
+		});
+	}
 
 	const contextRows = [
 		{
 			key: "url",
 			label: "Page URL",
 			value: error.path || "—",
-			icon: <LinkIcon className="h-4 w-4 shrink-0 text-muted-foreground" weight="duotone" />,
+			icon: (
+				<LinkIcon
+					className="h-4 w-4 shrink-0 text-muted-foreground"
+					weight="duotone"
+				/>
+			),
 			copySection: error.path ? "url" : null,
 			copyValue: error.path,
 		},
@@ -217,7 +256,12 @@ if (error.stack) {
 			key: "session",
 			label: "Session ID",
 			value: error.session_id || "—",
-			icon: <HashIcon className="h-4 w-4 shrink-0 text-muted-foreground" weight="duotone" />,
+			icon: (
+				<HashIcon
+					className="h-4 w-4 shrink-0 text-muted-foreground"
+					weight="duotone"
+				/>
+			),
 			copySection: error.session_id ? "session" : null,
 			copyValue: error.session_id,
 		},
@@ -225,7 +269,12 @@ if (error.stack) {
 			key: "user",
 			label: "User ID",
 			value: error.anonymous_id || "—",
-			icon: <UserIcon className="h-4 w-4 shrink-0 text-muted-foreground" weight="duotone" />,
+			icon: (
+				<UserIcon
+					className="h-4 w-4 shrink-0 text-muted-foreground"
+					weight="duotone"
+				/>
+			),
 			copySection: error.anonymous_id ? "user" : null,
 			copyValue: error.anonymous_id,
 		},
@@ -236,13 +285,23 @@ if (error.stack) {
 			key: "event",
 			label: "Event ID",
 			value: error.event_id,
-			icon: <StackIcon className="h-4 w-4 shrink-0 text-muted-foreground" weight="duotone" />,
+			icon: (
+				<StackIcon
+					className="h-4 w-4 shrink-0 text-muted-foreground"
+					weight="duotone"
+				/>
+			),
 		},
 		{
 			key: "client",
 			label: "Client ID",
 			value: error.client_id,
-			icon: <UserIcon className="h-4 w-4 shrink-0 text-muted-foreground" weight="duotone" />,
+			icon: (
+				<UserIcon
+					className="h-4 w-4 shrink-0 text-muted-foreground"
+					weight="duotone"
+				/>
+			),
 		},
 		{
 			key: "ip",
@@ -254,7 +313,12 @@ if (error.stack) {
 			key: "agent",
 			label: "User Agent",
 			value: error.user_agent,
-			icon: <CodeIcon className="h-4 w-4 shrink-0 text-muted-foreground" weight="duotone" />,
+			icon: (
+				<CodeIcon
+					className="h-4 w-4 shrink-0 text-muted-foreground"
+					weight="duotone"
+				/>
+			),
 		},
 	].filter((row) => Boolean(row.value));
 
@@ -275,7 +339,9 @@ if (error.stack) {
 								<ClockIcon className="h-3.5 w-3.5" weight="duotone" />
 								<span>{relativeTimeStr}</span>
 								<span className="text-muted-foreground/50">•</span>
-								<span className="font-mono">{formatDateTimeSeconds(error.timestamp)}</span>
+								<span className="font-mono">
+									{formatDateTimeSeconds(error.timestamp)}
+								</span>
 							</SheetDescription>
 						</div>
 					</div>
@@ -284,14 +350,16 @@ if (error.stack) {
 				<SheetBody className="space-y-6">
 					{quickActions.length > 0 && (
 						<section className="space-y-3">
-							<span className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
+							<span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
 								Quick actions
 							</span>
 							<div className="flex flex-wrap gap-2">
 								{quickActions.map((action) => (
 									<Tooltip key={action.key}>
 										<TooltipTrigger asChild>{action.node}</TooltipTrigger>
-										<TooltipContent className="text-xs">{action.description}</TooltipContent>
+										<TooltipContent className="text-xs">
+											{action.description}
+										</TooltipContent>
 									</Tooltip>
 								))}
 							</div>
@@ -325,13 +393,16 @@ if (error.stack) {
 								<AccordionItem value="stack">
 									<AccordionTrigger className="px-3">
 										<div className="flex items-center gap-2">
-											<StackIcon className="h-4 w-4 text-chart-2" weight="duotone" />
+											<StackIcon
+												className="h-4 w-4 text-chart-2"
+												weight="duotone"
+											/>
 											<span className="font-medium text-sm">Stack Trace</span>
 										</div>
 									</AccordionTrigger>
 									<AccordionContent>
 										<div className="rounded border bg-card p-4">
-											<pre className="max-h-56 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-xs leading-relaxed text-muted-foreground">
+											<pre className="wrap-break-word max-h-56 overflow-auto whitespace-pre-wrap font-mono text-muted-foreground text-xs leading-relaxed">
 												{error.stack}
 											</pre>
 										</div>
@@ -358,7 +429,9 @@ if (error.stack) {
 							</div>
 							<div className="rounded border bg-card p-3">
 								<div className="flex items-center gap-1 font-mono text-sm">
-									<span className="text-muted-foreground">{error.filename || "Unknown file"}</span>
+									<span className="text-muted-foreground">
+										{error.filename || "Unknown file"}
+									</span>
 									{error.lineno && (
 										<>
 											<span className="text-muted-foreground/50">:</span>
@@ -387,8 +460,13 @@ if (error.stack) {
 									<div className="flex min-w-0 items-center gap-3">
 										{row.icon}
 										<div className="min-w-0">
-											<span className="text-muted-foreground text-xs">{row.label}</span>
-											<p className="truncate font-mono text-sm" title={row.value}>
+											<span className="text-muted-foreground text-xs">
+												{row.label}
+											</span>
+											<p
+												className="truncate font-mono text-sm"
+												title={row.value}
+											>
 												{row.value}
 											</p>
 										</div>
@@ -424,7 +502,9 @@ if (error.stack) {
 								</div>
 							</div>
 							<div className="flex flex-col gap-1.5 rounded border bg-card p-3">
-								<span className="text-muted-foreground text-xs">Operating System</span>
+								<span className="text-muted-foreground text-xs">
+									Operating System
+								</span>
 								<div className="flex items-center gap-2">
 									{error.os_name ? (
 										<>
@@ -442,7 +522,9 @@ if (error.stack) {
 									{error.device_type ? (
 										<>
 											{getDeviceIcon(error.device_type)}
-											<span className="text-sm capitalize">{error.device_type}</span>
+											<span className="text-sm capitalize">
+												{error.device_type}
+											</span>
 										</>
 									) : (
 										<span className="text-muted-foreground text-sm">—</span>
@@ -460,14 +542,18 @@ if (error.stack) {
 									) : (
 										<>
 											<GlobeIcon className="h-4 w-4 text-muted-foreground" />
-											<span className="text-muted-foreground text-sm">Unknown</span>
+											<span className="text-muted-foreground text-sm">
+												Unknown
+											</span>
 										</>
 									)}
 								</div>
 							</div>
 						</div>
 						<div className="flex items-center justify-between rounded border bg-card p-3">
-							<span className="text-muted-foreground text-xs">Severity Level</span>
+							<span className="text-muted-foreground text-xs">
+								Severity Level
+							</span>
 							<SeverityIndicator severity={severity} />
 						</div>
 					</section>
@@ -483,8 +569,12 @@ if (error.stack) {
 									>
 										{row.icon}
 										<div className="flex-1">
-											<span className="text-muted-foreground text-xs">{row.label}</span>
-											<p className="wrap-break-word font-mono text-sm text-foreground/90">{row.value}</p>
+											<span className="text-muted-foreground text-xs">
+												{row.label}
+											</span>
+											<p className="wrap-break-word font-mono text-foreground/90 text-sm">
+												{row.value}
+											</p>
 										</div>
 									</div>
 								))}
@@ -514,4 +604,3 @@ if (error.stack) {
 		</Sheet>
 	);
 };
-

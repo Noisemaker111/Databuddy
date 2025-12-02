@@ -5,8 +5,7 @@ import {
 	getCountryName,
 } from "@databuddy/shared/country-codes";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CountryFlag } from "@/components/icon";
-import { BrowserIcon, OSIcon } from "@/components/icon";
+import { BrowserIcon, CountryFlag, OSIcon } from "@/components/icon";
 import { DataTable } from "@/components/table/data-table";
 import { useEnhancedPerformanceData } from "@/hooks/use-dynamic-query";
 import { calculatePerformanceSummary } from "@/lib/performance-utils";

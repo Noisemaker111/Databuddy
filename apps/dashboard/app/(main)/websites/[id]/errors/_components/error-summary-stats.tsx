@@ -53,13 +53,13 @@ function ErrorStatCard({
 					<Icon className={cn("size-4", styles.iconColor)} weight="duotone" />
 				</div>
 				<div className="min-w-0 flex-1">
-					<p className="truncate font-semibold text-foreground text-base tabular-nums leading-tight">
+					<p className="truncate font-semibold text-base text-foreground tabular-nums leading-tight">
 						{value}
 					</p>
 					<p className="truncate text-muted-foreground text-xs">{title}</p>
 				</div>
 			</div>
-			<div className="border-t border-border/50 bg-accent/30 px-3 py-1.5">
+			<div className="border-border/50 border-t bg-accent/30 px-3 py-1.5">
 				<p className="text-[10px] text-muted-foreground">{description}</p>
 			</div>
 		</div>

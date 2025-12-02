@@ -166,7 +166,7 @@ function ErrorsLoadingSkeleton() {
 										<Skeleton className="h-3 w-16" />
 									</div>
 								</div>
-								<div className="border-t border-border/50 bg-accent/30 px-3 py-1.5">
+								<div className="border-border/50 border-t bg-accent/30 px-3 py-1.5">
 									<Skeleton className="h-2.5 w-24" />
 								</div>
 							</div>
@@ -175,7 +175,7 @@ function ErrorsLoadingSkeleton() {
 
 					{/* Top error card skeleton */}
 					<div className="overflow-hidden rounded border border-border bg-card">
-						<div className="flex items-center gap-3 border-b border-border/50 p-4">
+						<div className="flex items-center gap-3 border-border/50 border-b p-4">
 							<Skeleton className="size-8 rounded" />
 							<div className="space-y-1.5">
 								<Skeleton className="h-4 w-32" />
@@ -188,7 +188,7 @@ function ErrorsLoadingSkeleton() {
 							<Skeleton className="h-4 w-3/4" />
 							<Skeleton className="h-10 w-full rounded" />
 						</div>
-						<div className="grid grid-cols-2 gap-2 border-t border-border/50 bg-accent/20 p-3">
+						<div className="grid grid-cols-2 gap-2 border-border/50 border-t bg-accent/20 p-3">
 							<Skeleton className="h-14 rounded" />
 							<Skeleton className="h-14 rounded" />
 						</div>
@@ -198,7 +198,7 @@ function ErrorsLoadingSkeleton() {
 
 			{/* Recent errors table skeleton */}
 			<div className="overflow-hidden rounded border border-border bg-card">
-				<div className="border-b border-border/50 p-4">
+				<div className="border-border/50 border-b p-4">
 					<div className="space-y-1.5">
 						<Skeleton className="h-5 w-28" />
 						<Skeleton className="h-3 w-40" />
@@ -228,7 +228,7 @@ function ErrorsLoadingSkeleton() {
 
 			{/* Error data table skeleton */}
 			<div className="overflow-hidden rounded border border-border bg-card">
-				<div className="border-b border-border/50 p-4">
+				<div className="border-border/50 border-b p-4">
 					<div className="space-y-1.5">
 						<Skeleton className="h-5 w-24" />
 						<Skeleton className="h-3 w-32" />

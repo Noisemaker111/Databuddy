@@ -738,4 +738,3 @@ export const annotations = pgTable(
 			.onDelete("restrict"),
 	]
 );
-

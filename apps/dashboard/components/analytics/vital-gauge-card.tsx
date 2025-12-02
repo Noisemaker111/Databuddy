@@ -1,9 +1,6 @@
 "use client";
 
-import {
-	GaugeChart,
-	type GaugeRating,
-} from "@/components/charts/gauge-chart";
+import { GaugeChart, type GaugeRating } from "@/components/charts/gauge-chart";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -104,11 +101,12 @@ function getRating(value: number, config: VitalConfig): GaugeRating {
 	return "poor";
 }
 
-const RATING_LABELS: Record<GaugeRating, { label: string; className: string }> = {
-	good: { label: "Good", className: "text-emerald-500" },
-	"needs-improvement": { label: "Needs work", className: "text-amber-500" },
-	poor: { label: "Poor", className: "text-red-500" },
-};
+const RATING_LABELS: Record<GaugeRating, { label: string; className: string }> =
+	{
+		good: { label: "Good", className: "text-emerald-500" },
+		"needs-improvement": { label: "Needs work", className: "text-amber-500" },
+		poor: { label: "Poor", className: "text-red-500" },
+	};
 
 type VitalGaugeCardProps = {
 	metricName: keyof typeof VITAL_CONFIGS;
@@ -139,7 +137,9 @@ export function VitalGaugeCard({
 
 	if (isLoading) {
 		return (
-			<Card className={cn("gap-0 overflow-hidden border bg-card py-0", className)}>
+			<Card
+				className={cn("gap-0 overflow-hidden border bg-card py-0", className)}
+			>
 				<div className="dotted-bg flex items-center justify-center bg-accent py-3">
 					<Skeleton className="size-24 rounded-full" />
 				</div>
@@ -173,8 +173,6 @@ export function VitalGaugeCard({
 				className
 			)}
 			onClick={onToggleAction}
-			role={isClickable ? "button" : undefined}
-			tabIndex={isClickable ? 0 : undefined}
 			onKeyDown={
 				isClickable
 					? (e) => {
@@ -185,6 +183,8 @@ export function VitalGaugeCard({
 						}
 					: undefined
 			}
+			role={isClickable ? "button" : undefined}
+			tabIndex={isClickable ? 0 : undefined}
 		>
 			{/* Gauge Chart Area */}
 			<div className="dotted-bg flex items-center justify-center bg-accent py-3">

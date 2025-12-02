@@ -222,7 +222,7 @@ export type SimpleQueryConfig = {
 
 	/** Query metadata for documentation */
 	meta?: QueryBuilderMeta;
-}
+};
 
 export type QueryRequest = {
 	projectId: string;

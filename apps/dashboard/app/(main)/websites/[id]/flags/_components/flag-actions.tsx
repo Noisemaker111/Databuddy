@@ -9,8 +9,8 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { Button } from "@/components/ui/button";
+import { DeleteDialog } from "@/components/ui/delete-dialog";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -99,13 +99,13 @@ export function FlagActions({
 			</DropdownMenu>
 
 			<DeleteDialog
+				confirmLabel="Delete"
+				description={`This action cannot be undone. This will permanently delete the flag "${flag.key}".`}
 				isDeleting={isDeleting}
 				isOpen={isOpen}
 				onClose={() => setIsOpen(false)}
 				onConfirm={handleConfirmDelete}
 				title="Delete flag?"
-				description={`This action cannot be undone. This will permanently delete the flag "${flag.key}".`}
-				confirmLabel="Delete"
 			/>
 		</>
 	);

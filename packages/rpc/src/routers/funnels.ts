@@ -44,7 +44,7 @@ const getEffectiveStartDate = (
 	createdAt: Date | null,
 	ignoreHistoricData: boolean
 ): string => {
-	if (!ignoreHistoricData || !createdAt) return requestedStartDate;
+	if (!(ignoreHistoricData && createdAt)) return requestedStartDate;
 
 	const createdDate = new Date(createdAt).toISOString().split("T")[0];
 	return new Date(requestedStartDate) > new Date(createdDate)
@@ -199,10 +199,7 @@ export const funnelsRouter = {
 				.update(funnelDefinitions)
 				.set({ ...updates, updatedAt: new Date() })
 				.where(
-					and(
-						eq(funnelDefinitions.id, id),
-						isNull(funnelDefinitions.deletedAt)
-					)
+					and(eq(funnelDefinitions.id, id), isNull(funnelDefinitions.deletedAt))
 				)
 				.returning();
 

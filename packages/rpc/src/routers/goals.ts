@@ -1,4 +1,4 @@
-import { and, desc, eq, goals, inArray, isNull, sql } from "@databuddy/db";
+import { and, desc, eq, goals, inArray, isNull } from "@databuddy/db";
 import { createDrizzleCache, redis } from "@databuddy/redis";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
@@ -36,7 +36,7 @@ const getEffectiveStartDate = (
 	createdAt: Date | null,
 	ignoreHistoricData: boolean
 ): string => {
-	if (!ignoreHistoricData || !createdAt) return requestedStartDate;
+	if (!(ignoreHistoricData && createdAt)) return requestedStartDate;
 
 	const createdDate = new Date(createdAt).toISOString().split("T")[0];
 	return new Date(requestedStartDate) > new Date(createdDate)
@@ -328,7 +328,11 @@ export const goalsRouter = {
 
 					const filters = (goal.filters as Filter[]) || [];
 					const totalUsers = goal.ignoreHistoricData
-						? await getTotalWebsiteUsers(input.websiteId, effectiveStartDate, endDate)
+						? await getTotalWebsiteUsers(
+								input.websiteId,
+								effectiveStartDate,
+								endDate
+							)
 						: baseTotalUsers;
 
 					try {

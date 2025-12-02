@@ -10,8 +10,8 @@ import type { Layer, Map as LeafletMap } from "leaflet";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type Country, useCountries } from "@/lib/geo";
 import { CountryFlag } from "@/components/icon";
+import { type Country, useCountries } from "@/lib/geo";
 
 const MapContainer = dynamic(
 	() => import("react-leaflet").then((mod) => mod.MapContainer),
@@ -224,9 +224,10 @@ export function MapComponent({
 			if (isHovered && hasData) {
 				return {
 					...baseStyle,
-					filter: resolvedTheme === "dark"
-						? "drop-shadow(0 2px 4px oklch(0 0 0 / 0.3))"
-						: "drop-shadow(0 2px 4px oklch(0 0 0 / 0.1))",
+					filter:
+						resolvedTheme === "dark"
+							? "drop-shadow(0 2px 4px oklch(0 0 0 / 0.3))"
+							: "drop-shadow(0 2px 4px oklch(0 0 0 / 0.1))",
 					transform: "scale(1.02)",
 					transformOrigin: "center",
 				};
@@ -234,13 +235,7 @@ export function MapComponent({
 
 			return baseStyle;
 		},
-		[
-			colorScale,
-			resolvedTheme,
-			getBorderColor,
-			getStyleWeights,
-			getFeatureData,
-		]
+		[colorScale, resolvedTheme, getBorderColor, getStyleWeights, getFeatureData]
 	);
 
 	const handleEachFeature = useCallback(
@@ -455,7 +450,8 @@ export function MapComponent({
 				<div
 					className="h-2 rounded-full"
 					style={{
-						background: "linear-gradient(90deg, oklch(0.81 0.1 252 / 0.4) 0%, oklch(0.55 0.22 263 / 0.95) 100%)",
+						background:
+							"linear-gradient(90deg, oklch(0.81 0.1 252 / 0.4) 0%, oklch(0.55 0.22 263 / 0.95) 100%)",
 					}}
 				/>
 			</div>

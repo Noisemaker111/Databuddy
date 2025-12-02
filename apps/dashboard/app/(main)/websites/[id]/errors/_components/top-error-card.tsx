@@ -10,7 +10,7 @@ export const TopErrorCard = ({ topError }: TopErrorCardProps) => {
 	if (!topError) {
 		return (
 			<div className="flex h-full flex-col overflow-hidden rounded border border-border bg-card">
-				<div className="flex items-center gap-3 border-b border-border/50 p-4">
+				<div className="flex items-center gap-3 border-border/50 border-b p-4">
 					<div className="flex size-8 items-center justify-center rounded bg-accent">
 						<BugIcon
 							className="size-4 text-muted-foreground"
@@ -38,7 +38,7 @@ export const TopErrorCard = ({ topError }: TopErrorCardProps) => {
 	return (
 		<div className="flex h-full flex-col overflow-hidden rounded border border-border bg-card">
 			{/* Header */}
-			<div className="flex items-center gap-3 border-b border-border/50 p-4">
+			<div className="flex items-center gap-3 border-border/50 border-b p-4">
 				<div className="flex size-8 items-center justify-center rounded bg-destructive/10">
 					<BugIcon className="size-4 text-destructive" weight="duotone" />
 				</div>
@@ -73,7 +73,7 @@ export const TopErrorCard = ({ topError }: TopErrorCardProps) => {
 			</div>
 
 			{/* Stats Footer */}
-			<div className="grid grid-cols-2 gap-2 border-t border-border/50 bg-accent/20 p-3">
+			<div className="grid grid-cols-2 gap-2 border-border/50 border-t bg-accent/20 p-3">
 				<div className="flex items-center gap-2 rounded border border-destructive/10 bg-destructive/5 p-2">
 					<WarningCircleIcon
 						className="size-4 shrink-0 text-destructive"

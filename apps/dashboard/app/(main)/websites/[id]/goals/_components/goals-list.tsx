@@ -11,11 +11,15 @@ interface GoalsListProps {
 	onEditGoal: (goal: Goal) => void;
 	onDeleteGoal: (goalId: string) => void;
 	onCreateGoal: () => void;
-	goalAnalytics?: Record<string, {
-		total_users_entered: number;
-		total_users_completed: number;
-		overall_conversion_rate: number;
-	} | { error: string }>;
+	goalAnalytics?: Record<
+		string,
+		| {
+				total_users_entered: number;
+				total_users_completed: number;
+				overall_conversion_rate: number;
+		  }
+		| { error: string }
+	>;
 	analyticsLoading?: boolean;
 }
 
@@ -53,8 +57,9 @@ export function GoalsList({
 		<div>
 			{goals.map((goal) => {
 				const analytics = goalAnalytics[goal.id];
-				const validAnalytics = analytics && !("error" in analytics) ? analytics : null;
-				
+				const validAnalytics =
+					analytics && !("error" in analytics) ? analytics : null;
+
 				return (
 					<GoalItem
 						analytics={validAnalytics}

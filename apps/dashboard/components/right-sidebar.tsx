@@ -1,13 +1,12 @@
 import type { IconProps } from "@phosphor-icons/react";
 import { BookOpenIcon } from "@phosphor-icons/react";
+import type { VariantProps } from "class-variance-authority";
 import type { ComponentType } from "react";
-import { Badge } from "@/components/ui/badge";
+import { Badge, type badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tip } from "@/components/ui/tip";
 import { cn } from "@/lib/utils";
-import type { VariantProps } from "class-variance-authority";
-import { badgeVariants } from "@/components/ui/badge";
 
 type RightSidebarProps = {
 	children: React.ReactNode;
@@ -38,7 +37,13 @@ type SectionProps = {
 	};
 };
 
-function Section({ children, className, title, border = false, badge }: SectionProps) {
+function Section({
+	children,
+	className,
+	title,
+	border = false,
+	badge,
+}: SectionProps) {
 	return (
 		<div className={cn(border && "border-b", "p-5", className)}>
 			{title && (

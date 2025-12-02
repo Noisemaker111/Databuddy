@@ -155,7 +155,7 @@ export const PerformanceBuilders: Record<string, SimpleQueryConfig> = {
 			endDate: string,
 			_filters?: Filter[],
 			_granularity?: TimeUnit,
-			_limit?: number,
+			_limit?: number
 		) => {
 			const limit = _limit ?? 100;
 			return {
@@ -196,7 +196,7 @@ export const PerformanceBuilders: Record<string, SimpleQueryConfig> = {
 			endDate: string,
 			_filters?: Filter[],
 			_granularity?: TimeUnit,
-			_limit?: number,
+			_limit?: number
 		) => {
 			const limit = _limit ?? 100;
 			return {
@@ -242,7 +242,7 @@ export const PerformanceBuilders: Record<string, SimpleQueryConfig> = {
 			endDate: string,
 			_filters?: Filter[],
 			_granularity?: TimeUnit,
-			_limit?: number,
+			_limit?: number
 		) => {
 			const limit = _limit ?? 100;
 			return {
@@ -289,7 +289,7 @@ export const PerformanceBuilders: Record<string, SimpleQueryConfig> = {
 			endDate: string,
 			_filters?: Filter[],
 			_granularity?: TimeUnit,
-			_limit?: number,
+			_limit?: number
 		) => {
 			const limit = _limit ?? 100;
 			return {
@@ -335,7 +335,7 @@ export const PerformanceBuilders: Record<string, SimpleQueryConfig> = {
 			endDate: string,
 			_filters?: Filter[],
 			_granularity?: TimeUnit,
-			_limit?: number,
+			_limit?: number
 		) => {
 			const limit = _limit ?? 100;
 			return {
@@ -376,11 +376,7 @@ export const PerformanceBuilders: Record<string, SimpleQueryConfig> = {
 	},
 
 	web_vitals_time_series: {
-		customSql: (
-			websiteId: string,
-			startDate: string,
-			endDate: string,
-		) => ({
+		customSql: (websiteId: string, startDate: string, endDate: string) => ({
 			sql: `
 				SELECT 
 					toDate(timestamp) as date,

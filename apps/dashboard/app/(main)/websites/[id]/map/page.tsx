@@ -80,7 +80,9 @@ function CountryRow({
 			type="button"
 		>
 			<CountryFlag
-				country={country.country_code?.toUpperCase() || country.country.toUpperCase()}
+				country={
+					country.country_code?.toUpperCase() || country.country.toUpperCase()
+				}
 				size={16}
 			/>
 			<div className="min-w-0 flex-1">

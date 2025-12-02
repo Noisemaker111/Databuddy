@@ -104,7 +104,10 @@ export function GeneralSettings({
 									value={slug}
 								/>
 								<p className="text-muted-foreground text-xs">
-									Used in URLs: <code className="rounded bg-muted px-1 py-0.5 text-xs">/{slug}</code>
+									Used in URLs:{" "}
+									<code className="rounded bg-muted px-1 py-0.5 text-xs">
+										/{slug}
+									</code>
 								</p>
 							</div>
 						</div>

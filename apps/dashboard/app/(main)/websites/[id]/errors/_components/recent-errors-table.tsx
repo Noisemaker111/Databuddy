@@ -20,7 +20,11 @@ import {
 import { ErrorDetailModal } from "./error-detail-modal";
 import { getDeviceIcon, getErrorTypeIcon } from "./error-icons";
 import type { RecentError } from "./types";
-import { formatDateTimeSeconds, getErrorCategory, getSeverityColor } from "./utils";
+import {
+	formatDateTimeSeconds,
+	getErrorCategory,
+	getSeverityColor,
+} from "./utils";
 
 dayjs.extend(relativeTime);
 
@@ -28,9 +32,7 @@ interface Props {
 	recentErrors: RecentError[];
 }
 
-const SeverityDot = ({
-	severity,
-}: { severity: "high" | "medium" | "low" }) => {
+const SeverityDot = ({ severity }: { severity: "high" | "medium" | "low" }) => {
 	const colors = {
 		high: "bg-primary",
 		medium: "bg-chart-2",
@@ -80,7 +82,10 @@ export const RecentErrorsTable = ({ recentErrors }: Props) => {
 			id: "message",
 			accessorKey: "message",
 			header: "Error",
-			cell: (info: { getValue: () => unknown; row: { original: RecentError } }) => {
+			cell: (info: {
+				getValue: () => unknown;
+				row: { original: RecentError };
+			}) => {
 				const message = info.getValue() as string;
 				const row = info.row.original;
 				const { type } = getErrorCategory(message);
@@ -91,7 +96,9 @@ export const RecentErrorsTable = ({ recentErrors }: Props) => {
 							<div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/10">
 								{getErrorTypeIcon(type)}
 							</div>
-							<Badge className={getSeverityColor(getErrorCategory(message).severity)}>
+							<Badge
+								className={getSeverityColor(getErrorCategory(message).severity)}
+							>
 								{type}
 							</Badge>
 							{row.stack && (
@@ -212,8 +219,13 @@ export const RecentErrorsTable = ({ recentErrors }: Props) => {
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<div className="flex items-center gap-1.5">
-								<CountryFlag country={countryCode || countryName || ""} size={16} />
-								<span className="max-w-[80px] truncate text-sm">{countryName}</span>
+								<CountryFlag
+									country={countryCode || countryName || ""}
+									size={16}
+								/>
+								<span className="max-w-[80px] truncate text-sm">
+									{countryName}
+								</span>
 							</div>
 						</TooltipTrigger>
 						<TooltipContent>{countryName}</TooltipContent>

@@ -119,7 +119,7 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 				initial={{ opacity: 0, y: 20 }}
 				transition={{ duration: 0.5 }}
 			>
-				<div className="flex items-center gap-3 border-b border-border/50 p-4">
+				<div className="flex items-center gap-3 border-border/50 border-b p-4">
 					<div className="flex size-8 items-center justify-center rounded bg-accent ring-1 ring-border">
 						<BugIcon
 							className="size-4 text-muted-foreground"
@@ -162,7 +162,7 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 			transition={{ duration: 0.5 }}
 		>
 			{/* Header */}
-			<div className="flex items-center justify-between border-b border-border/50 p-4">
+			<div className="flex items-center justify-between border-border/50 border-b p-4">
 				<div className="flex items-center gap-3">
 					<div className="flex size-8 items-center justify-center rounded bg-destructive/10 ring-1 ring-destructive/20">
 						<BugIcon className="size-4 text-destructive" weight="duotone" />
@@ -195,7 +195,7 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 			</div>
 
 			{/* Summary Stats */}
-			<div className="grid grid-cols-2 gap-3 border-b border-border/50 bg-accent/20 p-3">
+			<div className="grid grid-cols-2 gap-3 border-border/50 border-b bg-accent/20 p-3">
 				<motion.div
 					animate={{ opacity: 1 }}
 					className="space-y-0.5"

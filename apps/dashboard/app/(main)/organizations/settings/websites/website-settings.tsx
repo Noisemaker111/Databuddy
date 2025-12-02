@@ -10,14 +10,14 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 import { FaviconImage } from "@/components/analytics/favicon-image";
-import { WebsiteDialog } from "@/components/website-dialog";
+import { EmptyState } from "@/components/empty-state";
 import { RightSidebar } from "@/components/right-sidebar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { WebsiteDialog } from "@/components/website-dialog";
 import type { Organization } from "@/hooks/use-organizations";
 import type { Website } from "@/hooks/use-websites";
 import { orpc } from "@/lib/orpc";
-import { EmptyState } from "@/components/empty-state";
 
 function SkeletonRow() {
 	return (
@@ -155,10 +155,7 @@ export function WebsiteSettings({
 
 				{/* Sidebar */}
 				<RightSidebar className="gap-4 p-5">
-					<Button
-						className="w-full"
-						onClick={() => setShowCreateDialog(true)}
-					>
+					<Button className="w-full" onClick={() => setShowCreateDialog(true)}>
 						<PlusIcon className="mr-2" size={16} />
 						Create New Website
 					</Button>

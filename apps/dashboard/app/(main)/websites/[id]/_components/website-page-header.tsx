@@ -73,7 +73,9 @@ export function WebsitePageHeader({
 
 		if (subtitle) {
 			return typeof subtitle === "string" ? (
-				<p className="h-5 truncate text-muted-foreground text-sm sm:h-6 sm:text-base">{subtitle}</p>
+				<p className="h-5 truncate text-muted-foreground text-sm sm:h-6 sm:text-base">
+					{subtitle}
+				</p>
 			) : (
 				<div className="h-5 sm:h-6">{subtitle}</div>
 			);
@@ -103,9 +105,9 @@ export function WebsitePageHeader({
 								</Link>
 							</Button>
 						)}
-					<div className="rounded border border-primary/10 bg-primary/5 p-3">
-						{icon}
-					</div>
+						<div className="rounded border border-primary/10 bg-primary/5 p-3">
+							{icon}
+						</div>
 					</div>
 
 					<div className="flex-1">
@@ -220,8 +222,8 @@ export function WebsitePageHeader({
 				</div>
 			</div>
 
-		{hasError && (
-			<Card className="rounded border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+			{hasError && (
+				<Card className="rounded border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
 					<CardContent className="pt-6">
 						<div className="flex flex-col items-center space-y-3 text-center">
 							<div className="rounded-full border border-destructive/10 bg-destructive/5 p-3">

@@ -3,7 +3,7 @@
 import { TargetIcon, TrendDownIcon } from "@phosphor-icons/react";
 import { useAtom } from "jotai";
 import { useParams } from "next/navigation";
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { useDateFilters } from "@/hooks/use-date-filters";
@@ -22,7 +22,7 @@ import { GoalsList } from "./_components/goals-list";
 
 function GoalsListSkeleton() {
 	return (
-		<div className="border-t border-border">
+		<div className="border-border border-t">
 			{[1, 2, 3].map((i) => (
 				<GoalItemSkeleton key={i} />
 			))}
@@ -95,7 +95,10 @@ export default function GoalsPage() {
 						type: data.type,
 						target: data.target,
 						filters: data.filters,
-						ignoreHistoricData: "ignoreHistoricData" in data ? data.ignoreHistoricData : undefined,
+						ignoreHistoricData:
+							"ignoreHistoricData" in data
+								? data.ignoreHistoricData
+								: undefined,
 					},
 				});
 			} else {
@@ -105,7 +108,8 @@ export default function GoalsPage() {
 					type: data.type,
 					target: data.target,
 					filters: data.filters,
-					ignoreHistoricData: "ignoreHistoricData" in data ? data.ignoreHistoricData : undefined,
+					ignoreHistoricData:
+						"ignoreHistoricData" in data ? data.ignoreHistoricData : undefined,
 					websiteId,
 				} as CreateGoalData);
 			}
@@ -212,12 +216,12 @@ export default function GoalsPage() {
 
 			{deletingGoalId && (
 				<DeleteDialog
+					confirmLabel="Delete Goal"
+					description="Are you sure you want to delete this goal? This action cannot be undone and will permanently remove all associated analytics data."
 					isOpen={!!deletingGoalId}
 					onClose={() => setDeletingGoalId(null)}
 					onConfirm={() => deletingGoalId && handleDeleteGoal(deletingGoalId)}
 					title="Delete Goal"
-					description="Are you sure you want to delete this goal? This action cannot be undone and will permanently remove all associated analytics data."
-					confirmLabel="Delete Goal"
 				/>
 			)}
 		</div>

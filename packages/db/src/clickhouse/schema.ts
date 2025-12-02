@@ -151,7 +151,7 @@ GROUP BY client_id, path, error_type, message_hash, hour
 
 /**
  * Optimized Web Vitals table - minimal spans-oriented design
- * 
+ *
  * Rating computed at query time using standard thresholds:
  * - LCP: good < 2500, poor > 4000
  * - FCP: good < 1800, poor > 3000
@@ -469,13 +469,7 @@ export type ErrorHourlyAggregate = {
  * Web Vitals metric names
  * Rating computed at query time using standard thresholds
  */
-export type WebVitalMetricName =
-	| "FCP"
-	| "LCP"
-	| "CLS"
-	| "INP"
-	| "TTFB"
-	| "FPS";
+export type WebVitalMetricName = "FCP" | "LCP" | "CLS" | "INP" | "TTFB" | "FPS";
 
 /**
  * Spans-oriented Web Vitals
@@ -675,7 +669,10 @@ export async function initClickHouseSchema() {
 			{ name: "web_vitals_spans", query: CREATE_WEB_VITALS_SPANS_TABLE },
 			{ name: "web_vitals_hourly", query: CREATE_WEB_VITALS_HOURLY_TABLE },
 			{ name: "custom_event_spans", query: CREATE_CUSTOM_EVENT_SPANS_TABLE },
-			{ name: "custom_events_hourly", query: CREATE_CUSTOM_EVENTS_HOURLY_TABLE },
+			{
+				name: "custom_events_hourly",
+				query: CREATE_CUSTOM_EVENTS_HOURLY_TABLE,
+			},
 			{ name: "blocked_traffic", query: CREATE_BLOCKED_TRAFFIC_TABLE },
 			{ name: "email_events", query: CREATE_EMAIL_EVENTS_TABLE },
 			{ name: "outgoing_links", query: CREATE_CUSTOM_OUTGOING_LINKS_TABLE },
@@ -685,7 +682,10 @@ export async function initClickHouseSchema() {
 		const materializedViews = [
 			{ name: "error_hourly_mv", query: CREATE_ERROR_HOURLY_MV },
 			{ name: "web_vitals_hourly_mv", query: CREATE_WEB_VITALS_HOURLY_MV },
-			{ name: "custom_events_hourly_mv", query: CREATE_CUSTOM_EVENTS_HOURLY_MV },
+			{
+				name: "custom_events_hourly_mv",
+				query: CREATE_CUSTOM_EVENTS_HOURLY_MV,
+			},
 		];
 
 		// Create observability tables
@@ -709,7 +709,9 @@ export async function initClickHouseSchema() {
 		// Create materialized views (after target tables exist)
 		for (const mv of materializedViews) {
 			await clickHouse.command({ query: mv.query });
-			console.info(`Created materialized view: ${ANALYTICS_DATABASE}.${mv.name}`);
+			console.info(
+				`Created materialized view: ${ANALYTICS_DATABASE}.${mv.name}`
+			);
 		}
 
 		console.info("ClickHouse schema initialization completed successfully");

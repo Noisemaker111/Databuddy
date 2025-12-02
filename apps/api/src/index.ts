@@ -52,7 +52,7 @@ const app = new Elysia()
 					? ["http://localhost:3000"]
 					: []),
 			],
-		}),
+		})
 	)
 	.use(publicApi)
 	.use(health)

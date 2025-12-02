@@ -1,10 +1,9 @@
 "use client";
 
+import { FunnelIcon } from "@phosphor-icons/react";
 import { EmptyState } from "@/components/empty-state";
 import type { FunnelAnalyticsData } from "@/types/funnels";
-import { FunnelIcon } from "@phosphor-icons/react";
 import { FunnelItem, type FunnelItemData } from "./funnel-item";
-import { cn } from "@/lib/utils";
 
 interface FunnelsListProps {
 	funnels: FunnelItemData[];

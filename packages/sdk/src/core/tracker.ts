@@ -33,7 +33,7 @@ export function isTrackerAvailable(): boolean {
  * if (tracker) {
  *   // Access tracker methods
  *   tracker.track("event", { prop: "value" });
- *   
+ *
  *   // Get IDs using dedicated functions
  *   const anonId = getAnonymousId();
  *   const sessionId = getSessionId();
@@ -239,11 +239,7 @@ export function getAnonymousId(urlParams?: URLSearchParams): string | null {
 	if (typeof window === "undefined") {
 		return null;
 	}
-	return (
-		urlParams?.get("anonId") ||
-		localStorage.getItem("did") ||
-		null
-	);
+	return urlParams?.get("anonId") || localStorage.getItem("did") || null;
 }
 
 /**
@@ -268,9 +264,7 @@ export function getSessionId(urlParams?: URLSearchParams): string | null {
 		return null;
 	}
 	return (
-		urlParams?.get("sessionId") ||
-		sessionStorage.getItem("did_session") ||
-		null
+		urlParams?.get("sessionId") || sessionStorage.getItem("did_session") || null
 	);
 }
 

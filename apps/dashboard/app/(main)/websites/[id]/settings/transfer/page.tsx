@@ -78,7 +78,8 @@ function TransferPageContent() {
 				},
 				onError: (error) => {
 					toast.error(
-						(error as Error).message || "Failed to transfer website. Please try again."
+						(error as Error).message ||
+							"Failed to transfer website. Please try again."
 					);
 				},
 			}
@@ -260,118 +261,120 @@ function TransferPageContent() {
 				</section>
 			</div>
 
-		{/* Confirmation Dialog */}
-		<Dialog onOpenChange={setShowConfirmDialog} open={showConfirmDialog}>
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>Confirm Website Transfer</DialogTitle>
-					<DialogDescription>
-						This action cannot be undone.
-					</DialogDescription>
-				</DialogHeader>
+			{/* Confirmation Dialog */}
+			<Dialog onOpenChange={setShowConfirmDialog} open={showConfirmDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Confirm Website Transfer</DialogTitle>
+						<DialogDescription>This action cannot be undone.</DialogDescription>
+					</DialogHeader>
 
-				<div className="space-y-3">
-					{/* Website being transferred */}
-					<div className="flex items-center gap-2.5 rounded border bg-accent/50 p-2.5">
-						<div className="flex size-8 shrink-0 items-center justify-center rounded bg-primary/10">
-							<span className="font-semibold text-primary text-xs">
-								{websiteData.name?.charAt(0).toUpperCase() ||
-									websiteData.domain.charAt(0).toUpperCase()}
-							</span>
-						</div>
-						<div className="min-w-0 flex-1">
-							<p className="truncate font-medium text-sm">
-								{websiteData.name || websiteData.domain}
-							</p>
-							<p className="truncate text-muted-foreground text-xs">
-								{websiteData.domain}
-							</p>
-						</div>
-					</div>
-
-					{/* Transfer flow - stacked layout */}
-					<div className="space-y-2">
-						<div className="flex items-center gap-2.5 rounded border p-2.5">
-							<div className="flex size-8 shrink-0 items-center justify-center rounded border bg-background">
-								{currentOrg?.logo ? (
-									<img
-										alt={currentOrg.name}
-										className="size-full rounded object-cover"
-										src={currentOrg.logo}
-									/>
-								) : currentOrg ? (
-									<BuildingsIcon className="size-4 text-muted-foreground" />
-								) : (
-									<UserIcon className="size-4 text-muted-foreground" />
-								)}
+					<div className="space-y-3">
+						{/* Website being transferred */}
+						<div className="flex items-center gap-2.5 rounded border bg-accent/50 p-2.5">
+							<div className="flex size-8 shrink-0 items-center justify-center rounded bg-primary/10">
+								<span className="font-semibold text-primary text-xs">
+									{websiteData.name?.charAt(0).toUpperCase() ||
+										websiteData.domain.charAt(0).toUpperCase()}
+								</span>
 							</div>
 							<div className="min-w-0 flex-1">
-								<p className="text-muted-foreground text-xs">From</p>
 								<p className="truncate font-medium text-sm">
-									{currentOrg?.name || "Personal"}
+									{websiteData.name || websiteData.domain}
+								</p>
+								<p className="truncate text-muted-foreground text-xs">
+									{websiteData.domain}
 								</p>
 							</div>
 						</div>
 
-						<div className="flex justify-center">
-							<ArrowRightIcon
-								className="size-4 rotate-90 text-muted-foreground"
-								weight="bold"
-							/>
+						{/* Transfer flow - stacked layout */}
+						<div className="space-y-2">
+							<div className="flex items-center gap-2.5 rounded border p-2.5">
+								<div className="flex size-8 shrink-0 items-center justify-center rounded border bg-background">
+									{currentOrg?.logo ? (
+										<img
+											alt={currentOrg.name}
+											className="size-full rounded object-cover"
+											src={currentOrg.logo}
+										/>
+									) : currentOrg ? (
+										<BuildingsIcon className="size-4 text-muted-foreground" />
+									) : (
+										<UserIcon className="size-4 text-muted-foreground" />
+									)}
+								</div>
+								<div className="min-w-0 flex-1">
+									<p className="text-muted-foreground text-xs">From</p>
+									<p className="truncate font-medium text-sm">
+										{currentOrg?.name || "Personal"}
+									</p>
+								</div>
+							</div>
+
+							<div className="flex justify-center">
+								<ArrowRightIcon
+									className="size-4 rotate-90 text-muted-foreground"
+									weight="bold"
+								/>
+							</div>
+
+							<div className="flex items-center gap-2.5 rounded border border-primary/30 bg-primary/5 p-2.5">
+								<div className="flex size-8 shrink-0 items-center justify-center rounded border border-primary/30 bg-background">
+									{selectedOrg?.logo ? (
+										<img
+											alt={selectedOrg.name}
+											className="size-full rounded object-cover"
+											src={selectedOrg.logo}
+										/>
+									) : (
+										<BuildingsIcon className="size-4 text-primary" />
+									)}
+								</div>
+								<div className="min-w-0 flex-1">
+									<p className="text-muted-foreground text-xs">To</p>
+									<p className="truncate font-medium text-primary text-sm">
+										{selectedOrg?.name}
+									</p>
+								</div>
+							</div>
 						</div>
 
-						<div className="flex items-center gap-2.5 rounded border border-primary/30 bg-primary/5 p-2.5">
-							<div className="flex size-8 shrink-0 items-center justify-center rounded border border-primary/30 bg-background">
-								{selectedOrg?.logo ? (
-									<img
-										alt={selectedOrg.name}
-										className="size-full rounded object-cover"
-										src={selectedOrg.logo}
-									/>
-								) : (
-									<BuildingsIcon className="size-4 text-primary" />
-								)}
-							</div>
-							<div className="min-w-0 flex-1">
-								<p className="text-muted-foreground text-xs">To</p>
-								<p className="truncate font-medium text-primary text-sm">
-									{selectedOrg?.name}
-								</p>
-							</div>
-						</div>
+						{/* Warning */}
+						<p className="text-muted-foreground text-xs leading-relaxed">
+							All ownership, data, settings, and analytics will be transferred.
+							Members of{" "}
+							<span className="font-medium text-foreground">
+								{selectedOrg?.name}
+							</span>{" "}
+							will gain full access.
+						</p>
 					</div>
 
-					{/* Warning */}
-					<p className="text-muted-foreground text-xs leading-relaxed">
-						All ownership, data, settings, and analytics will be transferred.
-						Members of <span className="font-medium text-foreground">{selectedOrg?.name}</span> will gain full access.
-					</p>
-				</div>
-
-				<DialogFooter>
-					<Button
-						disabled={isTransferring}
-						onClick={() => setShowConfirmDialog(false)}
-						variant="outline"
-					>
-						Cancel
-					</Button>
-					<Button disabled={isTransferring} onClick={handleTransfer}>
-						{isTransferring ? (
-							<>
-								<div className="mr-2 size-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-								Transferring…
-							</>
-						) : (
-							<>
-								<ArrowSquareOutIcon className="mr-2 size-4" weight="fill" />
-								Confirm Transfer
-							</>
-						)}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+					<DialogFooter>
+						<Button
+							disabled={isTransferring}
+							onClick={() => setShowConfirmDialog(false)}
+							variant="outline"
+						>
+							Cancel
+						</Button>
+						<Button disabled={isTransferring} onClick={handleTransfer}>
+							{isTransferring ? (
+								<>
+									<div className="mr-2 size-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+									Transferring…
+								</>
+							) : (
+								<>
+									<ArrowSquareOutIcon className="mr-2 size-4" weight="fill" />
+									Confirm Transfer
+								</>
+							)}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

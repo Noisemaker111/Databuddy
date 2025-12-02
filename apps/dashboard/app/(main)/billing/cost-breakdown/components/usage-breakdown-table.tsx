@@ -9,18 +9,9 @@ import {
 	SparkleIcon,
 	TableIcon,
 } from "@phosphor-icons/react";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/empty-state";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 import { calculateOverageCost, type OverageInfo } from "../utils/billing-utils";
 
 const EVENT_TYPE_CONFIG = {
@@ -108,7 +99,9 @@ export function UsageBreakdownTable({
 	return (
 		<div className="h-full">
 			<div className="border-b px-4 py-3 sm:px-6 sm:py-4">
-				<h2 className="font-medium text-foreground text-lg">Usage by Event Type</h2>
+				<h2 className="font-medium text-foreground text-lg">
+					Usage by Event Type
+				</h2>
 			</div>
 			<div className="divide-y divide-border">
 				{sortedBreakdown.map((item) => {
@@ -137,8 +130,8 @@ export function UsageBreakdownTable({
 
 					return (
 						<div
+							className="group flex items-center gap-4 border-border border-b px-4 py-3 transition-colors hover:bg-accent/50 sm:px-6 sm:py-4"
 							key={item.event_category}
-							className="group flex items-center gap-4 border-b border-border px-4 py-3 transition-colors hover:bg-accent/50 sm:px-6 sm:py-4"
 						>
 							<div className="flex size-10 shrink-0 items-center justify-center rounded border border-accent-foreground/10 bg-secondary">
 								<IconComponent
@@ -148,7 +141,9 @@ export function UsageBreakdownTable({
 							</div>
 							<div className="min-w-0 flex-1">
 								<div className="flex items-center gap-2">
-									<div className="font-medium text-foreground">{config.name}</div>
+									<div className="font-medium text-foreground">
+										{config.name}
+									</div>
 									{overageCost > 0 && (
 										<Badge className="h-5 px-2" variant="destructive">
 											${overageCost.toFixed(2)}
@@ -165,7 +160,7 @@ export function UsageBreakdownTable({
 								</div>
 							</div>
 							<div className="shrink-0 text-right">
-								<div className="font-semibold tabular-nums text-foreground">
+								<div className="font-semibold text-foreground tabular-nums">
 									{item.event_count.toLocaleString()}
 								</div>
 								<div className="text-muted-foreground text-xs">events</div>
@@ -181,7 +176,9 @@ export function UsageBreakdownTable({
 						className="mx-auto mb-4 size-12 text-muted-foreground"
 						weight="duotone"
 					/>
-					<h3 className="font-semibold text-lg text-foreground">No Event Data</h3>
+					<h3 className="font-semibold text-foreground text-lg">
+						No Event Data
+					</h3>
 					<p className="mt-1 text-muted-foreground text-sm">
 						No events found for the selected period
 					</p>

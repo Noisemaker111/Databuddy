@@ -182,7 +182,9 @@ const buildStepQuery = (
 		AND time <= parseDateTimeBestEffort({endDate:String})`;
 
 	if (step.type === "PAGE_VIEW") {
-		const escapedTarget = step.target.replace(/\\/g, "\\\\").replace(/[%_]/g, "\\$&");
+		const escapedTarget = step.target
+			.replace(/\\/g, "\\\\")
+			.replace(/[%_]/g, "\\$&");
 		params[`t${idx}l`] = `%${escapedTarget}%`;
 		return `SELECT ${idx + 1} as step, {n${idx}:String} as name, anonymous_id as vid, MIN(time) as ts${refCol}
 			FROM analytics.events

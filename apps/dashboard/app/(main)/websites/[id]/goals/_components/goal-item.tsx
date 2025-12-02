@@ -1,5 +1,12 @@
 "use client";
 
+import {
+	DotsThreeIcon,
+	EyeIcon,
+	MouseMiddleClickIcon,
+	PencilSimpleIcon,
+	TrashIcon,
+} from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,13 +19,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Goal } from "@/hooks/use-goals";
 import { cn } from "@/lib/utils";
-import {
-	DotsThreeIcon,
-	EyeIcon,
-	MouseMiddleClickIcon,
-	PencilSimpleIcon,
-	TrashIcon,
-} from "@phosphor-icons/react";
 
 interface GoalItemProps {
 	goal: Goal;
@@ -45,16 +45,17 @@ function formatNumber(num: number): string {
 
 function GoalTypeIcon({ type }: { type: string }) {
 	if (type === "EVENT") {
-		return <MouseMiddleClickIcon className="size-4 text-muted-foreground" weight="duotone" />;
+		return (
+			<MouseMiddleClickIcon
+				className="size-4 text-muted-foreground"
+				weight="duotone"
+			/>
+		);
 	}
 	return <EyeIcon className="size-4 text-muted-foreground" weight="duotone" />;
 }
 
-function MiniProgressLines({
-	conversionRate,
-}: {
-	conversionRate: number;
-}) {
+function MiniProgressLines({ conversionRate }: { conversionRate: number }) {
 	const lineCount = 24;
 	const percentage = Math.max(0, Math.min(100, conversionRate)) / 100;
 	const activeLines = Math.floor(percentage * lineCount);
@@ -65,12 +66,10 @@ function MiniProgressLines({
 				const isActive = index < activeLines;
 				return (
 					<div
-						key={`line-${index}`}
 						className="h-full w-[2px] rounded-sm transition-all"
+						key={`line-${index}`}
 						style={{
-							backgroundColor: isActive
-								? "var(--primary)"
-								: "var(--muted)",
+							backgroundColor: isActive ? "var(--primary)" : "var(--muted)",
 							transform: isActive ? "scaleY(1)" : "scaleY(0.6)",
 						}}
 					/>
@@ -93,12 +92,7 @@ export function GoalItem({
 	const completions = analytics?.total_users_completed ?? 0;
 
 	return (
-		<div
-			className={cn(
-				"border-b border-border transition-colors",
-				className
-			)}
-		>
+		<div className={cn("border-border border-b transition-colors", className)}>
 			{/* Main row */}
 			<div className="group flex items-center transition-colors hover:bg-accent/50">
 				<div className="flex flex-1 items-center gap-4 px-4 py-3 sm:px-6 sm:py-4">
@@ -204,7 +198,7 @@ export function GoalItem({
 
 export function GoalItemSkeleton() {
 	return (
-		<div className="flex items-center border-b border-border px-4 py-3 sm:px-6 sm:py-4">
+		<div className="flex items-center border-border border-b px-4 py-3 sm:px-6 sm:py-4">
 			<div className="flex flex-1 items-center gap-4">
 				<Skeleton className="size-4 shrink-0" />
 				<div className="min-w-0 flex-1 space-y-1.5">
@@ -230,4 +224,3 @@ export function GoalItemSkeleton() {
 		</div>
 	);
 }
-

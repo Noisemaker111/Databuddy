@@ -275,7 +275,7 @@ export function CreateOrganizationDialog({
 	return (
 		<>
 			<Sheet onOpenChange={handleClose} open={isOpen}>
-				<SheetContent side="right" className="sm:max-w-lg">
+				<SheetContent className="sm:max-w-lg" side="right">
 					<SheetHeader>
 						<div className="flex items-center gap-4">
 							<div className="flex h-11 w-11 items-center justify-center rounded border bg-secondary-brighter">
@@ -286,7 +286,9 @@ export function CreateOrganizationDialog({
 								/>
 							</div>
 							<div>
-								<SheetTitle className="text-lg">Create New Organization</SheetTitle>
+								<SheetTitle className="text-lg">
+									Create New Organization
+								</SheetTitle>
 								<SheetDescription>
 									Set up a new organization to collaborate with your team
 								</SheetDescription>
@@ -324,7 +326,10 @@ export function CreateOrganizationDialog({
 											placeholder="e.g., Acme Corporation"
 											value={formData.name}
 										/>
-										<p className="text-muted-foreground text-xs" id="org-name-help">
+										<p
+											className="text-muted-foreground text-xs"
+											id="org-name-help"
+										>
 											This is the display name for your organization
 										</p>
 									</>
@@ -358,7 +363,10 @@ export function CreateOrganizationDialog({
 											placeholder="e.g., acme-corp"
 											value={formData.slug}
 										/>
-										<p className="text-muted-foreground text-xs" id="org-slug-help">
+										<p
+											className="text-muted-foreground text-xs"
+											id="org-slug-help"
+										>
 											Used in URLs and must be unique. Only lowercase letters,
 											numbers, and hyphens allowed.
 										</p>
