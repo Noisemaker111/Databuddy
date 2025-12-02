@@ -45,7 +45,7 @@ const ChartPreview = ({
 	className?: string;
 	size?: number;
 }) => {
-	// Scale radii based on size (using 150 as the base)
+	// Scale radius based on size (using 150 as the base)
 	const scale = size / 150;
 	const pieInnerRadius = Math.round(20 * scale);
 	const pieOuterRadius = Math.round(40 * scale);
