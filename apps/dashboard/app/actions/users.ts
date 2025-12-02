@@ -120,33 +120,6 @@ export async function setPasswordForOAuthUser(newPassword: string) {
 }
 
 /**
- * Sets a password for OAuth users who don't have one
- * Required before they can enable 2FA
- */
-export async function setPasswordForOAuthUser(newPassword: string) {
-	const currentUser = await getUser();
-	if (!currentUser) {
-		return { error: "Unauthorized" };
-	}
-
-	try {
-		await auth.api.setPassword({
-			body: { newPassword },
-			headers: await headers(),
-		});
-
-		revalidatePath("/settings");
-		return { success: true };
-	} catch (error) {
-		console.error("Set password error:", error);
-		if (error instanceof Error) {
-			return { error: error.message };
-		}
-		return { error: "Failed to set password" };
-	}
-}
-
-/**
  * Handles soft deletion of a user account
  */
 export async function deactivateUserAccount(formData: FormData) {
@@ -169,8 +142,6 @@ export async function deactivateUserAccount(formData: FormData) {
 			.update(user)
 			.set({
 				deletedAt: new Date().toISOString(),
-				// Store scheduled deletion date in database
-				// This record is used by a cleanup job to permanently delete after grace period (ensuring user has time to cancel)
 			})
 			.where(eq(user.id, currentUser.id));
 		revalidatePath("/settings");
