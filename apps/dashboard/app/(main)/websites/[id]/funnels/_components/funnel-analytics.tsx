@@ -12,6 +12,7 @@ import { useMemo } from "react";
 import { StatCard } from "@/components/analytics/stat-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useChartPreferences } from "@/hooks/use-chart-preferences";
 import type { FunnelAnalyticsByReferrerResult } from "@/hooks/use-funnels";
 import type {
 	FunnelAnalyticsData,
@@ -23,21 +24,23 @@ function createChartData(
 	timeSeries: FunnelTimeSeriesPoint[] | undefined,
 	valueKey: keyof FunnelTimeSeriesPoint
 ): { date: string; value: number }[] {
-	if (!timeSeries || timeSeries.length === 0) return [];
+	if (!timeSeries || timeSeries.length === 0) {
+		return [];
+	}
 	return timeSeries.map((point) => ({
 		date: point.date,
 		value: point[valueKey] as number,
 	}));
 }
 
-interface FunnelAnalyticsProps {
+type FunnelAnalyticsProps = {
 	isLoading: boolean;
 	error: Error | null;
 	data: FunnelAnalyticsData | undefined;
 	onRetry: () => void;
 	selectedReferrer?: string;
 	referrerAnalytics?: FunnelAnalyticsByReferrerResult[];
-}
+};
 
 function AnalyticsSkeleton() {
 	return (
@@ -78,6 +81,7 @@ export function FunnelAnalytics({
 	selectedReferrer,
 	referrerAnalytics,
 }: FunnelAnalyticsProps) {
+	const { chartType, chartStepType } = useChartPreferences("funnels");
 	const selectedReferrerData = useMemo(() => {
 		if (!selectedReferrer || selectedReferrer === "all" || !referrerAnalytics) {
 			return null;
@@ -181,6 +185,8 @@ export function FunnelAnalytics({
 			<div className="grid grid-cols-2 gap-3 md:grid-cols-4">
 				<StatCard
 					chartData={usersChartData}
+					chartStepType={chartStepType}
+					chartType={chartType}
 					icon={UsersIcon}
 					showChart={hasChartData}
 					title="Users"
@@ -188,6 +194,8 @@ export function FunnelAnalytics({
 				/>
 				<StatCard
 					chartData={conversionChartData}
+					chartStepType={chartStepType}
+					chartType={chartType}
 					formatChartValue={(v) => `${v.toFixed(1)}%`}
 					icon={TargetIcon}
 					showChart={hasChartData}
@@ -196,6 +204,8 @@ export function FunnelAnalytics({
 				/>
 				<StatCard
 					chartData={dropoffChartData}
+					chartStepType={chartStepType}
+					chartType={chartType}
 					icon={TrendDownIcon}
 					invertTrend
 					showChart={hasChartData}
@@ -204,6 +214,8 @@ export function FunnelAnalytics({
 				/>
 				<StatCard
 					chartData={avgTimeChartData}
+					chartStepType={chartStepType}
+					chartType={chartType}
 					formatChartValue={(v) =>
 						v < 60 ? `${Math.round(v)}s` : `${Math.round(v / 60)}m`
 					}

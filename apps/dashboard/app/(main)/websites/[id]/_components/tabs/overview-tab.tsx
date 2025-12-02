@@ -28,6 +28,7 @@ import {
 	createPageTimeColumns,
 	createReferrerColumns,
 } from "@/components/table/rows";
+import { useChartPreferences } from "@/hooks/use-chart-preferences";
 import { useDateFilters } from "@/hooks/use-date-filters";
 import { useBatchDynamicQuery } from "@/hooks/use-dynamic-query";
 import { metricVisibilityAtom } from "@/stores/jotai/chartAtoms";
@@ -121,6 +122,7 @@ export function WebsiteOverviewTab({
 	filters,
 	addFilter,
 }: Omit<FullTabProps, "isRefreshing" | "setIsRefreshing">) {
+	const { chartType, chartStepType } = useChartPreferences("overview-stats");
 	const calculatePreviousPeriod = useCallback(
 		(currentRange: typeof dateRange) => {
 			const startDate = dayjs(currentRange.start_date);
@@ -868,6 +870,8 @@ export function WebsiteOverviewTab({
 				].map((metric) => (
 					<StatCard
 						chartData={isLoading ? undefined : metric.chartData}
+						chartStepType={chartStepType}
+						chartType={chartType}
 						description={metric.description}
 						formatChartValue={metric.formatChartValue}
 						formatValue={metric.formatValue}
