@@ -61,21 +61,27 @@ export function WebsitePageHeader({
 	docsUrl,
 }: WebsitePageHeaderProps) {
 	const renderSubtitle = () => {
-		if (isLoading) {
-			return <Skeleton className="h-4 w-48" />;
+		const showSubtitleSkeleton = isLoading && !description;
+
+		if (showSubtitleSkeleton) {
+			return (
+				<div className="h-5 sm:h-6">
+					<Skeleton className="h-4 w-48" />
+				</div>
+			);
 		}
 
 		if (subtitle) {
 			return typeof subtitle === "string" ? (
-				<p className="text-muted-foreground text-sm sm:text-base">{subtitle}</p>
+				<p className="h-5 truncate text-muted-foreground text-sm sm:h-6 sm:text-base">{subtitle}</p>
 			) : (
-				subtitle
+				<div className="h-5 sm:h-6">{subtitle}</div>
 			);
 		}
 
 		if (description) {
 			return (
-				<p className="text-muted-foreground text-sm sm:text-base">
+				<p className="h-5 truncate text-muted-foreground text-sm sm:h-6 sm:text-base">
 					{description}
 				</p>
 			);
