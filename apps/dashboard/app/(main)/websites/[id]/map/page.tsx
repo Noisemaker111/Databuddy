@@ -20,11 +20,11 @@ const MapComponent = dynamic(
 		})),
 	{
 		loading: () => (
-			<div className="flex h-full items-center justify-center rounded bg-muted/20">
+			<div className="flex h-full items-center justify-center bg-accent">
 				<div className="flex flex-col items-center gap-3">
-					<div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+					<div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
 					<span className="font-medium text-muted-foreground text-sm">
-						Loading map...
+						Loading map…
 					</span>
 				</div>
 			</div>
@@ -66,7 +66,7 @@ function CountryRow({
 
 	return (
 		<button
-			className="flex w-full cursor-pointer items-center gap-2.5 px-1.5 py-1.5 text-left transition-all hover:opacity-80"
+			className="flex w-full items-center gap-2.5 rounded px-2.5 py-2 text-left transition-colors hover:bg-accent"
 			onClick={() =>
 				onCountrySelect(
 					country.country_code?.toUpperCase() || country.country.toUpperCase()
@@ -84,15 +84,11 @@ function CountryRow({
 				size={16}
 			/>
 			<div className="min-w-0 flex-1">
-				<div className="flex items-center justify-between">
-					<div className="truncate font-medium text-xs">{country.country}</div>
-					<span className="ml-1 font-semibold text-primary text-xs">
-						{country.visitors > 999
-							? `${(country.visitors / 1000).toFixed(0)}k`
-							: country.visitors.toString()}
-					</span>
-				</div>
+				<p className="truncate font-medium text-xs">{country.country}</p>
 			</div>
+			<span className="shrink-0 font-semibold text-xs tabular-nums">
+				{country.visitors.toLocaleString()}
+			</span>
 		</button>
 	);
 }
@@ -165,78 +161,69 @@ function WebsiteMapPage() {
 	}
 
 	return (
-		<div className="h-screen overflow-hidden">
-			<div className="relative h-full w-full">
-				<MapComponent
-					height="100%"
-					isLoading={isLoading}
-					locationData={locationData}
-					selectedCountry={selectedCountry}
-				/>
+		<div className="relative h-full w-full overflow-hidden">
+			<MapComponent
+				height="100%"
+				isLoading={isLoading}
+				locationData={locationData}
+				selectedCountry={selectedCountry}
+			/>
 
-				<div className="absolute top-2 right-2 z-20">
-					<Card className="w-56 max-w-[90vw] gap-0 border-sidebar-border bg-background/95 py-0 shadow-xl backdrop-blur-md sm:w-64">
-						<CardHeader className="px-3 pt-2.5 pb-2">
-							<CardTitle className="flex items-center gap-1.5 font-semibold text-xs">
+			<div className="absolute top-3 right-3 z-20">
+				<Card className="w-60 gap-0 border bg-card/95 py-0 shadow-lg backdrop-blur-sm">
+					<CardHeader className="border-b bg-accent px-3 py-2.5">
+						<CardTitle className="flex items-center gap-2 font-semibold text-sm">
+							<GlobeIcon className="size-4 text-primary" weight="duotone" />
+							Top Countries
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="p-0">
+						{isLoading ? (
+							<div className="space-y-1 p-3">
+								{Array.from({ length: 5 }).map((_, i) => (
+									<div
+										className="flex items-center gap-2.5 py-1.5"
+										key={`country-skeleton-${i + 1}`}
+									>
+										<Skeleton className="size-4 rounded" />
+										<Skeleton className="h-3 flex-1" />
+										<Skeleton className="h-3 w-8" />
+									</div>
+								))}
+							</div>
+						) : topCountries.length > 0 ? (
+							<div className="space-y-0.5 p-1.5">
+								{topCountries.map((country) => (
+									<CountryRow
+										country={country}
+										key={country.country}
+										onCountrySelect={handleCountrySelect}
+										totalVisitors={totalVisitors}
+									/>
+								))}
+							</div>
+						) : (
+							<div className="flex flex-col items-center justify-center p-6 text-center">
 								<GlobeIcon
-									className="h-3.5 w-3.5 text-primary"
+									className="size-8 text-muted-foreground/30"
 									weight="duotone"
 								/>
-								Top Countries
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="p-0">
-							{isLoading ? (
-								<div className="space-y-1 px-3 pb-2">
-									{new Array(5).fill(0).map((_, i) => (
-										<div
-											className="flex items-center gap-2.5 py-1.5"
-											key={`country-skeleton-${i + 1}`}
-										>
-											<Skeleton className="h-2.5 w-4" />
-											<Skeleton className="h-2.5 flex-1" />
-											<Skeleton className="h-2.5 w-8" />
-										</div>
-									))}
-								</div>
-							) : topCountries.length > 0 ? (
-								<div className="space-y-0.5">
-									{topCountries.map((country) => (
-										<CountryRow
-											country={country}
-											key={country.country}
-											onCountrySelect={handleCountrySelect}
-											totalVisitors={totalVisitors}
-										/>
-									))}
+								<p className="mt-2 text-muted-foreground text-xs">
+									No location data yet
+								</p>
+							</div>
+						)}
 
-									<div className="border-border/50 border-t px-2 pt-1.5 pb-1.5">
-										<div className="flex items-center justify-between text-xs">
-											<span className="text-muted-foreground">Total</span>
-											<span className="font-semibold text-primary">
-												{totalVisitors > 999
-													? `${(totalVisitors / 1000).toFixed(0)}k`
-													: totalVisitors.toLocaleString()}
-											</span>
-										</div>
-									</div>
-								</div>
-							) : (
-								<div className="flex flex-col items-center justify-center px-3 py-6 text-center">
-									<div className="mb-1.5 flex h-6 w-6 items-center justify-center bg-muted/20">
-										<GlobeIcon
-											className="h-3 w-3 text-muted-foreground/50"
-											weight="duotone"
-										/>
-									</div>
-									<p className="font-medium text-muted-foreground text-xs">
-										No data
-									</p>
-								</div>
-							)}
-						</CardContent>
-					</Card>
-				</div>
+						{topCountries.length > 0 && (
+							<div className="flex items-center justify-between border-t bg-accent px-3 py-2">
+								<span className="text-muted-foreground text-xs">Total</span>
+								<span className="font-semibold text-sm tabular-nums">
+									{totalVisitors.toLocaleString()}
+								</span>
+							</div>
+						)}
+					</CardContent>
+				</Card>
 			</div>
 		</div>
 	);
@@ -246,11 +233,11 @@ export default function Page() {
 	return (
 		<Suspense
 			fallback={
-				<div className="flex h-screen items-center justify-center">
+				<div className="flex h-full items-center justify-center">
 					<div className="flex flex-col items-center gap-3">
-						<div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+						<div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
 						<span className="font-medium text-muted-foreground text-sm">
-							Loading...
+							Loading…
 						</span>
 					</div>
 				</div>
