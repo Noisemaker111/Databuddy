@@ -16,21 +16,12 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
 		title: "General",
 		shortcuts: [
 			{ label: "Search", keys: "Ctrl+K", macKeys: "⌘K" },
-			{ label: "Toggle theme", keys: "Ctrl+D", macKeys: "⌘D" },
-		],
-	},
-	{
-		title: "Websites",
-		shortcuts: [
-			{ label: "Create new website", keys: "Ctrl+N", macKeys: "⌘N" },
-			{ label: "Refresh websites", keys: "Ctrl+Shift+R", macKeys: "⌘⇧R" },
 		],
 	},
 	{
 		title: "Forms & Dialogs",
 		shortcuts: [
-			{ label: "Save changes", keys: "Ctrl+S", macKeys: "⌘S" },
-			{ label: "Submit form", keys: "Ctrl+Enter", macKeys: "⌘↵" },
+			{ label: "Submit form", keys: "Enter" },
 			{ label: "Close dialog", keys: "Esc" },
 		],
 	},

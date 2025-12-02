@@ -7,7 +7,6 @@ import {
 	TrendUpIcon,
 } from "@phosphor-icons/react";
 import { useState } from "react";
-import { useHotkeys } from "react-hotkeys-hook";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -63,34 +62,6 @@ export default function WebsitesPage() {
 		isFetching,
 		refetch,
 	} = useWebsites();
-
-	const canCreateWebsite = !dialogOpen;
-	const isLoadingOrFetching = isLoading || isFetching;
-	const canRefresh = !isLoadingOrFetching;
-
-	useHotkeys(
-		"mod+n",
-		(e) => {
-			if (canCreateWebsite) {
-				e.preventDefault();
-				setDialogOpen(true);
-			}
-		},
-		{ preventDefault: true, enabled: canCreateWebsite },
-		[canCreateWebsite]
-	);
-
-	useHotkeys(
-		"mod+shift+r",
-		(e) => {
-			if (canRefresh) {
-				e.preventDefault();
-				refetch();
-			}
-		},
-		{ preventDefault: true, enabled: canRefresh },
-		[canRefresh, refetch]
-	);
 
 	return (
 		<div className="flex h-full flex-col">

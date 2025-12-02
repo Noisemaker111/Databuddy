@@ -164,21 +164,6 @@ export function AnnotationModal(props: AnnotationModalProps) {
 		}
 	};
 
-	useHotkeys(
-		"mod+enter",
-		(e) => {
-			if (isOpen && text.trim() && !submitting && !isSubmitting) {
-				e.preventDefault();
-				handleSubmit();
-			}
-		},
-		{
-			preventDefault: true,
-			enabled: isOpen && Boolean(text.trim()) && !submitting && !isSubmitting,
-		},
-		[isOpen, text, submitting, isSubmitting, handleSubmit]
-	);
-
 	const getDateRangeText = () => {
 		if (mode === "edit") {
 			const { annotation } = props as EditModeProps;

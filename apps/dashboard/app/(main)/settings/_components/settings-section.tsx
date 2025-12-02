@@ -98,18 +98,6 @@ export function UnsavedChangesFooter({
 	message = "You have unsaved changes",
 }: UnsavedChangesFooterProps) {
 	useHotkeys(
-		"mod+s",
-		(e) => {
-			if (hasChanges && !isSaving) {
-				e.preventDefault();
-				onSave();
-			}
-		},
-		{ preventDefault: true, enabled: hasChanges && !isSaving },
-		[hasChanges, isSaving, onSave]
-	);
-
-	useHotkeys(
 		"escape",
 		() => {
 			if (hasChanges && !isSaving && onDiscard) {

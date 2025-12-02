@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useOrganizationsContext } from "@/components/providers/organizations-provider";
@@ -156,28 +155,6 @@ export function WebsiteDialog({
 			toast.error(message);
 		}
 	});
-
-	useHotkeys(
-		"mod+enter",
-		(e) => {
-			if (
-				open &&
-				form.formState.isValid &&
-				!createWebsiteMutation.isPending &&
-				!updateWebsiteMutation.isPending
-			) {
-				e.preventDefault();
-				handleSubmit();
-			}
-		},
-		{ preventDefault: true, enabled: open },
-		[
-			open,
-			form.formState.isValid,
-			createWebsiteMutation.isPending,
-			updateWebsiteMutation.isPending,
-		]
-	);
 
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
