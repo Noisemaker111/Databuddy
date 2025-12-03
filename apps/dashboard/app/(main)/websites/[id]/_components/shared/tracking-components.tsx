@@ -213,7 +213,11 @@ export function TrackingOptionCard({
 						{description}
 					</div>
 				</div>
-				<Switch checked={isEnabled} onCheckedChange={onToggle} />
+				<Switch
+					checked={isEnabled}
+					onCheckedChange={onToggle}
+					onClick={onToggle}
+				/>
 			</div>
 			{required && !isEnabled && (
 				<div className="mb-3 rounded border border-destructive/20 bg-destructive/10 p-3">
