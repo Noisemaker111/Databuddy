@@ -840,7 +840,7 @@ export function WebsiteOverviewTab({
 					},
 					{
 						id: "session-duration-chart",
-						title: "Median Duration",
+						title: "Session Duration",
 						value: (() => {
 							const duration = analytics.summary?.median_session_duration;
 							if (!duration) {

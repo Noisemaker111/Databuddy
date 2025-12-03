@@ -39,7 +39,7 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
 					name: "median_session_duration",
 					type: "number",
 					label: "Median Session Duration",
-					description: "Median session duration in seconds",
+					description: "Median time spent actively on pages",
 					unit: "seconds",
 				},
 				{
@@ -81,7 +81,8 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
 			const baseEventsQuery = helpers?.sessionAttributionCTE
 				? `base_events AS (
 					SELECT e.session_id, e.anonymous_id, e.event_name,
-						toTimeZone(e.time, {timezone:String}) as normalized_time
+						toTimeZone(e.time, {timezone:String}) as normalized_time,
+						e.time_on_page
 					FROM analytics.events e
 					${helpers.sessionAttributionJoin("e")}
 					WHERE e.client_id = {websiteId:String}
@@ -92,7 +93,8 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
 				),`
 				: `base_events AS (
 					SELECT session_id, anonymous_id, event_name,
-						toTimeZone(time, {timezone:String}) as normalized_time
+						toTimeZone(time, {timezone:String}) as normalized_time,
+						time_on_page
 					FROM analytics.events
 					WHERE client_id = {websiteId:String}
 						AND time >= toDateTime({startDate:String})
@@ -108,8 +110,8 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
 				session_agg AS (
 					SELECT session_id,
 						countIf(event_name = 'screen_view') as page_count,
-						countIf(event_name != 'screen_view') as engagement_count,
-						dateDiff('second', min(normalized_time), max(normalized_time)) as duration
+						countIf(event_name != 'screen_view' AND event_name != 'page_exit') as engagement_count,
+						sumIf(time_on_page, event_name = 'page_exit' AND time_on_page > 0) as duration
 					FROM base_events
 					GROUP BY session_id
 				),
@@ -225,7 +227,7 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
 					name: "median_session_duration",
 					type: "number",
 					label: "Median Session Duration",
-					description: "Median session duration in seconds",
+					description: "Median time spent actively on pages",
 					unit: "seconds",
 				},
 				{
@@ -273,7 +275,8 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
 			const baseEventsQuery = helpers?.sessionAttributionCTE
 				? `base_events AS (
 					SELECT e.session_id, e.anonymous_id, e.event_name,
-						toTimeZone(e.time, {timezone:String}) as normalized_time
+						toTimeZone(e.time, {timezone:String}) as normalized_time,
+						e.time_on_page
 					FROM analytics.events e
 					${helpers.sessionAttributionJoin("e")}
 					WHERE e.client_id = {websiteId:String}
@@ -283,7 +286,8 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
 				),`
 				: `base_events AS (
 					SELECT session_id, anonymous_id, event_name,
-						toTimeZone(time, {timezone:String}) as normalized_time
+						toTimeZone(time, {timezone:String}) as normalized_time,
+						time_on_page
 					FROM analytics.events
 					WHERE client_id = {websiteId:String}
 						AND ${dateFilter}
@@ -299,8 +303,8 @@ export const SummaryBuilders: Record<string, SimpleQueryConfig> = {
 					SELECT session_id,
 						${timeBucketFn}(minIf(normalized_time, event_name = 'screen_view')) as time_bucket,
 						countIf(event_name = 'screen_view') as page_count,
-						countIf(event_name != 'screen_view') as engagement_count,
-						dateDiff('second', min(normalized_time), max(normalized_time)) as duration
+						countIf(event_name != 'screen_view' AND event_name != 'page_exit') as engagement_count,
+						sumIf(time_on_page, event_name = 'page_exit' AND time_on_page > 0) as duration
 					FROM base_events
 					GROUP BY session_id
 				),
