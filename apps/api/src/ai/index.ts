@@ -9,7 +9,7 @@
  */
 
 // Agent exports
-export { analyticsAgent, createAgent, mainAgent, reflectionAgent, triageAgent } from "./agents";
+export { analyticsAgent, createAgent, mainAgent, reflectionAgent, reflectionAgentHaiku, reflectionAgentMax, triageAgent } from "./agents";
 // Config exports
 export {
 	type AppContext,
