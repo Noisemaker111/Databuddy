@@ -11,3 +11,9 @@ export const COMMON_AGENT_RULES = `<behavior_rules>
 - When presenting repeated structured data (lists of items, multiple entries, time series), always use markdown tables
 - Tables make data scannable and easier to compare - use them for any data with 2+ rows
 </behavior_rules>`;
+
+/**
+ * ClickHouse schema documentation - now imported from schema-docs.ts
+ * This ensures the documentation is always up to date with the actual schema
+ */
+export { CLICKHOUSE_SCHEMA_DOCS } from "../config/schema-docs";
