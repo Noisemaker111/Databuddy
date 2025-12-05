@@ -1,8 +1,11 @@
 "use client";
 
-import { ArrowLeftIcon, LockIcon, MagnifyingGlassIcon, WarningCircleIcon } from "@phosphor-icons/react";
+import { ArrowLeftIcon, HouseIcon, LockIcon, MagnifyingGlassIcon, WarningCircleIcon } from "@phosphor-icons/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type WebsiteErrorStateProps = {
 	error: unknown;
@@ -106,27 +109,12 @@ export function WebsiteErrorState({
 	const getIcon = () => {
 		switch (type) {
 			case "not_found":
-				return (
-					<MagnifyingGlassIcon
-						className="size-16 text-primary"
-						weight="duotone"
-					/>
-				);
+				return MagnifyingGlassIcon;
 			case "unauthorized":
 			case "forbidden":
-				return (
-					<LockIcon
-						className="size-16 text-orange-500 dark:text-orange-400"
-						weight="duotone"
-					/>
-				);
+				return LockIcon;
 			default:
-				return (
-					<WarningCircleIcon
-						className="size-16 text-destructive"
-						weight="duotone"
-					/>
-				);
+				return WarningCircleIcon;
 		}
 	};
 
@@ -166,12 +154,14 @@ export function WebsiteErrorState({
 		if (type === "not_found") {
 			return (
 				<Button
-					onClick={() => router.push(isDemoRoute ? "/" : "/websites")}
-					variant="default"
-					size="lg"
+					asChild
 					className="bg-primary hover:bg-primary/90"
+					variant="default"
 				>
-					{isDemoRoute ? "Go to Homepage" : "Back to Websites"}
+					<Link href={isDemoRoute ? "/" : "/websites"}>
+						<HouseIcon className="mr-2 size-4" weight="duotone" />
+						Back to Websites
+					</Link>
 				</Button>
 			);
 		}
@@ -247,50 +237,52 @@ export function WebsiteErrorState({
 		);
 	};
 
+	const IconComponent = getIcon();
+	const actions = renderActions();
+
 	return (
-		<div className="flex h-screen flex-col items-center justify-center bg-background p-4">
-			<div className="flex w-full max-w-md flex-col items-center">
-				<div className="mb-6 flex items-center justify-center">
-					<div className="relative">
-						{getIcon()}
-						<div className="-z-10 absolute inset-0 rounded-full bg-primary/10 blur-2xl" />
+		<div className="flex min-h-full flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+			<Card className="flex w-full max-w-md flex-1 flex-col items-center justify-center rounded border-none bg-transparent shadow-none">
+				<CardContent className="flex flex-col items-center justify-center text-center px-6 sm:px-8 lg:px-12 py-12 sm:py-14">
+					<div
+						aria-hidden="true"
+						className={cn(
+							"flex size-12 items-center justify-center rounded-2xl",
+							type === "not_found" && "bg-accent",
+							(type === "unauthorized" || type === "forbidden") && "bg-orange-500/10",
+							type === "unknown" && "bg-destructive/10"
+						)}
+						role="img"
+					>
+						<IconComponent
+							aria-hidden="true"
+							className={cn(
+								"size-6",
+								type === "not_found" && "text-muted-foreground",
+								(type === "unauthorized" || type === "forbidden") && "text-orange-500 dark:text-orange-400",
+								type === "unknown" && "text-destructive"
+							)}
+							size={24}
+							weight="fill"
+						/>
 					</div>
-				</div>
 
-				<div className="mb-4 flex items-baseline font-mono">
-					{getErrorNumber()
-						.split("")
-						.map((digit, i) => (
-							<span
-								key={i}
-								className="font-bold text-8xl text-primary md:text-9xl"
-							>
-								{digit}
-							</span>
-						))}
-				</div>
+					<div className="mt-6 space-y-4 max-w-sm">
+						<h1 className="font-semibold text-foreground text-lg">
+							{getTitle()}
+						</h1>
+						<p className="text-muted-foreground text-sm leading-relaxed text-balance">
+							{getDescription()}
+						</p>
+					</div>
 
-				<div className="mb-4 h-px w-16 bg-border" />
-
-				<h1 className="mb-2 text-center font-bold text-2xl md:text-3xl">
-					{getTitle()}
-				</h1>
-
-				<p className="mb-8 text-center text-muted-foreground text-balance">
-					{getDescription()}
-				</p>
-
-				{renderActions()}
-			</div>
-
-			<div className="absolute bottom-8 rounded-md border border-accent bg-accent/50 px-4 py-2 font-mono text-muted-foreground text-xs">
-				<code>{getErrorCode()}</code>
-			</div>
-
-			<div className="pointer-events-none absolute inset-0 overflow-hidden opacity-5">
-				<div className="-right-24 -top-24 absolute h-96 w-96 rounded-full border-8 border-primary border-dashed" />
-				<div className="-left-24 -bottom-24 absolute h-96 w-96 rounded-full border-8 border-primary border-dashed" />
-			</div>
+					{actions && (
+						<div className="mt-6 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+							{actions}
+						</div>
+					)}
+				</CardContent>
+			</Card>
 		</div>
 	);
 }
