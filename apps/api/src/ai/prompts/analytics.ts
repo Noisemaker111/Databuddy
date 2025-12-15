@@ -43,7 +43,6 @@ const ANALYTICS_RULES = `<agent-specific-rules>
   1. First call: create_funnel({ websiteId: "...", name: "...", steps: [...], confirmed: false }) - shows preview
   2. Show preview to user and ask: "Do you want to create this funnel? Please confirm."
   3. Only after user explicitly confirms: create_funnel({ websiteId: "...", name: "...", steps: [...], confirmed: true })
-- Example memory: search_memory({ query: "user's preferred metrics" })
 
 **Insights & Recommendations:**
 - Provide 2-3 actionable recommendations based on findings
