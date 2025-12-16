@@ -18,7 +18,7 @@ export const openrouter = createOpenRouter({
  */
 
 // const overrideModel = 'z-ai/glm-4.6'
-const overrideModel = null;
+const overrideModel: string | null = null;
 
 const modelNames = {
 	triage: overrideModel || "anthropic/claude-haiku-4.5",
