@@ -23,7 +23,7 @@ import {
 	getContextConfig,
 	getDefaultCategory,
 } from "./navigation/navigation-config";
-import { ProfileButton } from "./profile-button";
+import { ProfileButtonClient } from "./profile-button-client";
 import { ThemeToggle } from "./theme-toggle";
 
 const HelpDialog = dynamic(
@@ -34,14 +34,22 @@ const HelpDialog = dynamic(
 	}
 );
 
+type User = {
+	name?: string | null;
+	email?: string | null;
+	image?: string | null;
+};
+
 type CategorySidebarProps = {
 	onCategoryChangeAction?: (categoryId: string) => void;
 	selectedCategory?: string;
+	user: User;
 };
 
 export function CategorySidebar({
 	onCategoryChangeAction,
 	selectedCategory,
+	user,
 }: CategorySidebarProps) {
 	const pathname = usePathname();
 	const { websites, isLoading: isLoadingWebsites } = useWebsites();
@@ -103,8 +111,8 @@ export function CategorySidebar({
 					const Icon = category.icon;
 					const isActive = activeCategory === category.id;
 					const isLast = idx === categories.length - 1;
-					const shouldShowBorder = isActive && !isLast;
-					const borderClass = shouldShowBorder ? "border-accent" : "";
+					// biome-ignore lint/nursery/noLeakedRender: FUCK ULTRACITE BRO THIS MAKES NO SENSE
+					const borderClass = isActive && !isLast ? "border-accent" : "";
 					const hoverClass = isActive ? "" : "hover:bg-sidebar-accent-brighter";
 					const boxClass = isLast
 						? "box-content border-border border-b"
@@ -171,7 +179,7 @@ export function CategorySidebar({
 					</div>
 
 					<div className="flex justify-center">
-						<ProfileButton />
+						<ProfileButtonClient user={user} />
 					</div>
 				</div>
 

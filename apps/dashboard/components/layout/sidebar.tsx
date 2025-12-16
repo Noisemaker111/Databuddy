@@ -31,7 +31,17 @@ type NavigationConfig = {
 	currentWebsiteId?: string | null;
 };
 
-export function Sidebar() {
+type User = {
+	name?: string | null;
+	email?: string | null;
+	image?: string | null;
+};
+
+type SidebarProps = {
+	user: User;
+};
+
+export function Sidebar({ user }: SidebarProps) {
 	const pathname = usePathname();
 	const [isMobileOpen, setIsMobileOpen] = useState(false);
 	const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
@@ -210,6 +220,7 @@ export function Sidebar() {
 				<CategorySidebar
 					onCategoryChangeAction={setSelectedCategory}
 					selectedCategory={selectedCategory}
+					user={user}
 				/>
 			</div>
 
