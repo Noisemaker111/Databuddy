@@ -34,9 +34,9 @@ type NavigationConfig = {
 export function Sidebar() {
 	const pathname = usePathname();
 	const [isMobileOpen, setIsMobileOpen] = useState(false);
-	const [selectedCategory, setSelectedCategory] = useState<
-		string | undefined
-	>(undefined);
+	const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
+		undefined
+	);
 	const { websites, isLoading: isLoadingWebsites } = useWebsites();
 	const accordionStates = useAccordionStates();
 	const sidebarRef = useRef<HTMLDivElement>(null);

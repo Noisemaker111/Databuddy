@@ -23,7 +23,7 @@ import {
 	getContextConfig,
 	getDefaultCategory,
 } from "./navigation/navigation-config";
-import { SignOutButton } from "./sign-out-button";
+import { ProfileButton } from "./profile-button";
 import { ThemeToggle } from "./theme-toggle";
 
 const HelpDialog = dynamic(
@@ -103,29 +103,34 @@ export function CategorySidebar({
 					const Icon = category.icon;
 					const isActive = activeCategory === category.id;
 					const isLast = idx === categories.length - 1;
+					const shouldShowBorder = isActive && !isLast;
+					const borderClass = shouldShowBorder ? "border-accent" : "";
+					const hoverClass = isActive ? "" : "hover:bg-sidebar-accent-brighter";
+					const boxClass = isLast
+						? "box-content border-border border-b"
+						: "box-content border-transparent";
+
 					return (
 						<Tooltip delayDuration={500} key={category.id}>
 							<TooltipTrigger asChild>
 								<button
 									className={cn(
-										isActive && !isLast && "border-accent",
+										borderClass,
 										"relative flex h-10 w-full cursor-pointer items-center justify-center",
 										"focus:outline-none",
-										!isActive && "hover:bg-sidebar-accent-brighter",
-										isLast
-											? "box-content border-border border-b"
-											: "box-content border-transparent"
+										hoverClass,
+										boxClass
 									)}
 									onClick={() => onCategoryChangeAction?.(category.id)}
 									type="button"
 								>
-									{isActive && (
+									{isActive ? (
 										<div
 											className={cn(
 												"absolute top-0 left-0 z-[-1] box-border h-full w-full bg-sidebar-accent-brighter"
 											)}
 										/>
-									)}
+									) : null}
 									<Icon
 										className={cn(
 											"size-5",
@@ -161,12 +166,12 @@ export function CategorySidebar({
 							type="button"
 							variant="ghost"
 						>
-							<InfoIcon className="size-4" weight="duotone" />
+							<InfoIcon className="size-5" weight="duotone" />
 						</Button>
 					</div>
 
 					<div className="flex justify-center">
-						<SignOutButton />
+						<ProfileButton />
 					</div>
 				</div>
 
