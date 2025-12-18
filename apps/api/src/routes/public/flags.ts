@@ -40,7 +40,7 @@ type FlagRule = {
 
 type FlagResult = {
 	enabled: boolean;
-	value: boolean | string | number;
+	value: boolean | string | number | unknown;
 	payload: unknown;
 	reason: string;
 	variant?: string;
@@ -59,9 +59,9 @@ type EvaluableFlag = {
 	key: string;
 	type: "boolean" | "rollout" | "multivariant";
 	status: "active" | "inactive" | "archived";
-	defaultValue: boolean;
-	rolloutPercentage: number;
-	rules?: FlagRule[];
+	defaultValue: string | number | boolean | unknown;
+	rolloutPercentage: number | null;
+	rules?: FlagRule[] | unknown;
 	variants?: Variant[];
 	payload?: unknown;
 };
@@ -251,7 +251,7 @@ export function evaluateRule(rule: FlagRule, context: UserContext): boolean {
 export function selectVariant(
 	flag: EvaluableFlag,
 	context: UserContext
-): { value: string | number | boolean; variant: string } {
+): { value: string | number | boolean | unknown; variant: string } {
 	if (!flag.variants || flag.variants.length === 0) {
 		return { value: flag.defaultValue, variant: "default" };
 	}
@@ -395,7 +395,16 @@ export const flagsRoute = new Elysia({ prefix: "/v1/flags" })
 						};
 					}
 
-					const result = evaluateFlag(flag as unknown as EvaluableFlag, context);
+					const result = evaluateFlag({
+						defaultValue: flag.defaultValue,
+						key: flag.key,
+						type: flag.type,
+						status: flag.status,
+						rolloutPercentage: flag.rolloutPercentage,
+						rules: flag.rules,
+						variants: flag.variants as Variant[],
+						payload: flag.payload,
+					}, context);
 					setAttributes({
 						"flag.found": true,
 						"flag.type": flag.type,

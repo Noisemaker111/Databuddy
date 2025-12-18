@@ -126,10 +126,16 @@ export function VariantEditor({ variants, onChange }: VariantEditorProps) {
       <div className="flex items-center justify-between">
         <Label>Variants</Label>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm">
+          <label
+            htmlFor="use-weights-toggle"
+            className="flex items-center gap-2 text-sm"
+          >
             <input
+              id="use-weights-toggle"
               type="checkbox"
-              checked={variants.length > 0 && typeof variants[0].weight === "number"}
+              checked={
+                variants.length > 0 && typeof variants[0].weight === "number"
+              }
               onChange={(e) => {
                 const useWeights = e.target.checked;
                 const updatedVariants = variants.map((variant) => ({
@@ -154,9 +160,10 @@ export function VariantEditor({ variants, onChange }: VariantEditorProps) {
                     break;
                   case "json":
                   case "string":
-                    coercedValue = typeof variant.value === "object"
-                      ? JSON.stringify(variant.value)
-                      : String(variant.value || "");
+                    coercedValue =
+                      typeof variant.value === "object"
+                        ? JSON.stringify(variant.value)
+                        : String(variant.value || "");
                     break;
                 }
                 return {
@@ -258,26 +265,29 @@ export function VariantEditor({ variants, onChange }: VariantEditorProps) {
       </div>
 
       <div
-        className={`text-sm flex items-center gap-2 ${totalWeight === 0
-          ? "text-blue-600"
-          : isValidTotal
-            ? "text-green-600"
-            : "text-amber-600"
-          }`}
+        className={`text-sm flex items-center gap-2 ${
+          totalWeight === 0
+            ? "text-blue-600"
+            : isValidTotal
+              ? "text-green-600"
+              : "text-amber-600"
+        }`}
       >
         <div
-          className={`w-2 h-2 rounded-full ${totalWeight === 0
-            ? "bg-blue-600"
-            : isValidTotal
-              ? "bg-green-600"
-              : "bg-amber-600"
-            }`}
+          className={`w-2 h-2 rounded-full ${
+            totalWeight === 0
+              ? "bg-blue-600"
+              : isValidTotal
+                ? "bg-green-600"
+                : "bg-amber-600"
+          }`}
         />
         {totalWeight === 0 ? (
           <>
             <span className="font-medium">Even Distribution</span>
             <span className="text-muted-foreground">
-              (Each variant covers ~{Math.round(100 / variants.length)}% of traffic)
+              (Each variant covers ~{Math.round(100 / variants.length)}% of
+              traffic)
             </span>
           </>
         ) : (
@@ -287,6 +297,6 @@ export function VariantEditor({ variants, onChange }: VariantEditorProps) {
           </>
         )}
       </div>
-    </div >
+    </div>
   );
 }

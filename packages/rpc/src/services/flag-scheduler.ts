@@ -1,4 +1,4 @@
-import { RolloutStep } from "@databuddy/shared/flags";
+import type { RolloutStep } from "@databuddy/shared/flags";
 import { logger } from "@databuddy/shared/logger";
 import { Client } from "@upstash/qstash";
 
@@ -10,16 +10,14 @@ const client = new Client({
     token: process.env.UPSTASH_QSTASH_TOKEN,
 });
 
-
 const FLAG_SCHEDULER_DESTINATION =
-    process.env.NEXT_PUBLIC_API_URL + "/webhooks/flag-scheduler"
+    process.env.NEXT_PUBLIC_API_URL + "/webhooks/flag-scheduler";
 
 export async function createQStashSchedule(
     scheduleId: string,
     scheduledAt: Date
 ): Promise<string> {
     try {
-
         const timestamp = Math.floor(scheduledAt.getTime() / 1000);
 
         const { messageId } = await client.publishJSON({
@@ -33,7 +31,9 @@ export async function createQStashSchedule(
         });
 
         if (!messageId) {
-            throw new Error("Failed to create QStash schedule - no message ID returned");
+            throw new Error(
+                "Failed to create QStash schedule - no message ID returned"
+            );
         }
 
         logger.info(
@@ -64,42 +64,73 @@ export async function createQStashRolloutSchedule(
     rolloutSteps: RolloutStep[]
 ): Promise<string[]> {
     try {
-        const messageIds = await Promise.all(rolloutSteps.map(async (step) => {
-            const stepScheduledAt = new Date(step.scheduledAt);
-            const timestamp = Math.floor(stepScheduledAt.getTime() / 1000);
+        const results = await Promise.allSettled(
+            rolloutSteps.map(async (step) => {
+                const stepScheduledAt = new Date(step.scheduledAt);
+                const timestamp = Math.floor(stepScheduledAt.getTime() / 1000);
 
-            const { messageId } = await client.publishJSON({
-                url: FLAG_SCHEDULER_DESTINATION,
-                body: {
-                    scheduleId,
-                    stepScheduledAt: step.scheduledAt,
-                    stepValue: step.value,
-                },
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-Schedule-Id": scheduleId,
-                    "X-Step-Scheduled-At": step.scheduledAt,
-                },
-                notBefore: timestamp,
-            });
+                const { messageId } = await client.publishJSON({
+                    url: FLAG_SCHEDULER_DESTINATION,
+                    body: {
+                        scheduleId,
+                        stepScheduledAt: step.scheduledAt,
+                        stepValue: step.value,
+                    },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Schedule-Id": scheduleId,
+                        "X-Step-Scheduled-At": step.scheduledAt,
+                    },
+                    notBefore: timestamp,
+                });
 
-            if (!messageId) {
-                throw new Error(`Failed to create QStash schedule for rollout step at ${step.scheduledAt}`);
+                if (!messageId) {
+                    throw new Error(
+                        `Failed to create QStash schedule for rollout step at ${step.scheduledAt}`
+                    );
+                }
+
+                return messageId;
+            })
+        );
+
+        const successes: string[] = [];
+        const errors: unknown[] = [];
+
+        for (const result of results) {
+            if (result.status === "fulfilled") {
+                successes.push(result.value);
+            } else {
+                errors.push(result.reason);
             }
+        }
 
-            return messageId;
-        }));
+        if (errors.length > 0) {
+            logger.error(
+                { errors, scheduleId },
+                "Failed to create some QStash rollout schedules, cleaning up successful ones"
+            );
+
+            // Cleanup successful schedules since the batch failed
+            await Promise.allSettled(
+                successes.map((id) => client.schedules.delete(id))
+            );
+
+            throw new Error(
+                `Failed to create all rollout steps: ${errors.length} failed`
+            );
+        }
 
         logger.info(
             {
                 scheduleId,
-                messageIds,
+                messageIds: successes,
                 stepCount: rolloutSteps.length,
             },
             "Created QStash schedules for rollout steps"
         );
 
-        return messageIds;
+        return successes;
     } catch (error) {
         logger.error(
             {
@@ -111,7 +142,6 @@ export async function createQStashRolloutSchedule(
         throw error;
     }
 }
-
 
 export async function updateQStashSchedule(
     scheduleId: string,
@@ -139,7 +169,6 @@ export async function updateQStashRolloutSchedule(
     oldQStashScheduleIds: string[] | string | null,
     rolloutSteps: RolloutStep[]
 ) {
-
     if (oldQStashScheduleIds) {
         const idsToDelete = Array.isArray(oldQStashScheduleIds)
             ? oldQStashScheduleIds
@@ -161,7 +190,9 @@ export async function updateQStashRolloutSchedule(
     return createQStashRolloutSchedule(scheduleId, rolloutSteps);
 }
 
-export async function deleteQStashSchedule(qstashScheduleId: string): Promise<void> {
+export async function deleteQStashSchedule(
+    qstashScheduleId: string
+): Promise<void> {
     try {
         await client.schedules.delete(qstashScheduleId);
         logger.info({ qstashScheduleId }, "Deleted QStash schedule");

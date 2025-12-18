@@ -143,6 +143,7 @@ export const flagScheduleSchema = z.object({
                     path: ['scheduledAt'],
                     message: "scheduledAt not allowed for rollout schedules",
                 })
+                return
             }
             if (!Array.isArray(data.rolloutSteps)) {
                 ctx.addIssue({

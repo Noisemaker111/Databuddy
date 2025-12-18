@@ -27,7 +27,6 @@ export const appRouter = {
 	apikeys: apikeysRouter,
 	flags: flagsRouter,
 	flagSchedules: flagSchedulesRouter,
-	assistant: assistantRouter,
 	chat: chatRouter,
 	agent: agentRouter,
 	organizations: organizationsRouter,

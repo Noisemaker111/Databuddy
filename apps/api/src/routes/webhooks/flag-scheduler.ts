@@ -6,7 +6,7 @@ import { Receiver } from "@upstash/qstash";
 import { z } from "zod";
 
 const webhookBodySchema = z.object({
-    scheduleId: z.string(),
+    scheduleId: z.string().optional(),
     stepScheduledAt: z.string().optional(),
     stepValue: z.union([z.number(), z.literal("enable"), z.literal("disable")]).optional(),
 });

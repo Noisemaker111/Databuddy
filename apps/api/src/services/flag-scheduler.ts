@@ -23,6 +23,7 @@ export async function executeSchedule(sched: ExecutableSchedule) {
         });
 
         if (!flag) {
+            logger.warn({ scheduleId: sched.id, flagId: sched.flagId }, "Flag not found for schedule, deleting schedule");
             await db.delete(flagSchedules).where(eq(flagSchedules.id, sched.id));
             return;
         }
@@ -59,7 +60,7 @@ export async function executeSchedule(sched: ExecutableSchedule) {
 
         if (sched.__isStep && sched.rolloutSteps) {
             const now = new Date();
-            const nowIso = new Date().toISOString();
+            const nowIso = now.toISOString();
             const updatedRolloutSteps = sched.rolloutSteps.map((step) => {
                 if (step.executedAt || new Date(step.scheduledAt) <= now) {
                     return { ...step, executedAt: step.executedAt || nowIso };

@@ -1,4 +1,3 @@
-import { logger } from "@/logger";
 import type {
     FlagResult,
     FlagState,
@@ -6,6 +5,7 @@ import type {
     FlagsManager,
     FlagsManagerOptions,
 } from "@/core/flags/types";
+import { logger } from "@/logger";
 
 export class ServerFlagsManager implements FlagsManager {
     private config: FlagsConfig;
@@ -40,7 +40,7 @@ export class ServerFlagsManager implements FlagsManager {
             debug: config.debug ?? false,
             skipStorage: config.skipStorage ?? false,
             isPending: config.isPending,
-            autoFetch: config.autoFetch ?? false,  // Default to false to use /evaluate endpoint
+            autoFetch: config.autoFetch ?? false, // Default to false to use /evaluate endpoint
             environment: config.environment,
         };
     }
@@ -95,6 +95,7 @@ export class ServerFlagsManager implements FlagsManager {
             }
         } catch (err) {
             logger.error("Bulk fetch error:", err);
+            throw err
         }
     }
 
@@ -112,7 +113,7 @@ export class ServerFlagsManager implements FlagsManager {
         }
 
         // If a specific user is provided and differs from config.user, fetch fresh
-        const isDifferentUser = user && (user.userId !== this.config.user?.userId);
+        const isDifferentUser = user && user.userId !== this.config.user?.userId;
 
         if (!isDifferentUser && this.memoryFlags[key]) {
             logger.debug(`Memory cache hit: ${key}`);
@@ -129,10 +130,13 @@ export class ServerFlagsManager implements FlagsManager {
             };
         }
 
-        return this.fetchFlag(key, user);
+        return await this.fetchFlag(key, user);
     }
 
-    private async fetchFlag(key: string, user?: FlagsConfig["user"]): Promise<FlagResult> {
+    private async fetchFlag(
+        key: string,
+        user?: FlagsConfig["user"]
+    ): Promise<FlagResult> {
         this.pendingFlags.add(key);
 
         const targetUser = user || this.config.user;
@@ -169,7 +173,7 @@ export class ServerFlagsManager implements FlagsManager {
             logger.debug(`Response for ${key}:`, result);
 
             // Only cache if it's for the default user
-            const isDefaultUser = !user || (user.userId === this.config.user?.userId);
+            const isDefaultUser = !user || user.userId === this.config.user?.userId;
 
             if (isDefaultUser) {
                 this.memoryFlags[key] = result;
@@ -188,7 +192,7 @@ export class ServerFlagsManager implements FlagsManager {
             };
 
             // Only cache fallback if default user
-            const isDefaultUser = !user || (user.userId === this.config.user?.userId);
+            const isDefaultUser = !user || user.userId === this.config.user?.userId;
             if (isDefaultUser) {
                 this.memoryFlags[key] = fallback;
                 this.notifyFlagsUpdate();
@@ -216,7 +220,10 @@ export class ServerFlagsManager implements FlagsManager {
             };
         }
         // Trigger fetch but don't await
-        this.getFlag(key).catch((err) => logger.error(`Background fetch error for ${key}:`, err)); return {
+        this.getFlag(key).catch((err) =>
+            logger.error(`Background fetch error for ${key}:`, err)
+        );
+        return {
             enabled: false,
             isLoading: true,
             isReady: false,
@@ -237,7 +244,9 @@ export class ServerFlagsManager implements FlagsManager {
     updateUser(user: FlagsConfig["user"]): void {
         this.config = { ...this.config, user };
         this.onConfigUpdate?.(this.config);
-        this.refresh().catch((err) => logger.error("Refresh error after user update:", err));
+        this.refresh().catch((err) =>
+            logger.error("Refresh error after user update:", err)
+        );
     }
 
     updateConfig(config: FlagsConfig): void {
@@ -245,7 +254,9 @@ export class ServerFlagsManager implements FlagsManager {
         this.onConfigUpdate?.(this.config);
 
         if (this.config.autoFetch && !this.config.isPending) {
-            this.fetchAllFlags().catch((err) => logger.error("Fetch error after config update:", err));
+            this.fetchAllFlags().catch((err) =>
+                logger.error("Fetch error after config update:", err)
+            );
         }
     }
 

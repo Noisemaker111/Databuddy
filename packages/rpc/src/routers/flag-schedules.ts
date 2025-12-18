@@ -1,19 +1,21 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, flagSchedules, flags, isNull } from "@databuddy/db";
+import { desc, eq, flagSchedules, flags } from "@databuddy/db";
+import {
+    type FlagScheduleType,
+    flagScheduleSchema,
+} from "@databuddy/shared/flags";
+import { logger } from "@databuddy/shared/logger";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
+import {
+    createQStashRolloutSchedule,
+    createQStashSchedule,
+    deleteQStashSchedule,
+    updateQStashRolloutSchedule,
+    updateQStashSchedule,
+} from "@/services/flag-scheduler";
 import { protectedProcedure } from "../orpc";
 import { authorizeWebsiteAccess } from "../utils/auth";
-import { flagScheduleSchema, FlagScheduleType } from "@databuddy/shared/flags";
-import { logger } from "@databuddy/shared/logger";
-import {
-    createQStashSchedule,
-    createQStashRolloutSchedule,
-    deleteQStashSchedule,
-    updateQStashSchedule,
-    updateQStashRolloutSchedule,
-} from "@/services/flag-scheduler";
-
 
 type DbRolloutStep = {
     scheduledAt: string;
@@ -43,7 +45,6 @@ export const flagSchedulesRouter = {
                 throw new ORPCError("NOT_FOUND", { message: "Flag not found" });
             }
 
-
             await authorizeWebsiteAccess(context, flag.websiteId, "read");
 
             const schedules = await context.db
@@ -52,9 +53,10 @@ export const flagSchedulesRouter = {
                 .where(eq(flagSchedules.flagId, input.flagId))
                 .orderBy(desc(flagSchedules.scheduledAt));
 
-
             if (!schedules[0]) {
-                throw new ORPCError("NOT_FOUND", { message: "No schedules found for this flag" });
+                throw new ORPCError("NOT_FOUND", {
+                    message: "No schedules found for this flag",
+                });
             }
 
             return schedules[0];
@@ -63,7 +65,6 @@ export const flagSchedulesRouter = {
     create: protectedProcedure
         .input(flagScheduleSchema)
         .handler(async ({ context, input }) => {
-
             const flag = await context.db.query.flags.findFirst({
                 where: eq(flags.id, input.flagId),
             });
@@ -79,34 +80,58 @@ export const flagSchedulesRouter = {
 
             try {
                 if (input.type === "update_rollout" && input.rolloutSteps) {
-                    qstashScheduleIds = await createQStashRolloutSchedule(scheduleId, input.rolloutSteps);
+                    qstashScheduleIds = await createQStashRolloutSchedule(
+                        scheduleId,
+                        input.rolloutSteps
+                    );
                 } else if (input.scheduledAt) {
-                    const messageId = await createQStashSchedule(scheduleId, new Date(input.scheduledAt));
+                    const messageId = await createQStashSchedule(
+                        scheduleId,
+                        new Date(input.scheduledAt)
+                    );
                     qstashScheduleIds = [messageId]; // Store as array for consistency
                 }
             } catch (error) {
-                logger.error({ error, scheduleId, input }, "Failed to create QStash schedule");
+                logger.error(
+                    { error, scheduleId, input },
+                    "Failed to create QStash schedule"
+                );
                 throw new ORPCError("INTERNAL_SERVER_ERROR", {
                     message: "Failed to create schedule in QStash",
-                    data: error
+                    data: error,
                 });
             }
 
-            const [schedule] = await context.db
-                .insert(flagSchedules)
-                .values({
-                    id: scheduleId,
-                    flagId: input.flagId,
-                    scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null,
-                    type: input.type,
-                    isEnabled: input.isEnabled,
-                    qstashScheduleIds,
-                    rolloutSteps: input.rolloutSteps?.map((step) => ({
-                        ...step,
-                        executedAt: undefined,
-                    })),
-                })
-                .returning();
+            let schedule;
+            try {
+                [schedule] = await context.db
+                    .insert(flagSchedules)
+                    .values({
+                        id: scheduleId,
+                        flagId: input.flagId,
+                        scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null,
+                        type: input.type,
+                        isEnabled: input.isEnabled,
+                        qstashScheduleIds,
+                        rolloutSteps: input.rolloutSteps?.map((step) => ({
+                            ...step,
+                            executedAt: undefined,
+                        })),
+                    })
+                    .returning();
+            } catch (dbError) {
+                if (qstashScheduleIds) {
+                    for (const qid of qstashScheduleIds) {
+                        await deleteQStashSchedule(qid).catch((e) =>
+                            logger.error(
+                                { error: e, qstashScheduleId: qid },
+                                "Failed to cleanup QStash schedule"
+                            )
+                        );
+                    }
+                }
+                throw dbError;
+            }
 
             logger.info(
                 {
@@ -126,7 +151,9 @@ export const flagSchedulesRouter = {
         .input(flagScheduleSchema)
         .handler(async ({ context, input }) => {
             if (!input.id) {
-                throw new ORPCError("BAD_REQUEST", { message: "Schedule ID is required" });
+                throw new ORPCError("BAD_REQUEST", {
+                    message: "Schedule ID is required",
+                });
             }
 
             const flag = await context.db.query.flags.findFirst({
@@ -149,7 +176,8 @@ export const flagSchedulesRouter = {
 
             const { id, ...updates } = input;
 
-            let qstashScheduleIds: string[] | null = existingSchedule.qstashScheduleIds;
+            let qstashScheduleIds: string[] | null =
+                existingSchedule.qstashScheduleIds;
             try {
                 if (input.type === "update_rollout" && input.rolloutSteps) {
                     qstashScheduleIds = await updateQStashRolloutSchedule(
@@ -166,7 +194,10 @@ export const flagSchedulesRouter = {
                     qstashScheduleIds = [messageId]; // Store as array for consistency
                 }
             } catch (error) {
-                logger.error({ error, scheduleId: input.id, input }, "Failed to update QStash schedule");
+                logger.error(
+                    { error, scheduleId: input.id, input },
+                    "Failed to update QStash schedule"
+                );
                 throw new ORPCError("INTERNAL_SERVER_ERROR", {
                     message: "Failed to update schedule in QStash",
                 });

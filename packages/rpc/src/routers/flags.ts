@@ -2,13 +2,20 @@ import { randomUUID } from "node:crypto";
 import { websitesApi } from "@databuddy/auth";
 import { and, desc, eq, flags, inArray, isNull } from "@databuddy/db";
 import { createDrizzleCache, redis } from "@databuddy/redis";
+import {
+	flagFormSchema,
+	userRuleSchema,
+	variantSchema,
+} from "@databuddy/shared/flags";
+import {
+	getScopeCondition,
+	handleFlagUpdateDependencyCascading,
+} from "@databuddy/shared/flags/utils";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import type { Context } from "../orpc";
 import { protectedProcedure, publicProcedure } from "../orpc";
 import { authorizeWebsiteAccess } from "../utils/auth";
-import { flagFormSchema, userRuleSchema, variantSchema, } from "@databuddy/shared/flags";
-import { getScopeCondition, handleFlagUpdateDependencyCascading } from "@databuddy/shared/flags/utils";
 import { getCacheAuthContext } from "../utils/cache-keys";
 
 const flagsCache = createDrizzleCache({ redis, namespace: "flags" });
@@ -42,8 +49,6 @@ const authorizeScope = async (
 		}
 	}
 };
-
-
 
 const invalidateFlagCache = async (
 	id: string,
@@ -103,35 +108,43 @@ const createFlagSchema = z
 		path: ["websiteId"],
 	});
 
-const updateFlagSchema = z.object({
-	id: z.string(),
-	name: z.string().min(1).max(100).optional(),
-	description: z.string().optional(),
-	type: z.enum(["boolean", "rollout", "multivariant"]).optional(),
-	status: z.enum(["active", "inactive", "archived"]).optional(),
-	defaultValue: z.boolean().optional(),
-	payload: z.any().optional(),
-	rules: z.array(userRuleSchema).optional(),
-	persistAcrossAuth: z.boolean().optional(),
-	rolloutPercentage: z.number().min(0).max(100).optional(),
-	variants: z.array(variantSchema).optional(),
-	dependencies: z.array(z.string()).optional(),
-	forceCancelScheduledRollout: z.boolean().optional(),
-}).passthrough().superRefine((data, ctx) => {
-	if (data.type === "multivariant" && data.variants) {
-		const hasAnyWeight = data.variants.some((v) => typeof v.weight === "number");
-		if (hasAnyWeight) {
-			const totalWeight = data.variants.reduce((sum, v) => sum + (typeof v.weight === "number" ? v.weight : 0), 0);
-			if (totalWeight !== 100) {
-				ctx.addIssue({
-					code: z.ZodIssueCode.custom,
-					path: ["variants"],
-					message: "When specifying weights, they must sum to 100%",
-				});
+const updateFlagSchema = z
+	.object({
+		id: z.string(),
+		name: z.string().min(1).max(100).optional(),
+		description: z.string().optional(),
+		type: z.enum(["boolean", "rollout", "multivariant"]).optional(),
+		status: z.enum(["active", "inactive", "archived"]).optional(),
+		defaultValue: z.boolean().optional(),
+		payload: z.any().optional(),
+		rules: z.array(userRuleSchema).optional(),
+		persistAcrossAuth: z.boolean().optional(),
+		rolloutPercentage: z.number().min(0).max(100).optional(),
+		variants: z.array(variantSchema).optional(),
+		dependencies: z.array(z.string()).optional(),
+		forceCancelScheduledRollout: z.boolean().optional(),
+	})
+	.passthrough()
+	.superRefine((data, ctx) => {
+		if (data.type === "multivariant" && data.variants) {
+			const hasAnyWeight = data.variants.some(
+				(v) => typeof v.weight === "number"
+			);
+			if (hasAnyWeight) {
+				const totalWeight = data.variants.reduce(
+					(sum, v) => sum + (typeof v.weight === "number" ? v.weight : 0),
+					0
+				);
+				if (totalWeight !== 100) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: ["variants"],
+						message: "When specifying weights, they must sum to 100%",
+					});
+				}
 			}
 		}
-	}
-});
+	});
 
 const checkCircularDependency = async (
 	context: Context,
@@ -165,7 +178,6 @@ const checkCircularDependency = async (
 	if (!graph.has(targetFlagKey)) {
 		graph.set(targetFlagKey, proposedDependencies);
 	}
-
 
 	const visited = new Set<string>();
 	const recursionStack = new Set<string>();
@@ -499,7 +511,8 @@ export const flagsRouter = {
 					)
 				);
 
-			const nextDependencies = input.dependencies ?? (flag.dependencies as string[]) ?? [];
+			const nextDependencies =
+				input.dependencies ?? (flag.dependencies as string[]) ?? [];
 
 			if (nextDependencies.length > 0 && input.status === "active") {
 				const hasInactiveDependency = dependencyFlags.some(
@@ -524,7 +537,9 @@ export const flagsRouter = {
 			await invalidateFlagCache(id, flag.websiteId, flag.organizationId);
 
 			// Handle cascading status changes for dependent flags
-			await handleFlagUpdateDependencyCascading({ updatedFlag, userId: context.user.id })
+			if (flag.status !== updatedFlag.status) {
+				await handleFlagUpdateDependencyCascading({ updatedFlag, userId: context.user.id })
+			}
 			return updatedFlag;
 		}),
 
@@ -573,4 +588,4 @@ export const flagsRouter = {
 
 			return { success: true };
 		}),
-}
+};
