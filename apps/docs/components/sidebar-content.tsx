@@ -161,6 +161,42 @@ export const contents: SidebarSection[] = [
 		],
 	},
 	{
+		title: "Hook Examples",
+		Icon: CodeIcon,
+		list: [
+			{
+				title: "Overview",
+				href: "/docs/hooks",
+				icon: FileTextIcon,
+			},
+			{
+				title: "Toast Tracking",
+				href: "/docs/hooks/toast-tracking",
+				icon: AtomIcon,
+			},
+			{
+				title: "Form Tracking",
+				href: "/docs/hooks/form-tracking",
+				icon: FileTextIcon,
+			},
+			{
+				title: "Modal Tracking",
+				href: "/docs/hooks/modal-tracking",
+				icon: MonitorIcon,
+			},
+			{
+				title: "Feature Usage",
+				href: "/docs/hooks/feature-usage",
+				icon: LightningIcon,
+			},
+			{
+				title: "Feedback Tracking",
+				href: "/docs/hooks/feedback-tracking",
+				icon: UserCheckIcon,
+			},
+		],
+	},
+	{
 		title: "Privacy & Compliance",
 		Icon: ShieldCheckIcon,
 		list: [

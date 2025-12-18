@@ -11,6 +11,7 @@
     "sdk",
     "vanilla-js",
     "node-sdk",
+    "hooks",
     "api",
     "api-keys",
     "Integrations",
