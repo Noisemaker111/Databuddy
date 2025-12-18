@@ -122,7 +122,7 @@ const updateFlagSchema = z
 		rolloutPercentage: z.number().min(0).max(100).optional(),
 		variants: z.array(variantSchema).optional(),
 		dependencies: z.array(z.string()).optional(),
-		forceCancelScheduledRollout: z.boolean().optional(),
+		environment: z.string().optional(),
 	})
 	.superRefine((data, ctx) => {
 		if (data.type === "multivariant" && data.variants) {
