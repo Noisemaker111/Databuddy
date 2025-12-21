@@ -83,6 +83,8 @@ export function FlagSheet({
 			input: { flagId: flag?.id ?? "" },
 		}),
 		enabled: Boolean(flag?.id),
+		retry: false,
+		throwOnError: false,
 	});
 	const isEditing = Boolean(flag);
 
