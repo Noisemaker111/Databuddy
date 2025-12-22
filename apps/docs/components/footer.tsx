@@ -216,6 +216,13 @@ export function Footer() {
 							<span className="text-muted-foreground/50 text-xs">•</span>
 							<Link
 								className="text-muted-foreground/70 text-xs hover:text-muted-foreground sm:text-sm"
+								href="/dpa"
+							>
+								DPA
+							</Link>
+							<span className="text-muted-foreground/50 text-xs">•</span>
+							<Link
+								className="text-muted-foreground/70 text-xs hover:text-muted-foreground sm:text-sm"
 								href="/terms"
 							>
 								Terms of Service

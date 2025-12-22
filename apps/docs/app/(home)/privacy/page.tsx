@@ -497,6 +497,9 @@ export default function PrivacyPage() {
 							>
 								Data Policy →
 							</a>
+							<a className="text-primary hover:text-primary/80" href="/dpa">
+								Data Processing Agreement →
+							</a>
 							<a
 								className="text-primary hover:text-primary/80"
 								href="/docs/security"
