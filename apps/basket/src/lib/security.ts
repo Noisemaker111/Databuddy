@@ -1,6 +1,6 @@
 import crypto, { createHash } from "node:crypto";
 import { cacheable, redis } from "@databuddy/redis";
-import { captureError } from "lib/tracing";
+import { captureError } from "@/lib/tracing";
 
 const EXIT_EVENT_TTL = 172_800;
 const STANDARD_EVENT_TTL = 86_400;

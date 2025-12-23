@@ -6,7 +6,7 @@ import {
 	BadMethodCallError,
 	Reader,
 } from "@maxmind/geoip2-node";
-import { captureError, record, setAttributes } from "lib/tracing";
+import { captureError, record, setAttributes } from "@/lib/tracing";
 
 interface GeoIPReader extends Reader {
 	city(ip: string): City;

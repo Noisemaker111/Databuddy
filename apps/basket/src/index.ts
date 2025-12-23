@@ -1,18 +1,18 @@
 import "./polyfills/compression";
 
 import { Elysia } from "elysia";
-import { disconnectProducer, getProducerStats } from "lib/producer";
+import { disconnectProducer, getProducerStats } from "@/lib/producer";
 import {
 	captureError,
 	endRequestSpan,
 	initTracing,
 	shutdownTracing,
 	startRequestSpan,
-} from "lib/tracing";
-import basketRouter from "routes/basket";
-import emailRouter from "routes/email";
-import llmRouter from "routes/llm";
-import { closeGeoIPReader } from "utils/ip-geo";
+} from "@/lib/tracing";
+import basketRouter from "@/routes/basket";
+import emailRouter from "@/routes/email";
+import llmRouter from "@/routes/llm";
+import { closeGeoIPReader } from "@/utils/ip-geo";
 
 initTracing();
 

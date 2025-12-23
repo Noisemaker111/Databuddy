@@ -6,8 +6,8 @@
  */
 
 import { bots } from "@databuddy/shared/lists/bots";
-import { captureError, record } from "lib/tracing";
 import { UAParser } from "ua-parser-js";
+import { captureError, record } from "@/lib/tracing";
 
 export interface UserAgentInfo {
 	bot: {
@@ -18,7 +18,7 @@ export interface UserAgentInfo {
 	browser?: string;
 	os?: string;
 	device?: "desktop" | "mobile" | "tablet" | "unknown";
-};
+}
 
 /**
  * Parse user agent to extract useful information

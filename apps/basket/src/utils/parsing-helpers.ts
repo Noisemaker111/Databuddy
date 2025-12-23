@@ -1,7 +1,7 @@
-import { logBlockedTraffic } from "lib/blocked-traffic";
-import { record, setAttributes } from "lib/tracing";
-import { VALIDATION_LIMITS } from "utils/validation";
 import type { z } from "zod";
+import { logBlockedTraffic } from "@/lib/blocked-traffic";
+import { record, setAttributes } from "@/lib/tracing";
+import { VALIDATION_LIMITS } from "@/utils/validation";
 
 type ParseResult<T> =
 	| { success: true; data: T }
@@ -109,7 +109,7 @@ export interface BotCheckResult {
 		eventType: string;
 		error?: string;
 	};
-};
+}
 
 /**
  * Parses and sanitizes event ID, generates UUID if missing

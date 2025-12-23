@@ -1,10 +1,10 @@
 import type { BlockedTraffic } from "@databuddy/db";
 import { randomUUIDv7 } from "bun";
-import { sendEvent } from "lib/producer";
-import { captureError } from "lib/tracing";
-import { extractIpFromRequest, getGeo } from "utils/ip-geo";
-import { parseUserAgent } from "utils/user-agent";
-import { sanitizeString, VALIDATION_LIMITS } from "utils/validation";
+import { sendEvent } from "@/lib/producer";
+import { captureError } from "@/lib/tracing";
+import { extractIpFromRequest, getGeo } from "@/utils/ip-geo";
+import { parseUserAgent } from "@/utils/user-agent";
+import { sanitizeString, VALIDATION_LIMITS } from "@/utils/validation";
 
 async function _logBlockedTrafficAsync(
 	request: Request,
