@@ -1,6 +1,7 @@
-import crypto, { createHash } from "node:crypto";
+import crypto from "node:crypto";
 import { cacheable, redis } from "@databuddy/redis";
 import { captureError } from "@lib/tracing";
+import { CryptoHasher } from "bun";
 
 const EXIT_EVENT_TTL = 172_800;
 const STANDARD_EVENT_TTL = 86_400;
@@ -40,15 +41,17 @@ export const getDailySalt = cacheable(
 
 export function saltAnonymousId(anonymousId: string, salt: string): string {
 	try {
-		return createHash("sha256")
-			.update(anonymousId + salt)
-			.digest("hex");
+		const hasher = new CryptoHasher("sha256");
+		hasher.update(anonymousId + salt);
+		return hasher.digest("hex");
 	} catch (error) {
 		captureError(error, {
 			message: "Failed to salt anonymous ID",
 			anonymousId,
 		});
-		return createHash("sha256").update(anonymousId).digest("hex");
+		const fallbackHasher = new CryptoHasher("sha256");
+		fallbackHasher.update(anonymousId);
+		return fallbackHasher.digest("hex");
 	}
 }
 

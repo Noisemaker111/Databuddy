@@ -17,18 +17,21 @@ COPY packages/ ./packages/
 RUN bun install
 
 COPY apps/basket/src ./apps/basket/src
+COPY apps/basket/tsconfig.json ./apps/basket/tsconfig.json
 
 ENV NODE_ENV=production
+
+WORKDIR /app/apps/basket
 
 RUN bun build \
 	--compile \
 	--minify-whitespace \
 	--minify-syntax \
 	--target bun \
-	--outfile server \
+	--outfile /app/server \
 	--sourcemap \
 	--bytecode \
-	./apps/basket/src/index.ts
+	./src/index.ts
 
 FROM gcr.io/distroless/base
 
