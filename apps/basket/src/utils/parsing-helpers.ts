@@ -1,7 +1,7 @@
+import { logBlockedTraffic } from "lib/blocked-traffic";
+import { record, setAttributes } from "lib/tracing";
+import { VALIDATION_LIMITS } from "utils/validation";
 import type { z } from "zod";
-import { logBlockedTraffic } from "../lib/blocked-traffic";
-import { record, setAttributes } from "../lib/tracing";
-import { VALIDATION_LIMITS } from "./validation";
 
 type ParseResult<T> =
 	| { success: true; data: T }
@@ -101,7 +101,7 @@ export function parseProperties(properties: unknown): string {
 /**
  * Creates standardized bot check result
  */
-export type BotCheckResult = {
+export interface BotCheckResult {
 	isBot: boolean;
 	response?: {
 		status: string;

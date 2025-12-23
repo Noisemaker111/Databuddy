@@ -7,8 +7,8 @@ import {
 	emailEventSchema,
 } from "@databuddy/validation";
 import { Elysia } from "elysia";
-import { sendEvent } from "../lib/producer";
-import { captureError } from "../lib/tracing";
+import { sendEvent } from "lib/producer";
+import { captureError } from "lib/tracing";
 
 const expectedKey = process.env.EMAIL_API_KEY;
 

@@ -6,10 +6,10 @@
  */
 
 import { bots } from "@databuddy/shared/lists/bots";
+import { captureError, record } from "lib/tracing";
 import { UAParser } from "ua-parser-js";
-import { captureError, record } from "../lib/tracing";
 
-export type UserAgentInfo = {
+export interface UserAgentInfo {
 	bot: {
 		isBot: boolean;
 		name?: string;

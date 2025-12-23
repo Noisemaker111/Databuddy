@@ -7,7 +7,7 @@
 
 import { and, db, eq, member, websites } from "@databuddy/db";
 import { cacheable } from "@databuddy/redis";
-import { captureError, record, setAttributes } from "../lib/tracing";
+import { captureError, record, setAttributes } from "lib/tracing";
 
 type Website = typeof websites.$inferSelect;
 

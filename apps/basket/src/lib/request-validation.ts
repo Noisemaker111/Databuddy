@@ -1,14 +1,14 @@
 import { Autumn as autumn } from "autumn-js";
-import { getWebsiteByIdV2, isValidOrigin } from "../hooks/auth";
-import { extractIpFromRequest } from "../utils/ip-geo";
-import { detectBot } from "../utils/user-agent";
+import { getWebsiteByIdV2, isValidOrigin } from "hooks/auth";
+import { logBlockedTraffic } from "lib/blocked-traffic";
+import { captureError, record, setAttributes } from "lib/tracing";
+import { extractIpFromRequest } from "utils/ip-geo";
+import { detectBot } from "utils/user-agent";
 import {
 	sanitizeString,
 	VALIDATION_LIMITS,
 	validatePayloadSize,
-} from "../utils/validation";
-import { logBlockedTraffic } from "./blocked-traffic";
-import { captureError, record, setAttributes } from "./tracing";
+} from "utils/validation";
 
 interface ValidationResult {
 	success: boolean;

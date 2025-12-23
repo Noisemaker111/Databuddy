@@ -12,17 +12,17 @@ import type {
 	ErrorSpan,
 	IndividualVital,
 } from "@databuddy/validation";
-import { getGeo } from "../utils/ip-geo";
-import { parseUserAgent } from "../utils/user-agent";
+import { sendEvent, sendEventBatch } from "lib/producer";
+import { checkDuplicate, getDailySalt, saltAnonymousId } from "lib/security";
+import { captureError, record, setAttributes } from "lib/tracing";
+import { getGeo } from "utils/ip-geo";
+import { parseUserAgent } from "utils/user-agent";
 import {
 	sanitizeString,
 	VALIDATION_LIMITS,
 	validatePerformanceMetric,
 	validateSessionId,
-} from "../utils/validation";
-import { sendEvent, sendEventBatch } from "./producer";
-import { checkDuplicate, getDailySalt, saltAnonymousId } from "./security";
-import { captureError, record, setAttributes } from "./tracing";
+} from "utils/validation";
 
 /**
  * Insert a track event (pageview/analytics event) via Kafka

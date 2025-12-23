@@ -1,7 +1,7 @@
 import type { ClickHouseClient } from "@clickhouse/client";
 import { clickHouse, TABLE_NAMES } from "@databuddy/db";
 import { CompressionTypes, Kafka, type Producer } from "kafkajs";
-import { captureError, record, setAttributes } from "./tracing";
+import { captureError, record, setAttributes } from "lib/tracing";
 
 /**
  * JSON stringify with undefined -> null conversion

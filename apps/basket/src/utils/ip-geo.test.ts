@@ -4,7 +4,7 @@ import {
 	closeGeoIPReader,
 	extractIpFromRequest,
 	getGeo,
-} from "./ip-geo";
+} from "utils/ip-geo";
 
 const ipRegex = /^[a-f0-9]{12}$/;
 
