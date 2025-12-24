@@ -2,11 +2,14 @@ import { relations } from "drizzle-orm/relations";
 import {
 	account,
 	apikey,
+	flags,
+	flagsToTargetGroups,
 	funnelDefinitions,
 	invitation,
 	member,
 	organization,
 	session,
+	targetGroups,
 	team,
 	twoFactor,
 	user,
@@ -132,3 +135,33 @@ export const apikeyRelations = relations(apikey, ({ one }) => ({
 		references: [organization.id],
 	}),
 }));
+
+export const flagsRelations = relations(flags, ({ one, many }) => ({
+	website: one(websites, {
+		fields: [flags.websiteId],
+		references: [websites.id],
+	}),
+	flagsToTargetGroups: many(flagsToTargetGroups),
+}));
+
+export const targetGroupsRelations = relations(targetGroups, ({ one, many }) => ({
+	website: one(websites, {
+		fields: [targetGroups.websiteId],
+		references: [websites.id],
+	}),
+	flagsToTargetGroups: many(flagsToTargetGroups),
+}));
+
+export const flagsToTargetGroupsRelations = relations(
+	flagsToTargetGroups,
+	({ one }) => ({
+		flag: one(flags, {
+			fields: [flagsToTargetGroups.flagId],
+			references: [flags.id],
+		}),
+		targetGroup: one(targetGroups, {
+			fields: [flagsToTargetGroups.targetGroupId],
+			references: [targetGroups.id],
+		}),
+	})
+);

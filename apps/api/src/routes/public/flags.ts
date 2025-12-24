@@ -21,13 +21,13 @@ const bulkFlagQuerySchema = t.Object({
 	environment: t.Optional(t.String()),
 });
 
-type UserContext = {
+interface UserContext {
 	userId?: string;
 	email?: string;
 	properties?: Record<string, unknown>;
 };
 
-type FlagRule = {
+interface FlagRule {
 	type: "user_id" | "email" | "property";
 	operator: string;
 	field?: string;
@@ -38,7 +38,7 @@ type FlagRule = {
 	batchValues?: string[];
 };
 
-type FlagResult = {
+interface FlagResult {
 	enabled: boolean;
 	value: boolean | string | number | unknown;
 	payload: unknown;
@@ -46,7 +46,7 @@ type FlagResult = {
 	variant?: string;
 };
 
-type Variant = {
+interface Variant {
 	key: string;
 	value: string | number;
 	weight?: number;
@@ -54,8 +54,13 @@ type Variant = {
 	type: "string" | "number";
 };
 
+interface TargetGroupData {
+	id: string;
+	rules: FlagRule[];
+};
+
 /** Flag type for evaluation - includes database fields not in the form schema */
-type EvaluableFlag = {
+interface EvaluableFlag {
 	key: string;
 	type: "boolean" | "rollout" | "multivariant";
 	status: "active" | "inactive" | "archived";
@@ -64,10 +69,12 @@ type EvaluableFlag = {
 	rules?: FlagRule[] | unknown;
 	variants?: Variant[];
 	payload?: unknown;
+	targetGroupIds?: string[];
+	resolvedTargetGroups?: TargetGroupData[];
 };
 
 const getCachedFlag = cacheable(
-	(key: string, clientId: string, environment?: string) => {
+	async (key: string, clientId: string, environment?: string) => {
 		const scopeCondition = or(
 			eq(flags.websiteId, clientId),
 			eq(flags.organizationId, clientId)
@@ -76,7 +83,8 @@ const getCachedFlag = cacheable(
 		const environmentCondition = environment
 			? eq(flags.environment, environment)
 			: isNull(flags.environment);
-		return db.query.flags.findFirst({
+
+		const flag = await db.query.flags.findFirst({
 			where: and(
 				eq(flags.key, key),
 				environmentCondition,
@@ -84,7 +92,31 @@ const getCachedFlag = cacheable(
 				eq(flags.status, "active"),
 				scopeCondition
 			),
+			with: {
+				flagsToTargetGroups: {
+					with: {
+						targetGroup: true,
+					},
+				},
+			},
 		});
+
+		if (!flag) {
+			return null;
+		}
+
+		// Map the nested relation to a flat array
+		const resolvedTargetGroups: TargetGroupData[] = flag.flagsToTargetGroups
+			.filter((ftg) => ftg.targetGroup && !ftg.targetGroup.deletedAt)
+			.map((ftg) => ({
+				id: ftg.targetGroup.id,
+				rules: (ftg.targetGroup.rules as FlagRule[]) || [],
+			}));
+
+		return {
+			...flag,
+			resolvedTargetGroups,
+		};
 	},
 	{
 		expireInSec: 30,
@@ -95,7 +127,7 @@ const getCachedFlag = cacheable(
 );
 
 const getCachedFlagsForClient = cacheable(
-	(clientId: string, environment?: string) => {
+	async (clientId: string, environment?: string) => {
 		const scopeCondition = or(
 			eq(flags.websiteId, clientId),
 			eq(flags.organizationId, clientId)
@@ -105,13 +137,35 @@ const getCachedFlagsForClient = cacheable(
 			? eq(flags.environment, environment)
 			: isNull(flags.environment);
 
-		return db.query.flags.findMany({
+		const flagsList = await db.query.flags.findMany({
 			where: and(
 				isNull(flags.deletedAt),
 				eq(flags.status, "active"),
 				environmentCondition,
 				scopeCondition
 			),
+			with: {
+				flagsToTargetGroups: {
+					with: {
+						targetGroup: true,
+					},
+				},
+			},
+		});
+
+		// Map the nested relations to flat arrays
+		return flagsList.map((flag) => {
+			const resolvedTargetGroups: TargetGroupData[] = flag.flagsToTargetGroups
+				.filter((ftg) => ftg.targetGroup && !ftg.targetGroup.deletedAt)
+				.map((ftg) => ({
+					id: ftg.targetGroup.id,
+					rules: (ftg.targetGroup.rules as FlagRule[]) || [],
+				}));
+
+			return {
+				...flag,
+				resolvedTargetGroups,
+			};
 		});
 	},
 	{
@@ -283,7 +337,7 @@ export function selectVariant(
 	}
 
 	// If no weighted match, fall back to last variant
-	const lastVariant = flag.variants[flag.variants.length - 1];
+	const lastVariant = flag.variants.at(-1);
 	if (!lastVariant) {
 		return { value: flag.defaultValue, variant: "default" };
 	}
@@ -294,6 +348,7 @@ export function evaluateFlag(
 	flag: EvaluableFlag,
 	context: UserContext
 ): FlagResult {
+	// Check direct flag rules first
 	if (flag.rules && Array.isArray(flag.rules) && flag.rules.length > 0) {
 		for (const rule of flag.rules as FlagRule[]) {
 			if (evaluateRule(rule, context)) {
@@ -303,6 +358,24 @@ export function evaluateFlag(
 					payload: rule.enabled ? flag.payload : null,
 					reason: "USER_RULE_MATCH",
 				};
+			}
+		}
+	}
+
+	// Check target group rules - if user matches any group rule, enable the flag
+	if (flag.resolvedTargetGroups && flag.resolvedTargetGroups.length > 0) {
+		for (const group of flag.resolvedTargetGroups) {
+			if (group.rules && Array.isArray(group.rules)) {
+				for (const rule of group.rules) {
+					if (evaluateRule(rule, context)) {
+						return {
+							enabled: rule.enabled,
+							value: rule.enabled,
+							payload: rule.enabled ? flag.payload : null,
+							reason: "TARGET_GROUP_MATCH",
+						};
+					}
+				}
 			}
 		}
 	}
@@ -417,6 +490,8 @@ export const flagsRoute = new Elysia({ prefix: "/v1/flags" })
 							rules: flag.rules,
 							variants: flag.variants as Variant[],
 							payload: flag.payload,
+							targetGroupIds: flag.targetGroupIds as string[],
+							resolvedTargetGroups: flag.resolvedTargetGroups,
 						},
 						context
 					);

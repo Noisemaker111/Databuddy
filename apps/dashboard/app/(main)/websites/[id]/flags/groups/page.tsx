@@ -14,22 +14,22 @@ import { GroupSheet } from "./_components/group-sheet";
 import { GroupsList } from "./_components/groups-list";
 
 const GroupsListSkeleton = () => (
-	<div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
-		{[...new Array(6)].map((_, i) => (
+	<div className="border-border border-t">
+		{[...new Array(5)].map((_, i) => (
 			<div
-				className="animate-pulse rounded border bg-card p-4"
+				className="flex animate-pulse items-center border-border border-b px-4 py-4 sm:px-6"
 				key={`group-skeleton-${i + 1}`}
 			>
-				<div className="flex items-start gap-3">
-					<div className="size-8 rounded bg-muted" />
-					<div className="flex-1 space-y-2">
-						<div className="h-5 w-32 rounded bg-muted" />
-						<div className="h-4 w-full rounded bg-muted" />
+				<div className="flex flex-1 items-center gap-4">
+					<div className="min-w-0 flex-1 space-y-2">
+						<div className="flex items-center gap-2">
+							<div className="size-8 rounded bg-muted" />
+							<div className="h-5 w-40 rounded bg-muted" />
+							<div className="h-5 w-16 rounded bg-muted" />
+						</div>
+						<div className="h-4 w-48 rounded bg-muted" />
 					</div>
-				</div>
-				<div className="mt-4 flex gap-2">
-					<div className="h-6 w-16 rounded bg-muted" />
-					<div className="h-6 w-20 rounded bg-muted" />
+					<div className="size-8 rounded bg-muted" />
 				</div>
 			</div>
 		))}

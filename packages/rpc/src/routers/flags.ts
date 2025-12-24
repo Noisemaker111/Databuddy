@@ -1,14 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { websitesApi } from "@databuddy/auth";
-import {
-	and,
-	desc,
-	eq,
-	flags,
-	inArray,
-	isNull,
-	targetGroups,
-} from "@databuddy/db";
+import { and, desc, eq, flags, flagsToTargetGroups, inArray, isNull } from "@databuddy/db";
 import { createDrizzleCache, redis } from "@databuddy/redis";
 import {
 	flagFormSchema,
@@ -23,7 +15,7 @@ import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import type { Context } from "../orpc";
 import { protectedProcedure, publicProcedure } from "../orpc";
-import { authorizeWebsiteAccess } from "../utils/auth";
+import { authorizeWebsiteAccess, isFullyAuthorized } from "../utils/auth";
 import { getCacheAuthContext } from "../utils/cache-keys";
 
 const flagsCache = createDrizzleCache({ redis, namespace: "flags" });
@@ -217,6 +209,30 @@ const checkCircularDependency = async (
 	}
 };
 
+interface FlagWithTargetGroups {
+	rules?: unknown;
+	targetGroups?: Array<{
+		rules?: unknown;
+		[key: string]: unknown;
+	}>;
+	[key: string]: unknown;
+};
+
+/**
+ * Sanitizes flag data for unauthorized/demo users by removing sensitive targeting information.
+ * Only keeps aggregate numbers like rule count and group count.
+ */
+function sanitizeFlagForDemo<T extends FlagWithTargetGroups>(flag: T): T {
+	return {
+		...flag,
+		rules: Array.isArray(flag.rules) && flag.rules.length > 0 ? [] : flag.rules,
+		targetGroups: flag.targetGroups?.map((group: { rules?: unknown;[key: string]: unknown }) => ({
+			...group,
+			rules: Array.isArray(group.rules) && group.rules.length > 0 ? [] : group.rules,
+		})),
+	};
+}
+
 export const flagsRouter = {
 	list: publicProcedure.input(listFlagsSchema).handler(({ context, input }) => {
 		const scope = getScope(input.websiteId, input.organizationId);
@@ -225,7 +241,7 @@ export const flagsRouter = {
 		return flagsCache.withCache({
 			key: cacheKey,
 			ttl: CACHE_DURATION,
-			tables: ["flags", "target_groups"],
+			tables: ["flags", "flags_to_target_groups", "target_groups"],
 			queryFn: async () => {
 				await authorizeScope(
 					context,
@@ -243,45 +259,37 @@ export const flagsRouter = {
 					conditions.push(eq(flags.status, input.status));
 				}
 
-				const flagsList = await context.db
-					.select()
-					.from(flags)
-					.where(and(...conditions))
-					.orderBy(desc(flags.createdAt));
+				const flagsList = await context.db.query.flags.findMany({
+					where: and(...conditions),
+					orderBy: desc(flags.createdAt),
+					with: {
+						flagsToTargetGroups: {
+							with: {
+								targetGroup: true,
+							},
+						},
+					},
+				});
 
-				// Fetch all target groups for the website
-				const allGroupIds = new Set<string>();
-				for (const flag of flagsList) {
-					const groupIds = (flag.targetGroupIds as string[]) || [];
-					for (const id of groupIds) {
-						allGroupIds.add(id);
-					}
-				}
-
-				let groupsMap = new Map();
-				if (allGroupIds.size > 0 && input.websiteId) {
-					const groups = await context.db
-						.select()
-						.from(targetGroups)
-						.where(
-							and(
-								inArray(targetGroups.id, Array.from(allGroupIds)),
-								eq(targetGroups.websiteId, input.websiteId),
-								isNull(targetGroups.deletedAt)
-							)
-						);
-
-					groupsMap = new Map(groups.map((g) => [g.id, g]));
-				}
-
-				// Map target groups to each flag
-				return flagsList.map((flag) => ({
+				// Map the nested relations to flat targetGroups array
+				const mappedFlags = flagsList.map((flag) => ({
 					...flag,
-					targetGroups:
-						((flag.targetGroupIds as string[]) || [])
-							.map((id) => groupsMap.get(id))
-							.filter((g) => g !== undefined) || [],
+					targetGroups: flag.flagsToTargetGroups
+						.filter((ftg) => ftg.targetGroup && !ftg.targetGroup.deletedAt)
+						.map((ftg) => ftg.targetGroup),
 				}));
+
+				// Check if user is fully authorized
+				const isAuthorized = input.websiteId
+					? await isFullyAuthorized(context, input.websiteId)
+					: Boolean(context.user);
+
+				// Sanitize data for unauthorized/demo users
+				if (!isAuthorized) {
+					return mappedFlags.map((flag) => sanitizeFlagForDemo(flag));
+				}
+
+				return mappedFlags;
 			},
 		});
 	}),
@@ -300,7 +308,7 @@ export const flagsRouter = {
 			return flagsCache.withCache({
 				key: cacheKey,
 				ttl: CACHE_DURATION,
-				tables: ["flags", "target_groups"],
+				tables: ["flags", "flags_to_target_groups", "target_groups"],
 				queryFn: async () => {
 					await authorizeScope(
 						context,
@@ -309,47 +317,45 @@ export const flagsRouter = {
 						"read"
 					);
 
-					const result = await context.db
-						.select()
-						.from(flags)
-						.where(
-							and(
-								eq(flags.id, input.id),
-								getScopeCondition(input.websiteId, input.organizationId),
-								isNull(flags.deletedAt)
-							)
-						)
-						.limit(1);
+					const flag = await context.db.query.flags.findFirst({
+						where: and(
+							eq(flags.id, input.id),
+							getScopeCondition(input.websiteId, input.organizationId),
+							isNull(flags.deletedAt)
+						),
+						with: {
+							flagsToTargetGroups: {
+								with: {
+									targetGroup: true,
+								},
+							},
+						},
+					});
 
-					if (result.length === 0) {
+					if (!flag) {
 						throw new ORPCError("NOT_FOUND", {
 							message: "Flag not found",
 						});
 					}
 
-					const flag = result[0];
-					const groupIds = (flag.targetGroupIds as string[]) || [];
+					const mappedFlag = {
+						...flag,
+						targetGroups: flag.flagsToTargetGroups
+							.filter((ftg) => ftg.targetGroup && !ftg.targetGroup.deletedAt)
+							.map((ftg) => ftg.targetGroup),
+					};
 
-					let targetGroupsList: unknown[] = [];
-					if (groupIds.length > 0 && input.websiteId) {
-						const groups = await context.db
-							.select()
-							.from(targetGroups)
-							.where(
-								and(
-									inArray(targetGroups.id, groupIds),
-									eq(targetGroups.websiteId, input.websiteId),
-									isNull(targetGroups.deletedAt)
-								)
-							);
+					// Check if user is fully authorized
+					const isAuthorized = input.websiteId
+						? await isFullyAuthorized(context, input.websiteId)
+						: Boolean(context.user);
 
-						targetGroupsList = groups;
+					// Sanitize data for unauthorized/demo users
+					if (!isAuthorized) {
+						return sanitizeFlagForDemo(mappedFlag);
 					}
 
-					return {
-						...flag,
-						targetGroups: targetGroupsList,
-					};
+					return mappedFlag;
 				},
 			});
 		}),
@@ -368,7 +374,7 @@ export const flagsRouter = {
 			return flagsCache.withCache({
 				key: cacheKey,
 				ttl: CACHE_DURATION,
-				tables: ["flags", "target_groups"],
+				tables: ["flags", "flags_to_target_groups", "target_groups"],
 				queryFn: async () => {
 					await authorizeScope(
 						context,
@@ -377,48 +383,46 @@ export const flagsRouter = {
 						"read"
 					);
 
-					const result = await context.db
-						.select()
-						.from(flags)
-						.where(
-							and(
-								eq(flags.key, input.key),
-								getScopeCondition(input.websiteId, input.organizationId),
-								eq(flags.status, "active"),
-								isNull(flags.deletedAt)
-							)
-						)
-						.limit(1);
+					const flag = await context.db.query.flags.findFirst({
+						where: and(
+							eq(flags.key, input.key),
+							getScopeCondition(input.websiteId, input.organizationId),
+							eq(flags.status, "active"),
+							isNull(flags.deletedAt)
+						),
+						with: {
+							flagsToTargetGroups: {
+								with: {
+									targetGroup: true,
+								},
+							},
+						},
+					});
 
-					if (result.length === 0) {
+					if (!flag) {
 						throw new ORPCError("NOT_FOUND", {
 							message: "Flag not found",
 						});
 					}
 
-					const flag = result[0];
-					const groupIds = (flag.targetGroupIds as string[]) || [];
+					const mappedFlag = {
+						...flag,
+						targetGroups: flag.flagsToTargetGroups
+							.filter((ftg) => ftg.targetGroup && !ftg.targetGroup.deletedAt)
+							.map((ftg) => ftg.targetGroup),
+					};
 
-					let targetGroupsList: unknown[] = [];
-					if (groupIds.length > 0 && input.websiteId) {
-						const groups = await context.db
-							.select()
-							.from(targetGroups)
-							.where(
-								and(
-									inArray(targetGroups.id, groupIds),
-									eq(targetGroups.websiteId, input.websiteId),
-									isNull(targetGroups.deletedAt)
-								)
-							);
+					// Check if user is fully authorized
+					const isAuthorized = input.websiteId
+						? await isFullyAuthorized(context, input.websiteId)
+						: Boolean(context.user);
 
-						targetGroupsList = groups;
+					// Sanitize data for unauthorized/demo users
+					if (!isAuthorized) {
+						return sanitizeFlagForDemo(mappedFlag);
 					}
 
-					return {
-						...flag,
-						targetGroups: targetGroupsList,
-					};
+					return mappedFlag;
 				},
 			});
 		}),
@@ -504,22 +508,39 @@ export const flagsRouter = {
 						variants: input.variants,
 						dependencies: input.dependencies,
 						environment: input.environment,
-						targetGroupIds: input.targetGroupIds || [],
 						deletedAt: null,
 						updatedAt: new Date(),
 					})
 					.where(eq(flags.id, existingFlag[0].id))
 					.returning();
 
-				await flagsCache.invalidateByTables(["flags"]);
+				// Update target group associations
+				await context.db
+					.delete(flagsToTargetGroups)
+					.where(eq(flagsToTargetGroups.flagId, existingFlag[0].id));
+
+				if (input.targetGroupIds && input.targetGroupIds.length > 0) {
+					await context.db.insert(flagsToTargetGroups).values(
+						input.targetGroupIds.map((targetGroupId) => ({
+							flagId: existingFlag[0].id,
+							targetGroupId,
+						}))
+					);
+				}
+
+				await flagsCache.invalidateByTables([
+					"flags",
+					"flags_to_target_groups",
+				]);
 
 				return restoredFlag;
 			}
 
+			const flagId = randomUUID();
 			const [newFlag] = await context.db
 				.insert(flags)
 				.values({
-					id: randomUUID(),
+					id: flagId,
 					key: input.key,
 					name: input.name || null,
 					description: input.description || null,
@@ -532,7 +553,6 @@ export const flagsRouter = {
 					rolloutPercentage: input.rolloutPercentage || 0,
 					variants: input.variants || [],
 					dependencies: input.dependencies || [],
-					targetGroupIds: input.targetGroupIds || [],
 					websiteId: input.websiteId || null,
 					organizationId: input.organizationId || null,
 					environment: input.environment || existingFlag?.[0]?.environment,
@@ -541,7 +561,20 @@ export const flagsRouter = {
 				})
 				.returning();
 
-			await flagsCache.invalidateByTables(["flags"]);
+			// Insert target group associations
+			if (input.targetGroupIds && input.targetGroupIds.length > 0) {
+				await context.db.insert(flagsToTargetGroups).values(
+					input.targetGroupIds.map((targetGroupId) => ({
+						flagId,
+						targetGroupId,
+					}))
+				);
+			}
+
+			await flagsCache.invalidateByTables([
+				"flags",
+				"flags_to_target_groups",
+			]);
 
 			return newFlag;
 		}),
@@ -614,7 +647,7 @@ export const flagsRouter = {
 				}
 			}
 
-			const { id, ...updates } = input;
+			const { id, targetGroupIds, ...updates } = input;
 			const [updatedFlag] = await context.db
 				.update(flags)
 				.set({
@@ -623,6 +656,22 @@ export const flagsRouter = {
 				})
 				.where(and(eq(flags.id, id), isNull(flags.deletedAt)))
 				.returning();
+
+			// Update target group associations if provided
+			if (targetGroupIds !== undefined) {
+				await context.db
+					.delete(flagsToTargetGroups)
+					.where(eq(flagsToTargetGroups.flagId, id));
+
+				if (targetGroupIds.length > 0) {
+					await context.db.insert(flagsToTargetGroups).values(
+						targetGroupIds.map((targetGroupId) => ({
+							flagId: id,
+							targetGroupId,
+						}))
+					);
+				}
+			}
 
 			await invalidateFlagCache(id, flag.websiteId, flag.organizationId);
 

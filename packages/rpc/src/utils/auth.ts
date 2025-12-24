@@ -87,6 +87,47 @@ export async function authorizeWebsiteAccess(
 }
 
 /**
+ * Checks if a user has full authorization (not just demo/public access).
+ * Returns true only if the user is authenticated and authorized.
+ */
+export async function isFullyAuthorized(
+	ctx: Context,
+	websiteId: string
+): Promise<boolean> {
+	try {
+		const website = await getWebsiteById(websiteId);
+
+		if (!website) {
+			return false;
+		}
+
+		// Public access is not "fully authorized" - it's demo access
+		if (!ctx.user) {
+			return false;
+		}
+
+		// Admin is always fully authorized
+		if (ctx.user.role === "ADMIN") {
+			return true;
+		}
+
+		// Check organization permissions
+		if (website.organizationId) {
+			const { success } = await websitesApi.hasPermission({
+				headers: ctx.headers,
+				body: { permissions: { website: ["read"] } },
+			});
+			return success;
+		}
+
+		// Check direct ownership
+		return website.userId === ctx.user.id;
+	} catch {
+		return false;
+	}
+}
+
+/**
  * A utility to authorize uptime schedule access.
  * If schedule has websiteId, checks website access.
  * Otherwise, checks that user owns the schedule.

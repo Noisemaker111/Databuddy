@@ -7,6 +7,7 @@ import {
 	jsonb,
 	pgEnum,
 	pgTable,
+	primaryKey,
 	text,
 	timestamp,
 	unique,
@@ -868,6 +869,29 @@ export const targetGroups = pgTable(
 		})
 			.onUpdate("cascade")
 			.onDelete("restrict"),
+	]
+);
+
+export const flagsToTargetGroups = pgTable(
+	"flags_to_target_groups",
+	{
+		flagId: text("flag_id")
+			.notNull()
+			.references(() => flags.id, { onDelete: "cascade" }),
+		targetGroupId: text("target_group_id")
+			.notNull()
+			.references(() => targetGroups.id, { onDelete: "cascade" }),
+	},
+	(table) => [
+		primaryKey({ columns: [table.flagId, table.targetGroupId] }),
+		index("flags_to_target_groups_flag_id_idx").using(
+			"btree",
+			table.flagId.asc().nullsLast()
+		),
+		index("flags_to_target_groups_target_group_id_idx").using(
+			"btree",
+			table.targetGroupId.asc().nullsLast()
+		),
 	]
 );
 

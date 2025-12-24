@@ -4,8 +4,8 @@ import { createDrizzleCache, redis } from "@databuddy/redis";
 import { userRuleSchema } from "@databuddy/shared/flags";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
-import { protectedProcedure } from "../orpc";
-import { authorizeWebsiteAccess } from "../utils/auth";
+import { protectedProcedure, publicProcedure } from "../orpc";
+import { authorizeWebsiteAccess, isFullyAuthorized } from "../utils/auth";
 
 const targetGroupsCache = createDrizzleCache({
     redis,
@@ -45,8 +45,24 @@ const deleteSchema = z.object({
     id: z.string(),
 });
 
+interface TargetGroupWithRules {
+    rules?: unknown;
+    [key: string]: unknown;
+};
+
+/**
+ * Sanitizes target group data for unauthorized/demo users by removing sensitive targeting information.
+ * Only keeps aggregate numbers like rule count.
+ */
+function sanitizeGroupForDemo<T extends TargetGroupWithRules>(group: T): T {
+    return {
+        ...group,
+        rules: Array.isArray(group.rules) && group.rules.length > 0 ? [] : group.rules,
+    };
+}
+
 export const targetGroupsRouter = {
-    list: protectedProcedure.input(listSchema).handler(({ context, input }) => {
+    list: publicProcedure.input(listSchema).handler(({ context, input }) => {
         const cacheKey = `list:website:${input.websiteId}`;
 
         return targetGroupsCache.withCache({
@@ -56,7 +72,7 @@ export const targetGroupsRouter = {
             queryFn: async () => {
                 await authorizeWebsiteAccess(context, input.websiteId, "read");
 
-                return context.db
+                const groupsList = await context.db
                     .select()
                     .from(targetGroups)
                     .where(
@@ -66,11 +82,21 @@ export const targetGroupsRouter = {
                         )
                     )
                     .orderBy(desc(targetGroups.createdAt));
+
+                // Check if user is fully authorized
+                const isAuthorized = await isFullyAuthorized(context, input.websiteId);
+
+                // Sanitize data for unauthorized/demo users
+                if (!isAuthorized) {
+                    return groupsList.map((group) => sanitizeGroupForDemo(group));
+                }
+
+                return groupsList;
             },
         });
     }),
 
-    getById: protectedProcedure
+    getById: publicProcedure
         .input(getByIdSchema)
         .handler(async ({ context, input }) => {
             await authorizeWebsiteAccess(context, input.websiteId, "read");
@@ -98,6 +124,14 @@ export const targetGroupsRouter = {
                         throw new ORPCError("NOT_FOUND", {
                             message: "Target group not found",
                         });
+                    }
+
+                    // Check if user is fully authorized
+                    const isAuthorized = await isFullyAuthorized(context, input.websiteId);
+
+                    // Sanitize data for unauthorized/demo users
+                    if (!isAuthorized) {
+                        return sanitizeGroupForDemo(result[0]);
                     }
 
                     return result[0];

@@ -1024,3 +1024,250 @@ describe("rollout stability", () => {
 		}
 	});
 });
+
+describe("evaluateFlag - target groups", () => {
+	it("enables flag when user matches a target group rule", () => {
+		const flag = {
+			key: "test-flag",
+			type: "boolean",
+			defaultValue: false,
+			payload: { feature: "beta" },
+			rules: [],
+			resolvedTargetGroups: [
+				{
+					id: "group-1",
+					rules: [
+						{
+							type: "user_id",
+							operator: "equals",
+							value: "vip-user",
+							enabled: true,
+							batch: false,
+						},
+					],
+				},
+			],
+		};
+
+		const result = evaluateFlag(flag, { userId: "vip-user" });
+		expect(result.enabled).toBe(true);
+		expect(result.reason).toBe("TARGET_GROUP_MATCH");
+		expect(result.payload).toEqual({ feature: "beta" });
+	});
+
+	it("disables flag when target group rule has enabled: false", () => {
+		const flag = {
+			key: "test-flag",
+			type: "boolean",
+			defaultValue: true,
+			payload: { feature: "beta" },
+			rules: [],
+			resolvedTargetGroups: [
+				{
+					id: "blocklist-group",
+					rules: [
+						{
+							type: "email",
+							operator: "contains",
+							value: "@competitor.com",
+							enabled: false,
+							batch: false,
+						},
+					],
+				},
+			],
+		};
+
+		const result = evaluateFlag(flag, { email: "spy@competitor.com" });
+		expect(result.enabled).toBe(false);
+		expect(result.reason).toBe("TARGET_GROUP_MATCH");
+		expect(result.payload).toBeNull();
+	});
+
+	it("falls back to default when no target group rules match", () => {
+		const flag = {
+			key: "test-flag",
+			type: "boolean",
+			defaultValue: true,
+			payload: null,
+			rules: [],
+			resolvedTargetGroups: [
+				{
+					id: "beta-users",
+					rules: [
+						{
+							type: "user_id",
+							operator: "equals",
+							value: "beta-tester",
+							enabled: true,
+							batch: false,
+						},
+					],
+				},
+			],
+		};
+
+		const result = evaluateFlag(flag, { userId: "regular-user" });
+		expect(result.enabled).toBe(true);
+		expect(result.reason).toBe("BOOLEAN_DEFAULT");
+	});
+
+	it("prioritizes direct flag rules over target group rules", () => {
+		const flag = {
+			key: "test-flag",
+			type: "boolean",
+			defaultValue: false,
+			payload: { source: "direct" },
+			rules: [
+				{
+					type: "user_id",
+					operator: "equals",
+					value: "admin",
+					enabled: true,
+					batch: false,
+				},
+			],
+			resolvedTargetGroups: [
+				{
+					id: "beta-group",
+					rules: [
+						{
+							type: "user_id",
+							operator: "equals",
+							value: "admin",
+							enabled: false,
+							batch: false,
+						},
+					],
+				},
+			],
+		};
+
+		const result = evaluateFlag(flag, { userId: "admin" });
+		expect(result.enabled).toBe(true);
+		expect(result.reason).toBe("USER_RULE_MATCH");
+	});
+
+	it("checks multiple target groups until match found", () => {
+		const flag = {
+			key: "test-flag",
+			type: "boolean",
+			defaultValue: false,
+			payload: { feature: "exclusive" },
+			rules: [],
+			resolvedTargetGroups: [
+				{
+					id: "group-1",
+					rules: [
+						{
+							type: "email",
+							operator: "ends_with",
+							value: "@company-a.com",
+							enabled: true,
+							batch: false,
+						},
+					],
+				},
+				{
+					id: "group-2",
+					rules: [
+						{
+							type: "email",
+							operator: "ends_with",
+							value: "@company-b.com",
+							enabled: true,
+							batch: false,
+						},
+					],
+				},
+			],
+		};
+
+		const resultA = evaluateFlag(flag, { email: "user@company-a.com" });
+		expect(resultA.enabled).toBe(true);
+		expect(resultA.reason).toBe("TARGET_GROUP_MATCH");
+
+		const resultB = evaluateFlag(flag, { email: "user@company-b.com" });
+		expect(resultB.enabled).toBe(true);
+		expect(resultB.reason).toBe("TARGET_GROUP_MATCH");
+
+		const resultOther = evaluateFlag(flag, { email: "user@other.com" });
+		expect(resultOther.enabled).toBe(false);
+		expect(resultOther.reason).toBe("BOOLEAN_DEFAULT");
+	});
+
+	it("handles empty resolvedTargetGroups array", () => {
+		const flag = {
+			key: "test-flag",
+			type: "boolean",
+			defaultValue: true,
+			payload: null,
+			rules: [],
+			resolvedTargetGroups: [],
+		};
+
+		const result = evaluateFlag(flag, { userId: "test" });
+		expect(result.enabled).toBe(true);
+		expect(result.reason).toBe("BOOLEAN_DEFAULT");
+	});
+
+	it("handles target group with batch rules", () => {
+		const flag = {
+			key: "test-flag",
+			type: "boolean",
+			defaultValue: false,
+			payload: { access: "granted" },
+			rules: [],
+			resolvedTargetGroups: [
+				{
+					id: "allowlist-group",
+					rules: [
+						{
+							type: "user_id",
+							operator: "in",
+							batch: true,
+							batchValues: ["user-1", "user-2", "user-3"],
+							enabled: true,
+						},
+					],
+				},
+			],
+		};
+
+		expect(evaluateFlag(flag, { userId: "user-1" }).enabled).toBe(true);
+		expect(evaluateFlag(flag, { userId: "user-2" }).enabled).toBe(true);
+		expect(evaluateFlag(flag, { userId: "user-4" }).enabled).toBe(false);
+	});
+
+	it("handles target group with property rules", () => {
+		const flag = {
+			key: "test-flag",
+			type: "boolean",
+			defaultValue: false,
+			payload: { tier: "premium" },
+			rules: [],
+			resolvedTargetGroups: [
+				{
+					id: "premium-users",
+					rules: [
+						{
+							type: "property",
+							operator: "in",
+							field: "plan",
+							values: ["pro", "enterprise"],
+							enabled: true,
+							batch: false,
+						},
+					],
+				},
+			],
+		};
+
+		const resultPro = evaluateFlag(flag, { properties: { plan: "pro" } });
+		expect(resultPro.enabled).toBe(true);
+		expect(resultPro.reason).toBe("TARGET_GROUP_MATCH");
+
+		const resultFree = evaluateFlag(flag, { properties: { plan: "free" } });
+		expect(resultFree.enabled).toBe(false);
+	});
+});
