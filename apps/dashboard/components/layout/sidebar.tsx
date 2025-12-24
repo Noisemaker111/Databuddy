@@ -158,9 +158,21 @@ export function Sidebar({ user }: SidebarProps) {
 		return () => document.removeEventListener("keydown", handleKeyDown);
 	}, [isMobileOpen, closeSidebar]);
 
+	const defaultCategory = useMemo(
+		() => getDefaultCategory(pathname),
+		[pathname]
+	);
+	const previousDefaultCategoryRef = useRef<string | undefined>(undefined);
+
 	useEffect(() => {
-		setSelectedCategory(undefined);
-	}, [pathname]);
+		if (
+			previousDefaultCategoryRef.current !== undefined &&
+			previousDefaultCategoryRef.current !== defaultCategory
+		) {
+			setSelectedCategory(undefined);
+		}
+		previousDefaultCategoryRef.current = defaultCategory;
+	}, [defaultCategory]);
 
 	useEffect(() => {
 		if (isMobileOpen && sidebarRef.current) {
