@@ -677,11 +677,11 @@ export const flagScheduleActionType = pgEnum("flag_schedule_type", [
 export type RolloutStep =
 	| { scheduledAt: string; action: "enable" | "disable"; executedAt?: string }
 	| {
-			scheduledAt: string;
-			action: "set_percentage";
-			value: number;
-			executedAt?: string;
-	  };
+		scheduledAt: string;
+		action: "set_percentage";
+		value: number;
+		executedAt?: string;
+	};
 export const annotationType = pgEnum("annotation_type", [
 	"point",
 	"line",
@@ -838,7 +838,10 @@ export const uptimeSchedules = pgTable(
 	"uptime_schedules",
 	{
 		id: text().primaryKey().notNull(),
-		websiteId: text("website_id").notNull(),
+		websiteId: text("website_id"),
+		userId: text("user_id").notNull(),
+		url: text().notNull(),
+		name: text(),
 		granularity: text("granularity").notNull(),
 		cron: text().notNull(),
 		isPaused: boolean("is_paused").default(false).notNull(),
@@ -850,10 +853,21 @@ export const uptimeSchedules = pgTable(
 			"btree",
 			table.websiteId.asc().nullsLast().op("text_ops")
 		),
+		index("uptime_schedules_user_id_idx").using(
+			"btree",
+			table.userId.asc().nullsLast().op("text_ops")
+		),
 		foreignKey({
 			columns: [table.websiteId],
 			foreignColumns: [websites.id],
 			name: "uptime_schedules_website_id_fkey",
+		})
+			.onUpdate("cascade")
+			.onDelete("cascade"),
+		foreignKey({
+			columns: [table.userId],
+			foreignColumns: [user.id],
+			name: "uptime_schedules_user_id_fkey",
 		})
 			.onUpdate("cascade")
 			.onDelete("cascade"),
