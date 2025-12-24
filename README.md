@@ -17,7 +17,7 @@
 
 [<img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />](https://vercel.com/oss)
 
-[![Discord](https://img.shields.io/discord/123456789?label=Discord&logo=discord)](https://discord.gg/JTk7a38tCZ)
+[![Discord](https://img.shields.io/badge/Discord-Join-blue?logo=discord)](https://discord.gg/JTk7a38tCZ)
 [![GitHub Stars](https://img.shields.io/github/stars/databuddy-analytics/Databuddy?style=social)](https://github.com/databuddy-analytics/Databuddy/stargazers)
 [![Twitter](https://img.shields.io/twitter/follow/trydatabuddy?style=social)](https://twitter.com/trydatabuddy)
 
@@ -58,7 +58,8 @@ A comprehensive analytics and data management platform built with Next.js, TypeS
 
 ### Prerequisites
 
-- Bun
+- Bun 1.3.4+
+- Node.js 20+
 
 ## 🤝 Contributing
 
@@ -76,7 +77,7 @@ See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
    Databuddy is a comprehensive analytics and data management platform.
 
 2. **How do I get started?**
-   Follow the [Getting Started](#getting-started) guide.
+   Follow the [Getting Started](https://www.databuddy.cc/docs/getting-started) guide.
 
 3. **Is it free?**
    Check our [pricing page](https://databuddy.cc/pricing).
@@ -96,8 +97,8 @@ See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 
 - [Documentation](https://www.databuddy.cc/docs)
 - [Discord](https://discord.gg/JTk7a38tCZ)
-- [Twitter](https://twitter.com/databuddyps)
-- [GitHub Issues](https://github.com/databuddy/databuddy/issues)
+- [Twitter](https://twitter.com/trydatabuddy)
+- [GitHub Issues](https://github.com/databuddy-analytics/Databuddy/issues)
 - [Email Support](mailto:support@databuddy.cc)
 
 ## 📄 License
