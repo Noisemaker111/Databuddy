@@ -7,7 +7,6 @@ import {
 	UserIcon,
 	WrenchIcon,
 } from "@phosphor-icons/react";
-import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -138,13 +137,7 @@ function RuleRow({
 				: "values";
 
 	return (
-		<motion.div
-			animate={{ opacity: 1, y: 0 }}
-			className="group rounded border bg-card"
-			exit={{ opacity: 0, scale: 0.95 }}
-			initial={{ opacity: 0, y: -10 }}
-			layout
-		>
+		<div className="group rounded border bg-card">
 			<div className="flex items-center gap-2 p-3">
 				<Select
 					onValueChange={(v) => handleTypeChange(v as UserRule["type"])}
@@ -274,7 +267,7 @@ function RuleRow({
 					</button>
 				</div>
 			)}
-		</motion.div>
+		</div>
 	);
 }
 
@@ -318,16 +311,14 @@ export function UserRulesBuilder({ rules, onChange }: UserRulesBuilderProps) {
 
 	return (
 		<div className="space-y-2">
-			<AnimatePresence mode="popLayout">
-				{rules.map((rule, index) => (
-					<RuleRow
-						key={index}
-						onRemove={() => removeRule(index)}
-						onUpdate={(updates) => updateRule(index, updates)}
-						rule={rule}
-					/>
-				))}
-			</AnimatePresence>
+			{rules.map((rule, index) => (
+				<RuleRow
+					key={index}
+					onRemove={() => removeRule(index)}
+					onUpdate={(updates) => updateRule(index, updates)}
+					rule={rule}
+				/>
+			))}
 
 			<Button
 				className="w-full text-muted-foreground"

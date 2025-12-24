@@ -5,7 +5,7 @@ import { FlagIcon, InfoIcon } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAtom } from "jotai";
 import { useParams } from "next/navigation";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useState } from "react";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { FeatureGate } from "@/components/feature-gate";
 import { GATED_FEATURES } from "@/components/providers/billing-provider";
@@ -15,10 +15,8 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useWebsite } from "@/hooks/use-websites";
 import { orpc } from "@/lib/orpc";
-import { isAnalyticsRefreshingAtom } from "@/stores/jotai/filterAtoms";
-import { WebsitePageHeader } from "../_components/website-page-header";
+import { isFlagSheetOpenAtom } from "@/stores/jotai/flagsAtoms";
 import { FlagSheet } from "./_components/flag-sheet";
 import { FlagsList } from "./_components/flags-list";
 import type { Flag } from "./_components/types";
@@ -50,24 +48,18 @@ const FlagsListSkeleton = () => (
 export default function FlagsPage() {
 	const { id } = useParams();
 	const websiteId = id as string;
-	const [isRefreshing, setIsRefreshing] = useAtom(isAnalyticsRefreshingAtom);
-	const [isSheetOpen, setIsSheetOpen] = useState(false);
+	const [isFlagSheetOpen, setIsFlagSheetOpen] = useAtom(isFlagSheetOpenAtom);
 	const [editingFlag, setEditingFlag] = useState<Flag | null>(null);
 	const queryClient = useQueryClient();
 
-	const { data: website } = useWebsite(websiteId);
 	const { isEnabled } = useFlags();
 	const experimentFlag = isEnabled("experiment-50");
 
-	const {
-		data: flags,
-		isLoading,
-		refetch,
-	} = useQuery({
+	const { data: flags, isLoading: flagsLoading } = useQuery({
 		...orpc.flags.list.queryOptions({ input: { websiteId } }),
 	});
 
-	const deleteMutation = useMutation({
+	const deleteFlagMutation = useMutation({
 		...orpc.flags.delete.mutationOptions(),
 		onSuccess: () => {
 			queryClient.invalidateQueries({
@@ -76,128 +68,95 @@ export default function FlagsPage() {
 		},
 	});
 
-	const handleRefresh = useCallback(async () => {
-		setIsRefreshing(true);
-		try {
-			await refetch();
-		} finally {
-			setIsRefreshing(false);
-		}
-	}, [refetch, setIsRefreshing]);
-
 	const handleCreateFlag = () => {
 		setEditingFlag(null);
-		setIsSheetOpen(true);
+		setIsFlagSheetOpen(true);
 	};
 
 	const handleEditFlag = (flag: Flag) => {
 		setEditingFlag(flag);
-		setIsSheetOpen(true);
+		setIsFlagSheetOpen(true);
 	};
 
 	const handleDeleteFlag = async (flagId: string) => {
-		await deleteMutation.mutateAsync({ id: flagId });
+		await deleteFlagMutation.mutateAsync({ id: flagId });
 	};
 
-	const handleSheetClose = () => {
-		setIsSheetOpen(false);
+	const handleFlagSheetClose = () => {
+		setIsFlagSheetOpen(false);
 		setEditingFlag(null);
 	};
 
 	return (
 		<FeatureGate feature={GATED_FEATURES.FEATURE_FLAGS}>
 			<ErrorBoundary>
-				<div className="flex h-full min-h-0 flex-col overflow-hidden">
-					<WebsitePageHeader
-						createActionLabel="Create Flag"
-						description="Control feature rollouts and A/B testing"
-						docsUrl="https://www.databuddy.cc/docs/features/feature-flags"
-						icon={<FlagIcon className="size-6 text-accent-foreground" />}
-						isLoading={isLoading}
-						isRefreshing={isRefreshing}
-						onCreateAction={handleCreateFlag}
-						onRefreshAction={handleRefresh}
-						subtitle={
-							isLoading
-								? undefined
-								: `${flags?.length || 0} flag${(flags?.length || 0) !== 1 ? "s" : ""}`
-						}
-						title="Feature Flags"
-						websiteId={websiteId}
-						websiteName={website?.name ?? undefined}
-					/>
-
-					<div className="min-h-0 flex-1 overflow-y-auto">
-						{experimentFlag.isReady && flags && (
-							<div className="flex h-10 items-center border-border border-b bg-accent px-4">
-								<div className="flex items-center gap-3">
-									<div className="flex items-center gap-2">
-										{experimentFlag.enabled ? (
-											<FlagIcon
-												className="size-4 text-destructive"
-												weight="fill"
-											/>
-										) : (
-											<FlagIcon
-												className="size-4 text-blue-600"
-												weight="fill"
-											/>
-										)}
-										{experimentFlag.enabled ? (
-											<Badge variant="destructive">Red Team</Badge>
-										) : (
-											<Badge variant="blue">Blue Team</Badge>
-										)}
-									</div>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<button
-												className="flex items-center gap-1.5 text-foreground text-sm hover:text-foreground/80"
-												type="button"
-											>
-												<InfoIcon className="size-4" weight="duotone" />
-												<span className="hidden sm:inline">
-													A/B Test Experiment
-												</span>
-											</button>
-										</TooltipTrigger>
-										<TooltipContent className="max-w-xs">
-											<div className="space-y-2">
-												<p className="font-medium">A/B Test Experiment</p>
-												<p className="text-xs leading-relaxed">
-													This is a proof-of-concept feature flag demonstrating
-													A/B testing capabilities. Approximately 50% of users
-													are randomly assigned to the "Red Team" experience,
-													while the other 50% see the "Blue Team" experience.
-												</p>
-											</div>
-										</TooltipContent>
-									</Tooltip>
+				<div className="h-full overflow-y-auto">
+					{experimentFlag.isReady && flags && (
+						<div className="flex h-10 items-center border-border border-b bg-accent px-4">
+							<div className="flex items-center gap-3">
+								<div className="flex items-center gap-2">
+									{experimentFlag.enabled ? (
+										<FlagIcon
+											className="size-4 text-destructive"
+											weight="fill"
+										/>
+									) : (
+										<FlagIcon className="size-4 text-blue-600" weight="fill" />
+									)}
+									{experimentFlag.enabled ? (
+										<Badge variant="destructive">Red Team</Badge>
+									) : (
+										<Badge variant="blue">Blue Team</Badge>
+									)}
 								</div>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<button
+											className="flex items-center gap-1.5 text-foreground text-sm hover:text-foreground/80"
+											type="button"
+										>
+											<InfoIcon className="size-4" weight="duotone" />
+											<span className="hidden sm:inline">
+												A/B Test Experiment
+											</span>
+										</button>
+									</TooltipTrigger>
+									<TooltipContent className="max-w-xs">
+										<div className="space-y-2">
+											<p className="font-medium">A/B Test Experiment</p>
+											<p className="text-xs leading-relaxed">
+												This is a proof-of-concept feature flag demonstrating
+												A/B testing capabilities. Approximately 50% of users are
+												randomly assigned to the "Red Team" experience, while
+												the other 50% see the "Blue Team" experience.
+											</p>
+										</div>
+									</TooltipContent>
+								</Tooltip>
 							</div>
-						)}
+						</div>
+					)}
 
-						<Suspense fallback={<FlagsListSkeleton />}>
-							<FlagsList
-								flags={(flags as Flag[]) ?? []}
-								isLoading={isLoading}
-								onCreateFlagAction={handleCreateFlag}
-								onDeleteFlag={handleDeleteFlag}
-								onEditFlagAction={handleEditFlag}
+					<Suspense fallback={<FlagsListSkeleton />}>
+						<FlagsList
+							flags={(flags as Flag[]) ?? []}
+							isLoading={flagsLoading}
+							onCreateFlagAction={handleCreateFlag}
+							onDeleteFlag={handleDeleteFlag}
+							onEditFlagAction={handleEditFlag}
+						/>
+					</Suspense>
+
+					{isFlagSheetOpen && (
+						<Suspense fallback={null}>
+							<FlagSheet
+								flag={editingFlag}
+								isOpen={isFlagSheetOpen}
+								onCloseAction={handleFlagSheetClose}
+								websiteId={websiteId}
 							/>
 						</Suspense>
-
-						{isSheetOpen && (
-							<Suspense fallback={null}>
-								<FlagSheet
-									flag={editingFlag}
-									isOpen={isSheetOpen}
-									onCloseAction={handleSheetClose}
-									websiteId={websiteId}
-								/>
-							</Suspense>
-						)}
-					</div>
+					)}
 				</div>
 			</ErrorBoundary>
 		</FeatureGate>

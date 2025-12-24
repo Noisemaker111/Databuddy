@@ -4,6 +4,7 @@ import {
 	DotsThreeIcon,
 	PencilSimpleIcon,
 	TrashIcon,
+	UsersThreeIcon,
 } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -19,14 +20,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { orpc } from "@/lib/orpc";
 import { cn } from "@/lib/utils";
-import type { Flag } from "./types";
+import type { Flag, TargetGroup } from "./types";
 
-type FlagItemProps = {
+interface FlagItemProps {
 	flag: Flag;
+	groups?: TargetGroup[];
 	onEdit: (flag: Flag) => void;
 	onDelete: (flagId: string) => void;
 	className?: string;
-};
+}
 
 function StatusBadge({ status }: { status: Flag["status"] }) {
 	if (status === "active") {
@@ -56,10 +58,17 @@ function StatusBadge({ status }: { status: Flag["status"] }) {
 	return <Badge variant="secondary">{status}</Badge>;
 }
 
-export function FlagItem({ flag, onEdit, onDelete, className }: FlagItemProps) {
+export function FlagItem({
+	flag,
+	groups = [],
+	onEdit,
+	onDelete,
+	className,
+}: FlagItemProps) {
 	const rollout = flag.rolloutPercentage ?? 0;
 	const ruleCount = flag.rules?.length ?? 0;
 	const variantCount = flag.variants?.length ?? 0;
+	const groupCount = groups.length;
 	const queryClient = useQueryClient();
 
 	const updateStatusMutation = useMutation({
@@ -103,11 +112,40 @@ export function FlagItem({ flag, onEdit, onDelete, className }: FlagItemProps) {
 						<p className="mt-0.5 truncate font-mono text-muted-foreground text-sm">
 							{flag.key}
 						</p>
-						{flag.description && (
-							<p className="mt-0.5 line-clamp-1 text-muted-foreground text-xs">
-								{flag.description}
-							</p>
-						)}
+						<div className="mt-0.5 flex items-center gap-2">
+							{flag.description && (
+								<p className="line-clamp-1 text-muted-foreground text-xs">
+									{flag.description}
+								</p>
+							)}
+							{groupCount > 0 && (
+								<div className="flex items-center gap-1">
+									{groups.slice(0, 2).map((group: TargetGroup) => (
+										<Badge
+											className="gap-1 border text-xs"
+											key={group.id}
+											style={{
+												borderColor: `${group.color}40`,
+												backgroundColor: `${group.color}10`,
+											}}
+											variant="outline"
+										>
+											<UsersThreeIcon
+												className="size-3 shrink-0"
+												style={{ color: group.color }}
+												weight="duotone"
+											/>
+											<span className="max-w-16 truncate">{group.name}</span>
+										</Badge>
+									))}
+									{groupCount > 2 && (
+										<span className="text-muted-foreground text-xs">
+											+{groupCount - 2}
+										</span>
+									)}
+								</div>
+							)}
+						</div>
 					</div>
 
 					{/* Stats - Desktop */}
@@ -116,6 +154,15 @@ export function FlagItem({ flag, onEdit, onDelete, className }: FlagItemProps) {
 							<div className="w-20 text-right">
 								<div className="font-semibold tabular-nums">{rollout}%</div>
 								<div className="text-muted-foreground text-xs">rollout</div>
+							</div>
+						)}
+
+						{groupCount > 0 && (
+							<div className="w-20 text-right">
+								<div className="font-semibold tabular-nums">{groupCount}</div>
+								<div className="text-muted-foreground text-xs">
+									group{groupCount !== 1 ? "s" : ""}
+								</div>
 							</div>
 						)}
 

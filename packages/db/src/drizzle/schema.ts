@@ -710,6 +710,7 @@ export const flags = pgTable(
 		createdBy: text("created_by").notNull(),
 		variants: jsonb("variants").default([]),
 		dependencies: text("dependencies").array(),
+		targetGroupIds: text("target_group_ids").array(),
 		environment: text("environment"),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 		updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -828,6 +829,42 @@ export const annotations = pgTable(
 			columns: [table.createdBy],
 			foreignColumns: [user.id],
 			name: "annotations_created_by_fkey",
+		})
+			.onUpdate("cascade")
+			.onDelete("restrict"),
+	]
+);
+
+export const targetGroups = pgTable(
+	"target_groups",
+	{
+		id: text().primaryKey().notNull(),
+		name: text().notNull(),
+		description: text(),
+		color: text().default("#6366f1").notNull(),
+		rules: jsonb("rules").default([]).notNull(),
+		websiteId: text("website_id").notNull(),
+		createdBy: text("created_by").notNull(),
+		createdAt: timestamp("created_at", { precision: 3 }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { precision: 3 }).defaultNow().notNull(),
+		deletedAt: timestamp("deleted_at", { precision: 3 }),
+	},
+	(table) => [
+		index("target_groups_website_id_idx").using(
+			"btree",
+			table.websiteId.asc().nullsLast().op("text_ops")
+		),
+		foreignKey({
+			columns: [table.websiteId],
+			foreignColumns: [websites.id],
+			name: "target_groups_website_id_fkey",
+		})
+			.onUpdate("cascade")
+			.onDelete("cascade"),
+		foreignKey({
+			columns: [table.createdBy],
+			foreignColumns: [user.id],
+			name: "target_groups_created_by_fkey",
 		})
 			.onUpdate("cascade")
 			.onDelete("restrict"),

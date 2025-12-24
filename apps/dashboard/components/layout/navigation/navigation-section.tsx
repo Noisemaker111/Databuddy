@@ -10,12 +10,12 @@ import { FEATURE_METADATA } from "@/types/features";
 import { NavigationItem } from "./navigation-item";
 import type { NavigationSection as NavigationSectionType } from "./types";
 
-type FeatureState = {
+interface FeatureState {
 	isLocked: boolean;
 	lockedPlanName: string | null;
-};
+}
 
-type NavigationSectionProps = {
+interface NavigationSectionProps {
 	title: string;
 	icon: NavigationSectionType["icon"];
 	items: NavigationSectionType["items"];
@@ -24,7 +24,7 @@ type NavigationSectionProps = {
 	className?: string;
 	accordionStates: ReturnType<typeof useAccordionStates>;
 	flag?: string;
-};
+}
 
 const buildFullPath = (basePath: string, itemHref: string) =>
 	itemHref === "" ? basePath : `${basePath}${itemHref}`;
@@ -43,15 +43,17 @@ const isItemActive = (
 		return pathname === item.href;
 	}
 
-	if (currentWebsiteId === "sandbox") {
-		return pathname === buildFullPath("/sandbox", item.href);
-	}
+	const fullPath = (() => {
+		if (currentWebsiteId === "sandbox") {
+			return buildFullPath("/sandbox", item.href);
+		}
+		if (pathname.startsWith("/demo")) {
+			return buildFullPath(`/demo/${currentWebsiteId}`, item.href);
+		}
+		return buildFullPath(`/websites/${currentWebsiteId}`, item.href);
+	})();
 
-	if (pathname.startsWith("/demo")) {
-		return pathname === buildFullPath(`/demo/${currentWebsiteId}`, item.href);
-	}
-
-	return pathname === buildFullPath(`/websites/${currentWebsiteId}`, item.href);
+	return pathname === fullPath || pathname.startsWith(`${fullPath}/`);
 };
 
 export const NavigationSection = memo(function NavigationSectionComponent({

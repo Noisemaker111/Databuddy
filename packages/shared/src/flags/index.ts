@@ -60,6 +60,7 @@ export const flagFormSchema = z
 			.array(z.string().min(1, "Invalid dependency value"))
 			.optional(),
 		environment: z.string().nullable().optional(),
+		targetGroupIds: z.array(z.string()).optional(),
 	})
 	.superRefine((data, ctx) => {
 		if (data.type === "multivariant" && data.variants) {

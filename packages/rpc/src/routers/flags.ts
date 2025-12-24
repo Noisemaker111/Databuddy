@@ -1,6 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { websitesApi } from "@databuddy/auth";
-import { and, desc, eq, flags, inArray, isNull } from "@databuddy/db";
+import {
+	and,
+	desc,
+	eq,
+	flags,
+	inArray,
+	isNull,
+	targetGroups,
+} from "@databuddy/db";
 import { createDrizzleCache, redis } from "@databuddy/redis";
 import {
 	flagFormSchema,
@@ -123,6 +131,7 @@ const updateFlagSchema = z
 		variants: z.array(variantSchema).optional(),
 		dependencies: z.array(z.string()).optional(),
 		environment: z.string().optional(),
+		targetGroupIds: z.array(z.string()).optional(),
 	})
 	.superRefine((data, ctx) => {
 		if (data.type === "multivariant" && data.variants) {
@@ -189,7 +198,9 @@ const checkCircularDependency = async (
 
 		for (const neighbor of neighbors) {
 			if (!visited.has(neighbor)) {
-				if (hasCycle(neighbor)) return true;
+				if (hasCycle(neighbor)) {
+					return true;
+				}
 			} else if (recursionStack.has(neighbor)) {
 				return true;
 			}
@@ -214,7 +225,7 @@ export const flagsRouter = {
 		return flagsCache.withCache({
 			key: cacheKey,
 			ttl: CACHE_DURATION,
-			tables: ["flags"],
+			tables: ["flags", "target_groups"],
 			queryFn: async () => {
 				await authorizeScope(
 					context,
@@ -232,11 +243,45 @@ export const flagsRouter = {
 					conditions.push(eq(flags.status, input.status));
 				}
 
-				return context.db
+				const flagsList = await context.db
 					.select()
 					.from(flags)
 					.where(and(...conditions))
 					.orderBy(desc(flags.createdAt));
+
+				// Fetch all target groups for the website
+				const allGroupIds = new Set<string>();
+				for (const flag of flagsList) {
+					const groupIds = (flag.targetGroupIds as string[]) || [];
+					for (const id of groupIds) {
+						allGroupIds.add(id);
+					}
+				}
+
+				let groupsMap = new Map();
+				if (allGroupIds.size > 0 && input.websiteId) {
+					const groups = await context.db
+						.select()
+						.from(targetGroups)
+						.where(
+							and(
+								inArray(targetGroups.id, Array.from(allGroupIds)),
+								eq(targetGroups.websiteId, input.websiteId),
+								isNull(targetGroups.deletedAt)
+							)
+						);
+
+					groupsMap = new Map(groups.map((g) => [g.id, g]));
+				}
+
+				// Map target groups to each flag
+				return flagsList.map((flag) => ({
+					...flag,
+					targetGroups:
+						((flag.targetGroupIds as string[]) || [])
+							.map((id) => groupsMap.get(id))
+							.filter((g) => g !== undefined) || [],
+				}));
 			},
 		});
 	}),
@@ -255,7 +300,7 @@ export const flagsRouter = {
 			return flagsCache.withCache({
 				key: cacheKey,
 				ttl: CACHE_DURATION,
-				tables: ["flags"],
+				tables: ["flags", "target_groups"],
 				queryFn: async () => {
 					await authorizeScope(
 						context,
@@ -282,7 +327,29 @@ export const flagsRouter = {
 						});
 					}
 
-					return result[0];
+					const flag = result[0];
+					const groupIds = (flag.targetGroupIds as string[]) || [];
+
+					let targetGroupsList: unknown[] = [];
+					if (groupIds.length > 0 && input.websiteId) {
+						const groups = await context.db
+							.select()
+							.from(targetGroups)
+							.where(
+								and(
+									inArray(targetGroups.id, groupIds),
+									eq(targetGroups.websiteId, input.websiteId),
+									isNull(targetGroups.deletedAt)
+								)
+							);
+
+						targetGroupsList = groups;
+					}
+
+					return {
+						...flag,
+						targetGroups: targetGroupsList,
+					};
 				},
 			});
 		}),
@@ -301,7 +368,7 @@ export const flagsRouter = {
 			return flagsCache.withCache({
 				key: cacheKey,
 				ttl: CACHE_DURATION,
-				tables: ["flags"],
+				tables: ["flags", "target_groups"],
 				queryFn: async () => {
 					await authorizeScope(
 						context,
@@ -329,7 +396,29 @@ export const flagsRouter = {
 						});
 					}
 
-					return result[0];
+					const flag = result[0];
+					const groupIds = (flag.targetGroupIds as string[]) || [];
+
+					let targetGroupsList: unknown[] = [];
+					if (groupIds.length > 0 && input.websiteId) {
+						const groups = await context.db
+							.select()
+							.from(targetGroups)
+							.where(
+								and(
+									inArray(targetGroups.id, groupIds),
+									eq(targetGroups.websiteId, input.websiteId),
+									isNull(targetGroups.deletedAt)
+								)
+							);
+
+						targetGroupsList = groups;
+					}
+
+					return {
+						...flag,
+						targetGroups: targetGroupsList,
+					};
 				},
 			});
 		}),
@@ -415,6 +504,7 @@ export const flagsRouter = {
 						variants: input.variants,
 						dependencies: input.dependencies,
 						environment: input.environment,
+						targetGroupIds: input.targetGroupIds || [],
 						deletedAt: null,
 						updatedAt: new Date(),
 					})
@@ -442,6 +532,7 @@ export const flagsRouter = {
 					rolloutPercentage: input.rolloutPercentage || 0,
 					variants: input.variants || [],
 					dependencies: input.dependencies || [],
+					targetGroupIds: input.targetGroupIds || [],
 					websiteId: input.websiteId || null,
 					organizationId: input.organizationId || null,
 					environment: input.environment || existingFlag?.[0]?.environment,

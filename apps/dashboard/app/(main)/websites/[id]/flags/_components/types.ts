@@ -16,6 +16,8 @@ export interface Flag {
 	payload?: unknown;
 	rolloutPercentage?: number | null;
 	rules?: UserRule[];
+	targetGroups?: TargetGroup[] | string[];
+	targetGroupIds?: string[];
 	variants?: Variant[];
 	dependencies?: string[];
 	environment?: string;
@@ -46,6 +48,19 @@ export interface UserRule {
 	enabled: boolean;
 	batch: boolean;
 	batchValues?: string[];
+}
+
+export interface TargetGroup {
+	id: string;
+	name: string;
+	description?: string | null;
+	color: string;
+	rules: UserRule[];
+	memberCount?: number;
+	websiteId: string;
+	createdBy: string;
+	createdAt: Date;
+	updatedAt: Date;
 }
 
 export type FlagStatus = "active" | "inactive" | "archived";
@@ -85,3 +100,37 @@ export interface UserRulesBuilderProps {
 	rules: UserRule[];
 	onChange: (rules: UserRule[]) => void;
 }
+
+export interface GroupsListProps {
+	groups: TargetGroup[];
+	isLoading: boolean;
+	onCreateGroupAction: () => void;
+	onEditGroupAction: (group: TargetGroup) => void;
+	onDeleteGroup?: (groupId: string) => void;
+}
+
+export interface GroupSheetProps {
+	isOpen: boolean;
+	onCloseAction: () => void;
+	websiteId: string;
+	group?: TargetGroup | null;
+}
+
+export interface GroupSelectorProps {
+	selectedGroups: string[];
+	availableGroups: TargetGroup[];
+	onChangeAction: (groupIds: string[]) => void;
+}
+
+export const GROUP_COLORS = [
+	{ value: "#6366f1", label: "Indigo" },
+	{ value: "#8b5cf6", label: "Violet" },
+	{ value: "#ec4899", label: "Pink" },
+	{ value: "#f43f5e", label: "Rose" },
+	{ value: "#f97316", label: "Orange" },
+	{ value: "#eab308", label: "Yellow" },
+	{ value: "#22c55e", label: "Green" },
+	{ value: "#14b8a6", label: "Teal" },
+	{ value: "#06b6d4", label: "Cyan" },
+	{ value: "#3b82f6", label: "Blue" },
+] as const;

@@ -3,7 +3,7 @@
 import { FlagIcon } from "@phosphor-icons/react";
 import { EmptyState } from "@/components/empty-state";
 import { FlagItem } from "./flag-item";
-import type { FlagsListProps } from "./types";
+import type { FlagsListProps, TargetGroup } from "./types";
 
 export function FlagsList({
 	flags,
@@ -37,14 +37,25 @@ export function FlagsList({
 
 	return (
 		<div>
-			{flags.map((flag) => (
-				<FlagItem
-					flag={flag}
-					key={flag.id}
-					onDelete={onDeleteFlag ?? (() => {})}
-					onEdit={onEditFlagAction}
-				/>
-			))}
+			{flags.map((flag) => {
+				// Use targetGroups from flag if it's an array of objects, otherwise fallback to empty
+				const flagGroups =
+					Array.isArray(flag.targetGroups) &&
+					flag.targetGroups.length > 0 &&
+					typeof flag.targetGroups[0] === "object"
+						? (flag.targetGroups as TargetGroup[])
+						: [];
+
+				return (
+					<FlagItem
+						flag={flag}
+						groups={flagGroups}
+						key={flag.id}
+						onDelete={onDeleteFlag ?? (() => {})}
+						onEdit={onEditFlagAction}
+					/>
+				);
+			})}
 		</div>
 	);
 }

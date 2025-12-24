@@ -10,10 +10,11 @@ import {
 	GitBranchIcon,
 	SpinnerGapIcon,
 	UsersIcon,
+	UsersThreeIcon,
 } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -40,12 +41,18 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { orpc } from "@/lib/orpc";
 import { cn } from "@/lib/utils";
+import { GroupSelector } from "../groups/_components/group-selector";
 import { DependencySelector } from "./dependency-selector";
 import { ScheduleManager } from "./schedule-manager";
-import type { Flag, FlagSheetProps } from "./types";
+import type { Flag, FlagSheetProps, TargetGroup } from "./types";
 import { UserRulesBuilder } from "./user-rules-builder";
 
-type ExpandedSection = "targeting" | "dependencies" | "scheduling" | null;
+type ExpandedSection =
+	| "targeting"
+	| "groups"
+	| "dependencies"
+	| "scheduling"
+	| null;
 
 function CollapsibleSection({
 	icon: Icon,
@@ -129,6 +136,12 @@ export function FlagSheet({
 		throwOnError: false,
 	});
 
+	const { data: targetGroups } = useQuery({
+		...orpc.targetGroups.list.queryOptions({
+			input: { websiteId },
+		}),
+	});
+
 	const isEditing = Boolean(flag);
 
 	const form = useForm<FlagWithScheduleForm>({
@@ -146,6 +159,7 @@ export function FlagSheet({
 				variants: [],
 				dependencies: [],
 				environment: undefined,
+				targetGroupIds: [],
 			},
 			schedule: undefined,
 		},
@@ -179,6 +193,7 @@ export function FlagSheet({
 					variants: flag.variants ?? [],
 					dependencies: flag.dependencies ?? [],
 					environment: flag.environment || undefined,
+					targetGroupIds: flag.targetGroupIds ?? flag.targetGroups ?? [],
 				},
 				schedule: schedule
 					? {
@@ -206,6 +221,7 @@ export function FlagSheet({
 					rules: [],
 					variants: [],
 					dependencies: [],
+					targetGroupIds: [],
 				},
 				schedule: undefined,
 			});
@@ -221,6 +237,14 @@ export function FlagSheet({
 			onCloseAction();
 		}
 	};
+
+	// Reset form when flag changes (for editing different flags)
+	useEffect(() => {
+		if (isOpen && flag) {
+			resetForm();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [flag?.id, isOpen]);
 
 	const watchedType = form.watch("flag.type");
 	const watchedRules = form.watch("flag.rules") || [];
@@ -267,6 +291,7 @@ export function FlagSheet({
 					environment: data.environment?.trim() || undefined,
 					defaultValue: data.defaultValue,
 					rolloutPercentage: data.rolloutPercentage ?? 0,
+					targetGroupIds: data.targetGroupIds || [],
 				};
 				await updateMutation.mutateAsync(updateData);
 				flagIdToUse = flag.id;
@@ -284,6 +309,7 @@ export function FlagSheet({
 					environment: data.environment?.trim() || undefined,
 					defaultValue: data.defaultValue,
 					rolloutPercentage: data.rolloutPercentage ?? 0,
+					targetGroupIds: data.targetGroupIds || [],
 				};
 				const updatedFlag = await createMutation.mutateAsync(createData);
 				flagIdToUse = updatedFlag.id;
@@ -638,6 +664,29 @@ export function FlagSheet({
 
 							{/* Advanced Options */}
 							<div className="space-y-1">
+								<CollapsibleSection
+									badge={
+										form.watch("flag.targetGroupIds")?.length ??
+										(targetGroups as TargetGroup[] | undefined)?.length
+									}
+									icon={UsersThreeIcon}
+									isExpanded={expandedSection === "groups"}
+									onToggleAction={() => toggleSection("groups")}
+									title="Target Groups"
+								>
+									<FormField
+										control={form.control}
+										name="flag.targetGroupIds"
+										render={({ field }) => (
+											<GroupSelector
+												availableGroups={(targetGroups as TargetGroup[]) ?? []}
+												onChangeAction={(ids) => field.onChange(ids)}
+												selectedGroups={field.value ?? []}
+											/>
+										)}
+									/>
+								</CollapsibleSection>
+
 								<CollapsibleSection
 									badge={watchedRules.length}
 									icon={UsersIcon}

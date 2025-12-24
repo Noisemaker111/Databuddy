@@ -13,6 +13,7 @@ import { miniChartsRouter } from "./routers/mini-charts";
 import { organizationsRouter } from "./routers/organizations";
 import { preferencesRouter } from "./routers/preferences";
 import { ssoRouter } from "./routers/sso";
+import { targetGroupsRouter } from "./routers/target-groups";
 import { uptimeRouter } from "./routers/uptime";
 import { websitesRouter } from "./routers/websites";
 
@@ -27,6 +28,7 @@ export const appRouter = {
 	apikeys: apikeysRouter,
 	flags: flagsRouter,
 	flagSchedules: flagSchedulesRouter,
+	targetGroups: targetGroupsRouter,
 	chat: chatRouter,
 	agent: agentRouter,
 	organizations: organizationsRouter,
