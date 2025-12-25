@@ -213,16 +213,12 @@ export default function PricingTable({
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{filteredProducts.map((plan) => (
 					<PricingCard
-						buttonProps={{
-							disabled:
-								plan.scenario === "active" || plan.scenario === "scheduled",
-							onClick: async () => {
-								await attach({
-									productId: plan.id,
-									dialog: AttachDialog,
-									...(plan.id === "hobby" && { reward: "SAVE80" }),
-								});
-							},
+						attachAction={async () => {
+							await attach({
+								productId: plan.id,
+								dialog: AttachDialog,
+								...(plan.id === "hobby" && { reward: "SAVE80" }),
+							});
 						}}
 						isSelected={selectedPlan === plan.id}
 						key={plan.id}
@@ -301,17 +297,18 @@ function DowngradeConfirmDialog({
 function PricingCard({
 	productId,
 	className,
-	buttonProps,
+	attachAction,
 	isSelected = false,
 }: {
 	productId: string;
 	className?: string;
-	buttonProps?: React.ComponentProps<"button">;
+	attachAction?: () => Promise<void>;
 	isSelected?: boolean;
 }) {
 	const { products, selectedPlan } = usePricingTableCtx();
 	const { attach } = useCustomer();
 	const [showDowngradeDialog, setShowDowngradeDialog] = useState(false);
+	const [isAttaching, setIsAttaching] = useState(false);
 	const product = products.find((p) => p.id === productId);
 
 	if (!product) {
@@ -323,6 +320,8 @@ function PricingCard({
 	const isRecommended = !!productDisplay?.recommend_text;
 	const Icon = getPlanIcon(product.id);
 	const isDowngrade = product.scenario === "downgrade";
+	const isDisabled =
+		product.scenario === "active" || product.scenario === "scheduled";
 
 	const currentProduct = products.find(
 		(p) => p.scenario === "active" || p.scenario === "scheduled"
@@ -336,6 +335,20 @@ function PricingCard({
 		) : (
 			defaultButtonText
 		);
+
+	const handleUpgradeClick = async () => {
+		if (isDowngrade) {
+			setShowDowngradeDialog(true);
+			return;
+		}
+
+		setIsAttaching(true);
+		try {
+			await attachAction?.();
+		} finally {
+			setIsAttaching(false);
+		}
+	};
 
 	const mainPrice = product.properties?.is_free
 		? { primary_text: "Free", secondary_text: "forever" }
@@ -471,19 +484,18 @@ function PricingCard({
 			</div>
 
 			<div className="p-5 pt-0">
-				<PricingCardButton
-					disabled={buttonProps?.disabled}
-					onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-						if (isDowngrade) {
-							setShowDowngradeDialog(true);
-						} else {
-							buttonProps?.onClick?.(e);
-						}
-					}}
-					recommended={isRecommended}
+				<Button
+					className="w-full"
+					disabled={isDisabled || isAttaching}
+					onClick={handleUpgradeClick}
+					variant={isRecommended ? "default" : "secondary"}
 				>
-					{buttonText}
-				</PricingCardButton>
+					{isAttaching ? (
+						<CircleNotchIcon className="size-4 animate-spin" />
+					) : (
+						buttonText
+					)}
+				</Button>
 			</div>
 
 			<DowngradeConfirmDialog
@@ -492,11 +504,16 @@ function PricingCard({
 				onClose={() => setShowDowngradeDialog(false)}
 				onConfirm={async () => {
 					setShowDowngradeDialog(false);
-					await attach({
-						productId: product.id,
-						dialog: AttachDialog,
-						...(product.id === "hobby" && { reward: "SAVE80" }),
-					});
+					setIsAttaching(true);
+					try {
+						await attach({
+							productId: product.id,
+							dialog: AttachDialog,
+							...(product.id === "hobby" && { reward: "SAVE80" }),
+						});
+					} finally {
+						setIsAttaching(false);
+					}
 				}}
 				productName={productDisplay?.name || name}
 			/>
@@ -585,44 +602,6 @@ function GatedFeatureItem({
 				)}
 			</div>
 		</div>
-	);
-}
-
-function PricingCardButton({
-	recommended,
-	children,
-	className,
-	onClick,
-	disabled,
-}: {
-	recommended?: boolean;
-	children: React.ReactNode;
-	className?: string;
-	onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-	disabled?: boolean;
-}) {
-	const [loading, setLoading] = useState(false);
-
-	const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-		setLoading(true);
-		try {
-			await onClick?.(e);
-		} catch (error) {
-			console.error(error);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	return (
-		<Button
-			className={cn("w-full", className)}
-			disabled={loading || disabled}
-			onClick={handleClick}
-			variant={recommended ? "default" : "secondary"}
-		>
-			{loading ? <CircleNotchIcon className="size-4 animate-spin" /> : children}
-		</Button>
 	);
 }
 
