@@ -7,6 +7,7 @@ import {
 	type InferSelectModel,
 	isNull,
 } from "@databuddy/db";
+import { invalidateCacheableKey } from "@databuddy/redis";
 import { ORPCError } from "@orpc/server";
 import {
 	ApiKeyErrorCode,
@@ -261,17 +262,24 @@ export const apikeysRouter = {
 				.where(eq(apikey.id, input.id))
 				.returning();
 
+			// Invalidate cache for the API key
+			await invalidateCacheableKey("getCachedApiKeyByHash", updated.keyHash);
+
 			return mapKey(updated);
 		}),
 
 	revoke: protectedProcedure
 		.input(z.object({ id: z.string() }))
 		.handler(async ({ context, input }) => {
-			await getKeyWithAuth(context, input.id);
+			const key = await getKeyWithAuth(context, input.id);
 			await context.db
 				.update(apikey)
 				.set({ enabled: false, revokedAt: new Date(), updatedAt: new Date() })
 				.where(eq(apikey.id, input.id));
+
+			// Invalidate cache for the revoked API key
+			await invalidateCacheableKey("getCachedApiKeyByHash", key.keyHash);
+
 			return { success: true };
 		}),
 
@@ -301,6 +309,12 @@ export const apikeysRouter = {
 				.where(eq(apikey.id, input.id))
 				.returning();
 
+			// Invalidate cache for both old and new key hash
+			await Promise.all([
+				invalidateCacheableKey("getCachedApiKeyByHash", key.keyHash),
+				invalidateCacheableKey("getCachedApiKeyByHash", updated.keyHash),
+			]);
+
 			return {
 				id: updated.id,
 				secret,
@@ -312,8 +326,12 @@ export const apikeysRouter = {
 	delete: protectedProcedure
 		.input(z.object({ id: z.string() }))
 		.handler(async ({ context, input }) => {
-			await getKeyWithAuth(context, input.id);
+			const key = await getKeyWithAuth(context, input.id);
 			await context.db.delete(apikey).where(eq(apikey.id, input.id));
+
+			// Invalidate cache for the deleted API key
+			await invalidateCacheableKey("getCachedApiKeyByHash", key.keyHash);
+
 			return { success: true };
 		}),
 

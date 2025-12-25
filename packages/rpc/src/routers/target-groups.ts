@@ -7,7 +7,11 @@ import {
     isNull,
     targetGroups,
 } from "@databuddy/db";
-import { createDrizzleCache, redis } from "@databuddy/redis";
+import {
+    createDrizzleCache,
+    invalidateCacheablePattern,
+    redis,
+} from "@databuddy/redis";
 import { userRuleSchema } from "@databuddy/shared/flags";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
@@ -208,6 +212,10 @@ export const targetGroupsRouter = {
 
             await targetGroupsCache.invalidateByTables(["target_groups"]);
 
+            // Invalidate public API flag cache for this website since target group rules affect flag evaluation
+            await invalidateCacheablePattern(`cacheable:flag:*,${group.websiteId}*`);
+            await invalidateCacheablePattern(`cacheable:flags-client:*${group.websiteId}*`);
+
             return updatedGroup;
         }),
 
@@ -256,6 +264,10 @@ export const targetGroupsRouter = {
                 "flags",
                 "flags_to_target_groups",
             ]);
+
+            // Invalidate public API flag cache for this website
+            await invalidateCacheablePattern(`cacheable:flag:*,${group.websiteId}*`);
+            await invalidateCacheablePattern(`cacheable:flags-client:*${group.websiteId}*`);
 
             return { success: true };
         }),
