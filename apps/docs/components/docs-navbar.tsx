@@ -26,10 +26,10 @@ export const DocsNavbar = ({ stars }: DocsNavbarProps) => {
 	};
 
 	return (
-		<div className="fixed top-0 right-0 left-0 z-30 flex flex-col border-border border-b bg-background/95 backdrop-blur-md">
-			<nav>
-				<div className="mx-auto w-full px-2 sm:px-2 md:px-6 lg:px-8">
-					<div className="flex h-16 items-center justify-between">
+		<div className="fixed top-0 right-0 left-0 z-30 flex flex-col border-border border-b bg-background/95 backdrop-blur-md" style={{ height: 'var(--header-height, 4rem)' }}>
+			<nav style={{ height: 'var(--header-height, 4rem)' }}>
+				<div className="mx-auto w-full px-2 sm:px-2 md:px-6 lg:px-8 h-full">
+					<div className="flex h-full items-center justify-between">
 						{/* Logo Section */}
 						<div className="shrink-0">
 							<Logo />

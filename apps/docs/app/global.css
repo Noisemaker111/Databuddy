@@ -424,9 +424,13 @@
   }
 }
 
+:root {
+  --header-height: 4rem;
+}
+
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 4rem;
+  scroll-padding-top: var(--header-height);
 }
 
 /* Responsive utilities */
