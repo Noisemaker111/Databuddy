@@ -27,13 +27,13 @@ const AreaChart = dynamic(
 	{ ssr: false }
 );
 
-type ErrorTrendsChartProps = {
+interface ErrorTrendsChartProps {
 	errorChartData: Array<{
 		date: string;
 		"Total Errors": number;
 		"Affected Users": number;
 	}>;
-};
+}
 
 export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 	const [refAreaLeft, setRefAreaLeft] = useState<string | null>(null);
@@ -100,7 +100,6 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 		setRefAreaRight(null);
 	};
 
-	// Calculate summary stats
 	const totalErrors = displayData.reduce(
 		(sum, d) => sum + d["Total Errors"],
 		0
@@ -112,26 +111,24 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 
 	if (!errorChartData.length) {
 		return (
-			<div className="flex h-full flex-col rounded border border-border bg-card">
-				<div className="flex items-center gap-3 border-border/50 border-b p-4">
-					<div className="flex size-8 items-center justify-center rounded bg-accent ring-1 ring-border">
+			<div className="flex h-full flex-col rounded border bg-card">
+				<div className="flex items-center gap-3 border-b px-3 py-2.5 sm:px-4 sm:py-3">
+					<div className="flex size-8 items-center justify-center rounded bg-accent">
 						<BugIcon
 							className="size-4 text-muted-foreground"
 							weight="duotone"
 						/>
 					</div>
-					<div className="flex flex-col gap-0.5">
-						<span className="font-medium text-foreground text-sm">
+					<div className="min-w-0 flex-1">
+						<h2 className="font-semibold text-foreground text-sm tracking-tight sm:text-base">
 							Error Trends
-						</span>
-						<span className="text-muted-foreground text-xs">
-							No data available
-						</span>
+						</h2>
+						<p className="text-muted-foreground text-xs">No data available</p>
 					</div>
 				</div>
-				<div className="flex-1 p-4">
+				<div className="flex-1 p-3 sm:p-4">
 					<TableEmptyState
-						description="Not enough data to display a trend chart. Error trends will appear here when your website encounters errors."
+						description="Error trends will appear here when your website encounters errors."
 						icon={<BugIcon className="size-6 text-muted-foreground" />}
 						title="No error trend data"
 					/>
@@ -149,20 +146,19 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 		affectedUsersMetric?.color || METRIC_COLORS.session_duration.primary;
 
 	return (
-		<div className="flex h-full flex-col overflow-hidden rounded border border-border bg-card">
-			{/* Header */}
-			<div className="flex items-center justify-between border-border/50 border-b p-4">
+		<div className="flex h-full flex-col rounded border bg-card">
+			<div className="flex flex-col items-start justify-between gap-2 border-b px-3 py-2.5 sm:flex-row sm:items-center sm:px-4 sm:py-3">
 				<div className="flex items-center gap-3">
-					<div className="flex size-8 items-center justify-center rounded bg-destructive/10 ring-1 ring-destructive/20">
+					<div className="flex size-8 items-center justify-center rounded bg-destructive/10">
 						<BugIcon className="size-4 text-destructive" weight="duotone" />
 					</div>
-					<div className="flex flex-col gap-0.5">
-						<span className="font-medium text-foreground text-sm">
+					<div className="min-w-0">
+						<h2 className="font-semibold text-foreground text-sm tracking-tight sm:text-base">
 							Error Trends
-						</span>
-						<span className="text-muted-foreground text-xs">
-							Error occurrences and impact over time
-						</span>
+						</h2>
+						<p className="text-muted-foreground text-xs">
+							Error occurrences over time
+						</p>
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
@@ -183,8 +179,7 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 				</div>
 			</div>
 
-			{/* Summary Stats */}
-			<div className="grid grid-cols-2 gap-3 border-border/50 border-b bg-accent/20 p-3">
+			<div className="grid grid-cols-2 gap-3 border-b bg-muted/30 p-3">
 				<div className="space-y-0.5">
 					<p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
 						Total Errors
@@ -203,13 +198,13 @@ export const ErrorTrendsChart = ({ errorChartData }: ErrorTrendsChartProps) => {
 				</div>
 			</div>
 
-			{/* Chart */}
-			<div className="flex-1 p-2">
+			<div className="flex-1 overflow-x-auto p-2">
 				<div
 					className="relative select-none"
 					style={{
 						width: "100%",
 						height: 260,
+						minWidth: 300,
 						userSelect: refAreaLeft ? "none" : "auto",
 						WebkitUserSelect: refAreaLeft ? "none" : "auto",
 					}}

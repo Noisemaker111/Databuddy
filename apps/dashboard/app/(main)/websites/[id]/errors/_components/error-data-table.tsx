@@ -2,6 +2,7 @@
 
 import type { ErrorTab } from "@databuddy/shared/types/errors";
 import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	createErrorTypeColumns,
 	createPageColumn,
@@ -16,7 +17,16 @@ const DataTable = dynamic(
 		})),
 	{
 		ssr: false,
-		loading: () => <div className="h-96 animate-pulse rounded bg-muted/20" />,
+		loading: () => (
+			<div className="rounded border bg-sidebar">
+				<div className="border-b px-3 py-2.5 sm:px-4 sm:py-3">
+					<Skeleton className="h-5 w-24" />
+				</div>
+				<div className="p-3 sm:p-4">
+					<Skeleton className="h-64 w-full" />
+				</div>
+			</div>
+		),
 	}
 );
 
@@ -51,10 +61,10 @@ export const ErrorDataTable = ({
 
 	return (
 		<DataTable
-			description="Comprehensive error breakdown across different dimensions"
+			description="Error breakdown by type and page"
 			initialPageSize={15}
 			isLoading={isLoading || isRefreshing}
-			minHeight={400}
+			minHeight={350}
 			tabs={errorTabs}
 			title="Error Analysis"
 		/>

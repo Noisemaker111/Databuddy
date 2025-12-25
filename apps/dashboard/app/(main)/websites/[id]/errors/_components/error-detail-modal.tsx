@@ -160,11 +160,11 @@ Context:
 • Device: ${error.device_type || "Unknown"}
 • Location: ${locationLabel}`;
 
-	type QuickAction = {
+	interface QuickAction {
 		key: string;
 		node: ReactNode;
 		description: string;
-	};
+	}
 
 	const quickActions: QuickAction[] = [];
 
@@ -327,15 +327,17 @@ Context:
 			<SheetContent className="sm:max-w-xl" side="right">
 				<SheetHeader>
 					<div className="flex items-center gap-4">
-						<div className="flex h-11 w-11 items-center justify-center rounded border bg-secondary-brighter">
+						<div className="flex h-11 w-11 items-center justify-center rounded bg-accent">
 							{getErrorTypeIcon(type)}
 						</div>
 						<div className="min-w-0 flex-1">
 							<div className="flex items-center gap-2">
-								<SheetTitle className="text-lg">{type}</SheetTitle>
+								<SheetTitle className="text-foreground text-lg">
+									{type}
+								</SheetTitle>
 								<Badge className={getSeverityColor(severity)}>{severity}</Badge>
 							</div>
-							<SheetDescription className="flex flex-wrap items-center gap-1.5 text-xs sm:text-sm">
+							<SheetDescription className="flex flex-wrap items-center gap-1.5 text-muted-foreground text-xs sm:text-sm">
 								<ClockIcon className="h-3.5 w-3.5" weight="duotone" />
 								<span>{relativeTimeStr}</span>
 								<span className="text-muted-foreground/50">•</span>
@@ -370,7 +372,9 @@ Context:
 						<div className="flex items-center justify-between">
 							<div className="flex items-center gap-2">
 								<CodeIcon className="size-4 text-primary" weight="duotone" />
-								<span className="font-medium text-sm">Error Message</span>
+								<span className="font-medium text-foreground text-sm">
+									Error Message
+								</span>
 							</div>
 							<CopyButton
 								ariaLabel="Copy error message"
@@ -380,8 +384,8 @@ Context:
 								text={error.message}
 							/>
 						</div>
-						<div className="rounded border bg-card p-4">
-							<p className="wrap-break-word text-sm leading-relaxed">
+						<div className="rounded border bg-accent/30 p-4">
+							<p className="wrap-break-word text-foreground text-sm leading-relaxed">
 								{error.message}
 							</p>
 						</div>
@@ -397,12 +401,14 @@ Context:
 												className="size-4 text-chart-2"
 												weight="duotone"
 											/>
-											<span className="font-medium text-sm">Stack Trace</span>
+											<span className="font-medium text-foreground text-sm">
+												Stack Trace
+											</span>
 										</div>
 									</AccordionTrigger>
 									<AccordionContent>
-										<div className="rounded border bg-card p-4">
-											<pre className="wrap-break-word max-h-56 overflow-auto whitespace-pre-wrap font-mono text-muted-foreground text-xs leading-relaxed">
+										<div className="rounded border bg-accent/30 p-4">
+											<pre className="wrap-break-word max-h-56 overflow-auto whitespace-pre-wrap font-mono text-foreground text-xs leading-relaxed">
 												{error.stack}
 											</pre>
 										</div>
@@ -425,11 +431,13 @@ Context:
 						<section className="space-y-3">
 							<div className="flex items-center gap-2">
 								<CodeIcon className="size-4 text-chart-3" weight="duotone" />
-								<span className="font-medium text-sm">Source Location</span>
+								<span className="font-medium text-foreground text-sm">
+									Source Location
+								</span>
 							</div>
-							<div className="rounded border bg-card p-3">
+							<div className="rounded border bg-accent/30 p-3">
 								<div className="flex items-center gap-1 font-mono text-sm">
-									<span className="text-muted-foreground">
+									<span className="text-foreground">
 										{error.filename || "Unknown file"}
 									</span>
 									{error.lineno && (
@@ -450,8 +458,8 @@ Context:
 					)}
 
 					<section className="space-y-3">
-						<span className="font-medium text-sm">Context</span>
-						<div className="rounded border bg-card">
+						<span className="font-medium text-foreground text-sm">Context</span>
+						<div className="rounded border bg-accent/30">
 							{contextRows.map((row, index) => (
 								<div
 									className={`flex items-center justify-between gap-3 px-3 py-2.5 ${index > 0 ? "border-t" : ""}`}
@@ -464,7 +472,7 @@ Context:
 												{row.label}
 											</span>
 											<p
-												className="truncate font-mono text-sm"
+												className="truncate font-mono text-foreground text-sm"
 												title={row.value}
 											>
 												{row.value}
@@ -486,22 +494,26 @@ Context:
 					</section>
 
 					<section className="space-y-3">
-						<span className="font-medium text-sm">Environment</span>
+						<span className="font-medium text-foreground text-sm">
+							Environment
+						</span>
 						<div className="grid grid-cols-2 gap-3">
-							<div className="flex flex-col gap-1.5 rounded border bg-card p-3">
+							<div className="flex flex-col gap-1.5 rounded border bg-accent/30 p-3">
 								<span className="text-muted-foreground text-xs">Browser</span>
 								<div className="flex items-center gap-2">
 									{error.browser_name ? (
 										<>
 											<BrowserIcon name={error.browser_name} size="sm" />
-											<span className="text-sm">{error.browser_name}</span>
+											<span className="text-foreground text-sm">
+												{error.browser_name}
+											</span>
 										</>
 									) : (
 										<span className="text-muted-foreground text-sm">—</span>
 									)}
 								</div>
 							</div>
-							<div className="flex flex-col gap-1.5 rounded border bg-card p-3">
+							<div className="flex flex-col gap-1.5 rounded border bg-accent/30 p-3">
 								<span className="text-muted-foreground text-xs">
 									Operating System
 								</span>
@@ -509,20 +521,22 @@ Context:
 									{error.os_name ? (
 										<>
 											<OSIcon name={error.os_name} size="sm" />
-											<span className="text-sm">{error.os_name}</span>
+											<span className="text-foreground text-sm">
+												{error.os_name}
+											</span>
 										</>
 									) : (
 										<span className="text-muted-foreground text-sm">—</span>
 									)}
 								</div>
 							</div>
-							<div className="flex flex-col gap-1.5 rounded border bg-card p-3">
+							<div className="flex flex-col gap-1.5 rounded border bg-accent/30 p-3">
 								<span className="text-muted-foreground text-xs">Device</span>
 								<div className="flex items-center gap-2">
 									{error.device_type ? (
 										<>
 											{getDeviceIcon(error.device_type)}
-											<span className="text-sm capitalize">
+											<span className="text-foreground text-sm capitalize">
 												{error.device_type}
 											</span>
 										</>
@@ -531,13 +545,15 @@ Context:
 									)}
 								</div>
 							</div>
-							<div className="flex flex-col gap-1.5 rounded border bg-card p-3">
+							<div className="flex flex-col gap-1.5 rounded border bg-accent/30 p-3">
 								<span className="text-muted-foreground text-xs">Location</span>
 								<div className="flex items-center gap-2">
 									{locationLabel !== "Unknown" ? (
 										<>
 											<CountryFlag country={locationCode} size={16} />
-											<span className="text-sm">{locationLabel}</span>
+											<span className="text-foreground text-sm">
+												{locationLabel}
+											</span>
 										</>
 									) : (
 										<>
@@ -550,7 +566,7 @@ Context:
 								</div>
 							</div>
 						</div>
-						<div className="flex items-center justify-between rounded border bg-card p-3">
+						<div className="flex items-center justify-between rounded border bg-accent/30 p-3">
 							<span className="text-muted-foreground text-xs">
 								Severity Level
 							</span>
@@ -560,8 +576,10 @@ Context:
 
 					{metadataRows.length > 0 && (
 						<section className="space-y-3">
-							<span className="font-medium text-sm">Metadata</span>
-							<div className="rounded border bg-card">
+							<span className="font-medium text-foreground text-sm">
+								Metadata
+							</span>
+							<div className="rounded border bg-accent/30">
 								{metadataRows.map((row, index) => (
 									<div
 										className={`flex items-start gap-3 px-3 py-2.5 ${index > 0 ? "border-t" : ""}`}
@@ -572,7 +590,7 @@ Context:
 											<span className="text-muted-foreground text-xs">
 												{row.label}
 											</span>
-											<p className="wrap-break-word font-mono text-foreground/90 text-sm">
+											<p className="wrap-break-word font-mono text-foreground text-sm">
 												{row.value}
 											</p>
 										</div>

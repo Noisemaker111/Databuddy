@@ -9,7 +9,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { orpc } from "@/lib/orpc";
 
-type UserPreferences = {
+interface UserPreferences {
 	timezone: string;
 	dateFormat: string;
 	timeFormat: string;
